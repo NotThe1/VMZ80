@@ -47,23 +47,23 @@ public class Z80 {
 	/**
 	 * flags
 	 */
-	public static final byte ccSign = (byte) 0b10000000;
-	public static final byte ccZero = (byte) 0b01000000;
-	public static final byte ccBit5 = (byte) 0b00100000;
-	public static final byte ccAux  = (byte) 0b00010000;
-	public static final byte ccBit3 = (byte) 0b00001000;
-	public static final byte ccPV = (byte) 0b00000100;
-	public static final byte ccN = (byte) 0b00000010;
-	public static final byte ccCarry = (byte) 0b00000001;
+	public static final byte BIT_SIGN = (byte) 0b10000000;
+	public static final byte BIT_ZERO = (byte) 0b01000000;
+	public static final byte BIT_BIT5 = (byte) 0b00100000;
+	public static final byte BIT_AUX  = (byte) 0b00010000;
+	public static final byte BIT_BIT3 = (byte) 0b00001000;
+	public static final byte BIT_PV = (byte) 0b00000100;
+	public static final byte BIT_N = (byte) 0b00000010;
+	public static final byte BIT_CARRY = (byte) 0b00000001;
 
-	public static final byte ccnSign = (byte) ~ccSign;
-	public static final byte ccnZero =(byte)  ~ccZero;
-	public static final byte ccnBit5 =(byte)  ~ccBit5;
-	public static final byte ccnAux =(byte)  ~ccAux;
-	public static final byte ccnBit3 =(byte)  ~ccBit3;
-	public static final byte ccnPV =(byte)  ~ccPV;
-	public static final byte ccnN =(byte)  ~ccN;
-	public static final byte ccnCarry =(byte)  ~ccCarry;
+	public static final byte MASK_SIGN = (byte) ~BIT_SIGN;
+	public static final byte MASK_ZERO =(byte)  ~BIT_ZERO;
+	public static final byte MASK_BIT5 =(byte)  ~BIT_BIT5;
+	public static final byte MASK_AUX =(byte)  ~BIT_AUX;
+	public static final byte MASK_BIT3 =(byte)  ~BIT_BIT3;
+	public static final byte MASK_PV =(byte)  ~BIT_PV;
+	public static final byte MASK_N =(byte)  ~BIT_N;
+	public static final byte MASK_CARRY =(byte)  ~BIT_CARRY;
 	
 	/**
 	 * tables
