@@ -82,7 +82,7 @@ public class ConditionCodeRegister  {
 
 	public void setZSP(byte value) {
 		this.setZeroFlag(value == 0);
-		this.setSignFlag((value & Z80.MASK_SIGN) != 0);
+		this.setSignFlag((value & Z80.BIT_SIGN) != 0);
 		this.setPvFlag((Integer.bitCount(value) % 2) == 0);
 	}// setZSP
 
