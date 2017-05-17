@@ -1,6 +1,31 @@
 package codeSupport;
 
 public class Z80 {
+	
+	public enum Register {
+		// Single Byte Registers
+		A, B, C, D, E, H, L,F,
+		Ap, Fp,Bp, Cp, Dp, Ep, Hp, Lp,
+		I,R,
+			// AFp,BCp, DEp, HLp,
+			// no instructions reference these 16 Bit registers
+		
+			// Double Byte Registers
+			// used for identification only
+			// nothing is stored directly into one of these
+		 AF,BC, DE, HL,
+		 M,
+		 SP, PC,
+		 IX,IY
+	}//enum Register
+	
+	/**
+	 * Constants
+	 */
+	
+	public static final int WORD_MASK = 0X00FFFF;
+	public static final int BYTE_MASK = 0X00FF;
+	public static final int HI_BYTE_MASK = 0X00FF00;
 	/**
 	 * registers
 	 */
