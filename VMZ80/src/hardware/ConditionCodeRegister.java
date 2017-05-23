@@ -23,7 +23,7 @@ public class ConditionCodeRegister  {
 	private boolean signFlag = false; // set to most significant bit (7)
 	private boolean zeroFlag = false; // set if result = 0;
 	private boolean bit5Flag = false; 
-	private boolean auxFlag = false;
+	private boolean hFlag = false;
 	
 	private boolean bit3Flag = false; 
 	private boolean pvFlag = false; // set to one if even parity, reset if odd
@@ -51,7 +51,7 @@ public class ConditionCodeRegister  {
 		byte conditionCode = (byte) 0B00000010;
 		conditionCode = (byte) ((signFlag) ? conditionCode | Z80.BIT_SIGN : conditionCode & Z80.MASK_SIGN);
 		conditionCode = (byte) ((zeroFlag) ? conditionCode | Z80.BIT_ZERO : conditionCode & Z80.MASK_ZERO);
-		conditionCode = (byte) ((auxFlag) ? conditionCode | Z80.BIT_AUX : conditionCode & Z80.MASK_AUX);
+		conditionCode = (byte) ((hFlag) ? conditionCode | Z80.BIT_AUX : conditionCode & Z80.MASK_AUX);
 		conditionCode = (byte) ((pvFlag) ? conditionCode | Z80.BIT_PV : conditionCode & Z80.MASK_PV);
 		conditionCode = (byte) ((nFlag) ? conditionCode | Z80.BIT_N : conditionCode & Z80.MASK_N);
 		conditionCode = (byte) ((carryFlag) ? conditionCode | Z80.BIT_CARRY : conditionCode & Z80.MASK_CARRY);
@@ -65,14 +65,14 @@ public class ConditionCodeRegister  {
 
 		setSignFlag((flags & Z80.BIT_SIGN) == Z80.BIT_SIGN);
 		setZeroFlag((flags & Z80.BIT_ZERO) == Z80.BIT_ZERO);
-		setAuxFlag((flags & Z80.BIT_AUX) == Z80.BIT_AUX);
+		setHFlag((flags & Z80.BIT_AUX) == Z80.BIT_AUX);
 		setPvFlag((flags & Z80.BIT_PV) == Z80.BIT_PV);
 		setNFlag((flags & Z80.BIT_N) == Z80.BIT_N);
 		setCarryFlag((flags & Z80.BIT_CARRY) == Z80.BIT_CARRY);
 	}// setConditionCode
 
 	public void clearAllCodes() {
-		auxFlag = false;
+		hFlag = false;
 		carryFlag = false;
 		signFlag = false;
 		pvFlag = false;
@@ -91,12 +91,12 @@ public class ConditionCodeRegister  {
 		setZSP(value);
 	}// setZSPclearCYandAUX
 
-	public boolean isAuxFlagSet() {
-		return auxFlag;
+	public boolean isHFlagSet() {
+		return hFlag;
 	}// isAuxilaryCarryFlagSet
 
-	public void setAuxFlag(boolean auxFlag) {
-		this.auxFlag = auxFlag;
+	public void setHFlag(boolean auxFlag) {
+		this.hFlag = auxFlag;
 	}// setAuxilaryCarryFlag
 
 	public boolean isCarryFlagSet() {
