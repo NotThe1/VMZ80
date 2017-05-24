@@ -85,6 +85,12 @@ public class ConditionCodeRegister  {
 		this.setSignFlag((value & Z80.BIT_SIGN) != 0);
 		this.setPvFlag((Integer.bitCount(value) % 2) == 0);
 	}// setZSP
+	
+	public void setZSP16(int value){
+		this.setZeroFlag(value == 0);
+		this.setSignFlag((value & Z80.WORD_SIGN) != 0);
+		this.setPvFlag((Integer.bitCount(value) % 2) == 0);
+	}//setZSP16
 
 	public void setZSPclearCYandAUX(byte value) {
 		clearAllCodes();

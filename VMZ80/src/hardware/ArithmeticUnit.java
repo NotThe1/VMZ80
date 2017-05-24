@@ -104,7 +104,7 @@ public class ArithmeticUnit {
 	 * @return 8 bit sum
 	 */
 	// @Override
-	public byte add(byte operand1, byte operand2) {
+	public byte addBytes(byte operand1, byte operand2) {
 		byte result = (byte) add((byte) operand1, (byte) operand2, MASK_BYTE);
 //		boolean overflow = false;
 //		if (((operand1 ^ operand2) & MASK_SIGN) == 0) { // same sign
@@ -130,9 +130,34 @@ public class ArithmeticUnit {
 	 * @return 16 bit sum of the two values
 	 */
 	// @Override
-	public int add(int operand1, int operand2) { // add words
+	public int addWords(int operand1, int operand2) { // add words
+		ccr.setNFlag(false);
 		return add(operand1, operand2, MASK_WORD);
 	}// add(short operand1, short operand2)
+	
+	public int addWordsWithCarry(int operand1, int operand2 ){
+		int op1 = operand1;
+		int op2 = operand2;
+		boolean carryFlagIn = ccr.isCarryFlagSet();
+		boolean carryFromIncrement = false;
+		boolean auxCarryFromIncrement = false;
+		if (carryFlagIn) {
+			operand2 =  this.add(operand2, 1, MASK_WORD);
+			carryFromIncrement = ccr.isCarryFlagSet(); // carry flag from increment
+			auxCarryFromIncrement = ccr.isHFlagSet(); // Aux carry from increment
+		} // if carryFlagIn
+
+		int result =  add( operand1,  operand2, MASK_WORD);
+		boolean carryFlagOut = ccr.isCarryFlagSet() | carryFromIncrement;// carry is true if either flag is set
+		boolean auxCarryFlagOut = ccr.isHFlagSet() | auxCarryFromIncrement;// Aux carry is true if either
+																			// flag is set
+		ccr.setHFlag(auxCarryFlagOut);
+		ccr.setCarryFlag(carryFlagOut);
+		ccr.setZSP16(result);
+		ccr.setPvFlag(hasOverflow(op1,op2,result,MASK_SIGN_BYTE));	//replace P with V
+		return result;
+
+	}//addWordsWithCarry
 
 	/**
 	 * addWithCarry two bytes plus the Carry bit
@@ -146,7 +171,9 @@ public class ArithmeticUnit {
 	 * @return 8 bit sum
 	 */
 	// @Override
-	public byte addWithCarry(byte operand1, byte operand2) {
+	public byte addBytesWithCarry(byte operand1, byte operand2) {
+		byte op1 = operand1;
+		byte op2 = operand2;
 		boolean carryFlagIn = ccr.isCarryFlagSet();
 		boolean carryFromIncrement = false;
 		boolean auxCarryFromIncrement = false;
@@ -163,6 +190,7 @@ public class ArithmeticUnit {
 		ccr.setHFlag(auxCarryFlagOut);
 		ccr.setCarryFlag(carryFlagOut);
 		ccr.setZSP(result);
+		ccr.setPvFlag(hasOverflow(op1,op2,result,MASK_SIGN_BYTE));	//replace P with V
 		return result;
 	}// addWithCarry
 	
@@ -174,7 +202,17 @@ public class ArithmeticUnit {
 			} // if result had same sign
 		} // if source had same sign
 		return hasOverflow;
-	}
+	}//hasOverflow
+	
+
+	
+//	private boolean hasOverflowWithCarry(int operand1, int operand2,int result, int  signMask){
+//		boolean hasOverflow = false;
+//		if (ccr.isCarryFlagSet()){
+//			hasOverflow = hasOverflow(1,operand1,1 + operand1,signMask);
+//		}
+//		
+//	}
 		// // <><><><><><><><><><><><><><><><><><><><><><><><>
 
 	// /**

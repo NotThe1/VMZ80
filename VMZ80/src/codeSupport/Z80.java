@@ -70,8 +70,10 @@ public class Z80 {
 	
 	
 	/**
-	 * flags
+	 * masks
 	 */
+	public static final byte WORD_SIGN = (byte) 0b1000000000000000;
+	
 	public static final byte BIT_SIGN = (byte) 0b10000000;
 	public static final byte BIT_ZERO = (byte) 0b01000000;
 	public static final byte BIT_BIT5 = (byte) 0b00100000;
