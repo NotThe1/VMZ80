@@ -15,6 +15,38 @@ public class Adder {
 	private BitSet sum = new BitSet(SIZE);
 	private BitSet carryOut = new BitSet(SIZE);
 	private BitSet carryIn = new BitSet(SIZE);
+	
+	public byte[] and(byte[] argument1, byte[] argument2) {
+		this.setArgument1(argument1);
+		this.setArgument2(argument2);
+		sum= (BitSet) augend.clone();
+		sum.and(addend);
+		return this.getSum();	
+	}//and
+
+	public byte[] or(byte[] argument1, byte[] argument2) {
+		this.setArgument1(argument1);
+		this.setArgument2(argument2);
+		sum= (BitSet) augend.clone();
+		sum.or(addend);
+		return this.getSum();	
+	}//or
+	
+	public byte[] xor(byte[] argument1, byte[] argument2) {
+		this.setArgument1(argument1);
+		this.setArgument2(argument2);
+		sum= (BitSet) augend.clone();
+		sum.xor(addend);
+		return this.getSum();	
+	}//xor
+	
+	
+	public byte[] complement(byte[] argument1) {
+		this.setArgument1(argument1);
+		sum= (BitSet) augend.clone();
+		sum.flip(0,8);
+		return this.getSum();	
+	}//and
 
 	public byte[] add(byte[] argument1, byte[] argument2) {
 		this.setArgument1(argument1);
@@ -23,7 +55,7 @@ public class Adder {
 		return this.getSum();
 	}// add
 
-	public void add() {
+	private void add() {
 		clearSets();
 		int bitCount;
 		for (int bitIndex = 0; bitIndex < SIZE; bitIndex++) {
@@ -57,17 +89,7 @@ public class Adder {
 		} // for
 	}// add
 
-	// public BitSet getArg1(){
-	// return augend;
-	// }//get
-	//
-	// public BitSet getArg2(){
-	// return addend;
-	// }//get
 
-	// public BitSet getSum(){
-	// return sum;
-	// }//get
 	public byte[] getSum() {
 		byte[] ans = sum.toByteArray();
 		switch (ans.length) {
@@ -83,18 +105,9 @@ public class Adder {
 			break;
 		default:
 		}//switch
-		
-
 		return ans;
 	}// getSum
 
-	// public BitSet getACarryIn(){
-	// return carryIn;
-	// }//get
-	//
-	// public BitSet getACarryOut(){
-	// return carryOut;
-	// }//get
 
 	public static Adder getInstance() {
 		return instance;
@@ -117,7 +130,7 @@ public class Adder {
 		setArgument2(argument2);
 	}// setArguments
 
-	public void clearSets() {
+	private void clearSets() {
 		sum.clear();
 		carryOut.clear();
 		carryIn.clear();
@@ -125,14 +138,14 @@ public class Adder {
 	//
 
 	public boolean hasCarry() {
-		return carryOut.get(7);
+		return hasCarryBase(BYTE_ARG);
 	}// isHalfCarrySet
 
 	public boolean hasCarryWord() {
-		return carryOut.get(15);
+		return hasCarryBase(WORD_ARG);
 	}// isHalfCarrySet
 
-	public boolean hasCarryBase(String arg) {
+	private boolean hasCarryBase(String arg) {
 		int bitIndex = arg == BYTE_ARG ? 7 : 15;
 		return carryOut.get(bitIndex);
 	}// hasCarryBase
@@ -150,13 +163,14 @@ public class Adder {
 		return hasOverflowBase(WORD_ARG);
 	}// hasOverflowWord
 
-	public boolean hasOverflowBase(String arg) {
+	private boolean hasOverflowBase(String arg) {
 		int bitIndex = arg == BYTE_ARG ? 7 : 15;
 		boolean ans = false;
-		if (!(augend.get(15) ^ addend.get(15))) { // xor
-			ans = augend.get(15) ^ sum.get(15);
-		} // if
-		return ans;
+//		if (!(augend.get(15) ^ addend.get(15))) { // xor
+//			ans = augend.get(15) ^ sum.get(15);
+//		} // if
+//		return ans;
+		return carryIn.get(bitIndex) ^ carryOut.get(bitIndex);
 	}// hasOverflowBase
 	//
 	/*
@@ -174,7 +188,7 @@ public class Adder {
 	}// hasEvenParityWord
 
 	private boolean hasParityBase(String arg) {
-		int bitIndex = arg == BYTE_ARG ? 7 : 15;
+		int bitIndex = arg == BYTE_ARG ? 8 : 16;
 		BitSet bs = sum.get(0, bitIndex);
 		return (bs.cardinality() % 2) == 0 ? true : false;
 	}// hasEvenParityBase
@@ -188,7 +202,7 @@ public class Adder {
 		return hasHalfCarryBase(WORD_ARG);
 	}// isHalfCarrySet
 
-	public boolean hasHalfCarryBase(String arg) {
+	private boolean hasHalfCarryBase(String arg) {
 		int bitIndex = arg == BYTE_ARG ? 3 : 11;
 		return carryOut.get(bitIndex);
 	}// hasHalfCarryBase
@@ -203,7 +217,7 @@ public class Adder {
 	}// isZeroWord
 
 	private boolean isZeroBase(String arg) {
-		int bitIndex = arg == BYTE_ARG ? 7 : 15;
+		int bitIndex = arg == BYTE_ARG ? 8 : 16;
 		BitSet bs = sum.get(0, bitIndex);
 		return (bs.cardinality()) == 0 ? true : false;
 	}// isZeroBase
@@ -226,28 +240,6 @@ public class Adder {
 	private static final String BYTE_ARG = "ByteArg";
 	private static final String WORD_ARG = "WordArg";
 
-	private int byteMask = 0XFF;
-	private int wordMask = 0XFFFF;
 
-	private int bit0 = 1;
-	private int bit1 = 2;
-	private int bit2 = 4;
-	private int bit3 = 8;
-	private int bit4 = 16;
-	private int bit5 = 32;
-	private int bit6 = 64;
-	private int bit7 = 128;
-
-	private int bit8 = 256;
-	private int bit9 = 512;
-	private int bit10 = 1024;
-	private int bit11 = 2048;
-	private int bit12 = 4096;
-	private int bit13 = 8192;
-	private int bit14 = 16384;
-	private int bit15 = 32768;
-
-	private int[] bits = new int[] { bit0, bit1, bit2, bit3, bit4, bit5, bit6, bit7, bit8, bit9, bit10, bit11, bit12,
-			bit13, bit14, bit15 };
 
 }// class Adder
