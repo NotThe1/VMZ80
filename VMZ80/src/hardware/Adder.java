@@ -15,48 +15,76 @@ public class Adder {
 	private BitSet sum = new BitSet(SIZE);
 	private BitSet carryOut = new BitSet(SIZE);
 	private BitSet carryIn = new BitSet(SIZE);
-	
+
 	public byte[] and(byte[] argument1, byte[] argument2) {
 		this.setArgument1(argument1);
 		this.setArgument2(argument2);
-		sum= (BitSet) augend.clone();
+		sum = (BitSet) augend.clone();
 		sum.and(addend);
-		return this.getSum();	
-	}//and
+		return this.getSum();
+	}// and
 
 	public byte[] or(byte[] argument1, byte[] argument2) {
 		this.setArgument1(argument1);
 		this.setArgument2(argument2);
-		sum= (BitSet) augend.clone();
+		sum = (BitSet) augend.clone();
 		sum.or(addend);
-		return this.getSum();	
-	}//or
-	
+		return this.getSum();
+	}// or
+
 	public byte[] xor(byte[] argument1, byte[] argument2) {
 		this.setArgument1(argument1);
 		this.setArgument2(argument2);
-		sum= (BitSet) augend.clone();
+		sum = (BitSet) augend.clone();
 		sum.xor(addend);
-		return this.getSum();	
-	}//xor
-	
-	
+		return this.getSum();
+	}// xor
+
+	// one's complement
 	public byte[] complement(byte[] argument1) {
 		this.setArgument1(argument1);
-		sum= (BitSet) augend.clone();
-		sum.flip(0,8);
-		return this.getSum();	
-	}//and
+		sum = (BitSet) augend.clone();
+		sum.flip(0, 8);
+		return this.getSum();
+	}// one's complement
 
-	public byte[] add(byte[] argument1, byte[] argument2) {
+	public byte increment(byte[] argument) {
+		return add(argument, new byte[] { (byte) 0X001, (byte) 0X00 });
+	}// increment
+	
+	public byte[] incrementWord(byte[] argument) {
+		return addWord(argument, new byte[] { (byte) 0X001, (byte) 0X00 });
+	}// increment
+
+	public byte add(byte[] argument1, byte[] argument2) {
+		return addWithCarry(argument1,argument2, false);
+	}// add
+	
+	public byte addWithCarry(byte[] argument1, byte[] argument2, boolean carryState){
 		this.setArgument1(argument1);
 		this.setArgument2(argument2);
-		this.add();
+		this.add(carryState);
+		return this.getSum()[0];
+	}//addWithCarry
+	
+
+	public byte[] addWord(byte[] argument1, byte[] argument2) {
+		return addWordWithCarry(argument1, argument2, false);
+	}// add
+	
+	
+	public byte[] addWordWithCarry(byte[] argument1, byte[] argument2,boolean carryState) {
+		this.setArgument1(argument1);
+		this.setArgument2(argument2);
+		this.add(carryState);
 		return this.getSum();
 	}// add
+	
+	
 
-	private void add() {
+	private void add(boolean carryInBit0) {
 		clearSets();
+		carryIn.set(0,carryInBit0);
 		int bitCount;
 		for (int bitIndex = 0; bitIndex < SIZE; bitIndex++) {
 			bitCount = 0;
@@ -89,7 +117,6 @@ public class Adder {
 		} // for
 	}// add
 
-
 	public byte[] getSum() {
 		byte[] ans = sum.toByteArray();
 		switch (ans.length) {
@@ -98,16 +125,15 @@ public class Adder {
 			break;
 		case 1:
 			byte b0 = ans[0];
-			ans = new byte[] {b0, 0X00};
+			ans = new byte[] { b0, 0X00 };
 			break;
 		case 2:
 			// ok
 			break;
 		default:
-		}//switch
+		}// switch
 		return ans;
 	}// getSum
-
 
 	public static Adder getInstance() {
 		return instance;
@@ -135,7 +161,7 @@ public class Adder {
 		carryOut.clear();
 		carryIn.clear();
 	}// clearSets
-	//
+		//
 
 	public boolean hasCarry() {
 		return hasCarryBase(BYTE_ARG);
@@ -149,7 +175,7 @@ public class Adder {
 		int bitIndex = arg == BYTE_ARG ? 7 : 15;
 		return carryOut.get(bitIndex);
 	}// hasCarryBase
-	//
+		//
 	/*
 	 * For addition, operands with different signs never cause Overflow. When adding operands with like signs and the
 	 * result has a different sign, the Overflow Flag is set,
@@ -166,13 +192,13 @@ public class Adder {
 	private boolean hasOverflowBase(String arg) {
 		int bitIndex = arg == BYTE_ARG ? 7 : 15;
 		boolean ans = false;
-//		if (!(augend.get(15) ^ addend.get(15))) { // xor
-//			ans = augend.get(15) ^ sum.get(15);
-//		} // if
-//		return ans;
+		// if (!(augend.get(15) ^ addend.get(15))) { // xor
+		// ans = augend.get(15) ^ sum.get(15);
+		// } // if
+		// return ans;
 		return carryIn.get(bitIndex) ^ carryOut.get(bitIndex);
 	}// hasOverflowBase
-	//
+		//
 	/*
 	 * The number of 1 bits in a byte are counted. If the total is Odd, ODD parity is flagged (P = 0). If the total is
 	 * Even, EVEN parity is flagged (P = 1).
@@ -192,7 +218,7 @@ public class Adder {
 		BitSet bs = sum.get(0, bitIndex);
 		return (bs.cardinality() % 2) == 0 ? true : false;
 	}// hasEvenParityBase
-	//
+		//
 
 	public boolean hasHalfCarry() {
 		return hasHalfCarryBase(BYTE_ARG);
@@ -206,7 +232,7 @@ public class Adder {
 		int bitIndex = arg == BYTE_ARG ? 3 : 11;
 		return carryOut.get(bitIndex);
 	}// hasHalfCarryBase
-	//
+		//
 
 	public boolean isZero() {
 		return isZeroBase(BYTE_ARG);
@@ -221,7 +247,7 @@ public class Adder {
 		BitSet bs = sum.get(0, bitIndex);
 		return (bs.cardinality()) == 0 ? true : false;
 	}// isZeroBase
-	//
+		//
 
 	public boolean hasSign() {
 		return hasSignBase(BYTE_ARG);
@@ -239,7 +265,5 @@ public class Adder {
 	// ---------------------------------------------------
 	private static final String BYTE_ARG = "ByteArg";
 	private static final String WORD_ARG = "WordArg";
-
-
 
 }// class Adder
