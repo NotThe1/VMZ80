@@ -2,19 +2,25 @@ package hardware;
 
 import java.util.BitSet;
 
-import codeSupport.AppLogger;
-
 public class Adder {
 
 	private static Adder instance = new Adder();
 
-	private AppLogger appLogger = AppLogger.getInstance();
+	// private AppLogger appLogger = AppLogger.getInstance();
 	private static final int SIZE = 16;
 	private BitSet augend = new BitSet(SIZE);
 	private BitSet addend = new BitSet(SIZE);
 	private BitSet sum = new BitSet(SIZE);
 	private BitSet carryOut = new BitSet(SIZE);
 	private BitSet carryIn = new BitSet(SIZE);
+
+	private boolean sign;
+	private boolean zero;
+	private boolean halfCarry;
+	private boolean parity; // Parity/ Overflow
+	private boolean overflow; // Parity/ Overflow
+	private boolean nFlag; // N flag
+	private boolean carry;
 
 	public byte[] and(byte[] argument1, byte[] argument2) {
 		this.setArgument1(argument1);
@@ -44,47 +50,61 @@ public class Adder {
 	public byte[] complement(byte[] argument1) {
 		this.setArgument1(argument1);
 		sum = (BitSet) augend.clone();
-		sum.flip(0, 8);
+		sum.flip(0, 16);
+		halfCarry = true;
 		return this.getSum();
 	}// one's complement
+	
+	// two's complement
+	public byte negate(byte[] argument){
+		return sub( new byte[] { (byte) 0X000, (byte) 0X00 },argument);
+	}// negatetwo's complement
 
 	public byte increment(byte[] argument) {
 		return add(argument, new byte[] { (byte) 0X001, (byte) 0X00 });
 	}// increment
-	
+
 	public byte[] incrementWord(byte[] argument) {
 		return addWord(argument, new byte[] { (byte) 0X001, (byte) 0X00 });
 	}// increment
+	
+	public byte decrement(byte[] argument) {
+		return sub(argument, new byte[] { (byte) 0X001, (byte) 0X00 });
+	}// increment
+
+	public byte[] decrementWord(byte[] argument) {
+		return subWordWithCarry(argument, new byte[] { (byte) 0X001, (byte) 0X00 },false);
+	}// increment
+	
+
 
 	public byte add(byte[] argument1, byte[] argument2) {
-		return addWithCarry(argument1,argument2, false);
+		return addWithCarry(argument1, argument2, false);
 	}// add
-	
-	public byte addWithCarry(byte[] argument1, byte[] argument2, boolean carryState){
+
+	public byte addWithCarry(byte[] argument1, byte[] argument2, boolean carryState) {
 		this.setArgument1(argument1);
 		this.setArgument2(argument2);
 		this.add(carryState);
+		setFlags(BYTE_ARG);
 		return this.getSum()[0];
-	}//addWithCarry
-	
+	}// addWithCarry
 
 	public byte[] addWord(byte[] argument1, byte[] argument2) {
 		return addWordWithCarry(argument1, argument2, false);
 	}// add
-	
-	
-	public byte[] addWordWithCarry(byte[] argument1, byte[] argument2,boolean carryState) {
+
+	public byte[] addWordWithCarry(byte[] argument1, byte[] argument2, boolean carryState) {
 		this.setArgument1(argument1);
 		this.setArgument2(argument2);
 		this.add(carryState);
+		setFlags(WORD_ARG);
 		return this.getSum();
 	}// add
-	
-	
 
 	private void add(boolean carryInBit0) {
 		clearSets();
-		carryIn.set(0,carryInBit0);
+		carryIn.set(0, carryInBit0);
 		int bitCount;
 		for (int bitIndex = 0; bitIndex < SIZE; bitIndex++) {
 			bitCount = 0;
@@ -115,6 +135,7 @@ public class Adder {
 			default:
 			}// switch
 		} // for
+
 	}// add
 
 	public byte[] getSum() {
@@ -123,17 +144,71 @@ public class Adder {
 		case 0:
 			ans = new byte[] { 0X00, 0X00 };
 			break;
-		case 1:
+		case 1: // byte
 			byte b0 = ans[0];
 			ans = new byte[] { b0, 0X00 };
 			break;
-		case 2:
+		case 2: // word
 			// ok
 			break;
 		default:
 		}// switch
 		return ans;
 	}// getSum
+
+	public byte subWithCarry(byte[] argument1, byte[] argument2, boolean carryState) {
+		byte arg2;
+		boolean halfCarry0 = false;
+		boolean carry0 = false;
+
+		if (carryState) {
+			arg2 = this.increment(argument2);
+			halfCarry0 = halfCarry;
+			carry0 = carry;
+			argument2[0] = arg2;
+		} // if
+		
+		byte[] subtrahend = this.complement(argument2);
+		arg2 = this.increment(subtrahend);
+		halfCarry0 = halfCarry | halfCarry0;
+		carry0 = carry | carry;
+
+		subtrahend[0] = arg2;
+		byte ans = this.add(argument1, subtrahend);
+		halfCarry = !(halfCarry | halfCarry0);
+		carry = !(carry | carry0);
+		return ans;
+	}// subWithCarry
+
+	public byte[] subWordWithCarry(byte[] argument1, byte[] argument2, boolean carryState) {
+		byte[] arg2 = null;
+		boolean halfCarry0 = false;
+		boolean carry0 = false;
+
+		if (carryState) {
+			arg2 = this.incrementWord(argument2);
+			halfCarry0 = halfCarry;
+			carry0 = carry;
+		}else{
+			arg2 = argument2.clone();
+		}//if
+		
+		byte[] subtrahend = this.complement(arg2);
+		subtrahend = this.incrementWord(subtrahend);
+		halfCarry0 = halfCarry | halfCarry0;
+		carry0 = carry | carry;
+
+		
+		byte[] ans = this.addWord(argument1, subtrahend);
+		halfCarry = !(halfCarry | halfCarry0);
+		carry = !(carry | carry0);
+		return ans;
+	}// subWithCarry
+
+	// return argument1 - argument2
+	public byte sub(byte[] argument1, byte[] argument2) {
+		return subWithCarry(argument1, argument2, false);
+	}// sub
 
 	public static Adder getInstance() {
 		return instance;
@@ -164,41 +239,18 @@ public class Adder {
 		//
 
 	public boolean hasCarry() {
-		return hasCarryBase(BYTE_ARG);
+		return carry;
 	}// isHalfCarrySet
 
-	public boolean hasCarryWord() {
-		return hasCarryBase(WORD_ARG);
-	}// isHalfCarrySet
-
-	private boolean hasCarryBase(String arg) {
-		int bitIndex = arg == BYTE_ARG ? 7 : 15;
-		return carryOut.get(bitIndex);
-	}// hasCarryBase
-		//
 	/*
 	 * For addition, operands with different signs never cause Overflow. When adding operands with like signs and the
 	 * result has a different sign, the Overflow Flag is set,
 	 */
 
 	public boolean hasOverflow() {
-		return hasOverflowBase(BYTE_ARG);
+		return overflow;
 	}// hasOverflow
 
-	public boolean hasOverflowWord() {
-		return hasOverflowBase(WORD_ARG);
-	}// hasOverflowWord
-
-	private boolean hasOverflowBase(String arg) {
-		int bitIndex = arg == BYTE_ARG ? 7 : 15;
-		boolean ans = false;
-		// if (!(augend.get(15) ^ addend.get(15))) { // xor
-		// ans = augend.get(15) ^ sum.get(15);
-		// } // if
-		// return ans;
-		return carryIn.get(bitIndex) ^ carryOut.get(bitIndex);
-	}// hasOverflowBase
-		//
 	/*
 	 * The number of 1 bits in a byte are counted. If the total is Odd, ODD parity is flagged (P = 0). If the total is
 	 * Even, EVEN parity is flagged (P = 1).
@@ -206,61 +258,43 @@ public class Adder {
 	 */
 
 	public boolean hasParity() {
-		return hasParityBase(BYTE_ARG);
+		return parity;
 	}// hasEvenParity
 
-	public boolean hasParityWord() {
-		return hasParityBase(WORD_ARG);
-	}// hasEvenParityWord
-
-	private boolean hasParityBase(String arg) {
-		int bitIndex = arg == BYTE_ARG ? 8 : 16;
-		BitSet bs = sum.get(0, bitIndex);
-		return (bs.cardinality() % 2) == 0 ? true : false;
-	}// hasEvenParityBase
-		//
-
 	public boolean hasHalfCarry() {
-		return hasHalfCarryBase(BYTE_ARG);
+		return halfCarry;
 	}// isHalfCarrySet
-
-	public boolean hasHalfCarryWord() {
-		return hasHalfCarryBase(WORD_ARG);
-	}// isHalfCarrySet
-
-	private boolean hasHalfCarryBase(String arg) {
-		int bitIndex = arg == BYTE_ARG ? 3 : 11;
-		return carryOut.get(bitIndex);
-	}// hasHalfCarryBase
-		//
 
 	public boolean isZero() {
-		return isZeroBase(BYTE_ARG);
+		return zero;
 	}// isZero
 
-	public boolean isZeroWord() {
-		return isZeroBase(WORD_ARG);
-	}// isZeroWord
-
-	private boolean isZeroBase(String arg) {
-		int bitIndex = arg == BYTE_ARG ? 8 : 16;
-		BitSet bs = sum.get(0, bitIndex);
-		return (bs.cardinality()) == 0 ? true : false;
-	}// isZeroBase
-		//
-
 	public boolean hasSign() {
-		return hasSignBase(BYTE_ARG);
+		return sign;
 	}// hasSign
 
-	public boolean hasSignWord() {
-		return hasSignBase(WORD_ARG);
-	}// hasSignWord
+	private void setFlags(String operationSize) {
+		setFlags(operationSize, false);
+	}// setFlags
 
-	private boolean hasSignBase(String arg) {
-		int bitIndex = arg == BYTE_ARG ? 7 : 15;
-		return sum.get(bitIndex);
-	}// hasSignBase
+	private void setFlags(String operationSize, boolean aSubtraction) {
+		int bitIndex = (operationSize == BYTE_ARG) ? 8 : 16;
+		sign = sum.get(bitIndex - 1);
+
+		BitSet bs = sum.get(0, bitIndex);
+		zero = (bs.cardinality()) == 0 ? true : false;
+
+		halfCarry = carryOut.get(bitIndex - 5);
+
+		parity = (bs.cardinality() % 2) == 0 ? true : false;
+
+		overflow = carryIn.get(bitIndex - 1) ^ carryOut.get(bitIndex - 1);
+
+		nFlag = aSubtraction;
+
+		carry = carryOut.get(bitIndex - 1);
+
+	}// setFlags
 
 	// ---------------------------------------------------
 	private static final String BYTE_ARG = "ByteArg";
