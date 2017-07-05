@@ -45,6 +45,12 @@ public class Adder {
 		sum.xor(addend);
 		return this.getSum();
 	}// xor
+	
+	// evaluate argument1(ACC) - argument2
+	public void compare(byte[] argument1, byte[] argument2) {
+		 subWithCarry(argument1, argument2, false);
+		 return;
+	}// sub
 
 	// one's complement
 	public byte[] complement(byte[] argument1) {
@@ -171,10 +177,11 @@ public class Adder {
 		byte[] subtrahend = this.complement(argument2);
 		arg2 = this.increment(subtrahend);
 		halfCarry0 = halfCarry | halfCarry0;
-		carry0 = carry | carry;
+		carry0 = carry | carry0;
 
 		subtrahend[0] = arg2;
 		byte ans = this.add(argument1, subtrahend);
+		setFlags(BYTE_ARG,true);
 		halfCarry = !(halfCarry | halfCarry0);
 		carry = !(carry | carry0);
 		return ans;
