@@ -2,6 +2,9 @@ package hardware;
 
 import java.util.BitSet;
 
+import codeSupport.Z80;
+//import codeSupport.Z80;
+
 public class Adder {
 
 	private static Adder instance = new Adder();
@@ -21,6 +24,9 @@ public class Adder {
 	private boolean overflow; // Parity/ Overflow
 	private boolean nFlag; // N flag
 	private boolean carry;
+	
+	private boolean signArg1;//what it is being subtracted from
+	private boolean signArg2; //what is being subtracted
 
 	public byte[] and(byte[] argument1, byte[] argument2) {
 		this.setArgument1(argument1);
@@ -163,7 +169,7 @@ public class Adder {
 	}// getSum
 
 	public byte subWithCarry(byte[] argument1, byte[] argument2, boolean carryState) {
-		byte arg2;
+		byte arg2 = argument2[0];
 		boolean halfCarry0 = false;
 		boolean carry0 = false;
 
@@ -173,6 +179,8 @@ public class Adder {
 			carry0 = carry;
 			argument2[0] = arg2;
 		} // if
+		signArg1 = (argument1[0] & Z80.BIT_SIGN ) == Z80.BIT_SIGN; 
+		signArg2 = (arg2 & Z80.BIT_SIGN ) == Z80.BIT_SIGN; 
 		
 		byte[] subtrahend = this.complement(argument2);
 		arg2 = this.increment(subtrahend);
@@ -294,8 +302,17 @@ public class Adder {
 		halfCarry = carryOut.get(bitIndex - 5);
 
 		parity = (bs.cardinality() % 2) == 0 ? true : false;
-
+		
+		if (aSubtraction){
+			overflow = false;
+			if ((signArg1 ^ signArg2)) {
+				overflow = signArg2 == sign;
+			} // if
+		}else{
 		overflow = carryIn.get(bitIndex - 1) ^ carryOut.get(bitIndex - 1);
+			
+		}
+
 
 		nFlag = aSubtraction;
 
