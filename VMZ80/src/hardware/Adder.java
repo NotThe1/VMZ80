@@ -24,38 +24,47 @@ public class Adder {
 	private boolean overflow; // Parity/ Overflow
 	private boolean nFlag; // N flag
 	private boolean carry;
-	
-	private boolean signArg1;//what it is being subtracted from
-	private boolean signArg2; //what is being subtracted
 
-	public byte[] and(byte[] argument1, byte[] argument2) {
+	private boolean signArg1;// what it is being subtracted from
+	private boolean signArg2; // what is being subtracted
+
+	public byte and(byte[] argument1, byte[] argument2) {
 		this.setArgument1(argument1);
 		this.setArgument2(argument2);
 		sum = (BitSet) augend.clone();
 		sum.and(addend);
-		return this.getSum();
+		setFlags(BYTE_ARG);
+		halfCarry=true;
+		carry = false;
+		return this.getSum()[0];
 	}// and
 
-	public byte[] or(byte[] argument1, byte[] argument2) {
+	public byte or(byte[] argument1, byte[] argument2) {
 		this.setArgument1(argument1);
 		this.setArgument2(argument2);
 		sum = (BitSet) augend.clone();
 		sum.or(addend);
-		return this.getSum();
+		setFlags(BYTE_ARG);
+		halfCarry=false;
+		carry = false;
+		return this.getSum()[0];
 	}// or
 
-	public byte[] xor(byte[] argument1, byte[] argument2) {
+	public byte xor(byte[] argument1, byte[] argument2) {
 		this.setArgument1(argument1);
 		this.setArgument2(argument2);
 		sum = (BitSet) augend.clone();
 		sum.xor(addend);
-		return this.getSum();
+		setFlags(BYTE_ARG);
+		halfCarry=false;
+		carry = false;
+		return this.getSum()[0];
 	}// xor
-	
+
 	// evaluate argument1(ACC) - argument2
 	public void compare(byte[] argument1, byte[] argument2) {
-		 subWithCarry(argument1, argument2, false);
-		 return;
+		subWithCarry(argument1, argument2, false);
+		return;
 	}// sub
 
 	// one's complement
@@ -66,10 +75,10 @@ public class Adder {
 		halfCarry = true;
 		return this.getSum();
 	}// one's complement
-	
+
 	// two's complement
-	public byte negate(byte[] argument){
-		return sub( new byte[] { (byte) 0X000, (byte) 0X00 },argument);
+	public byte negate(byte[] argument) {
+		return sub(new byte[] { (byte) 0X000, (byte) 0X00 }, argument);
 	}// negatetwo's complement
 
 	public byte increment(byte[] argument) {
@@ -79,16 +88,14 @@ public class Adder {
 	public byte[] incrementWord(byte[] argument) {
 		return addWord(argument, new byte[] { (byte) 0X001, (byte) 0X00 });
 	}// increment
-	
+
 	public byte decrement(byte[] argument) {
 		return sub(argument, new byte[] { (byte) 0X001, (byte) 0X00 });
 	}// increment
 
 	public byte[] decrementWord(byte[] argument) {
-		return subWordWithCarry(argument, new byte[] { (byte) 0X001, (byte) 0X00 },false);
+		return subWordWithCarry(argument, new byte[] { (byte) 0X001, (byte) 0X00 }, false);
 	}// increment
-	
-
 
 	public byte add(byte[] argument1, byte[] argument2) {
 		return addWithCarry(argument1, argument2, false);
@@ -172,31 +179,31 @@ public class Adder {
 		byte arg2 = argument2[0];
 		boolean halfCarry0 = false;
 		boolean carry0 = false;
-
 		if (carryState) {
 			arg2 = this.increment(argument2);
 			halfCarry0 = halfCarry;
 			carry0 = carry;
-			argument2[0] = arg2;
+			// argument2[0] = arg2;
 		} // if
-		signArg1 = (argument1[0] & Z80.BIT_SIGN ) == Z80.BIT_SIGN; 
-		signArg2 = (arg2 & Z80.BIT_SIGN ) == Z80.BIT_SIGN; 
-		
-		byte[] subtrahend = this.complement(argument2);
+		signArg1 = (argument1[0] & Z80.BIT_SIGN) == Z80.BIT_SIGN;
+		// signArg2 = (arg2 & Z80.BIT_SIGN ) == Z80.BIT_SIGN;
+		signArg2 = (argument2[0] & Z80.BIT_SIGN) == Z80.BIT_SIGN;
+
+		byte[] subtrahend = this.complement(new byte[] { arg2 });
 		arg2 = this.increment(subtrahend);
 		halfCarry0 = halfCarry | halfCarry0;
 		carry0 = carry | carry0;
 
 		subtrahend[0] = arg2;
 		byte ans = this.add(argument1, subtrahend);
-		setFlags(BYTE_ARG,true);
+		setFlags(BYTE_ARG, true);
 		halfCarry = !(halfCarry | halfCarry0);
 		carry = !(carry | carry0);
 		return ans;
 	}// subWithCarry
 
 	public byte[] subWordWithCarry(byte[] argument1, byte[] argument2, boolean carryState) {
-		byte[] arg2 = null;
+		byte[] arg2 = argument2.clone();
 		boolean halfCarry0 = false;
 		boolean carry0 = false;
 
@@ -204,17 +211,27 @@ public class Adder {
 			arg2 = this.incrementWord(argument2);
 			halfCarry0 = halfCarry;
 			carry0 = carry;
-		}else{
-			arg2 = argument2.clone();
-		}//if
-		
+		} // if
+
+		signArg1 = (argument1[1] & Z80.BIT_SIGN) == Z80.BIT_SIGN;
+		signArg2 = (argument2[1] & Z80.BIT_SIGN) == Z80.BIT_SIGN;
+
 		byte[] subtrahend = this.complement(arg2);
 		subtrahend = this.incrementWord(subtrahend);
 		halfCarry0 = halfCarry | halfCarry0;
 		carry0 = carry | carry;
 
-		
 		byte[] ans = this.addWord(argument1, subtrahend);
+		setFlags(WORD_ARG, true);
+//		boolean signAns = (arg2[1] & Z80.BIT_SIGN) == Z80.BIT_SIGN;
+//		
+//		overflow= false;
+//		if (signArg1 ^ signArg2){
+//			if(signArg1 == signAns){
+//				overflow = true;
+//			}// if arg1 and have different signs
+//		}// if arg1 and arg2  have different signs
+
 		halfCarry = !(halfCarry | halfCarry0);
 		carry = !(carry | carry0);
 		return ans;
@@ -302,17 +319,16 @@ public class Adder {
 		halfCarry = carryOut.get(bitIndex - 5);
 
 		parity = (bs.cardinality() % 2) == 0 ? true : false;
-		
-		if (aSubtraction){
+
+		if (aSubtraction) {
 			overflow = false;
 			if ((signArg1 ^ signArg2)) {
 				overflow = signArg2 == sign;
 			} // if
-		}else{
-		overflow = carryIn.get(bitIndex - 1) ^ carryOut.get(bitIndex - 1);
-			
-		}
+		} else {
+			overflow = carryIn.get(bitIndex - 1) ^ carryOut.get(bitIndex - 1);
 
+		}
 
 		nFlag = aSubtraction;
 
