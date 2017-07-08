@@ -22,7 +22,7 @@ public class Adder {
 	private boolean halfCarry;
 	private boolean parity; // Parity/ Overflow
 	private boolean overflow; // Parity/ Overflow
-	private boolean nFlag; // N flag
+	private boolean nFlag; // N flag add/Subtract
 	private boolean carry;
 
 	private boolean signArg1;// what it is being subtracted from
@@ -73,6 +73,7 @@ public class Adder {
 		sum = (BitSet) augend.clone();
 		sum.flip(0, 16);
 		halfCarry = true;
+		nFlag = true;
 		return this.getSum();
 	}// one's complement
 
@@ -273,6 +274,10 @@ public class Adder {
 	public boolean hasCarry() {
 		return carry;
 	}// isHalfCarrySet
+	
+	public boolean isNFlagSet(){
+		return nFlag;
+	}
 
 	/*
 	 * For addition, operands with different signs never cause Overflow. When adding operands with like signs and the
@@ -327,8 +332,7 @@ public class Adder {
 			} // if
 		} else {
 			overflow = carryIn.get(bitIndex - 1) ^ carryOut.get(bitIndex - 1);
-
-		}
+		}//if
 
 		nFlag = aSubtraction;
 
