@@ -90,7 +90,35 @@ public class Adder {
 	public byte negate(byte argument) {
 		return sub((byte) 0X00, argument);
 	}// negatetwo's complement
-
+	//-----------------------------------------------------------------------------------------------------
+	
+	public byte rotateLeft(byte arg){
+		return rotateLeft(arg, false, false);
+	}//rotateLeft
+	
+	public byte rotateLeftThru(byte arg,boolean carryBefore){
+		return rotateLeft(arg, carryBefore, true);
+	}//rotateLeft
+	
+	private byte rotateLeft(byte arg, boolean carryBefore, boolean thru){
+		clearSets();
+		setSum(arg);
+		boolean originalBit7 = sum.get(7);
+		
+		for ( int i = 7; i > 0;i --){
+			sum.set(i,sum.get(i-1));
+		}// for
+		
+		if (thru){
+			sum.set(0, carryBefore);
+		}else {
+			sum.set(0,originalBit7);
+		}//
+		setFlagsRotate(originalBit7);
+		return getSum()[0];	
+	}//rotateLeft
+	
+	//-----------------------------------------------------------------------------------------------------
 	public byte increment(byte argument) {
 		return add(argument, (byte) 0X001);
 	}// increment
@@ -256,10 +284,14 @@ public class Adder {
 		addend = BitSet.valueOf(argument2);
 	}// setArgument1
 
-	public void setArguments(byte[] argument1, byte[] argument2) {
+	private void setArguments(byte[] argument1, byte[] argument2) {
 		setArgument1(argument1);
 		setArgument2(argument2);
 	}// setArguments
+	
+	private void setSum(byte argument){
+		sum = BitSet.valueOf(new byte[]{ argument});
+	}//setSum
 
 	private void clearSets() {
 		sum.clear();
@@ -306,6 +338,19 @@ public class Adder {
 	public boolean hasSign() {
 		return sign;
 	}// hasSign
+	
+	private void setFlagsRotate(boolean carryResult){
+		carry = carryResult;
+		halfCarry = false;
+		nFlag = false;
+		
+		sign = sum.get(7);
+		
+		BitSet bs = sum.get(0, 8);
+		zero = (bs.cardinality()) == 0 ? true : false;
+		parity = (bs.cardinality() % 2) == 0 ? true : false;
+
+	}//setFlagsRotate
 
 	private void setFlags(String operationSize) {
 		setFlags(operationSize, false);
