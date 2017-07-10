@@ -98,7 +98,7 @@ public class Adder {
 	
 	public byte rotateLeftThru(byte arg,boolean carryBefore){
 		return rotateLeft(arg, carryBefore, true);
-	}//rotateLeft
+	}//rotateLeftThru
 	
 	private byte rotateLeft(byte arg, boolean carryBefore, boolean thru){
 		clearSets();
@@ -117,6 +117,32 @@ public class Adder {
 		setFlagsRotate(originalBit7);
 		return getSum()[0];	
 	}//rotateLeft
+	
+	public byte rotateRight(byte arg){
+		return rotateRight(arg, false, false);
+	}//rotateRight
+	
+	public byte rotateRightThru(byte arg,boolean carryBefore){
+		return rotateRight(arg, carryBefore, true);
+	}//rotateRightThru
+	
+	private byte rotateRight(byte arg, boolean carryBefore, boolean thru){
+		clearSets();
+		setSum(arg);
+		boolean originalBit0 = sum.get(0);
+		
+		for ( int i = 0; i < 7;i ++){
+			sum.set(i,sum.get(i+1));
+		}// for
+		
+		if (thru){
+			sum.set(7, carryBefore);
+		}else {
+			sum.set(7,originalBit0);
+		}//
+		setFlagsRotate(originalBit0);
+		return getSum()[0];	
+	}//rotateRight
 	
 	//-----------------------------------------------------------------------------------------------------
 	public byte increment(byte argument) {
