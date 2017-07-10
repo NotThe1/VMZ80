@@ -144,6 +144,49 @@ public class Adder {
 		return getSum()[0];	
 	}//rotateRight
 	
+	public byte shiftSRL(byte arg){
+		return shiftRight(arg, true);
+	}//shiftSRL
+	
+	public byte shiftSRA(byte arg){
+		return shiftRight(arg, false);
+	}//shiftSRA
+	
+	private byte shiftRight(byte arg,boolean zeroSeed){
+		clearSets();
+		setSum(arg);
+		boolean originalBit0 = sum.get(0);
+		boolean originalBit7 = sum.get(7);
+		
+		for (int i = 0; i < 7;i++){
+			sum.set(i,sum.get(i+1));
+		}//for
+		
+		if (zeroSeed){
+			sum.set(7,false);
+		}else{
+			sum.set(7,originalBit7);
+		}//if
+		setFlagsRotate(originalBit0);
+		return getSum()[0];	
+				
+	}//shiftRight
+	
+	public byte shiftSLA(byte arg){
+		clearSets();
+		setSum(arg);
+		boolean originalBit7 = sum.get(7);
+
+		for ( int i = 7; i > 0;i --){
+			sum.set(i,sum.get(i-1));
+		}// for
+
+		sum.set(0,false);
+		setFlagsRotate(originalBit7);
+		return getSum()[0];	
+
+	}//shiftSLA
+	
 	//-----------------------------------------------------------------------------------------------------
 	public byte increment(byte argument) {
 		return add(argument, (byte) 0X001);
