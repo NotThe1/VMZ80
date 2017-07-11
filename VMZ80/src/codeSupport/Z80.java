@@ -1,28 +1,23 @@
 package codeSupport;
 
 public class Z80 {
-	
+
 	public enum Register {
 		// Single Byte Registers
-		A, B, C, D, E, H, L,F,
-		Ap, Fp,Bp, Cp, Dp, Ep, Hp, Lp,
-		I,R,
-			// AFp,BCp, DEp, HLp,
-			// no instructions reference these 16 Bit registers
-		
-			// Double Byte Registers
-			// used for identification only
-			// nothing is stored directly into one of these
-		 AF,BC, DE, HL,
-		 M,
-		 SP, PC,
-		 IX,IY
-	}//enum Register
-	
+		A, B, C, D, E, H, L, F, Ap, Fp, Bp, Cp, Dp, Ep, Hp, Lp, I, R,
+		// AFp,BCp, DEp, HLp,
+		// no instructions reference these 16 Bit registers
+
+		// Double Byte Registers
+		// used for identification only
+		// nothing is stored directly into one of these
+		AF, BC, DE, HL, M, SP, PC, IX, IY
+	}// enum Register
+
 	/**
 	 * Constants
 	 */
-	
+
 	public static final int WORD_MASK = 0X00FFFF;
 	public static final int BYTE_MASK = 0X00FF;
 	public static final int HI_BYTE_MASK = 0X00FF00;
@@ -40,22 +35,22 @@ public class Z80 {
 	public static final String REG_M = "REG_M";
 	public static final String REG_I = "REG_I";
 	public static final String REG_R = "REG_R";
-	
+
 	public static final String REG_AF = "REG_AF";
 	public static final String REG_BC = "REG_BC";
 	public static final String REG_DE = "REG_DE";
 	public static final String REG_HL = "REG_HL";
-	
+
 	public static final String REG_AFp = "REG_AFp";
 	public static final String REG_BCp = "REG_BCp";
 	public static final String REG_DEp = "REG_DEp";
 	public static final String REG_HLp = "REG_HLp";
-	                           
+
 	public static final String REG_IX = "REG_IX";
 	public static final String REG_IY = "REG_IY";
 	public static final String REG_SP = "REG_SP";
 	public static final String REG_PC = "REG_PC";
-	
+
 	/**
 	 * Conditions
 	 */
@@ -67,81 +62,100 @@ public class Z80 {
 	public static final String COND_PE = "COND_PE";
 	public static final String COND_P = "COND_P";
 	public static final String COND_M = "COND_M";
-	
-	
+
 	/**
 	 * masks
 	 */
 	public static final byte WORD_SIGN = (byte) 0b1000000000000000;
-	
+
 	public static final byte BIT_SIGN = (byte) 0b10000000;
 	public static final byte BIT_ZERO = (byte) 0b01000000;
 	public static final byte BIT_BIT5 = (byte) 0b00100000;
-	public static final byte BIT_AUX  = (byte) 0b00010000;
+	public static final byte BIT_AUX = (byte) 0b00010000;
 	public static final byte BIT_BIT3 = (byte) 0b00001000;
 	public static final byte BIT_PV = (byte) 0b00000100;
 	public static final byte BIT_N = (byte) 0b00000010;
 	public static final byte BIT_CARRY = (byte) 0b00000001;
 
 	public static final byte MASK_SIGN = (byte) ~BIT_SIGN;
-	public static final byte MASK_ZERO =(byte)  ~BIT_ZERO;
-	public static final byte MASK_BIT5 =(byte)  ~BIT_BIT5;
-	public static final byte MASK_AUX =(byte)  ~BIT_AUX;
-	public static final byte MASK_BIT3 =(byte)  ~BIT_BIT3;
-	public static final byte MASK_PV =(byte)  ~BIT_PV;
-	public static final byte MASK_N =(byte)  ~BIT_N;
-	public static final byte MASK_CARRY =(byte)  ~BIT_CARRY;
-	
+	public static final byte MASK_ZERO = (byte) ~BIT_ZERO;
+	public static final byte MASK_BIT5 = (byte) ~BIT_BIT5;
+	public static final byte MASK_AUX = (byte) ~BIT_AUX;
+	public static final byte MASK_BIT3 = (byte) ~BIT_BIT3;
+	public static final byte MASK_PV = (byte) ~BIT_PV;
+	public static final byte MASK_N = (byte) ~BIT_N;
+	public static final byte MASK_CARRY = (byte) ~BIT_CARRY;
+
+	public static final byte BIT_0 = (byte) 0b00000001;
+	public static final byte BIT_1 = (byte) 0b00000010;
+	public static final byte BIT_2 = (byte) 0b00000100;
+	public static final byte BIT_3 = (byte) 0b00001000;
+	public static final byte BIT_4 = (byte) 0b00010000;
+	public static final byte BIT_5 = (byte) 0b00100000;
+	public static final byte BIT_6 = (byte) 0b01000000;
+	public static final byte BIT_7 = (byte) 0b10000000;
+
+	public static final byte BIT_NOT_0 = (byte) ~BIT_0;
+	public static final byte BIT_NOT_1 = (byte) ~BIT_1;
+	public static final byte BIT_NOT_2 = (byte) ~BIT_2;
+	public static final byte BIT_NOT_3 = (byte) ~BIT_3;
+	public static final byte BIT_NOT_4 = (byte) ~BIT_4;
+	public static final byte BIT_NOT_5 = (byte) ~BIT_5;
+	public static final byte BIT_NOT_6 = (byte) ~BIT_6;
+	public static final byte BIT_NOT_7 = (byte) ~BIT_7;
+
+	public static final byte[] BITS = { BIT_0, BIT_1, BIT_2, BIT_3, BIT_4, BIT_5, BIT_6, BIT_7 };
+	public static final byte[] BITS_NOT = { BIT_NOT_0, BIT_NOT_1, BIT_NOT_2, BIT_NOT_3, BIT_NOT_4, BIT_NOT_5, BIT_NOT_6,
+			BIT_NOT_7 };
+
 	/**
 	 * tables
 	 */
-	
-//	public static final HashMap<String, Byte> conditionTable = new HashMap<>();
-//	static {
-//		conditionTable.put("NZ", (byte) 0b00000000);
-//		conditionTable.put("Z", (byte) 0b00001000);
-//		conditionTable.put("NC", (byte) 0b00010000);
-//		conditionTable.put("C", (byte) 0b00011000);
-//		conditionTable.put("PO", (byte) 0b00100000);
-//		conditionTable.put("PE", (byte) 0b00101000);
-//		conditionTable.put("P", (byte) 0b00110000);
-//		conditionTable.put("M", (byte) 0b00111000);
-//	}// static conditionTable
 
-//	public static final HashMap<String, Byte> registerTable = new HashMap<>();
-//	static {
-//		registerTable.put("A", (byte) 0b00000111);
-//		registerTable.put("B", (byte) 0b00000000);
-//		registerTable.put("C", (byte) 0b00000001);
-//		registerTable.put("D", (byte) 0b00000010);
-//		registerTable.put("E", (byte) 0b00000011);
-//		registerTable.put("H", (byte) 0b00000100);
-//		registerTable.put("L", (byte) 0b00000101);
-//		registerTable.put("M", (byte) 0b00000110);
-//		registerTable.put("(HL)", (byte) 0b00000110);
-//
-//		registerTable.put("BC", (byte) 0b00000000);
-//		registerTable.put("DE", (byte) 0b00010000);
-//		registerTable.put("HL", (byte) 0b00100000);
-//		registerTable.put("SP", (byte) 0b00110000);
-//		registerTable.put("AF", (byte) 0b00110000);
-//		registerTable.put("IX", (byte) 0b00100000);
-//		registerTable.put("IY", (byte) 0b00100000);
-//
-//	}// static registerTable
+	// public static final HashMap<String, Byte> conditionTable = new HashMap<>();
+	// static {
+	// conditionTable.put("NZ", (byte) 0b00000000);
+	// conditionTable.put("Z", (byte) 0b00001000);
+	// conditionTable.put("NC", (byte) 0b00010000);
+	// conditionTable.put("C", (byte) 0b00011000);
+	// conditionTable.put("PO", (byte) 0b00100000);
+	// conditionTable.put("PE", (byte) 0b00101000);
+	// conditionTable.put("P", (byte) 0b00110000);
+	// conditionTable.put("M", (byte) 0b00111000);
+	// }// static conditionTable
 
-//	public static final HashMap<Integer, Byte> bitTable = new HashMap<>();
-//	static {
-//		bitTable.put(0, (byte) 0b00000000);
-//		bitTable.put(1, (byte) 0b00001000);
-//		bitTable.put(2, (byte) 0b00010000);
-//		bitTable.put(3, (byte) 0b00011000);
-//		bitTable.put(4, (byte) 0b00100000);
-//		bitTable.put(5, (byte) 0b00101000);
-//		bitTable.put(6, (byte) 0b00110000);
-//		bitTable.put(7, (byte) 0b00111000);
-//	}// static bitTable
-	
-	
-	
+	// public static final HashMap<String, Byte> registerTable = new HashMap<>();
+	// static {
+	// registerTable.put("A", (byte) 0b00000111);
+	// registerTable.put("B", (byte) 0b00000000);
+	// registerTable.put("C", (byte) 0b00000001);
+	// registerTable.put("D", (byte) 0b00000010);
+	// registerTable.put("E", (byte) 0b00000011);
+	// registerTable.put("H", (byte) 0b00000100);
+	// registerTable.put("L", (byte) 0b00000101);
+	// registerTable.put("M", (byte) 0b00000110);
+	// registerTable.put("(HL)", (byte) 0b00000110);
+	//
+	// registerTable.put("BC", (byte) 0b00000000);
+	// registerTable.put("DE", (byte) 0b00010000);
+	// registerTable.put("HL", (byte) 0b00100000);
+	// registerTable.put("SP", (byte) 0b00110000);
+	// registerTable.put("AF", (byte) 0b00110000);
+	// registerTable.put("IX", (byte) 0b00100000);
+	// registerTable.put("IY", (byte) 0b00100000);
+	//
+	// }// static registerTable
+
+	// public static final HashMap<Integer, Byte> bitTable = new HashMap<>();
+	// static {
+	// bitTable.put(0, (byte) 0b00000000);
+	// bitTable.put(1, (byte) 0b00001000);
+	// bitTable.put(2, (byte) 0b00010000);
+	// bitTable.put(3, (byte) 0b00011000);
+	// bitTable.put(4, (byte) 0b00100000);
+	// bitTable.put(5, (byte) 0b00101000);
+	// bitTable.put(6, (byte) 0b00110000);
+	// bitTable.put(7, (byte) 0b00111000);
+	// }// static bitTable
+
 }

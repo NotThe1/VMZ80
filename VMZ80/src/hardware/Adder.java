@@ -90,104 +90,128 @@ public class Adder {
 	public byte negate(byte argument) {
 		return sub((byte) 0X00, argument);
 	}// negatetwo's complement
-	//-----------------------------------------------------------------------------------------------------
-	
-	public byte rotateLeft(byte arg){
+		// -----------------------------------------------------------------------------------------------------
+
+	public byte rotateLeft(byte arg) {
 		return rotateLeft(arg, false, false);
-	}//rotateLeft
-	
-	public byte rotateLeftThru(byte arg,boolean carryBefore){
+	}// rotateLeft
+
+	public byte rotateLeftThru(byte arg, boolean carryBefore) {
 		return rotateLeft(arg, carryBefore, true);
-	}//rotateLeftThru
-	
-	private byte rotateLeft(byte arg, boolean carryBefore, boolean thru){
+	}// rotateLeftThru
+
+	private byte rotateLeft(byte arg, boolean carryBefore, boolean thru) {
 		clearSets();
 		setSum(arg);
 		boolean originalBit7 = sum.get(7);
-		
-		for ( int i = 7; i > 0;i --){
-			sum.set(i,sum.get(i-1));
-		}// for
-		
-		if (thru){
+
+		for (int i = 7; i > 0; i--) {
+			sum.set(i, sum.get(i - 1));
+		} // for
+
+		if (thru) {
 			sum.set(0, carryBefore);
-		}else {
-			sum.set(0,originalBit7);
-		}//
+		} else {
+			sum.set(0, originalBit7);
+		} //
 		setFlagsRotate(originalBit7);
-		return getSum()[0];	
-	}//rotateLeft
-	
-	public byte rotateRight(byte arg){
+		return getSum()[0];
+	}// rotateLeft
+
+	public byte rotateRight(byte arg) {
 		return rotateRight(arg, false, false);
-	}//rotateRight
-	
-	public byte rotateRightThru(byte arg,boolean carryBefore){
+	}// rotateRight
+
+	public byte rotateRightThru(byte arg, boolean carryBefore) {
 		return rotateRight(arg, carryBefore, true);
-	}//rotateRightThru
-	
-	private byte rotateRight(byte arg, boolean carryBefore, boolean thru){
+	}// rotateRightThru
+
+	private byte rotateRight(byte arg, boolean carryBefore, boolean thru) {
 		clearSets();
 		setSum(arg);
 		boolean originalBit0 = sum.get(0);
-		
-		for ( int i = 0; i < 7;i ++){
-			sum.set(i,sum.get(i+1));
-		}// for
-		
-		if (thru){
+
+		for (int i = 0; i < 7; i++) {
+			sum.set(i, sum.get(i + 1));
+		} // for
+
+		if (thru) {
 			sum.set(7, carryBefore);
-		}else {
-			sum.set(7,originalBit0);
-		}//
+		} else {
+			sum.set(7, originalBit0);
+		} //
 		setFlagsRotate(originalBit0);
-		return getSum()[0];	
-	}//rotateRight
-	
-	public byte shiftSRL(byte arg){
+		return getSum()[0];
+	}// rotateRight
+
+	public byte shiftSRL(byte arg) {
 		return shiftRight(arg, true);
-	}//shiftSRL
-	
-	public byte shiftSRA(byte arg){
+	}// shiftSRL
+
+	public byte shiftSRA(byte arg) {
 		return shiftRight(arg, false);
-	}//shiftSRA
-	
-	private byte shiftRight(byte arg,boolean zeroSeed){
+	}// shiftSRA
+
+	private byte shiftRight(byte arg, boolean zeroSeed) {
 		clearSets();
 		setSum(arg);
 		boolean originalBit0 = sum.get(0);
 		boolean originalBit7 = sum.get(7);
-		
-		for (int i = 0; i < 7;i++){
-			sum.set(i,sum.get(i+1));
-		}//for
-		
-		if (zeroSeed){
-			sum.set(7,false);
-		}else{
-			sum.set(7,originalBit7);
-		}//if
+
+		for (int i = 0; i < 7; i++) {
+			sum.set(i, sum.get(i + 1));
+		} // for
+
+		if (zeroSeed) {
+			sum.set(7, false);
+		} else {
+			sum.set(7, originalBit7);
+		} // if
 		setFlagsRotate(originalBit0);
-		return getSum()[0];	
-				
-	}//shiftRight
-	
-	public byte shiftSLA(byte arg){
+		return getSum()[0];
+
+	}// shiftRight
+
+	public byte shiftSLA(byte arg) {
 		clearSets();
 		setSum(arg);
 		boolean originalBit7 = sum.get(7);
 
-		for ( int i = 7; i > 0;i --){
-			sum.set(i,sum.get(i-1));
-		}// for
+		for (int i = 7; i > 0; i--) {
+			sum.set(i, sum.get(i - 1));
+		} // for
 
-		sum.set(0,false);
+		sum.set(0, false);
 		setFlagsRotate(originalBit7);
-		return getSum()[0];	
+		return getSum()[0];
 
-	}//shiftSLA
+	}// shiftSLA
+
+	// -----------------------------------------------------------------------------------------------------
 	
-	//-----------------------------------------------------------------------------------------------------
+	private int vetBitValue(int arg) {
+		int index = Math.max(arg, 0);
+		return Math.min(7, arg);
+	}//vetBitValue
+	
+	public void bitTest(byte arg, int bit) {
+		byte mask = Z80.BITS[vetBitValue(bit)];
+		halfCarry = true;
+		nFlag = false;
+		zero = (arg & mask) != mask;
+	}//bitTest
+
+	public byte bitSet(byte arg, int bit) {
+		byte mask = Z80.BITS[vetBitValue(bit)];
+		return (byte) (arg | mask);
+	}//bitTest
+
+	public byte bitRes(byte arg, int bit) {
+		byte mask = Z80.BITS_NOT[vetBitValue(bit)];
+		return (byte) (arg & mask);
+	}//bitTest
+
+	// -----------------------------------------------------------------------------------------------------
 	public byte increment(byte argument) {
 		return add(argument, (byte) 0X001);
 	}// increment
@@ -357,10 +381,10 @@ public class Adder {
 		setArgument1(argument1);
 		setArgument2(argument2);
 	}// setArguments
-	
-	private void setSum(byte argument){
-		sum = BitSet.valueOf(new byte[]{ argument});
-	}//setSum
+
+	private void setSum(byte argument) {
+		sum = BitSet.valueOf(new byte[] { argument });
+	}// setSum
 
 	private void clearSets() {
 		sum.clear();
@@ -407,19 +431,19 @@ public class Adder {
 	public boolean hasSign() {
 		return sign;
 	}// hasSign
-	
-	private void setFlagsRotate(boolean carryResult){
+
+	private void setFlagsRotate(boolean carryResult) {
 		carry = carryResult;
 		halfCarry = false;
 		nFlag = false;
-		
+
 		sign = sum.get(7);
-		
+
 		BitSet bs = sum.get(0, 8);
 		zero = (bs.cardinality()) == 0 ? true : false;
 		parity = (bs.cardinality() % 2) == 0 ? true : false;
 
-	}//setFlagsRotate
+	}// setFlagsRotate
 
 	private void setFlags(String operationSize) {
 		setFlags(operationSize, false);
