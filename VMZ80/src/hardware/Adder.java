@@ -28,6 +28,64 @@ public class Adder {
 	private boolean signArg1;// what it is being subtracted from
 	private boolean signArg2; // what is being subtracted
 
+	public static Adder getInstance() {
+		return instance;
+	}// Factory method
+
+	private Adder() {
+		clearSets();
+	}// Constructor
+		// ----------------------------------------------------------------------------
+
+	public byte daa(byte value, boolean subtractFlag, boolean carryIn, boolean halfCarryIn) {
+		byte ans = (byte) 00;
+		byte fudge = (byte) 00;
+		boolean carryOut = false;
+		boolean halfCarryOut = false;
+		if (subtractFlag) {// Subtraction
+			carryOut = carryIn;
+			halfCarryOut = false;
+			int flagMix = halfCarryIn ? 1 : 0;
+			flagMix = carryIn ? flagMix + 2 : flagMix;
+			switch (flagMix) {
+			case 3:// carryIn and halfCarryIn
+				fudge = (byte) 0X9A;
+				break;
+			case 2:// carryIn and !halfCarryIn
+				fudge = (byte) 0XA0;
+				break;
+			case 1:// !carryIn and halfCarryIn
+				fudge = (byte) 0XFA;
+				break;
+			case 0:// !carryIn and !halfCarryIn
+				fudge = (byte) 0X0A;
+				break;
+			default:
+				//report error
+			}// switch
+
+		} else {// Addition
+			if (carryIn) {// carryIn
+				if (halfCarryIn) {// halfCarryIn
+
+				} else {// Not halfCarryIn
+
+				} // if halfCarryIn v Not halfCarryIn
+
+			} else {// Not carryIn
+
+			} // if carryIn v no carryIn
+
+		} // if add v Sub
+		
+		
+		ans = (byte) (value + fudge);
+		carry = carryOut;
+		halfCarry = halfCarryOut;
+		return ans;
+	}
+	// ----------------------------------------------------------------------------
+
 	public byte and(byte argument1, byte argument2) {
 		this.setArgument1(new byte[] { argument1 });
 		this.setArgument2(new byte[] { argument2 });
@@ -188,28 +246,28 @@ public class Adder {
 	}// shiftSLA
 
 	// -----------------------------------------------------------------------------------------------------
-	
+
 	private int vetBitValue(int arg) {
 		int index = Math.max(arg, 0);
 		return Math.min(7, arg);
-	}//vetBitValue
-	
+	}// vetBitValue
+
 	public void bitTest(byte arg, int bit) {
 		byte mask = Z80.BITS[vetBitValue(bit)];
 		halfCarry = true;
 		nFlag = false;
 		zero = (arg & mask) != mask;
-	}//bitTest
+	}// bitTest
 
 	public byte bitSet(byte arg, int bit) {
 		byte mask = Z80.BITS[vetBitValue(bit)];
 		return (byte) (arg | mask);
-	}//bitTest
+	}// bitTest
 
 	public byte bitRes(byte arg, int bit) {
 		byte mask = Z80.BITS_NOT[vetBitValue(bit)];
 		return (byte) (arg & mask);
-	}//bitTest
+	}// bitTest
 
 	// -----------------------------------------------------------------------------------------------------
 	public byte increment(byte argument) {
@@ -361,14 +419,6 @@ public class Adder {
 		return subWithCarry(argument1, argument2, false);
 	}// sub
 
-	public static Adder getInstance() {
-		return instance;
-	}// Factory method
-
-	private Adder() {
-		clearSets();
-	}// Constructor
-
 	public void setArgument1(byte[] argument1) {
 		augend = BitSet.valueOf(argument1);
 	}// setArgument1
@@ -377,10 +427,10 @@ public class Adder {
 		addend = BitSet.valueOf(argument2);
 	}// setArgument1
 
-	private void setArguments(byte[] argument1, byte[] argument2) {
-		setArgument1(argument1);
-		setArgument2(argument2);
-	}// setArguments
+	// private void setArguments(byte[] argument1, byte[] argument2) {
+	// setArgument1(argument1);
+	// setArgument2(argument2);
+	// }// setArguments
 
 	private void setSum(byte argument) {
 		sum = BitSet.valueOf(new byte[] { argument });
