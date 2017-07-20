@@ -58,7 +58,7 @@ public class Adder {
 				fudge = (byte) 0XFA;
 				break;
 			case 0:// !carryIn and !halfCarryIn
-				fudge = (byte) 0X0A;
+				fudge = (byte) 0X00;
 				break;
 			default:
 				//report error
