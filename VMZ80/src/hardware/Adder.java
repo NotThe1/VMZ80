@@ -42,43 +42,92 @@ public class Adder {
 		byte fudge = (byte) 00;
 		boolean carryOut = false;
 		boolean halfCarryOut = false;
+
+		int flagMix = halfCarryIn ? 1 : 0;
+		flagMix = carryIn ? flagMix + 2 : flagMix;
 		if (subtractFlag) {// Subtraction
 			carryOut = carryIn;
 			halfCarryOut = false;
-			int flagMix = halfCarryIn ? 1 : 0;
-			flagMix = carryIn ? flagMix + 2 : flagMix;
 			switch (flagMix) {
-			case 3:// carryIn and halfCarryIn
-				fudge = (byte) 0X9A;
-				break;
-			case 2:// carryIn and !halfCarryIn
-				fudge = (byte) 0XA0;
+			case 0:// !carryIn and !halfCarryIn
+				fudge = (byte) 0X00;
 				break;
 			case 1:// !carryIn and halfCarryIn
 				fudge = (byte) 0XFA;
 				break;
-			case 0:// !carryIn and !halfCarryIn
-				fudge = (byte) 0X00;
+			case 2:// carryIn and !halfCarryIn
+				fudge = (byte) 0XA0;
+				break;
+			case 3:// carryIn and halfCarryIn
+				fudge = (byte) 0X9A;
 				break;
 			default:
-				//report error
-			}// switch
+				// report error
+			}// switch Subtraction
 
 		} else {// Addition
-			if (carryIn) {// carryIn
-				if (halfCarryIn) {// halfCarryIn
+			byte loNibble = (byte) (value & 0X0F);
+			byte hiNibble = (byte) ((value & 0XF0) >>4);
+			switch (flagMix) {
+			case 0:// !carryIn and !halfCarryIn
+				if (loNibble < 0X0A){//(0-9)
+					if(hiNibble < 0X0A){//0-9)
+						carryOut = false;
+						halfCarryOut = false;
+						fudge = (byte) 0X00;
+					}else{//(A-F)
+						carryOut = true;
+						halfCarryOut = false;
+						fudge = (byte) 0X60;
+					}//if hiNibble
+					
+				}else{//(A-F)
+					if(hiNibble < 0X09){//(0-8)
+						carryOut = false;
+						halfCarryOut = true;
+						fudge = (byte) 0X06 ;
+					}else{//(9-F)
+						carryOut =true;
+						halfCarryOut = true;
+						fudge = (byte) 0X66;
 
-				} else {// Not halfCarryIn
+					}//if hiNibble
+					
+				}// if loNibble
+				
+				break;
+			case 1:// !carryIn and halfCarryIn
+					halfCarryOut = false;
+				if(hiNibble >9){
+					carryOut = true;
+					fudge = (byte) 0X066;
+				}else{
+					carryOut = false;
+					fudge = (byte) 0X006;
+				}
+				break;
+			case 2:// carryIn and !halfCarryIn
+				carryOut = true;
+				if (loNibble < 0X0A){
+					fudge = (byte) 0X060;
+					halfCarryOut = false;
+				}else{
+					fudge = (byte) 0X066;
+					halfCarryOut = true;
+				}//if
+				break;
+			case 3:// carryIn and halfCarryIn
+				fudge =(byte) 0XFA;
+				
+				halfCarryOut = false;
+				break;
+			default:
+				// report error
+			}// switch Addition
 
-				} // if halfCarryIn v Not halfCarryIn
-
-			} else {// Not carryIn
-
-			} // if carryIn v no carryIn
 
 		} // if add v Sub
-		
-		
+
 		ans = (byte) (value + fudge);
 		carry = carryOut;
 		halfCarry = halfCarryOut;
