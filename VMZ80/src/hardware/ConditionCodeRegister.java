@@ -88,7 +88,7 @@ public class ConditionCodeRegister  {
 	
 	public void setZSP16(int value){
 		this.setZeroFlag(value == 0);
-		this.setSignFlag((value & Z80.WORD_SIGN) != 0);
+		this.setSignFlag((value & Z80.WORD_SIGN) == Z80.WORD_SIGN);
 		this.setPvFlag((Integer.bitCount(value) % 2) == 0);
 	}//setZSP16
 

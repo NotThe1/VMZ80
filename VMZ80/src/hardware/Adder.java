@@ -454,8 +454,8 @@ public class Adder {
 		byte[] subtrahend = this.complementWord(arg2);
 		subtrahend = this.incrementWord(subtrahend);
 		halfCarry0 = halfCarry | halfCarry0;
-		carry0 = carry | carry;
-
+//		carry0 = carry | carry;
+		carry0 = carry ;
 		byte[] ans = this.addWord(argument1, subtrahend);
 		setFlags(WORD_ARG, true);
 

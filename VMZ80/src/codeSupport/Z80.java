@@ -66,7 +66,7 @@ public class Z80 {
 	/**
 	 * masks
 	 */
-	public static final byte WORD_SIGN = (byte) 0b1000000000000000;
+	public static final int WORD_SIGN =  0b1000000000000000;
 
 	public static final byte BIT_SIGN = (byte) 0b10000000;
 	public static final byte BIT_ZERO = (byte) 0b01000000;
