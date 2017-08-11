@@ -414,6 +414,9 @@ public class Adder {
 	}// getSum
 
 	public byte subWithCarry(byte argument1, byte argument2, boolean carryState) {
+		signArg1 = (argument1 & Z80.BIT_SIGN) == Z80.BIT_SIGN;
+		signArg2 = (argument2 & Z80.BIT_SIGN) == Z80.BIT_SIGN;
+		
 		byte arg2 = argument2;
 		boolean halfCarry0 = false;
 		boolean carry0 = false;
@@ -422,13 +425,16 @@ public class Adder {
 			halfCarry0 = halfCarry;
 			carry0 = carry;
 		} // if
-		signArg1 = (argument1 & Z80.BIT_SIGN) == Z80.BIT_SIGN;
-		signArg2 = (argument2 & Z80.BIT_SIGN) == Z80.BIT_SIGN;
 
 		byte subtrahend = this.complement(arg2);
 		arg2 = this.increment(subtrahend);
-		halfCarry0 = halfCarry | halfCarry0;
-		carry0 = carry | carry0;
+		
+//		halfCarry0 = halfCarry | halfCarry0;
+//		carry0 = carry | carry0;
+		halfCarry0 = halfCarry ^ halfCarry0;
+		carry0 = carry ^ carry0;
+		
+
 
 		byte ans = this.add(argument1, arg2);
 		setFlags(BYTE_ARG, true);
