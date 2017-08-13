@@ -444,6 +444,9 @@ public class Adder {
 	}// subWithCarry
 
 	public byte[] subWordWithCarry(byte[] argument1, byte[] argument2, boolean carryState) {
+		signArg1 = (argument1[1] & Z80.BIT_SIGN) == Z80.BIT_SIGN;
+		signArg2 = (argument2[1] & Z80.BIT_SIGN) == Z80.BIT_SIGN;
+		
 		byte[] arg2 = argument2.clone();
 		boolean halfCarry0 = false;
 		boolean carry0 = false;
@@ -454,19 +457,17 @@ public class Adder {
 			carry0 = carry;
 		} // if
 
-		signArg1 = (argument1[1] & Z80.BIT_SIGN) == Z80.BIT_SIGN;
-		signArg2 = (argument2[1] & Z80.BIT_SIGN) == Z80.BIT_SIGN;
 
 		byte[] subtrahend = this.complementWord(arg2);
 		subtrahend = this.incrementWord(subtrahend);
-		halfCarry0 = halfCarry | halfCarry0;
-//		carry0 = carry | carry;
-		carry0 = carry ;
+				
+		halfCarry0 = halfCarry ^ halfCarry0;
+		carry0 = carry^carry0 ;
 		byte[] ans = this.addWord(argument1, subtrahend);
 		setFlags(WORD_ARG, true);
 
-		halfCarry = !(halfCarry | halfCarry0);
-		carry = !(carry | carry0);
+		halfCarry = !(halfCarry ^ halfCarry0);
+		carry = !(carry ^ carry0);
 		return ans;
 	}// subWithCarry
 
