@@ -251,14 +251,7 @@ public class Adder {
 		return getSum()[0];
 	}// rotateRight
 
-	public byte shiftSRL(byte arg) {
-		return shiftRight(arg, true);
-	}// shiftSRL
-
-	public byte shiftSRA(byte arg) {
-		return shiftRight(arg, false);
-	}// shiftSRA
-
+//------------------ shift SLA, SRA, SRL
 	private byte shiftRight(byte arg, boolean zeroSeed) {
 		clearSets();
 		setSum(arg);
@@ -279,7 +272,23 @@ public class Adder {
 
 	}// shiftRight
 
+	public byte shiftSRL(byte arg) {
+		return shiftRight(arg, true);
+	}// shiftSRL
+
+	public byte shiftSRA(byte arg) {
+		return shiftRight(arg, false);
+	}// shiftSRA
+	
 	public byte shiftSLA(byte arg) {
+		return shiftSLASLL(arg,false);
+	}//shiftSLA
+	
+	public byte shiftSLL(byte arg) {
+		return shiftSLASLL(arg,true);
+	}//shiftSLA
+	
+	public byte shiftSLASLL(byte arg,boolean seed) {
 		clearSets();
 		setSum(arg);
 		boolean originalBit7 = sum.get(7);
