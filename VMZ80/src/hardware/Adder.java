@@ -117,8 +117,8 @@ public class Adder {
 				}//if
 				break;
 			case 3:// carryIn and halfCarryIn
-				fudge =(byte) 0XFA;
-				
+				fudge =(byte) 0X66;
+				carryOut = true;
 				halfCarryOut = false;
 				break;
 			default:
