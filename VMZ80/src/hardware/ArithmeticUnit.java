@@ -572,6 +572,6 @@ public class ArithmeticUnit {
 	private static final int MASK_BYTE = 0X00FF;
 	private static final int MASK_WORD = 0XFFFF;
 	private static final byte MASK_SIGN_BYTE = (byte) 0X080;
-	private static final byte MASK_SIGN_WORD = (byte) 0X08000;
+//	private static final byte MASK_SIGN_WORD = (byte) 0X08000;
 
 }// class ArithmeticUnit

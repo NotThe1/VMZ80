@@ -306,7 +306,7 @@ public class Adder {
 	// -----------------------------------------------------------------------------------------------------
 
 	private int vetBitValue(int arg) {
-		int index = Math.max(arg, 0);
+//		int index = Math.max(arg, 0);
 		return Math.min(7, arg);
 	}// vetBitValue
 

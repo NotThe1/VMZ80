@@ -111,6 +111,18 @@ public class Z80 {
 	/**
 	 * tables
 	 */
+	
+	public static Register[] singleRegisters = new Register[] {Register.B,
+			Register.C,Register.D,Register.E,Register.H,Register.L,Register.M,Register.A};
+
+	public static Register[] doubleRegisters1 = new Register[] {Register.BC,
+			Register.DE,Register.HL,Register.SP};
+	
+	public static Register[] doubleRegisters2 = new Register[] {Register.BC,
+			Register.DE,Register.HL,Register.AF};
+	
+//	public static Register[] doubleRegisters3 = new Register[] {Register.BC,
+//			Register.DE,Register.HL,Register.AF};
 
 	// public static final HashMap<String, Byte> conditionTable = new HashMap<>();
 	// static {
