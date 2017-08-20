@@ -479,13 +479,13 @@ public class CentralProcessingUnit implements Runnable {
 			instructionSize = opCodePage00(instruction);
 			break;
 		case 1:
-			// // instructionLength = opCodePage01(opCode, yyy, zzz);
+			instructionSize = opCodePage01(instruction);
 			break;
 		case 2:
-			// // instructionLength = opCodePage10(opCode, yyy);
+			instructionSize = opCodePage10(instruction);
 			break;
 		case 3:
-			// // instructionLength = opCodePage11(currentAddress, opCode, yyy, zzz);
+			instructionSize = opCodePage11(instruction);
 			break;
 		default:
 			// // setError(ErrorStatus.INVALID_OPCODE);
@@ -800,6 +800,7 @@ public class CentralProcessingUnit implements Runnable {
 		byte hiByte = (byte) (value >> 8);
 		byte loByte = (byte) (value & 0X00FF);
 		opCode_Push(hiByte, loByte);
+		
 		// int stackLocation = wrs.getStackPointer();
 		// cpuBuss.pushWord(stackLocation, hiByte, loByte); // push the return address
 		// wrs.setStackPointer(stackLocation - 2);
