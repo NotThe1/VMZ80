@@ -1,6 +1,7 @@
 package hardware;
 
 import codeSupport.Z80;
+import codeSupport.Z80.ConditionCode;
 import codeSupport.Z80.Register;
 import memory.CpuBuss;
 
@@ -18,13 +19,13 @@ public class Instruction {
 	int yyy;
 	int zzz;
 	int dd;
-	boolean bit3;
+	// boolean bit3;
 	int bit = -1;
 	Register singleRegister1; // if two registers, the destination
 	Register singleRegister2; // if two registers, the source
 	Register doubleRegister1; // if two registers, the destination
 	Register doubleRegister2; // if two registers, the source
-
+	ConditionCode conditionCode;	// used by CALL and JUMP
 	public Instruction() {
 		int currentLocation = wrs.getProgramCounter();
 		byte opCode0 = cpuBuss.read(currentLocation);
@@ -69,19 +70,54 @@ public class Instruction {
 			case (byte) 0X6E: // LD L,(IXY=d)
 				this.singleRegister1 = Z80.singleRegisters[yyy];
 				break;
-			case (byte) 0X0CB: // Bit Instructions for IXY	
-				bit = cpuBuss.read(wrs.getProgramCounter() + 3)>>3 & 0X0F;
-				
-//				if (this.page != 0) {
-//					this.bit = this.yyy;
-//				} // if page NOT 0
+			case (byte) 0X0CB: // Bit Instructions for IXY
+				bit = cpuBuss.read(wrs.getProgramCounter() + 3) >> 3 & 0X0F;
+
+				// if (this.page != 0) {
+				// this.bit = this.yyy;
+				// } // if page NOT 0
 				break;
 
 			}// switch opCode1
 			break;
-			
+
 		default:
 			setMembers(opCode0);
+			switch (this.page) {
+			case 0: // page 00
+				this.dd = this.yyy >> 1;
+				this.doubleRegister1 = Z80.doubleRegisters1[dd];
+				this.singleRegister1 = Z80.singleRegisters[yyy];
+				break;
+
+			case 1: // page 01
+				this.singleRegister1 = Z80.singleRegisters[yyy]; // Destination
+				this.singleRegister2 = Z80.singleRegisters[zzz]; // Source
+				break;
+
+			case 2: // page 10
+				this.singleRegister1 = Z80.singleRegisters[zzz]; // Source
+				break;
+
+			case 3: // page 11
+				switch (yyy) {
+				case 1: // 001 POP rr
+				case 5: // 101 PUSH rr
+					boolean bit3 = ((this.opCode0 & Z80.BIT_3) == Z80.BIT_3);
+					if (!bit3) {
+						this.dd = this.yyy >> 1;
+						this.doubleRegister1 = Z80.doubleRegisters2[dd];
+					} // if not bit3
+					break;
+				case 0:	// 000 Conditional RETURN
+				case 2:	// 010 Conditional JUMP
+				case 4:	// 100 Conditional CALL
+					conditionCode = Z80.conditionCode[yyy];
+				} // switch yyy
+				break;
+			default:
+				// // setError(ErrorStatus.INVALID_OPCODE);
+			} // switch page
 		}// switch opCode
 	}// constructor
 

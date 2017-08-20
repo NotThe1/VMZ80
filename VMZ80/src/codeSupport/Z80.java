@@ -14,6 +14,10 @@ public class Z80 {
 		AF, BC, DE, HL, M, SP, PC, IX, IY
 	}// enum Register
 
+	public enum ConditionCode {
+		NZ, Z, NC, C, PO, PE, P, M
+	}// enum conditionCode
+
 	/**
 	 * Constants
 	 */
@@ -66,7 +70,7 @@ public class Z80 {
 	/**
 	 * masks
 	 */
-	public static final int WORD_SIGN =  0b1000000000000000;
+	public static final int WORD_SIGN = 0b1000000000000000;
 
 	public static final byte BIT_SIGN = (byte) 0b10000000;
 	public static final byte BIT_ZERO = (byte) 0b01000000;
@@ -111,18 +115,19 @@ public class Z80 {
 	/**
 	 * tables
 	 */
-	
-	public static Register[] singleRegisters = new Register[] {Register.B,
-			Register.C,Register.D,Register.E,Register.H,Register.L,Register.M,Register.A};
 
-	public static Register[] doubleRegisters1 = new Register[] {Register.BC,
-			Register.DE,Register.HL,Register.SP};
-	
-	public static Register[] doubleRegisters2 = new Register[] {Register.BC,
-			Register.DE,Register.HL,Register.AF};
-	
-//	public static Register[] doubleRegisters3 = new Register[] {Register.BC,
-//			Register.DE,Register.HL,Register.AF};
+	public static Register[] singleRegisters = new Register[] { Register.B, Register.C, Register.D, Register.E,
+			Register.H, Register.L, Register.M, Register.A };
+
+	public static Register[] doubleRegisters1 = new Register[] { Register.BC, Register.DE, Register.HL, Register.SP };
+
+	public static Register[] doubleRegisters2 = new Register[] { Register.BC, Register.DE, Register.HL, Register.AF };
+
+	public static ConditionCode[] conditionCode = new ConditionCode[] { ConditionCode.NZ, ConditionCode.Z,
+			ConditionCode.NC, ConditionCode.C, ConditionCode.PO, ConditionCode.PE, ConditionCode.P, ConditionCode.M };
+
+	// public static Register[] doubleRegisters3 = new Register[] {Register.BC,
+	// Register.DE,Register.HL,Register.AF};
 
 	// public static final HashMap<String, Byte> conditionTable = new HashMap<>();
 	// static {

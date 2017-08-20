@@ -1,6 +1,7 @@
 package hardware;
 
 import codeSupport.AppLogger;
+import codeSupport.Z80;
 import codeSupport.Z80.Register;
 //import ioSystem.IOController;
 import memory.CpuBuss;
@@ -111,7 +112,8 @@ public class CentralProcessingUnit implements Runnable {
 			case 2: // ADC HL,ss SBC HL,ss
 				source = instruction.doubleRegister1;
 				instructionSize = 2;
-				if (instruction.bit3) {// ADC HL,ss
+				boolean bit3 = ((instruction.opCode1 & Z80.BIT_3) == Z80.BIT_3);
+				if (bit3) {// ADC HL,ss
 					// DO OPCODE ADC HL,ss
 				} else {// SBC HL,ss
 						// DO OPCODE SBC HL,ss
@@ -120,7 +122,8 @@ public class CentralProcessingUnit implements Runnable {
 			case 3:// LD (nn),dd LD dd,(nn)
 				source = instruction.doubleRegister1;
 				instructionSize = 4;
-				if (instruction.bit3) {// ALD dd,(nn)
+				bit3 = ((instruction.opCode1 & Z80.BIT_3) == Z80.BIT_3);
+				if (bit3) {// ALD dd,(nn)
 					// DO OPCODE LD dd,(nn)
 				} else {// LD (nn),dd
 						// DO OPCODE LD (nn),dd
@@ -357,9 +360,9 @@ public class CentralProcessingUnit implements Runnable {
 			instructionSize = 4;
 			// DO OPCODE DEC (IXY+d)
 			break;
-		case (byte) 0X7E: // LD	A,IXY
+		case (byte) 0X7E: // LD A,IXY
 			instructionSize = 3;
-			// DO OPCODE LD	A,IXY
+			// DO OPCODE LD A,IXY
 			break;
 		case (byte) 0X86: // ADD A,(IXY+d)
 			instructionSize = 3;
@@ -420,9 +423,9 @@ public class CentralProcessingUnit implements Runnable {
 
 	private int opCodeSetIndexRegistersBit(Instruction instruction) {
 		int instructionSize = 4;
-		int subInstructionPage = cpuBuss.read(wrs.getProgramCounter()+3)>>6 & 0B011;
+		int subInstructionPage = cpuBuss.read(wrs.getProgramCounter() + 3) >> 6 & 0B011;
 		switch (subInstructionPage) {
-		case 0: // Page 00 RLC RRC RL RR SLA SRA SLL SRL  ---  (IXY+d)
+		case 0: // Page 00 RLC RRC RL RR SLA SRA SLL SRL --- (IXY+d)
 			switch (instruction.yyy) {
 			case 0: // RLC (IXY+d)
 				// DO OPCODE RLC (IXY+d)
@@ -442,7 +445,7 @@ public class CentralProcessingUnit implements Runnable {
 			case 5: // SRA (IXY+d)
 				// DO OPCODE SRA (IXY+d)
 				break;
-			case 6: // SLL  (IXY+d)******* not real
+			case 6: // SLL (IXY+d)******* not real
 				// DO OPCODE SLL (IXY+d)
 				break;
 			case 7: // SRL (IXY+d)
@@ -471,456 +474,322 @@ public class CentralProcessingUnit implements Runnable {
 		// int yyy = (opCode >> 3) & 0X0007; // only want the value of bits 3,4 & 5
 		// int zzz = opCode & 0X0007; // only want the value of bits 0,1 & 2
 
-		// switch (page) {
-		// case 0:
-		// // instructionLength = opCodePage00(currentAddress, opCode, yyy, zzz);
-		// break;
-		// case 1:
-		// // instructionLength = opCodePage01(opCode, yyy, zzz);
-		// break;
-		// case 2:
-		// // instructionLength = opCodePage10(opCode, yyy);
-		// break;
-		// case 3:
-		// // instructionLength = opCodePage11(currentAddress, opCode, yyy, zzz);
-		// break;
-		// default:
-		// // setError(ErrorStatus.INVALID_OPCODE);
-		//
-		// }// Switch page
+		switch (instruction.page) {
+		case 0:
+			instructionSize = opCodePage00(instruction);
+			break;
+		case 1:
+			// // instructionLength = opCodePage01(opCode, yyy, zzz);
+			break;
+		case 2:
+			// // instructionLength = opCodePage10(opCode, yyy);
+			break;
+		case 3:
+			// // instructionLength = opCodePage11(currentAddress, opCode, yyy, zzz);
+			break;
+		default:
+			// // setError(ErrorStatus.INVALID_OPCODE);
+
+		}// Switch page
 		return instructionSize;
 	}// opCodePageSingle
 		// --------------------------------------------------------------------------------------------------------
 
-	// private int opCodePage00(int currentAddress, byte opCode, int yyy, int zzz) {
-	// byte hiByte, loByte;
-	// int intValue;
-	// byte byteValue;
-	// int directAddress = cpuBuss.readWordReversed(currentAddress + 1);
-	// Register register16Bit = RegisterDecode.getRegisterPairStd(opCode);
-	// Register register8bit = RegisterDecode.getHighRegister(opCode);
-	// int codeLength;
-	// // 00 YYY ZZZ
-	// switch (zzz) {
-	// case 0: // zzz = 000 (NOP)
-	// // NOP
-	// if (yyy == 0) {// its a NOP OO length =1, cycles = 4
-	// // 00 real NOP
-	// codeLength = 1;
-	// } else if (yyy == 6) {// Opcode "30" special for debugging **** act like a halt
-	// codeLength = 0;
-	// setError(ErrorStatus.STOP);
-	// } else {// treat as if it is a NOP
-	// // 08,10,18,20,28,30,38 - not implemented. treat as NOP
-	// codeLength = 1;
-	// }//
-	// break;
-	// case 1: // zzz = 001 (LXI & DAD)- Register Pair (BC,DE,HL,SP)
-	// if ((yyy & 0X01) == 0) { // LXI
-	// // word = cpuBuss.readWordReversed(currentAddress + 1);
-	// wrs.setDoubleReg(register16Bit, directAddress);
-	// codeLength = 3;
-	// } else {// DAD
-	// int hlValue = wrs.getDoubleReg(Register.HL);
-	// int regValue = wrs.getDoubleReg(register16Bit);
-	// wrs.setDoubleReg(Register.HL, au.add(hlValue, regValue));
-	// codeLength = 1;
-	// }// if
-	// break;
-	// case 2: // zzz = 010 (STAX LDAX)
-	// int location = wrs.getDoubleReg(register16Bit);
-	// switch (yyy) {// zzz = 100
-	// case 0: // STAX BC
-	// case 2: // STAX DE
-	// cpuBuss.write(location, wrs.getAcc());
-	// codeLength = 1;
-	// break;
-	// case 1: // LDAX BC
-	// case 3: // LDAX DE
-	// wrs.setAcc(cpuBuss.read(location));
-	// codeLength = 1;
-	// break;
-	// case 4: // SHLD
-	// hiByte = wrs.getReg(Register.L);
-	// loByte = wrs.getReg(Register.H);
-	// cpuBuss.writeWord(directAddress, hiByte, loByte);
-	// codeLength = 3;
-	// break;
-	// case 5: // LHLD
-	// wrs.setReg(Register.L, cpuBuss.read(directAddress));
-	// wrs.setReg(Register.H, cpuBuss.read(directAddress + 1));
-	// codeLength = 3;
-	// break;
-	// case 6: // STA
-	// cpuBuss.write(directAddress, wrs.getAcc());
-	// codeLength = 3;
-	// break;
-	// case 7: // LDA
-	// wrs.setAcc(cpuBuss.read(directAddress));
-	// codeLength = 3;
-	// break;
-	// default:
-	// codeLength = 0;
-	// setError(ErrorStatus.INVALID_OPCODE);
-	// // return codeLength;
-	// }// switch (yyy)
-	// break;
-	// case 3: // zzz = 011 (INX & DCX) - Register Pair (BC,DE,HL,SP)
-	// codeLength = 1;
-	// intValue = wrs.getDoubleReg(register16Bit);
-	// if ((yyy & 0X01) == 0) {// INX
-	// wrs.setDoubleReg(register16Bit, au.increment(intValue));
-	// } else { // DCX
-	// wrs.setDoubleReg(register16Bit, au.decrement(intValue));
-	// }// if
-	//
-	// break;
-	// case 4: // zzz = 100 (INC)- Register (B,C,D,E,H,L,A)
-	// if (register8bit.equals(Register.M)) { // Memory reference through (HL)
-	// int indirectAddress = wrs.getDoubleReg(Register.M);
-	// byteValue = au.increment(cpuBuss.read(indirectAddress));
-	// cpuBuss.write(indirectAddress, byteValue);
-	// } else { // Standard 8-bit register
-	// byteValue = wrs.getReg(register8bit);
-	// wrs.setReg(register8bit, au.increment(byteValue));
-	// }// if
-	// codeLength = 1;
-	// break;
-	// case 5: // zzz = 101 (DCR)- Register (B,C,D,E,H,L,A)
-	// if (register8bit.equals(Register.M)) { // Memory reference through (HL)
-	// int indirectAddress = wrs.getDoubleReg(Register.M);
-	// byteValue = au.decrement(cpuBuss.read(indirectAddress));
-	// cpuBuss.write(indirectAddress, byteValue);
-	// } else { // Standard 8-bit register
-	// byteValue = wrs.getReg(register8bit);
-	// wrs.setReg(register8bit, au.decrement(byteValue));
-	// }// if
-	// codeLength = 1;
-	// break;
-	// case 6: // zzz = 110 (MVI)- Register (B,C,D,E,H,L,A)
-	// byteValue = cpuBuss.read(currentAddress + 1);
-	// if (register8bit.equals(Register.M)) { // Memory reference through (HL)
-	// int indirectAddress = wrs.getDoubleReg(Register.M);
-	// cpuBuss.write(indirectAddress, byteValue);
-	// } else { // Standard 8-bit register
-	// wrs.setReg(register8bit, byteValue);
-	// }// if
-	// codeLength = 2;
-	// break;
-	// case 7: // zzz = 111 (RLC,RRC,RAL,RAR,DAA,CMA,STC,CMC
-	// byteValue = wrs.getAcc();
-	// switch (yyy) {
-	// case 0: // zzz = 000 (RLC)
-	// wrs.setAcc(au.rotateLeft(byteValue));
-	// codeLength = 1;
-	// break;
-	// case 1: // zzz = 001 (RRC)
-	// wrs.setAcc(au.rotateRight(byteValue));
-	// codeLength = 1;
-	// break;
-	// case 2: // zzz = 010 (RAL)
-	// wrs.setAcc(au.rotateLeftThruCarry(byteValue));
-	// codeLength = 1;
-	// break;
-	// case 3: // zzz = 011 (RAR)
-	// wrs.setAcc(au.rotateRightThruCarry(byteValue));
-	// codeLength = 1;
-	// break;
-	// case 4: // zzz = 100 (DAA)
-	// wrs.setAcc(au.decimalAdjustByte(byteValue));
-	// codeLength = 1;
-	// break;
-	// case 5: // zzz = 101 (CMA)
-	// wrs.setAcc(au.complement(byteValue));
-	// codeLength = 1;
-	// break;
-	// case 6: // zzz = 110 (STC)
-	// ccr.setCarryFlag(true);
-	// codeLength = 1;
-	// break;
-	// case 7: // zzz = 111 (CMC)
-	// boolean state = ccr.isCarryFlagSet();
-	// ccr.setCarryFlag(!state);
-	// codeLength = 1;
-	// break;
-	// default:
-	// setError(ErrorStatus.INVALID_OPCODE);
-	// codeLength = 0;
-	// }// switch yyy
-	// break;
-	// default:
-	// setError(ErrorStatus.INVALID_OPCODE);
-	// return 0;
-	// }// switch zzz
-	// return codeLength;
-	//
-	// }// opCodePage00
-	// // ----------------------------------------------------
-	//
-	// // private int opCodePage01(int currentAddress, byte opCode, int yyy, int zzz){
-	//
-	// private int opCodePage01(byte opCode, int yyy, int zzz) {
-	// if (opCode == (byte) 0X76) { // (HLT)
-	// setError(ErrorStatus.HLT_INSTRUCTION);
-	// } else { // (MOV)
-	// Register destination = RegisterDecode.getHighRegister(opCode);
-	// Register source = RegisterDecode.getLowRegister(opCode);
-	// byte value;
-	//
-	// if (source.equals(Register.M)) { // Memory reference through (HL)
-	// int indirectAddress = wrs.getDoubleReg(Register.M);
-	// value = cpuBuss.read(indirectAddress);
-	// } else { // Standard 8-bit register
-	// value = wrs.getReg(source);
-	// }// if
-	//
-	// if (destination.equals(Register.M)) { // Memory reference through (HL)
-	// int indirectAddress = wrs.getDoubleReg(Register.M);
-	// cpuBuss.write(indirectAddress, value);
-	// } else { // Standard 8-bit register
-	// wrs.setReg(destination, value);
-	// }// if
-	// }// else
-	// int codeLength = 1;
-	// return codeLength;
-	// }// opCodePage01
-	//
-	// private int opCodePage10(byte opCode, int yyy) {
-	// byte sourceValue, accValue;
-	// int indirectAddress;
-	// Register register8bit = RegisterDecode.getLowRegister(opCode);
-	// if (register8bit.equals(Register.M)) {
-	// indirectAddress = wrs.getDoubleReg(Register.M);
-	// sourceValue = cpuBuss.read(indirectAddress);
-	// } else {
-	// sourceValue = wrs.getReg(register8bit);
-	// }// if register M for source
-	//
-	// accValue = wrs.getAcc();
-	// int codeLength = 1;
-	// switch (yyy) {
-	// case 0: // yyy = 000 (ADD)
-	// wrs.setAcc(au.add(accValue, sourceValue));
-	// break;
-	// case 1: // yyy = 001 (ADC)
-	// wrs.setAcc(au.addWithCarry(accValue, sourceValue));
-	// break;
-	// case 2: // yyy = 010 (SUB)
-	// wrs.setAcc(au.subtract(accValue, sourceValue));
-	// break;
-	// case 3: // yyy = 011 (SBB)
-	// wrs.setAcc(au.subtractWithBorrow(accValue, sourceValue));
-	// break;
-	// case 4: // yyy = 100 (ANA)
-	// wrs.setAcc(au.logicalAnd(accValue, sourceValue));
-	// break;
-	// case 5: // yyy = 101 (XRA)
-	// wrs.setAcc(au.logicalXor(accValue, sourceValue));
-	// break;
-	// case 6: // yyy = 110 (ORA)
-	// wrs.setAcc(au.logicalOr(accValue, sourceValue));
-	// break;
-	// case 7: // yyy = 111 (CMP)
-	// au.subtract(accValue, sourceValue); // leave both values untouched
-	// break;
-	// default:
-	// setError(ErrorStatus.INVALID_OPCODE);
-	// codeLength = 0;
-	// }// switch yyy
-	//
-	// return codeLength;
-	// }// opCodePage10
-	//
-	// private int opCodePage11(int currentAddress, byte opCode, int yyy, int zzz) {
-	// int codeLength = -1;
-	// byte accValue;
-	// Register register16bit = RegisterDecode.getRegisterPairAlt(opCode);
-	// ConditionFlag condition = RegisterDecode.getCondition(opCode);
-	// accValue = wrs.getAcc();
-	//
-	// switch (zzz) {
-	// case 0: // zzz 000 Conditional return CCC
-	// if (opCodeConditionTrue(condition)) { // do the return
-	// opCode_Return();
-	// codeLength = 0;
-	// } else { // just skip past
-	// codeLength = 1;
-	// }// if
-	// break;
-	// case 1: // zzz 001 POP/RET/PCHL/SPHL
-	// if ((yyy & 0X01) == 0) { // POP
-	// int stackLocation = wrs.getStackPointer();
-	// int valueInt = cpuBuss.popWord(stackLocation);
-	// if (register16bit.equals(Register.AF)) { // PSW
-	// wrs.setReg(Register.A, (byte) ((valueInt >> 8) & 0X00FF));
-	// ccr.setConditionCode((byte) (valueInt & 0X00FF));
-	// } else {
-	// wrs.setDoubleReg(register16bit, valueInt);
-	// }// if
-	// wrs.setStackPointer(stackLocation + 2);
-	// codeLength = 1;
-	// } else { // RET/PCHL/SPHL
-	// if (opCode == (byte) 0XC9) {// RET
-	// opCode_Return();
-	// codeLength = 0;
-	// } else if (opCode == (byte) 0XE9) { // PCHL
-	// int hlValue = wrs.getDoubleReg(Register.HL);
-	// wrs.setProgramCounter(hlValue);
-	// codeLength = 0;
-	// } else if (opCode == (byte) 0XF9) { // SPHL
-	// int hlValue = wrs.getDoubleReg(Register.HL);
-	// wrs.setStackPointer(hlValue);
-	// codeLength = 1;
-	// } else { // Not used
-	// setError(ErrorStatus.INVALID_OPCODE);
-	// codeLength = 0;
-	// }// inner if
-	// }// if lsb = 0/1
-	// break;
-	// case 2: // zzz 010 Conditional Jump CCC
-	// if (opCodeConditionTrue(condition)) { // do the return
-	// opCode_Jump();
-	// codeLength = 0;
-	// } else { // just skip past
-	// codeLength = 3;
-	// }// if
-	// break;
-	// case 3: // zzz 011 JMP/OUT/IN/XTHL/XCHL/DI/EI
-	// switch (yyy) {
-	// case 0: // yyy 000 JMP
-	// opCode_Jump();
-	// codeLength = 0;
-	// break;
-	// case 1: // yyy 001 Not Used
-	// setError(ErrorStatus.INVALID_OPCODE);
-	// codeLength = 0;
-	// break;
-	// case 2: // yyy 010 OUT
-	// Byte IOaddress = cpuBuss.read(wrs.getProgramCounter() + 1);
-	// ioController.byteToDevice(IOaddress, wrs.getReg(Register.A));
-	// codeLength = 2;
-	// break;
-	// case 3: // yyy 011 IN
-	// IOaddress = cpuBuss.read(wrs.getProgramCounter() + 1);
-	// wrs.setReg(Register.A, ioController.byteFromDevice(IOaddress));
-	// codeLength = 2;
-	// break;
-	// case 4: // yyy 100 XTHL
-	// byte valueL = wrs.getReg(Register.L);
-	// byte valueH = wrs.getReg(Register.H);
-	//
-	//// int hlValue = wrs.getDoubleReg(Register.HL);
-	// int stackLocation = wrs.getStackPointer();
-	// wrs.setReg(Register.L, cpuBuss.read(stackLocation));
-	// wrs.setReg(Register.H, cpuBuss.read(stackLocation+1));
-	//// int stackValue = cpuBuss.popWord(stackLocation);
-	//// wrs.setDoubleReg(Register.HL, stackValue);
-	//// cpuBuss.pushWord(stackLocation, hlValue);
-	// cpuBuss.write(stackLocation, valueL);
-	// cpuBuss.write(stackLocation + 1, valueH);
-	//
-	// codeLength = 1;
-	// break;
-	// case 5: // yyy 101 XCHG
-	// int deValue = wrs.getDoubleReg(Register.DE);
-	// wrs.setDoubleReg(Register.DE, wrs.getDoubleReg(Register.HL));
-	// wrs.setDoubleReg(Register.HL, deValue);
-	// codeLength = 1;
-	// break;
-	// case 6: // yyy 110 DI
-	// System.out.println("Not yet implemented");
-	// codeLength = 1;
-	// break;
-	// case 7: // yyy 111 EI
-	// System.out.println("Not yet implemented");
-	// codeLength = 1;
-	// break;
-	// default:
-	// setError(ErrorStatus.INVALID_OPCODE);
-	// codeLength = 0;
-	// }// switch(opCod
-	// break;
-	// case 4: // zzz 100 Conditional Call CCC
-	// if (opCodeConditionTrue(condition)) { // do the return
-	// opCode_Call();
-	// codeLength = 0;
-	// } else { // just skip past
-	// codeLength = 3;
-	// }// if
-	// break;
-	// case 5: // zzz 101 PUSH/CALL
-	// if ((yyy & 0X01) == 0) { // PUSH
-	// if (register16bit.equals(Register.AF)) {
-	// opCode_Push(wrs.getReg(Register.A), ccr.getConditionCode());
-	// } else {
-	// opCode_Push(wrs.getDoubleReg(register16bit));
-	// }// if
-	// codeLength = 1;
-	// } else if (opCode == (byte) 0XCD) { // CALL
-	// opCode_Call();
-	// codeLength = 0;
-	// } else {
-	// setError(ErrorStatus.INVALID_OPCODE);
-	// codeLength = 0;
-	// }// if odd/even
-	// break;
-	// case 6: // zzz 110 ADI/ACI/SUI/SBI/ANI/XRI/ORI/CPI
-	// byte resultValue;
-	// byte immediateValue = cpuBuss.read(wrs.getProgramCounter() + 1);
-	// // accValue = wrs.getAcc();
-	// codeLength = 2;
-	// switch (yyy) {
-	// case 0: // yyy 000 ADI
-	// resultValue = au.add(accValue, immediateValue);
-	// wrs.setAcc(resultValue);
-	// break;
-	// case 1: // yyy 001 ACI
-	// resultValue = au.addWithCarry(accValue, immediateValue);
-	// wrs.setAcc(resultValue);
-	// break;
-	// case 2: // yyy 010 SUI
-	// resultValue = au.subtract(accValue, immediateValue);
-	// wrs.setAcc(resultValue);
-	// break;
-	// case 3: // yyy 011 SBI
-	// resultValue = au.subtractWithBorrow(accValue, immediateValue);
-	// wrs.setAcc(resultValue);
-	// break;
-	// case 4: // yyy 100 ANI
-	// resultValue = au.logicalAnd(accValue, immediateValue);
-	// wrs.setAcc(resultValue);
-	// break;
-	// case 5: // yyy 101 XRI
-	// resultValue = au.logicalXor(accValue, immediateValue);
-	// wrs.setAcc(resultValue);
-	// break;
-	// case 6: // yyy 110 ORI
-	// resultValue = au.logicalOr(accValue, immediateValue);
-	// wrs.setAcc(resultValue);
-	// break;
-	// case 7: // yyy 111 CPI
-	// resultValue = au.subtract(accValue, immediateValue);
-	// break;
-	// default:
-	// setError(ErrorStatus.INVALID_OPCODE);
-	// codeLength = 0;
-	// }// switch(yyy)
-	// break;
-	// case 7: // zzz 111 RST PPP
-	// opCode_Push(wrs.getProgramCounter());
-	// int address = yyy * 8;
-	// wrs.setProgramCounter(address);
-	// codeLength = 0;
-	// break;
-	// default: // zzz 000
-	// setError(ErrorStatus.INVALID_OPCODE);
-	// return 0;
-	// }// switch(zzz)
-	//
-	// return codeLength;
-	//
-	// }// opCodePage11
-	//
+	private int opCodePage00(Instruction instruction) {
+		int instructionSize = 0;
+		boolean bit3;
+		int currentAddress = wrs.getProgramCounter();
+		int directAddress = cpuBuss.readWordReversed(currentAddress + 1);
+		// 00 YYY ZZZ
+		switch (instruction.zzz) {
+
+		case 0: // NOP
+			instructionSize = 1;
+			// DO OPCODE NOP
+			break;
+		case 1: // LD rr,dd ADD HL,rr
+			instructionSize = 3;
+			bit3 = ((instruction.opCode1 & Z80.BIT_3) == Z80.BIT_3);
+			if (bit3) {// ADD HL,rr
+				instructionSize = 1;
+				// DO OPCODE ADD HL,rr
+			} else { // LD rr
+				instructionSize = 3;
+				// DO OPCODE LD rr,dd
+			} // if bit 3
+			break;
+		case 2:
+			// LD (BC),A LD (DE),A LD (DE),A LD (nn),A
+			// LD A,(BC) LD (DE),A LD HL,(nn) LD A,(nn)
+			switch (instruction.yyy) {
+			case 0: // LD (BC),A
+				instructionSize = 1;
+				// DO OPCODE LD (BC),A
+				break;
+			case 1: // LD A,(BC)
+				instructionSize = 1;
+				// DO OPCODE LD A,(BC)
+				break;
+			case 2: // LD (DE),A
+				instructionSize = 1;
+				// DO OPCODE LD (DE),A
+				break;
+			case 3: // LD (DE),A
+				instructionSize = 1;
+				// DO OPCODE LD (DE),A
+				break;
+			case 4: // LD (DE),A
+				instructionSize = 3;
+				// DO OPCODE LD (DE),A
+				break;
+			case 5: // LD HL,(nn)
+				instructionSize = 3;
+				// DO OPCODE LD HL,(nn)
+				break;
+			case 6: // LD (nn),A
+				instructionSize = 3;
+				// DO OPCODE LD (nn),A
+				break;
+			case 7: // LD A,(nn)
+				instructionSize = 3;
+				// DO OPCODE LD A,(nn)
+				break;
+			}// switch yyy
+			break;
+
+		case 3: // INC rr DEC rr
+			instructionSize = 1;
+			bit3 = ((instruction.opCode1 & Z80.BIT_3) == Z80.BIT_3);
+			if (bit3) {// DEC,rr
+				// DO OPCODE DEC,rr
+			} else { // INC rr
+				// DO OPCODE INC,rr
+			} // if bit 3
+			break;
+		case 4: // INC r
+			instructionSize = 1;
+			// DO OPCODE INC r
+			break;
+		case 5: // DEC r
+			instructionSize = 1;
+			// DO OPCODE DEC r
+			break;
+		case 6: // LD r,d
+			instructionSize = 2;
+			// DO OPCODE LD r,d
+			break;
+		case 7: // RLCA RRCA RLA RRA DAA CPL SCF CCF
+			instructionSize = 1;
+			switch (instruction.yyy) {
+			case 0: // RLCA
+				// DO OPCODERLCA
+				break;
+			case 1: // RRCA
+				// DO OPCODE RRCA
+				break;
+			case 2: // RLA
+				// DO OPCODE RLA
+				break;
+			case 3: // RRA
+				// DO OPCODE RRA
+				break;
+			case 4: // DAA
+				// DO OPCODE DAA
+				break;
+			case 5: // CPL
+				// DO OPCODE CPL
+				break;
+			case 6: // SCF
+				// DO OPCODE SCF
+				break;
+			case 7: // CCF
+				// DO OPCODE CCF
+				break;
+			}// switch yyy
+			break;
+
+		}// switch zzz
+		return instructionSize;
+		//
+	}// opCodePage00
+
+	private int opCodePage01(Instruction instruction) {
+		int instructionSize = 1;
+		if (instruction.opCode0 == (byte) 0X76) {// HALT
+			// DO OPCODE HALT
+		} else {// LD r, r1
+				// DO OPCODE LD r, r1
+		} // if halt
+		return instructionSize;
+	}// opCodePage01
+
+	private int opCodePage10(Instruction instruction) {
+		int instructionSize = 1;
+		switch (instruction.yyy) {
+		case 0: // ADD A,r
+			// DO OPCODE ADD A,r
+			break;
+		case 1: // ADC A,r
+			// DO OPCODE ADC A,r
+			break;
+		case 2: // SUB r
+			// DO OPCODE SUB r
+			break;
+		case 3: // SBC A,r
+			// DO OPCODE SBC A,r
+			break;
+		case 4: // AND r
+			// DO OPCODE AND r
+			break;
+		case 5: // XOR r
+			// DO OPCODE XOR r
+			break;
+		case 6: // OR r
+			// DO OPCODE OR r
+			break;
+		case 7: // CP r
+			// DO OPCODE CP r
+			break;
+		}// switch yyy
+
+		return instructionSize;
+	}// opCodePage10
+
+	private int opCodePage11(Instruction instruction) {
+		int instructionSize = 0;
+		boolean bit3;
+		switch (instruction.zzz) {
+		case 0: // Conditional Returns
+			instructionSize = 1;
+			// DO OPCODE Conditional Returns
+			break;
+		case 1: // POP rr RET JP (HL) LD SP,HL
+			instructionSize = 1;
+			bit3 = ((instruction.opCode1 & Z80.BIT_3) == Z80.BIT_3);
+			if (bit3) {// POP rr
+				// DO OPCODE POP rr
+			} else {// RET EXX JP (HL) LD SP,HL
+				switch (instruction.yyy) {
+				case 1: // RET
+					// DO OPCODE RET
+					break;
+				case 3: // EXX
+					// DO OPCODE EXX
+					break;
+				case 5: // JP (HL)
+					// DO OPCODE JP (HL)
+					break;
+				case 7: // LD SP,HL
+					// DO OPCODE LD SP,HL
+					break;
+				}// switch yyy
+			} // if bit 3
+			break;
+		case 2: // Conditional Jumps
+			instructionSize = 3;
+			// DO OPCODE Conditional Jumps
+			break;
+		case 3: // JP nn OUT (nn),A IN A,(nn) EX (SP),HL EX DE,HL DI EI
+			switch (instruction.yyy) {
+
+			case 0: // JP nn
+				instructionSize = 3;
+				// DO OPCODE JP nn
+				break;
+			case 1: // CB BITS
+				// Extended Code
+				// DO OPCODE elsewhere
+				break;
+			case 2: // OUT (nn),A
+				instructionSize = 2;
+				// DO OPCODE OUT (nn),A
+				break;
+			case 3: // IN A,(nn)
+				instructionSize = 2;
+				// DO OPCODE IN A,(nn)
+				break;
+			case 4: // EX (SP),HL
+				instructionSize = 1;
+				// DO OPCODE EX (SP),HL
+				break;
+			case 5: // EX DE,HL
+				instructionSize = 1;
+				// DO OPCODE EX DE,HL
+				break;
+			case 6: // DI
+				instructionSize = 1;
+				// DO OPCODE DI
+				break;
+			case 7: // EI
+				instructionSize = 1;
+				// DO OPCODE EI
+				break;
+			}// switch yyy
+
+			break;
+		case 4: // Conditional Calls
+			instructionSize = 3;
+			// DO OPCODE Conditional Calls
+			break;
+		case 5: // PUSH rr CALL nn
+			bit3 = ((instruction.opCode1 & Z80.BIT_3) == Z80.BIT_3);
+			if (bit3) {// PUSH rr
+				instructionSize = 1;
+				// DO OPCODE PUSH rr
+			} else {// RET EXX JP (HL) LD SP,HL
+				switch (instruction.yyy) {
+				case 1: // CALL nn
+					instructionSize = 3;
+					// DO OPCODE CALL nn
+					break;
+				case 3: // DD IX
+				case 5: // ED EXTD
+				case 7: // FD IY
+					// Extended Code
+					// DO OPCODE elsewhere
+					break;
+				}// switch yyy
+			} // if bit 3
+				
+			break;
+		case 6: // ADC A,n ADC A,n  SUB n SBC A,n AND n XOR n OR n CP n
+			instructionSize = 2;
+			switch (instruction.yyy) {
+			case 0:	// ADC A,n
+				// DO OPCODE ADC A,n
+				break;
+			case 1:	// ADC A,n
+				// DO OPCODE ADC A,n
+				break;
+			case 2:	// SUB n 
+				// DO OPCODE  SUB n 
+				break;
+			case 3:	// SBC A,n
+				// DO OPCODE SBC A,n
+				break;
+			case 4:	// AND n
+				// DO OPCODE AND n
+				break;
+			case 5:	//  XOR n
+				// DO OPCODE XOR n
+				break;
+			case 6:	// OR n
+				// DO OPCODE OR n
+				break;
+			case 7:	// CP n
+				// DO OPCODE CP n
+				break;
+			}// switch yyy
+			// DO OPCODE
+			break;
+		case 7: //
+			// DO OPCODE
+			break;
+		}// switch yyy
+
+		return instructionSize;
+	}// opCodePage11
+
 	private void opCode_Push(byte hiByte, byte loByte) {
 		int stackLocation = wrs.getStackPointer();
 		cpuBuss.pushWord(stackLocation, hiByte, loByte); // push the return address
