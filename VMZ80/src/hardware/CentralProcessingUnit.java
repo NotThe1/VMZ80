@@ -52,14 +52,14 @@ public class CentralProcessingUnit implements Runnable {
 	}// run
 
 	public boolean startInstruction() {
-		long origin = System.nanoTime();
+		// long origin = System.nanoTime();
 		executeInstruction(wrs.getProgramCounter());
-		long elapsedTIme = System.nanoTime() - origin;
+		// long elapsedTIme = System.nanoTime() - origin;
 		return !isError();
 	}// startInstruction
 
 	public void executeInstruction(int currentAddress) {
-		Register indexRegister = null;
+		// Register indexRegister = null;
 		Instruction instruction = new Instruction();
 		byte opCode = instruction.opCode0;
 		int instructionLength = 0;
@@ -72,7 +72,7 @@ public class CentralProcessingUnit implements Runnable {
 			break;
 		case (byte) 0X0DD: // IX Instructions
 		case (byte) 0X0FD: // IY Instructions
-			// indexRegister = opCode == (byte) 0XDD ? Z80.Register.IX : Z80.Register.IY;
+			// indexRegister = instruction.doubleRegister1
 
 			if (instruction.opCode1 == (byte) 0XCB) { // IX/IY bit instructions
 				instructionLength = opCodeSetIndexRegistersBit(instruction);
@@ -503,9 +503,42 @@ public class CentralProcessingUnit implements Runnable {
 		// 00 YYY ZZZ
 		switch (instruction.zzz) {
 
-		case 0: // NOP
-			instructionSize = 1;
-			// DO OPCODE NOP
+		case 0: // NOP DJNZ e
+			switch(instruction.yyy) {
+			case 0:	//NOP
+				instructionSize = 1;
+				// DO OPCODE NOP
+				break;
+			case 1:	// EX AF,AF'
+				instructionSize = 1;
+				// DO OPCODE  EX AF,AF'
+				break;
+			case 2:	// DJNZ e
+				instructionSize = 2;
+				// DO OPCODE DJNZ e
+				break;
+			case 3:	// JR e
+				instructionSize = 2;
+				// DO OPCODE JR e
+				break;
+			case 4:	// JR NZ,e
+				instructionSize = 2;
+				// DO OPCODE JR NZ,e
+				break;
+			case 5:	// JR Z,e
+				instructionSize = 2;
+				// DO OPCODE JR Z,e
+				break;
+			case 6:	// JR NC,e
+				instructionSize = 2;
+				// DO OPCODE JR NC,e
+				break;
+			case 7:	// JR C,e
+				instructionSize = 2;
+				// DO OPCODE JR C,e
+				break;
+			}//switch yyy
+			
 			break;
 		case 1: // LD rr,dd ADD HL,rr
 			instructionSize = 3;
@@ -689,7 +722,7 @@ public class CentralProcessingUnit implements Runnable {
 			instructionSize = 3;
 			// DO OPCODE Conditional Jumps
 			break;
-		case 3: // JP nn OUT (nn),A IN A,(nn) EX (SP),HL EX DE,HL DI EI
+		case 3: // JP nn OUT (n),A IN A,(n) EX (SP),HL EX DE,HL DI EI
 			switch (instruction.yyy) {
 
 			case 0: // JP nn
@@ -700,13 +733,13 @@ public class CentralProcessingUnit implements Runnable {
 				// Extended Code
 				// DO OPCODE elsewhere
 				break;
-			case 2: // OUT (nn),A
+			case 2: // OUT (n),A
 				instructionSize = 2;
-				// DO OPCODE OUT (nn),A
+				// DO OPCODE OUT (n),A
 				break;
-			case 3: // IN A,(nn)
+			case 3: // IN A,(n)
 				instructionSize = 2;
-				// DO OPCODE IN A,(nn)
+				// DO OPCODE IN A,(n)
 				break;
 			case 4: // EX (SP),HL
 				instructionSize = 1;
@@ -750,37 +783,37 @@ public class CentralProcessingUnit implements Runnable {
 					break;
 				}// switch yyy
 			} // if bit 3
-				
+
 			break;
-		case 6: // ADC A,n ADC A,n  SUB n SBC A,n AND n XOR n OR n CP n
+		case 6: // ADC A,n ADC A,n SUB n SBC A,n AND n XOR n OR n CP n
 			instructionSize = 2;
 			switch (instruction.yyy) {
-			case 0:	// ADC A,n
+			case 0: // ADC A,n
 				// DO OPCODE ADC A,n
 				break;
-			case 1:	// ADC A,n
+			case 1: // ADC A,n
 				// DO OPCODE ADC A,n
 				break;
-			case 2:	// SUB n 
-				// DO OPCODE  SUB n 
+			case 2: // SUB n
+				// DO OPCODE SUB n
 				break;
-			case 3:	// SBC A,n
+			case 3: // SBC A,n
 				// DO OPCODE SBC A,n
 				break;
-			case 4:	// AND n
+			case 4: // AND n
 				// DO OPCODE AND n
 				break;
-			case 5:	//  XOR n
+			case 5: // XOR n
 				// DO OPCODE XOR n
 				break;
-			case 6:	// OR n
+			case 6: // OR n
 				// DO OPCODE OR n
 				break;
-			case 7:	// CP n
+			case 7: // CP n
 				// DO OPCODE CP n
 				break;
 			}// switch yyy
-			// DO OPCODE
+				// DO OPCODE
 			break;
 		case 7: //
 			// DO OPCODE
@@ -800,7 +833,7 @@ public class CentralProcessingUnit implements Runnable {
 		byte hiByte = (byte) (value >> 8);
 		byte loByte = (byte) (value & 0X00FF);
 		opCode_Push(hiByte, loByte);
-		
+
 		// int stackLocation = wrs.getStackPointer();
 		// cpuBuss.pushWord(stackLocation, hiByte, loByte); // push the return address
 		// wrs.setStackPointer(stackLocation - 2);
