@@ -51,7 +51,8 @@ public class Instruction {
 					break;
 				case 2:// ED Page= 1 ZZZ= 2
 					this.dd = this.yyy >> 1;
-					this.doubleRegister1 = Z80.doubleRegisters1[this.dd];
+					this.doubleRegister1 = Z80.Register.HL;
+					this.doubleRegister2 = Z80.doubleRegisters1[this.dd];
 					break;
 				case 3:// ED Page= 1 ZZZ= 3
 					this.dd = this.yyy >> 1;
@@ -99,12 +100,12 @@ public class Instruction {
 			case (byte) 0X2A: // LD IXY,(nn)
 				this.immediateWord = cpuBuss.readWordReversed(wrs.getProgramCounter() + 2);
 				break;
-				
+
 			case (byte) 0X34: // INC (IXY + d)
 			case (byte) 0X35: // DEC (IXY + d)
 				this.indexDisplacement = cpuBuss.read(wrs.getProgramCounter() + 2);
 				break;
-				
+
 			case (byte) 0X36: // DEC (IXY + d)
 				this.indexDisplacement = cpuBuss.read(wrs.getProgramCounter() + 2);
 				this.immediateByte = cpuBuss.read(wrs.getProgramCounter() + 3);
@@ -131,15 +132,15 @@ public class Instruction {
 				this.singleRegister1 = Z80.singleRegisters[yyy];
 				this.indexDisplacement = cpuBuss.read(wrs.getProgramCounter() + 2);
 				break;
-			case (byte) 0X86:	// ADD r,(IXY + d)
-			case (byte) 0X8E:	// ADC r,(IXY + d)
-			case (byte) 0X96:	// SUB (IXY + d)
-			case (byte) 0X9E:	// SBC r,(IXY + d)
-			case (byte) 0XA6:	// AND (IXY + d)
-			case (byte) 0XAE:	// XOR (IXY + d)
-			case (byte) 0XB6:	// OR (IXY + d)
-			case (byte) 0XBE:	// CP (IXY + d)
-				this.singleRegister1 = Z80.Register.A;	//Acc
+			case (byte) 0X86: // ADD r,(IXY + d)
+			case (byte) 0X8E: // ADC r,(IXY + d)
+			case (byte) 0X96: // SUB (IXY + d)
+			case (byte) 0X9E: // SBC r,(IXY + d)
+			case (byte) 0XA6: // AND (IXY + d)
+			case (byte) 0XAE: // XOR (IXY + d)
+			case (byte) 0XB6: // OR (IXY + d)
+			case (byte) 0XBE: // CP (IXY + d)
+				this.singleRegister1 = Z80.Register.A; // Acc
 				this.indexDisplacement = cpuBuss.read(wrs.getProgramCounter() + 2);
 				break;
 
@@ -244,4 +245,72 @@ public class Instruction {
 		this.yyy = (source >> 3) & 0X0007; // only want the value of bits 3,4 & 5
 		this.zzz = source & 0X0007; // only want the value of bits 0,1 & 2
 	}// setMembers
+
+	public WorkingRegisterSet getWrs() {
+		return wrs;
+	}
+
+	public CpuBuss getCpuBuss() {
+		return cpuBuss;
+	}
+
+	public byte getOpCode0() {
+		return opCode0;
+	}
+
+	public byte getOpCode1() {
+		return opCode1;
+	}
+
+	public int getPage() {
+		return page;
+	}
+
+	public int getYyy() {
+		return yyy;
+	}
+
+	public int getZzz() {
+		return zzz;
+	}
+
+	public int getDd() {
+		return dd;
+	}
+
+	public int getBit() {
+		return bit;
+	}
+
+	public Register getSingleRegister1() {
+		return singleRegister1;
+	}
+
+	public Register getSingleRegister2() {
+		return singleRegister2;
+	}
+
+	public Register getDoubleRegister1() {
+		return doubleRegister1;
+	}
+
+	public Register getDoubleRegister2() {
+		return doubleRegister2;
+	}
+
+	public ConditionCode getConditionCode() {
+		return conditionCode;
+	}
+
+	public int getImmediateWord() {
+		return immediateWord;
+	}
+
+	public int getImmediateByte() {
+		return immediateByte;
+	}
+
+	public int getIndexDisplacement() {
+		return indexDisplacement;
+	}
 }// class OpCode
