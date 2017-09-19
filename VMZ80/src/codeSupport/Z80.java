@@ -17,6 +17,20 @@ public class Z80 {
 	public enum ConditionCode {
 		NZ, Z, NC, C, PO, PE, P, M
 	}// enum conditionCode
+	
+	/**
+	 * tables
+	 */
+
+	public static Register[] singleRegisters = new Register[] { Register.B, Register.C, Register.D, Register.E,
+			Register.H, Register.L, Register.M, Register.A };
+
+	public static Register[] doubleRegisters1 = new Register[] { Register.BC, Register.DE, Register.HL, Register.SP };
+
+	public static Register[] doubleRegisters2 = new Register[] { Register.BC, Register.DE, Register.HL, Register.AF };
+
+	public static ConditionCode[] conditionCode = new ConditionCode[] { ConditionCode.NZ, ConditionCode.Z,
+			ConditionCode.NC, ConditionCode.C, ConditionCode.PO, ConditionCode.PE, ConditionCode.P, ConditionCode.M };
 
 	/**
 	 * Constants
@@ -112,19 +126,6 @@ public class Z80 {
 	public static final byte[] BITS_NOT = { BIT_NOT_0, BIT_NOT_1, BIT_NOT_2, BIT_NOT_3, BIT_NOT_4, BIT_NOT_5, BIT_NOT_6,
 			BIT_NOT_7 };
 
-	/**
-	 * tables
-	 */
-
-	public static Register[] singleRegisters = new Register[] { Register.B, Register.C, Register.D, Register.E,
-			Register.H, Register.L, Register.M, Register.A };
-
-	public static Register[] doubleRegisters1 = new Register[] { Register.BC, Register.DE, Register.HL, Register.SP };
-
-	public static Register[] doubleRegisters2 = new Register[] { Register.BC, Register.DE, Register.HL, Register.AF };
-
-	public static ConditionCode[] conditionCode = new ConditionCode[] { ConditionCode.NZ, ConditionCode.Z,
-			ConditionCode.NC, ConditionCode.C, ConditionCode.PO, ConditionCode.PE, ConditionCode.P, ConditionCode.M };
 
 	// public static Register[] doubleRegisters3 = new Register[] {Register.BC,
 	// Register.DE,Register.HL,Register.AF};
