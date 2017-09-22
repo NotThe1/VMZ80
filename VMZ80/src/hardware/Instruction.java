@@ -44,30 +44,71 @@ public class Instruction {
 			// break;
 			case 1: // ED (40- 7F)page 1
 				switch (this.zzz) {
-				case 0:// ED (40,48,50,58,60,68,70,78) - Page= 1 ZZZ= 0
+				case 0:// ED (40,48,50,58,60,68,70,78) - IN r,(C)
 					this.singleRegister1 = Z80.singleRegisters[this.yyy];
+					this.singleRegister2 = Z80.Register.C;
 					break;
-				case 1:// ED (41,49,51,59,61,69,71,79) - Page= 1 ZZZ= 1
-					this.singleRegister1 = Z80.singleRegisters[this.yyy];
+				case 1:// ED (41,49,51,59,61,69,71,79) - OUT r,(C)
+					this.singleRegister1 = Z80.Register.C;
+					this.singleRegister2 = Z80.singleRegisters[this.yyy];
 					break;
-				case 2:// ED (42,4A,52,5A,62,6A,72,7A) - Page= 1 ZZZ= 2
+
+				case 2:// ED (42,4A,52,5A,62,6A,72,7A) - SBC HL,rr & ADC HL,rr
 					this.dd = this.yyy >> 1;
 					this.doubleRegister1 = Z80.Register.HL;
 					this.doubleRegister2 = Z80.doubleRegisters1[this.dd];
 					break;
-				case 3:// ED (43,4B,53,5B,63,6B,73,7B) - Page= 1 ZZZ= 3
+				case 3:// ED (43,4B,53,5B,63,6B,73,7B) - LD (nn),rr & LD rr,(nn)
 					this.dd = this.yyy >> 1;
 					this.doubleRegister1 = Z80.doubleRegisters1[this.dd];
 					this.immediateWord = cpuBuss.readWordReversed(wrs.getProgramCounter() + 2);
 					break;
-				// case 4: // ED (44,4C,54,5C,64,6C,74,7C) - Page= 1 ZZZ= 4
+				// case 4: // ED (44,4C,54,5C,64,6C,74,7C) - NEG and unused
 				// break;
-				// case 5: // ED (45,4D,55,5D,65,6D,75,7D) - Page= 1 ZZZ= 5
+				// case 5: // ED (45,4D,55,5D,65,6D,75,7D) - RETN
 				// break;
-				// case 6: // ED (46,4E,56,5E,66,6E,76,7E) - Page= 1 ZZZ= 6
-				// break;
-				// case 7: // ED (47,4F,57,5F,67,6F,77,7F) - Page= 1 ZZZ= 7
-				// break;
+				case 6: // ED (46,4E,56,5E,66,6E,76,7E) - Page= 1 ZZZ= 6
+					switch (this.yyy) {
+					case 0:// 46 IM 0
+					case 4:// 66 IM 0
+						this.immediateByte = (byte) 0X00;
+						break;
+					case 2:// 56 IM 1
+					case 6:// 76 IM 1
+						this.immediateByte = (byte) 0X01;
+						break;
+					case 3:// 5E IM 2
+					case 7:// 7E IM 2
+						this.immediateByte = (byte) 0X02;
+						break;
+					}// switch YYY
+					break;
+				case 7: // ED (47,4F,57,5F,67,6F,77,7F) - Page= 1 ZZZ= 7
+					switch (this.yyy) {
+					case 0: // 47 LD I,A
+						this.singleRegister1 = Z80.Register.I;
+						this.singleRegister2 = Z80.Register.A;
+						break;
+					case 2: // 57 LD A,I
+						this.singleRegister1 = Z80.Register.A;
+						this.singleRegister2 = Z80.Register.I;
+						break;
+
+					case 1: // 4F LD R,A
+						this.singleRegister1 = Z80.Register.R;
+						this.singleRegister2 = Z80.Register.A;
+						break;
+					case 3: // 5F LD A,R
+						this.singleRegister1 = Z80.Register.A;
+						this.singleRegister2 = Z80.Register.R;
+						break;
+
+					case 4: // 67 RRD
+					case 5: // F7 RLD
+						this.singleRegister1 = Z80.Register.A;
+						this.doubleRegister1 = Z80.Register.HL;
+					}// switch YYY
+					break;
 
 				}// this zzz ED page 1
 				break;
@@ -91,36 +132,41 @@ public class Instruction {
 
 		case (byte) 0X0DD: // IX Instructions
 		case (byte) 0X0FD: // IY Instructions
-			this.doubleRegister1 = opCode0 == (byte) 0XDD ? Z80.Register.IX : Z80.Register.IY;
+			Z80.Register activeIndexRegister = opCode0 == (byte) 0XDD ? Z80.Register.IX : Z80.Register.IY;
+			// this.doubleRegister1 = opCode0 == (byte) 0XDD ? Z80.Register.IX : Z80.Register.IY;
 			setMembers(opCode1);
-			this.dd = this.yyy >> 1;
-			this.doubleRegister2 = Z80.doubleRegisters1[this.dd];
-			this.doubleRegister2 = doubleRegister2.equals(Z80.Register.HL) ? doubleRegister1 : doubleRegister2;
+			// this.dd = this.yyy >> 1;
+			// this.doubleRegister2 = Z80.doubleRegisters1[this.dd];
+			// this.doubleRegister2 = doubleRegister2.equals(Z80.Register.HL) ? doubleRegister1 : doubleRegister2;
 			switch (opCode1) {
-			// case (byte) 0X09: // ADD IXY,BC
-			// case (byte) 0X19: // ADD IXY,DE
-			// case (byte) 0X39: // ADD IXY,SP
-			// case (byte) 0X29: // ADD IXY,IXY
-			// // both doubleRegister1 and doubleRegister1 are set above
-			// break;
-
+			case (byte) 0X09: // ADD IXY,BC
+			case (byte) 0X19: // ADD IXY,DE
+			case (byte) 0X39: // ADD IXY,SP
+				this.doubleRegister1 = activeIndexRegister;
+				this.doubleRegister2 = Z80.doubleRegisters1[this.yyy >> 1];
+				break;
+			case (byte) 0X29: // ADD IXY,IXY
+				this.doubleRegister1 = activeIndexRegister;
+				this.doubleRegister2 = activeIndexRegister;
+				break;
 			case (byte) 0X21: // LD IXY,nn
 			case (byte) 0X22: // LD nn,IXY
 			case (byte) 0X2A: // LD IXY,(nn)
+				this.doubleRegister1 = activeIndexRegister;
 				this.immediateWord = cpuBuss.readWordReversed(wrs.getProgramCounter() + 2);
 				break;
-
-			// case (byte) 0X23: // INC IXY
-			// case (byte) 0X2B: // DEC IXY
-			// doubleRegister1 is set above
-			// break;
+			case (byte) 0X23: // INC IXY
+			case (byte) 0X2B: // DEC IXY
+				this.doubleRegister1 = activeIndexRegister;
+				break;
 
 			case (byte) 0X34: // INC (IXY + d)
 			case (byte) 0X35: // DEC (IXY + d)
+				this.doubleRegister1 = activeIndexRegister;
 				this.indexDisplacement = cpuBuss.read(wrs.getProgramCounter() + 2);
 				break;
-
 			case (byte) 0X36: // LD (IXY + d),n
+				this.doubleRegister1 = activeIndexRegister;
 				this.indexDisplacement = cpuBuss.read(wrs.getProgramCounter() + 2);
 				this.immediateByte = cpuBuss.read(wrs.getProgramCounter() + 3);
 				break;
@@ -133,6 +179,7 @@ public class Instruction {
 			case (byte) 0X75: // LD (IXY + d),L
 				// case (byte) 0X76: // LD (IXY + d),M
 			case (byte) 0X77: // LD (IXY + d),A
+				this.doubleRegister1 = activeIndexRegister;
 				this.singleRegister1 = Z80.singleRegisters[zzz];
 				this.indexDisplacement = cpuBuss.read(wrs.getProgramCounter() + 2);
 				break;
@@ -143,6 +190,7 @@ public class Instruction {
 			case (byte) 0X66: // LD H,(IXY + d)
 			case (byte) 0X6E: // LD L,(IXY + d)
 			case (byte) 0X7E: // LD A,(IXY + d)
+				this.doubleRegister1 = activeIndexRegister;
 				this.singleRegister1 = Z80.singleRegisters[yyy];
 				this.indexDisplacement = cpuBuss.read(wrs.getProgramCounter() + 2);
 				break;
@@ -154,6 +202,7 @@ public class Instruction {
 			case (byte) 0XAE: // XOR (IXY + d)
 			case (byte) 0XB6: // OR (IXY + d)
 			case (byte) 0XBE: // CP (IXY + d)
+				this.doubleRegister1 = activeIndexRegister;
 				this.singleRegister1 = Z80.Register.A; // Acc
 				this.indexDisplacement = cpuBuss.read(wrs.getProgramCounter() + 2);
 				break;
@@ -163,6 +212,7 @@ public class Instruction {
 				int zzz3 = opCode2 & 0X07;
 				switch (zzz3) {
 				case 6: // DDCB (m6 and mE)
+					this.doubleRegister1 = activeIndexRegister;
 					this.indexDisplacement = cpuBuss.read(wrs.getProgramCounter() + 2);
 					bit = cpuBuss.read(wrs.getProgramCounter() + 3) >> 3;
 					break;
@@ -170,15 +220,16 @@ public class Instruction {
 
 				break;
 
-			// case (byte) 0X0E1: // POP IXY
-			// case (byte) 0X0E5: // PUSH IXY
-			// case (byte) 0X0E9: // JP (IXY)
-			// // doubleRegister1 is set above
-			// break;
+			case (byte) 0X0E1: // POP IXY
+			case (byte) 0X0E5: // PUSH IXY
+			case (byte) 0X0E9: // JP (IXY)
+				this.doubleRegister1 = activeIndexRegister;
+				break;
 
 			case (byte) 0X0E3: // EX (SP),IXY
 			case (byte) 0X0F9: // LD SP,IXY
-				this.doubleRegister2 = Z80.Register.SP;
+				this.doubleRegister1 = Z80.Register.SP;
+				this.doubleRegister2 = activeIndexRegister;
 				break;
 
 			}// switch opCode1
@@ -363,19 +414,19 @@ public class Instruction {
 						this.immediateWord = cpuBuss.readWordReversed(wrs.getProgramCounter() + 1);
 
 						break;
-//					case 3: // DD - IX
-//					case 5: // ED - EXTD
-//					case 7: // FD - IY
-//						break;
+					// case 3: // DD - IX
+					// case 5: // ED - EXTD
+					// case 7: // FD - IY
+					// break;
 					}// switch yyy
 					break;
 				case 6:// Immediate instructions - C6,CE,D6,DE,E6,EE,F6,FE
-					this.singleRegister1= Z80.Register.A;
+					this.singleRegister1 = Z80.Register.A;
 					this.immediateByte = cpuBuss.read(wrs.getProgramCounter() + 1);
 					break;
-				 case 7: // RST - C7,CF,D7,DF,E7,EF,F7,FF
-					 this.immediateByte = (byte) (this.yyy << 3);
-				 break;
+				case 7: // RST - C7,CF,D7,DF,E7,EF,F7,FF
+					this.immediateByte = (byte) (this.yyy << 3);
+					break;
 				} // switch zzz
 
 				break;
@@ -420,9 +471,9 @@ public class Instruction {
 		return zzz;
 	}
 
-//	public int getDd() {
-//		return dd;
-//	}
+	// public int getDd() {
+	// return dd;
+	// }
 
 	public int getBit() {
 		return bit;
