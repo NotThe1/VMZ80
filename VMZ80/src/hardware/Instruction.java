@@ -188,9 +188,9 @@ public class Instruction {
 			setMembers(opCode0);
 			switch (this.page) {
 			case 0: // page 00
-				this.dd = this.yyy >> 1;
-				this.doubleRegister1 = Z80.doubleRegisters1[dd];
-				this.singleRegister1 = Z80.singleRegisters[yyy];
+				// this.dd = this.yyy >> 1;
+				// this.doubleRegister1 = Z80.doubleRegisters1[dd];
+				// this.singleRegister1 = Z80.singleRegisters[yyy];
 				switch (this.zzz) {
 				case 0: // 00,08,10,18,20,28,30,38
 					switch (this.yyy) {
@@ -202,10 +202,10 @@ public class Instruction {
 					case 3: // 18 JR n
 						this.immediateByte = cpuBuss.read(wrs.getProgramCounter() + 1);
 						break;
-					case 4:
-					case 5:
-					case 6:
-					case 7:
+					case 4: // 20 JR NZ,n
+					case 5: // 28 JR Z,n
+					case 6: // 30 JR NC,n
+					case 7: // 38 JR C,N
 						this.immediateByte = cpuBuss.read(wrs.getProgramCounter() + 1);
 						this.conditionCode = Z80.conditionCode[this.yyy & 0b011];
 						break;
@@ -213,8 +213,13 @@ public class Instruction {
 					break;
 
 				case 1: // 01,09,11,19,21,29,31,39
-					this.immediateWord = cpuBuss.readWordReversed(wrs.getProgramCounter() + 1);
-					// double register1 set above
+					if ((this.yyy & Z80.BIT_0) != Z80.BIT_0) {// 01,11,21,31 LD RR,nn
+						this.immediateWord = cpuBuss.readWordReversed(wrs.getProgramCounter() + 1);
+						this.doubleRegister1 = Z80.doubleRegisters1[this.yyy >> 1];
+					} else {// 09,19,29,39 ADD HL,RR
+						this.doubleRegister1 = Z80.Register.HL;
+						this.doubleRegister2 = Z80.doubleRegisters1[this.yyy >> 1];
+					} // if
 					break;
 				case 2: // 02,0A,12,1A,22,2A,32,3A
 					switch (this.yyy) {
@@ -241,31 +246,30 @@ public class Instruction {
 					}//// switch yyy
 					this.immediateWord = cpuBuss.readWordReversed(wrs.getProgramCounter() + 1);
 					break;
-				// case 3: // 03,0B,13,1B,23,2B,33,3B
-				// double register1 set above
-				// break;
-				// case 4: // 04,0C,14,1C,24,2C,34,3C
-				// case 5: // 05,0D,15,1D,25,2D,35,3D
-				// // single register1 set above
-				// break;
+				case 3: // 03,0B,13,1B,23,2B,33,3B
+					this.doubleRegister1 = Z80.doubleRegisters1[this.yyy >> 1];
+					break;
+				case 4: // 04,0C,14,1C,24,2C,34,3C
+				case 5: // 05,0D,15,1D,25,2D,35,3D
+					this.singleRegister1 = Z80.singleRegisters[yyy];
+					break;
 				case 6: // 06,0E,16,1E,26,2E,36,3E
-					// single register1 set above
+					this.singleRegister1 = Z80.singleRegisters[yyy];
 					this.immediateByte = cpuBuss.read(wrs.getProgramCounter() + 1);
 					break;
 				case 7: // 07,0F,17,1F,27,2F,37,3F
 					switch (this.yyy) {
-					case 0: // 07 RLCA	
-					case 1: // 0F RRCA 
+					case 0: // 07 RLCA
+					case 1: // 0F RRCA
 					case 2: // 17 RLA
 					case 3: // 1F RRA
 					case 4: // 27 DAA
-					case 5: // 2F CPL 
+					case 5: // 2F CPL
 						this.singleRegister1 = Z80.Register.A;
 						break;
-					case 6: // 37 SCF
-					case 7: // 3F CCF
-						break;
-
+					// case 6: // 37 SCF
+					// case 7: // 3F CCF
+					// break;
 					}// switch yyy
 					break;
 				}// switch zzz
@@ -277,44 +281,101 @@ public class Instruction {
 				break;
 
 			case 2: // page 10
-				this.singleRegister1 = Z80.singleRegisters[zzz]; // Source
+				this.singleRegister1 = Z80.Register.A; // Destination
+				this.singleRegister2 = Z80.singleRegisters[zzz]; // Source
 				break;
 
 			case 3: // page 11
-				switch (zzz) {
-				case 0: // 000 Conditional RETURN
+				switch (this.zzz) {
+				case 0: // 000 Conditional RETURN - C0,C8,D0,D8.E0.E8.F0.F8
 					conditionCode = Z80.conditionCode[yyy];
 					break;
-				case 1: // 001 POP rr
-					boolean bit3 = ((this.opCode0 & Z80.BIT_3) == Z80.BIT_3);
-					if (!bit3) {
-						this.dd = this.yyy >> 1;
-						this.doubleRegister1 = Z80.doubleRegisters2[dd];
-					} // if not bit3
+				case 1: // C1,C9,D1,D9,E1,E9,F1,F9
+					switch (this.yyy) {
+					case 0:// C1 - POP BC
+					case 2:// D1 - POP DE
+					case 4:// E1 - POP HL
+					case 6:// F1 - POP AF
+						this.doubleRegister1 = Z80.doubleRegisters2[this.yyy >> 1];
+						break;
+					// case 1:// C9 - RET
+					// break;
+					// case 3: // D9 - EXX
+					// break;
+					case 5: // E9 - JP (HL)
+						this.doubleRegister1 = Z80.Register.PC;
+						this.doubleRegister2 = Z80.Register.HL;
+						break;
+					case 7: // F9 - LD SP,HL
+						this.doubleRegister1 = Z80.Register.SP;
+						this.doubleRegister2 = Z80.Register.HL;
+						break;
+					}// switch yyy
 					break;
-				case 2: // 010 Conditional JUMP
+				case 2: // 010 Conditional JUMP C2,CA,D2,DA,E2,EA,F2,FA
 					this.immediateWord = cpuBuss.readWordReversed(wrs.getProgramCounter() + 1);
 					conditionCode = Z80.conditionCode[yyy];
 					break;
 				case 3: // JUMP
-					this.immediateWord = cpuBuss.readWordReversed(wrs.getProgramCounter() + 1);
+					switch (this.yyy) {
+					case 0:// C3 JMP nn
+						this.immediateWord = cpuBuss.readWordReversed(wrs.getProgramCounter() + 1);
+						break;
+					case 1:// CB - BITS
+						break;
+					case 2:// D3 - OUT (*),A
+					case 3:// DB - IN A,(n)
+						this.immediateByte = cpuBuss.read(wrs.getProgramCounter() + 1);
+						this.singleRegister1 = Z80.Register.A;
+						break;
+					case 4:// E3 - EX (SP),HL
+						this.doubleRegister1 = Z80.Register.SP;
+						this.doubleRegister2 = Z80.Register.HL;
+						break;
+					case 5: // EB - EX DE,HL
+						this.doubleRegister1 = Z80.Register.DE;
+						this.doubleRegister2 = Z80.Register.HL;
+						break;
+					// case 6: // F3 - DI
+					// case 7: // FB - EI
+					// break;
+					}// switch YYY
 					break;
-				case 4: // 100 Conditional CALL
+				case 4: // 100 Conditional CALL - C4,CC,D4,DC,E4,EC,F4,FC
 					this.immediateWord = cpuBuss.readWordReversed(wrs.getProgramCounter() + 1);
 					conditionCode = Z80.conditionCode[yyy];
 					break;
 				case 5: // 101 PUSH rr
-					bit3 = ((this.opCode0 & Z80.BIT_3) == Z80.BIT_3);
-					if (!bit3) {
-						this.dd = this.yyy >> 1;
-						this.doubleRegister1 = Z80.doubleRegisters2[dd];
-					} // if not bit3
+					// bit3 = ((this.opCode0 & Z80.BIT_3) == Z80.BIT_3);
+					// if (!bit3) {
+					// this.dd = this.yyy >> 1;
+					// this.doubleRegister1 = Z80.doubleRegisters2[dd];
+					// } // if not bit3
+
+					switch (this.yyy) {
+					case 0:// C5 - PUSH BC
+					case 2:// D5 - PUSH DE
+					case 4:// E5 - PUSH HL
+					case 6:// F5 - PUSH AF
+						this.doubleRegister1 = Z80.doubleRegisters2[this.yyy >> 1];
+						break;
+					case 1:// CD - CALL NN
+						this.immediateWord = cpuBuss.readWordReversed(wrs.getProgramCounter() + 1);
+
+						break;
+//					case 3: // DD - IX
+//					case 5: // ED - EXTD
+//					case 7: // FD - IY
+//						break;
+					}// switch yyy
 					break;
-				case 6:
+				case 6:// Immediate instructions - C6,CE,D6,DE,E6,EE,F6,FE
+					this.singleRegister1= Z80.Register.A;
 					this.immediateByte = cpuBuss.read(wrs.getProgramCounter() + 1);
 					break;
-				// case 7: // RST
-				// break;
+				 case 7: // RST - C7,CF,D7,DF,E7,EF,F7,FF
+					 this.immediateByte = (byte) (this.yyy << 3);
+				 break;
 				} // switch zzz
 
 				break;
@@ -359,9 +420,9 @@ public class Instruction {
 		return zzz;
 	}
 
-	public int getDd() {
-		return dd;
-	}
+//	public int getDd() {
+//		return dd;
+//	}
 
 	public int getBit() {
 		return bit;
