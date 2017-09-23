@@ -16,11 +16,10 @@ import memory.CpuBuss;
 
 public class CentralProcessingUnit implements Runnable {
 	private static CentralProcessingUnit instance = new CentralProcessingUnit();
-	private CpuBuss cpuBuss;
-	private ConditionCodeRegister ccr;
-	private WorkingRegisterSet wrs;
-	private Adder adder = Adder.getInstance();
-	// private ArithmeticUnit au;
+	private CpuBuss cpuBuss = CpuBuss.getInstance();
+	private ConditionCodeRegister ccr = ConditionCodeRegister.getInstance();
+	private WorkingRegisterSet wrs = WorkingRegisterSet.getInstance();
+	private ArithmeticUnit au = ArithmeticUnit.getInstance();
 	private ErrorStatus error;
 	// private IOController ioController;
 
@@ -31,12 +30,7 @@ public class CentralProcessingUnit implements Runnable {
 	}// getInstance
 
 	private CentralProcessingUnit() {
-		this.cpuBuss = CpuBuss.getInstance();
-		this.wrs = WorkingRegisterSet.getInstance();
-		// this.au = ArithmeticUnit.getInstance();
-		this.ccr = ConditionCodeRegister.getInstance();
-		// this.ioController = IOController.getInstance();
-		// this.error = ErrorStatus.NONE;
+
 	}// Constructor
 
 	/**
@@ -81,8 +75,8 @@ public class CentralProcessingUnit implements Runnable {
 			} // if bit instructions
 			break;
 
-		default:
-			instructionLength = opCodeSetSingle(instruction);
+		default: // Main instructions
+			instructionLength = opCodeSetMain(instruction);
 
 		}// switch opCode
 		wrs.incrementProgramCounter(instructionLength);
@@ -93,41 +87,53 @@ public class CentralProcessingUnit implements Runnable {
 	private int opCodeSetED(Instruction instruction) {
 		int instructionSize = 0;
 		Register source;
+		Register destination;
+		byte[] ansWord;
+		byte sourceByte, destinationByte;
+		byte[] sourceWord, destinationWord;
 		switch (instruction.page) {
 		case 0: // Page 00
+			log.addError(String.format("bad instruction %02X %02X %02X, at location %04X", instruction.opCode0,
+					instruction.opCode1, instruction.opCode2, wrs.getProgramCounter()));
+			System.exit(-1);
 			// There are no instructions on page 0
 			break;
 		case 1: // Page 01
 			switch (instruction.zzz) {
-			case 0:// IN r(C)
-				source = instruction.singleRegister1;
+			case 0:// ED (40,48,50,58,60,68,70,78) - IN r,(C)
+				destination = instruction.singleRegister1;
+				source = instruction.singleRegister2;
 				instructionSize = 2;
 				// DO OPCODE IN r(C) note Register.M special
 				break;
-			case 1:// OUT (C),r
-				source = instruction.singleRegister1;
+			case 1:// ED (41,49,51,59,61,69,71,79) - OUT r,(C)
+				destination = instruction.singleRegister1;
+				source = instruction.singleRegister2;
 				instructionSize = 2;
 				// DO OPCODE OUT (C),r note Register.M special
 				break;
-			case 2: // ADC HL,ss SBC HL,ss
-				source = instruction.doubleRegister1;
-				instructionSize = 2;
-				boolean bit3 = ((instruction.opCode1 & Z80.BIT_3) == Z80.BIT_3);
-				if (bit3) {// ADC HL,ss
-					// DO OPCODE ADC HL,ss
-				} else {// SBC HL,ss
-						// DO OPCODE SBC HL,ss
-				} // if bit 3
+			case 2: // ED (42,52,62,72) - SBC HL,rr |ED (4A,5A,6A,7A) - ADC HL,rr
+//				destinationWord = wrs.getDoubleRegArray(instruction.doubleRegister1);
+//				sourceWord = wrs.getDoubleRegArray(instruction.doubleRegister1);
+//				instructionSize = 2;
+//				boolean bit3 = ((instruction.opCode1 & Z80.BIT_3) == Z80.BIT_3);
+//				if (bit3) {// ADC HL,ss
+//					ansWord = au.addWordWithCarry(destinationWord, sourceWord, ccr.isCarryFlagSet());
+//				} else {// SBC HL,ss
+//					ansWord = au.subWordWithCarry(destinationWord, sourceWord, ccr.isCarryFlagSet());
+//				} // if bit 3
+//				wrs.setDoubleReg(instruction.singleRegister1, ansWord);
+
 				break;
 			case 3:// LD (nn),dd LD dd,(nn)
-				source = instruction.doubleRegister1;
-				instructionSize = 4;
-				bit3 = ((instruction.opCode1 & Z80.BIT_3) == Z80.BIT_3);
-				if (bit3) {// ALD dd,(nn)
-					// DO OPCODE LD dd,(nn)
-				} else {// LD (nn),dd
-						// DO OPCODE LD (nn),dd
-				} // if bit 3
+				// source = instruction.doubleRegister1;
+				// instructionSize = 4;
+				// bit3 = ((instruction.opCode1 & Z80.BIT_3) == Z80.BIT_3);
+				// if (bit3) {// ALD dd,(nn)
+				// // DO OPCODE LD dd,(nn)
+				// } else {// LD (nn),dd
+				// // DO OPCODE LD (nn),dd
+				// } // if bit 3
 				break;
 			case 4:// NEG
 				instructionSize = 2;
@@ -467,7 +473,7 @@ public class CentralProcessingUnit implements Runnable {
 		return instructionSize;
 	}// opCodePageDD
 
-	private int opCodeSetSingle(Instruction instruction) {
+	private int opCodeSetMain(Instruction instruction) {
 		int instructionSize = 0;
 
 		// int page = (opCode >> 6) & 0X0003; // only want the value of bits 6 & 7
@@ -504,41 +510,41 @@ public class CentralProcessingUnit implements Runnable {
 		switch (instruction.zzz) {
 
 		case 0: // NOP DJNZ e
-			switch(instruction.yyy) {
-			case 0:	//NOP
+			switch (instruction.yyy) {
+			case 0: // NOP
 				instructionSize = 1;
 				// DO OPCODE NOP
 				break;
-			case 1:	// EX AF,AF'
+			case 1: // EX AF,AF'
 				instructionSize = 1;
-				// DO OPCODE  EX AF,AF'
+				// DO OPCODE EX AF,AF'
 				break;
-			case 2:	// DJNZ e
+			case 2: // DJNZ e
 				instructionSize = 2;
 				// DO OPCODE DJNZ e
 				break;
-			case 3:	// JR e
+			case 3: // JR e
 				instructionSize = 2;
 				// DO OPCODE JR e
 				break;
-			case 4:	// JR NZ,e
+			case 4: // JR NZ,e
 				instructionSize = 2;
 				// DO OPCODE JR NZ,e
 				break;
-			case 5:	// JR Z,e
+			case 5: // JR Z,e
 				instructionSize = 2;
 				// DO OPCODE JR Z,e
 				break;
-			case 6:	// JR NC,e
+			case 6: // JR NC,e
 				instructionSize = 2;
 				// DO OPCODE JR NC,e
 				break;
-			case 7:	// JR C,e
+			case 7: // JR C,e
 				instructionSize = 2;
 				// DO OPCODE JR C,e
 				break;
-			}//switch yyy
-			
+			}// switch yyy
+
 			break;
 		case 1: // LD rr,dd ADD HL,rr
 			instructionSize = 3;

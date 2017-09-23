@@ -2,6 +2,7 @@ package hardware;
 
 import java.util.HashMap;
 
+import codeSupport.AppLogger;
 import codeSupport.Z80;
 import codeSupport.Z80.Register;
 
@@ -28,6 +29,9 @@ public class WorkingRegisterSet {
 	private boolean iff1 = false;
 	private boolean iff2 = false;
 	private HashMap<Register, Byte> registers;
+	
+	private AppLogger log = AppLogger.getInstance();
+
 
 	public static WorkingRegisterSet getInstance() {
 
@@ -55,29 +59,62 @@ public class WorkingRegisterSet {
 		iff2 = false;
 	}// initialize
 
-	public int getProgramCounter() {
-		return programCounter;
-	}// getProgramCounter
-
 	public void setProgramCounter(int programCounter) {
 		this.programCounter = programCounter & WORD_MASK;
 	}// setProgramCounter
+	
+	public void setProgramCounter(byte[] programCounterValue) {
+		int hi = (int) (programCounterValue[0] << 8);
+		int lo = (int) (programCounterValue[1] & 0X00FF);
+		setProgramCounter((hi + lo) & WORD_MASK);
+	}// setProgramCounter
+
+	
+	public void setProgramCounter(byte hiByte, byte loByte) {
+		int hi = (int) (hiByte << 8);
+		int lo = (int) (loByte & 0X00FF);
+		setProgramCounter((hi + lo) & WORD_MASK);
+	}// setStackPointer
+
 
 	public void incrementProgramCounter(int delta) {// setProgramCounter
 		setProgramCounter(this.programCounter + delta);
 	}// incrementProgramCounter
+	
+	public int getProgramCounter() {
+		return this.programCounter;
+	}// getProgramCounter
+	
+	public byte[] getProgramCounterArray() {
+		return splitWord(this.programCounter);
+	}//getProgramCounterArray
+
+
 
 	public int getStackPointer() {
-		return stackPointer;
+		return this.stackPointer;
 	}// getStackPointer
 
-	private int getIX() {
-		return IX;
-	}// getIX
+	public byte[] getStackPointerArray() {
+		return splitWord(this.stackPointer);
+	}// getStackPointerarray
 
-	private int getIY() {
-		return IY;
+	public int getIX() {
+		return this.IX;
+	}// getIX
+	
+	public byte[]getIXarray(){
+		return splitWord(this.IX);
+	}//getIXarray
+
+	public int getIY() {
+		return this.IY;
 	}// getIY
+	
+	public byte[]getIYarray(){
+		return splitWord(this.IY);
+	}//getIYarray
+
 
 	public boolean isIFF1Set() {
 		return iff1;
@@ -87,29 +124,46 @@ public class WorkingRegisterSet {
 		return iff2;
 	}// isIFF2Set
 
-	public void setStackPointer(int stackPointer) {
-		this.stackPointer = stackPointer & WORD_MASK;
-	}// setStackPointer
 
+//	public void setStackPointer(byte hiByte, byte loByte) {
+//		int hi = (int) (hiByte << 8);
+//		int lo = (int) (loByte & 0X00FF);
+//		this.stackPointer = (hi + lo) & WORD_MASK;
+//	}// setIX
+	
 	public void setIX(byte hiByte, byte loByte) {
 		int hi = (int) (hiByte << 8);
 		int lo = (int) (loByte & 0X00FF);
 		this.IX = (hi + lo) & WORD_MASK;
 	}// setIX
 
-	private void setIX(int stackPointer) {
-		this.IX = stackPointer & WORD_MASK;
+	public void setIX(int ixValue) {
+		this.IX = ixValue & WORD_MASK;
+	}// setIX
+	
+	public void setIX(byte[] IXValue) {
+		int hi = (int) (IXValue[0] << 8);
+		int lo = (int) (IXValue[1] & 0X00FF);
+		setIX((hi + lo) & WORD_MASK);
 	}// setIX
 
+	public void setIY(int IYValue) {
+		this.IY = IYValue & WORD_MASK;
+	}// setIY
+	
 	public void setIY(byte hiByte, byte loByte) {
 		int hi = (int) (hiByte << 8);
 		int lo = (int) (loByte & 0X00FF);
-		this.IY = (hi + lo) & WORD_MASK;
+		setIY((hi + lo) & WORD_MASK);
 	}// setIY
+	
+	public void setIY(byte[] IYValue) {
+		int hi = (int) (IYValue[0] << 8);
+		int lo = (int) (IYValue[1] & 0X00FF);
+		setIX((hi + lo) & WORD_MASK);
+	}// setIX
 
-	private void setIY(int stackPointer) {
-		this.IY = stackPointer & WORD_MASK;
-	}// setIY
+
 
 	public void setIFF1(boolean state) {
 		iff1 = state;
@@ -118,11 +172,22 @@ public class WorkingRegisterSet {
 	public void setIFF2(boolean state) {
 		iff2 = state;
 	}// setIFF2
+	
+	public void setStackPointer(int stackPointerValue) {
+		this.stackPointer = stackPointerValue & WORD_MASK;
+	}// setStackPointer
+
+	public void setStackPointer(byte[] stackPointerValue) {
+		int hi = (int) (stackPointerValue[0] << 8);
+		int lo = (int) (stackPointerValue[1] & 0X00FF);
+		setStackPointer((hi + lo) & WORD_MASK);
+	}// setStackPointer
 
 	public void setStackPointer(byte hiByte, byte loByte) {
 		int hi = (int) (hiByte << 8);
 		int lo = (int) (loByte & 0X00FF);
-		this.stackPointer = (hi + lo) & WORD_MASK;
+		setStackPointer((hi + lo) & WORD_MASK);
+		
 	}// setStackPointer
 
 	public void setAcc(byte value) {
@@ -180,42 +245,121 @@ public class WorkingRegisterSet {
 	}// setDoubleReg
 
 	public int getDoubleReg(Register reg) {
-		byte hi = 0;
-		byte lo = 0;
+		int result = 0;
 
 		switch (reg) {
 		case BC:
-			hi = this.getReg(Register.B);
-			lo = this.getReg(Register.C);
+//			hi = this.getReg(Register.B);
+//			lo = this.getReg(Register.C);
+//			result = (((hi << 8) + (lo & BYTE_MASK)) & WORD_MASK);
+			result = (((getReg(Register.B) << 8) + (getReg(Register.C) & BYTE_MASK)) & WORD_MASK);	
 			break;
 		case DE:
-			hi = this.getReg(Register.D);
-			lo = this.getReg(Register.E);
+			result = (((getReg(Register.D) << 8) + (getReg(Register.E) & BYTE_MASK)) & WORD_MASK);
 			break;
 		case HL:
 		case M:
-			hi = this.getReg(Register.H);
-			lo = this.getReg(Register.L);
+			result = (((getReg(Register.H) << 8) + (getReg(Register.L) & BYTE_MASK)) & WORD_MASK);
 			break;
 		case SP:
-			return this.getStackPointer();
-		// exits here for SP
+			result =  this.getStackPointer();
+		break;
 		case PC:
-			return this.getProgramCounter();
-		// exits here for PC
+			result = this.getProgramCounter();
+		break;
 		case IX:
-			return this.getIX();
-		// exits here for IX
+			result =  this.getIX();
+		break;
 		case IY:
-			return this.getIY();
-		// exits here for IY
+			result = this.getIY();
+		break;
 		default:
-			// just use 0;
+			log.addError(String.format("[workingRegisterSet] %n getDoubleReg-%s at location %04X,",
+					reg,this.programCounter));
+			System.exit(-1);
 		}// switch
-		int result = (((hi << 8) + (lo & BYTE_MASK)) & WORD_MASK);
 
 		return result;
 	}// getDoubleReg
+	
+	public void setDoubleReg(Register reg, byte hi, byte lo) {
+		setDoubleReg(reg,new byte[] {hi,lo});
+	}//setDoubleReg
+	
+	public void setDoubleReg(Register reg, byte[] registerValues) {
+
+		switch (reg) {
+		case BC:
+			setReg(Register.B, registerValues[0]);
+			setReg(Register.C, registerValues[1]);
+			break;
+		case DE:
+			setReg(Register.D, registerValues[0]);
+			setReg(Register.E, registerValues[1]);
+			break;
+		case HL:
+		case M:
+			setReg(Register.H, registerValues[0]);
+			setReg(Register.L, registerValues[1]);
+			break;
+		case SP:
+			setStackPointer(registerValues[0],registerValues[1]);
+			break;
+		case PC:
+			setStackPointer(registerValues[0],registerValues[1]);
+			break;
+		case IX:
+			setIX(registerValues[0],registerValues[1]);
+			break;
+		case IY:
+			setIY(registerValues[0],registerValues[1]);
+			break;
+		default:
+			// just fall thru
+		}// switch
+
+		return;
+	}// setDoubleReg
+
+	public byte[] getDoubleRegArray(Register reg) {
+		byte[] ans = new byte[2];
+
+		switch (reg) {
+		case BC:
+			ans[0] = this.getReg(Register.B);
+			ans[1] = this.getReg(Register.C);
+			break;
+		case DE:
+			ans[0] = this.getReg(Register.D);
+			ans[1] = this.getReg(Register.E);
+			break;
+		case HL:
+		case M:
+			ans[0] = this.getReg(Register.H);
+			ans[1] = this.getReg(Register.L);
+			break;
+		case SP:
+			ans = splitWord(this.getStackPointer());
+			break;
+		case PC:
+			ans = splitWord(this.getProgramCounter());
+			break;
+		case IX:
+			ans = splitWord(this.getIX());
+			break;
+		case IY:
+			ans = splitWord(this.getIY());
+			break;
+		default:
+			// just use 0;
+		}// switch
+
+		return ans;
+	}// getDoubleReg
+
+	private byte[] splitWord(int wordValue) {
+		return new byte[] { (byte) ((wordValue >> 8) & 0XFF), (byte) (wordValue & 0XFF) };
+	}// split word
 
 	public byte swapAF(byte flags) {
 		swap1Reg(Register.A, Register.Ap);

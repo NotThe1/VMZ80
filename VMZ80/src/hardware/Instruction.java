@@ -52,8 +52,7 @@ public class Instruction {
 					this.singleRegister1 = Z80.Register.C;
 					this.singleRegister2 = Z80.singleRegisters[this.yyy];
 					break;
-
-				case 2:// ED (42,4A,52,5A,62,6A,72,7A) - SBC HL,rr & ADC HL,rr
+				case 2:// ED (42,52,62,72) - SBC HL,rr |ED (4A,5A,6A,7A) - ADC HL,rr
 					this.dd = this.yyy >> 1;
 					this.doubleRegister1 = Z80.Register.HL;
 					this.doubleRegister2 = Z80.doubleRegisters1[this.dd];

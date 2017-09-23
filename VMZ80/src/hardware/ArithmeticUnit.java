@@ -5,9 +5,9 @@ import java.util.BitSet;
 import codeSupport.Z80;
 //import codeSupport.Z80;
 
-public class Adder {
+public class ArithmeticUnit {
 
-	private static Adder instance = new Adder();
+	private static ArithmeticUnit instance = new ArithmeticUnit();
 
 	// private AppLogger appLogger = AppLogger.getInstance();
 	private static final int SIZE = 16;
@@ -28,11 +28,11 @@ public class Adder {
 	private boolean signArg1;// what it is being subtracted from
 	private boolean signArg2; // what is being subtracted
 
-	public static Adder getInstance() {
+	public static ArithmeticUnit getInstance() {
 		return instance;
 	}// Factory method
 
-	private Adder() {
+	private ArithmeticUnit() {
 		clearSets();
 	}// Constructor
 		// ----------------------------------------------------------------------------
@@ -355,10 +355,23 @@ public class Adder {
 		setFlags(BYTE_ARG);
 		return this.getSum()[0];
 	}// addWithCarry
+	
+	public byte[] addWord(int word1,int word2) {
+		byte arg1[] = {(byte)((word1 >>8) & 0XFF),(byte) (word1 & 0XFF)};
+		byte arg2[] = {(byte)((word2 >>8) & 0XFF),(byte) (word2 & 0XFF)};
+		return addWordWithCarry(arg1, arg2, false);
+	}//addWord(int,int)
 
 	public byte[] addWord(byte[] argument1, byte[] argument2) {
 		return addWordWithCarry(argument1, argument2, false);
 	}// add
+	
+	public byte[] addWordWithCarry(int word1,int word2, boolean carryState) {
+		byte arg1[] = {(byte)((word1 >>8) & 0XFF),(byte) (word1 & 0XFF)};
+		byte arg2[] = {(byte)((word2 >>8) & 0XFF),(byte) (word2 & 0XFF)};
+		return addWordWithCarry(arg1, arg2, carryState);
+	}//addWord(int,int)
+
 
 	public byte[] addWordWithCarry(byte[] argument1, byte[] argument2, boolean carryState) {
 		this.setArgument1(argument1);
