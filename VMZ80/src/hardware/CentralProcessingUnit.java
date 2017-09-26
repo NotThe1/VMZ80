@@ -91,6 +91,7 @@ public class CentralProcessingUnit implements Runnable {
 		byte[] ansWord;
 		byte sourceByte, destinationByte;
 		byte[] sourceWord, destinationWord;
+		int sourceValue,destinationValue;
 		switch (instruction.page) {
 		case 0: // Page 00
 			log.addError(String.format("bad instruction %02X %02X %02X, at location %04X", instruction.opCode0,
@@ -113,16 +114,16 @@ public class CentralProcessingUnit implements Runnable {
 				// DO OPCODE OUT (C),r note Register.M special
 				break;
 			case 2: // ED (42,52,62,72) - SBC HL,rr |ED (4A,5A,6A,7A) - ADC HL,rr
-//				destinationWord = wrs.getDoubleRegArray(instruction.doubleRegister1);
-//				sourceWord = wrs.getDoubleRegArray(instruction.doubleRegister1);
-//				instructionSize = 2;
-//				boolean bit3 = ((instruction.opCode1 & Z80.BIT_3) == Z80.BIT_3);
-//				if (bit3) {// ADC HL,ss
-//					ansWord = au.addWordWithCarry(destinationWord, sourceWord, ccr.isCarryFlagSet());
-//				} else {// SBC HL,ss
-//					ansWord = au.subWordWithCarry(destinationWord, sourceWord, ccr.isCarryFlagSet());
-//				} // if bit 3
-//				wrs.setDoubleReg(instruction.singleRegister1, ansWord);
+				destinationWord = wrs.getDoubleRegArray(instruction.doubleRegister1);
+				sourceWord = wrs.getDoubleRegArray(instruction.doubleRegister2);
+				instructionSize = 2;
+				boolean bit3 = ((instruction.opCode1 & Z80.BIT_3) == Z80.BIT_3);
+				if (bit3) {// ADC HL,ss
+					ansWord = au.addWordWithCarry(destinationWord, sourceWord, ccr.isCarryFlagSet());
+				} else {// SBC HL,ss
+					ansWord = au.subWordWithCarry(destinationWord, sourceWord, ccr.isCarryFlagSet());
+				} // if bit 3
+				wrs.setDoubleReg(instruction.doubleRegister1, ansWord);
 
 				break;
 			case 3:// LD (nn),dd LD dd,(nn)
@@ -502,6 +503,8 @@ public class CentralProcessingUnit implements Runnable {
 		// --------------------------------------------------------------------------------------------------------
 
 	private int opCodePage00(Instruction instruction) {
+		int sourceValue,destinationValue,ansValue;
+		byte[] sourceValueArray,destinationValueArray,ansValueArray;
 		int instructionSize = 0;
 		boolean bit3;
 		int currentAddress = wrs.getProgramCounter();
@@ -547,9 +550,18 @@ public class CentralProcessingUnit implements Runnable {
 
 			break;
 		case 1: // LD rr,dd ADD HL,rr
-			instructionSize = 3;
 			bit3 = ((instruction.opCode1 & Z80.BIT_3) == Z80.BIT_3);
 			if (bit3) {// ADD HL,rr
+
+				destinationValueArray = wrs.getDoubleRegArray(instruction.doubleRegister1);
+				sourceValueArray = wrs.getDoubleRegArray(instruction.doubleRegister2);
+				ansValueArray = au.addWord(destinationValueArray, sourceValueArray);
+				wrs.setDoubleReg(instruction.doubleRegister1, ansValueArray);
+
+//				destinationValue = wrs.getDoubleReg(instruction.doubleRegister1);
+//				sourceValue = wrs.getDoubleReg(instruction.doubleRegister2);	
+//				ansValue = au.addWord(destinationValue, sourceValue);				
+//				wrs.setDoubleReg(instruction.doubleRegister1, ansValue);
 				instructionSize = 1;
 				// DO OPCODE ADD HL,rr
 			} else { // LD rr
@@ -907,6 +919,16 @@ public class CentralProcessingUnit implements Runnable {
 	}// conditionTrue
 
 	// --------------------------------------------------------------------------------------------------------
+
+	
+	private byte[] splitWord(int wordValue) {
+		return new byte[] { (byte) ((wordValue >> 8) & 0XFF), (byte) (wordValue & 0XFF) };
+	}// split word
+
+	private byte[] splitWordReverse(int wordValue) {
+		return new byte[] { (byte) (wordValue & 0XFF) ,(byte) ((wordValue >> 8) & 0XFF) };
+	}// split word
+
 
 	/**
 	 * Retrieves an error of ErrorStatus

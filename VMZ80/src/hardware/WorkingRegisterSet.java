@@ -29,9 +29,8 @@ public class WorkingRegisterSet {
 	private boolean iff1 = false;
 	private boolean iff2 = false;
 	private HashMap<Register, Byte> registers;
-	
-	private AppLogger log = AppLogger.getInstance();
 
+	private AppLogger log = AppLogger.getInstance();
 
 	public static WorkingRegisterSet getInstance() {
 
@@ -50,198 +49,56 @@ public class WorkingRegisterSet {
 
 	public void initialize() {
 		registers.clear();
+		Byte value = 0X00;
 		for (Register register : Register.values()) {
-			registers.put(register, (byte) 0);
+			registers.put(register, value);
 		} // for
-		programCounter = 0000;
+		programCounter = 0X0000;
 		stackPointer = 0X0100; // set to non zero
 		iff1 = false;
 		iff2 = false;
 	}// initialize
 
-	public void setProgramCounter(int programCounter) {
-		this.programCounter = programCounter & WORD_MASK;
-	}// setProgramCounter
-	
-	public void setProgramCounter(byte[] programCounterValue) {
-		int hi = (int) (programCounterValue[0] << 8);
-		int lo = (int) (programCounterValue[1] & 0X00FF);
-		setProgramCounter((hi + lo) & WORD_MASK);
-	}// setProgramCounter
-
-	
-	public void setProgramCounter(byte hiByte, byte loByte) {
-		int hi = (int) (hiByte << 8);
-		int lo = (int) (loByte & 0X00FF);
-		setProgramCounter((hi + lo) & WORD_MASK);
-	}// setStackPointer
-
-
-	public void incrementProgramCounter(int delta) {// setProgramCounter
-		setProgramCounter(this.programCounter + delta);
-	}// incrementProgramCounter
-	
-	public int getProgramCounter() {
-		return this.programCounter;
-	}// getProgramCounter
-	
-	public byte[] getProgramCounterArray() {
-		return splitWord(this.programCounter);
-	}//getProgramCounterArray
-
-
-
-	public int getStackPointer() {
-		return this.stackPointer;
-	}// getStackPointer
-
-	public byte[] getStackPointerArray() {
-		return splitWord(this.stackPointer);
-	}// getStackPointerarray
-
-	public int getIX() {
-		return this.IX;
-	}// getIX
-	
-	public byte[]getIXarray(){
-		return splitWord(this.IX);
-	}//getIXarray
-
-	public int getIY() {
-		return this.IY;
-	}// getIY
-	
-	public byte[]getIYarray(){
-		return splitWord(this.IY);
-	}//getIYarray
-
-
-	public boolean isIFF1Set() {
-		return iff1;
-	}// isIFF1Set
-
-	public boolean isIFF2Set() {
-		return iff2;
-	}// isIFF2Set
-
-
-//	public void setStackPointer(byte hiByte, byte loByte) {
-//		int hi = (int) (hiByte << 8);
-//		int lo = (int) (loByte & 0X00FF);
-//		this.stackPointer = (hi + lo) & WORD_MASK;
-//	}// setIX
-	
-	public void setIX(byte hiByte, byte loByte) {
-		int hi = (int) (hiByte << 8);
-		int lo = (int) (loByte & 0X00FF);
-		this.IX = (hi + lo) & WORD_MASK;
-	}// setIX
-
-	public void setIX(int ixValue) {
-		this.IX = ixValue & WORD_MASK;
-	}// setIX
-	
-	public void setIX(byte[] IXValue) {
-		int hi = (int) (IXValue[0] << 8);
-		int lo = (int) (IXValue[1] & 0X00FF);
-		setIX((hi + lo) & WORD_MASK);
-	}// setIX
-
-	public void setIY(int IYValue) {
-		this.IY = IYValue & WORD_MASK;
-	}// setIY
-	
-	public void setIY(byte hiByte, byte loByte) {
-		int hi = (int) (hiByte << 8);
-		int lo = (int) (loByte & 0X00FF);
-		setIY((hi + lo) & WORD_MASK);
-	}// setIY
-	
-	public void setIY(byte[] IYValue) {
-		int hi = (int) (IYValue[0] << 8);
-		int lo = (int) (IYValue[1] & 0X00FF);
-		setIX((hi + lo) & WORD_MASK);
-	}// setIX
-
-
-
-	public void setIFF1(boolean state) {
-		iff1 = state;
-	}// setIFF1
-
-	public void setIFF2(boolean state) {
-		iff2 = state;
-	}// setIFF2
-	
-	public void setStackPointer(int stackPointerValue) {
-		this.stackPointer = stackPointerValue & WORD_MASK;
-	}// setStackPointer
-
-	public void setStackPointer(byte[] stackPointerValue) {
-		int hi = (int) (stackPointerValue[0] << 8);
-		int lo = (int) (stackPointerValue[1] & 0X00FF);
-		setStackPointer((hi + lo) & WORD_MASK);
-	}// setStackPointer
-
-	public void setStackPointer(byte hiByte, byte loByte) {
-		int hi = (int) (hiByte << 8);
-		int lo = (int) (loByte & 0X00FF);
-		setStackPointer((hi + lo) & WORD_MASK);
-		
-	}// setStackPointer
-
-	public void setAcc(byte value) {
-		registers.put(Register.A, value);
-	}// loadReg
-
-	public byte getAcc() {
-		return registers.get(Register.A);
-	}// getReg
-
-	public void setReg(Register reg, byte value) {
-		registers.put(reg, value);
-	}// loadReg
-
-	public byte getReg(Register reg) {
-		return registers.get(reg);
-	}// getReg
-
 	public void setDoubleReg(Register reg, int value) {
-		int hi = value & HI_BYTE_MASK;
-		byte hiByte = (byte) ((hi >> 8) & BYTE_MASK);
-		byte loByte = (byte) (value & BYTE_MASK);
+		byte[] registerValues = splitWord(value);
+		setDoubleReg(reg, registerValues[0], registerValues[1]);
+	}// setDoubleReg
 
+	public void setDoubleReg(Register reg, byte[] registerValues) {
+		setDoubleReg(reg, registerValues[1], registerValues[0]);
+		return;
+	}// setDoubleReg
+
+	public void setDoubleReg(Register reg, byte hi, byte lo) {
 		switch (reg) {
 		case BC:
-			setReg(Register.B, hiByte);
-			setReg(Register.C, loByte);
+			setReg(Register.B, hi);
+			setReg(Register.C, lo);
 			break;
 		case DE:
-			setReg(Register.D, hiByte);
-			setReg(Register.E, loByte);
+			setReg(Register.D, hi);
+			setReg(Register.E, lo);
 			break;
 		case HL:
 		case M:
-			setReg(Register.H, hiByte);
-			setReg(Register.L, loByte);
+			setReg(Register.H, hi);
+			setReg(Register.L, lo);
 			break;
 		case SP:
-			setStackPointer(value);
+			setStackPointer(hi, lo);
 			break;
 		case PC:
-			setProgramCounter(value);
+			setProgramCounter(hi, lo);
 			break;
 		case IX:
-			setIX(value);
+			setIX(hi, lo);
 			break;
 		case IY:
-			setIY(value);
+			setIY(hi, lo);
 			break;
 		default:
 			// just fall thru
 		}// switch
-
-		return;
 	}// setDoubleReg
 
 	public int getDoubleReg(Register reg) {
@@ -249,10 +106,7 @@ public class WorkingRegisterSet {
 
 		switch (reg) {
 		case BC:
-//			hi = this.getReg(Register.B);
-//			lo = this.getReg(Register.C);
-//			result = (((hi << 8) + (lo & BYTE_MASK)) & WORD_MASK);
-			result = (((getReg(Register.B) << 8) + (getReg(Register.C) & BYTE_MASK)) & WORD_MASK);	
+			result = (((getReg(Register.B) << 8) + (getReg(Register.C) & BYTE_MASK)) & WORD_MASK);
 			break;
 		case DE:
 			result = (((getReg(Register.D) << 8) + (getReg(Register.E) & BYTE_MASK)) & WORD_MASK);
@@ -262,81 +116,43 @@ public class WorkingRegisterSet {
 			result = (((getReg(Register.H) << 8) + (getReg(Register.L) & BYTE_MASK)) & WORD_MASK);
 			break;
 		case SP:
-			result =  this.getStackPointer();
-		break;
+			result = this.getStackPointer();
+			break;
 		case PC:
 			result = this.getProgramCounter();
-		break;
+			break;
 		case IX:
-			result =  this.getIX();
-		break;
+			result = this.getIX();
+			break;
 		case IY:
 			result = this.getIY();
-		break;
+			break;
 		default:
-			log.addError(String.format("[workingRegisterSet] %n getDoubleReg-%s at location %04X,",
-					reg,this.programCounter));
+			log.addError(String.format("[workingRegisterSet] %n getDoubleReg-%s at location %04X,", reg,
+					this.programCounter));
 			System.exit(-1);
 		}// switch
 
 		return result;
 	}// getDoubleReg
-	
-	public void setDoubleReg(Register reg, byte hi, byte lo) {
-		setDoubleReg(reg,new byte[] {hi,lo});
-	}//setDoubleReg
-	
-	public void setDoubleReg(Register reg, byte[] registerValues) {
 
-		switch (reg) {
-		case BC:
-			setReg(Register.B, registerValues[0]);
-			setReg(Register.C, registerValues[1]);
-			break;
-		case DE:
-			setReg(Register.D, registerValues[0]);
-			setReg(Register.E, registerValues[1]);
-			break;
-		case HL:
-		case M:
-			setReg(Register.H, registerValues[0]);
-			setReg(Register.L, registerValues[1]);
-			break;
-		case SP:
-			setStackPointer(registerValues[0],registerValues[1]);
-			break;
-		case PC:
-			setStackPointer(registerValues[0],registerValues[1]);
-			break;
-		case IX:
-			setIX(registerValues[0],registerValues[1]);
-			break;
-		case IY:
-			setIY(registerValues[0],registerValues[1]);
-			break;
-		default:
-			// just fall thru
-		}// switch
-
-		return;
-	}// setDoubleReg
-
+	// return [0] = lsb , [1] = msb
 	public byte[] getDoubleRegArray(Register reg) {
 		byte[] ans = new byte[2];
 
 		switch (reg) {
 		case BC:
-			ans[0] = this.getReg(Register.B);
-			ans[1] = this.getReg(Register.C);
+			ans[1] = this.getReg(Register.B);
+			ans[0] = this.getReg(Register.C);
 			break;
 		case DE:
-			ans[0] = this.getReg(Register.D);
-			ans[1] = this.getReg(Register.E);
+			ans[1] = this.getReg(Register.D);
+			ans[0] = this.getReg(Register.E);
 			break;
 		case HL:
 		case M:
-			ans[0] = this.getReg(Register.H);
-			ans[1] = this.getReg(Register.L);
+			ans[1] = this.getReg(Register.H);
+			ans[0] = this.getReg(Register.L);
 			break;
 		case SP:
 			ans = splitWord(this.getStackPointer());
@@ -357,8 +173,150 @@ public class WorkingRegisterSet {
 		return ans;
 	}// getDoubleReg
 
+
+
+	public void setProgramCounter(int programCounter) {
+		this.programCounter = programCounter & WORD_MASK;
+	}// setProgramCounter
+
+	public void setProgramCounter(byte[] programCounterValue) {
+		int hi = (int) (programCounterValue[1] << 8);
+		int lo = (int) (programCounterValue[0] & 0X00FF);
+		setProgramCounter((hi + lo) & WORD_MASK);
+	}// setProgramCounter
+
+	public void setProgramCounter(byte hiByte, byte loByte) {
+		int hi = (int) (hiByte << 8);
+		int lo = (int) (loByte & 0X00FF);
+		setProgramCounter((hi + lo) & WORD_MASK);
+	}// setStackPointer
+
+	public void incrementProgramCounter(int delta) {// setProgramCounter
+		setProgramCounter((this.programCounter + delta & WORD_MASK));
+	}// incrementProgramCounter
+
+	public int getProgramCounter() {
+		return this.programCounter;
+	}// getProgramCounter
+
+	public byte[] getProgramCounterArray() {
+		return splitWord(this.programCounter);
+	}// getProgramCounterArray
+
+	public void setStackPointer(int stackPointerValue) {
+		this.stackPointer = stackPointerValue & WORD_MASK;
+	}// setStackPointer
+
+	public void setStackPointer(byte[] stackPointerValue) {
+		int hi = (int) (stackPointerValue[1] << 8);
+		int lo = (int) (stackPointerValue[0] & 0X00FF);
+		setStackPointer((hi + lo) & WORD_MASK);
+	}// setStackPointer
+
+	public void setStackPointer(byte hiByte, byte loByte) {
+		int hi = (int) (hiByte << 8);
+		int lo = (int) (loByte & 0X00FF);
+		setStackPointer((hi + lo) & WORD_MASK);
+
+	}// setStackPointer
+
+	public int getStackPointer() {
+		return this.stackPointer;
+	}// getStackPointer
+
+	public byte[] getStackPointerArray() {
+		return splitWord(this.stackPointer);
+	}// getStackPointerarray
+
+	public void setIX(int ixValue) {
+		this.IX = ixValue & WORD_MASK;
+	}// setIX
+
+	public void setIX(byte[] IXValue) {
+		int hi = (int) (IXValue[1] << 8);
+		int lo = (int) (IXValue[0] & 0X00FF);
+		setIX((hi + lo) & WORD_MASK);
+	}// setIX
+
+	public void setIX(byte hiByte, byte loByte) {
+		int hi = (int) (hiByte << 8);
+		int lo = (int) (loByte & 0X00FF);
+		this.IX = (hi + lo) & WORD_MASK;
+	}// setIX
+
+	public int getIX() {
+		return this.IX;
+	}// getIX
+
+	public byte[] getIXarray() {
+		return splitWord(this.IX);
+	}// getIXarray
+
+	public void setIY(int IYValue) {
+		this.IY = IYValue & WORD_MASK;
+	}// setIY
+
+	public void setIY(byte[] IYValue) {
+		int hi = (int) (IYValue[1] << 8);
+		int lo = (int) (IYValue[0] & 0X00FF);
+		setIX((hi + lo) & WORD_MASK);
+	}// setIX
+
+	public void setIY(byte hiByte, byte loByte) {
+		int hi = (int) (hiByte << 8);
+		int lo = (int) (loByte & 0X00FF);
+		setIY((hi + lo) & WORD_MASK);
+	}// setIY
+
+	public int getIY() {
+		return this.IY;
+	}// getIY
+
+	public byte[] getIYarray() {
+		return splitWord(this.IY);
+	}// getIYarray
+
+	public boolean isIFF1Set() {
+		return iff1;
+	}// isIFF1Set
+
+	public boolean isIFF2Set() {
+		return iff2;
+	}// isIFF2Set
+
+	// public void setStackPointer(byte hiByte, byte loByte) {
+	// int hi = (int) (hiByte << 8);
+	// int lo = (int) (loByte & 0X00FF);
+	// this.stackPointer = (hi + lo) & WORD_MASK;
+	// }// setIX
+
+	public void setIFF1(boolean state) {
+		iff1 = state;
+	}// setIFF1
+
+	public void setIFF2(boolean state) {
+		iff2 = state;
+	}// setIFF2
+
+	public void setAcc(byte value) {
+		registers.put(Register.A, value);
+	}// loadReg
+
+	public byte getAcc() {
+		return registers.get(Register.A);
+	}// getReg
+
+	public void setReg(Register reg, byte value) {
+		registers.put(reg, value);
+	}// loadReg
+
+	public byte getReg(Register reg) {
+		return registers.get(reg);
+	}// getReg
+
+	// return [0] = lsb , [1] = msb
 	private byte[] splitWord(int wordValue) {
-		return new byte[] { (byte) ((wordValue >> 8) & 0XFF), (byte) (wordValue & 0XFF) };
+		return new byte[] { (byte) (wordValue & 0XFF), (byte) ((wordValue >> 8) & 0XFF) };
 	}// split word
 
 	public byte swapAF(byte flags) {

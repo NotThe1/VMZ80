@@ -33,8 +33,8 @@ public class Instruction {
 
 	public Instruction() {
 		int currentLocation = wrs.getProgramCounter();
-		byte opCode0 = cpuBuss.read(currentLocation);
-		byte opCode1 = cpuBuss.read(currentLocation + 1);
+		 opCode0 = cpuBuss.read(currentLocation);
+		 opCode1 = cpuBuss.read(currentLocation + 1);
 
 		switch (opCode0) {
 		case (byte) 0X0ED: // Extended Instructions
@@ -442,33 +442,33 @@ public class Instruction {
 		this.zzz = source & 0X0007; // only want the value of bits 0,1 & 2
 	}// setMembers
 
-	public WorkingRegisterSet getWrs() {
-		return wrs;
-	}
+//	public WorkingRegisterSet getWrs() {
+//		return wrs;
+//	}//
 
-	public CpuBuss getCpuBuss() {
-		return cpuBuss;
-	}
+//	public CpuBuss getCpuBuss() {
+//		return cpuBuss;
+//	}//
 
 	public byte getOpCode0() {
 		return opCode0;
-	}
+	}//getOpCode0
 
 	public byte getOpCode1() {
 		return opCode1;
-	}
+	}//getOpCode1
 
 	public int getPage() {
 		return page;
-	}
+	}//getPage
 
 	public int getYyy() {
 		return yyy;
-	}
+	}//getYyy
 
 	public int getZzz() {
 		return zzz;
-	}
+	}//getZzz
 
 	// public int getDd() {
 	// return dd;
@@ -476,37 +476,42 @@ public class Instruction {
 
 	public int getBit() {
 		return bit;
-	}
+	}//getBit
 
 	public Register getSingleRegister1() {
 		return singleRegister1;
-	}
+	}//getSingleRegister1
 
 	public Register getSingleRegister2() {
 		return singleRegister2;
-	}
+	}//getSingleRegister2
 
 	public Register getDoubleRegister1() {
 		return doubleRegister1;
-	}
+	}//getDoubleRegister1
 
 	public Register getDoubleRegister2() {
 		return doubleRegister2;
-	}
+	}//getDoubleRegister2
 
 	public ConditionCode getConditionCode() {
 		return conditionCode;
-	}
+	}//getConditionCode
 
 	public int getImmediateWord() {
 		return immediateWord;
-	}
+	}//getImmediateWord
+	
+	public byte[] getImmediateWordArray() {
+		byte[] ans = new byte[] { (byte) 00,(byte) 00};
+		return ans;
+	}//getImmediateWord
 
 	public byte getImmediateByte() {
 		return immediateByte;
-	}
+	}//getImmediateByte
 
 	public byte getIndexDisplacement() {
 		return indexDisplacement;
-	}
+	}//getIndexDisplacement
 }// class OpCode

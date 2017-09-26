@@ -305,25 +305,25 @@ public class ArithmeticUnit {
 
 	// -----------------------------------------------------------------------------------------------------
 
-	private int vetBitValue(int arg) {
+	private int getBitValue(int arg) {
 //		int index = Math.max(arg, 0);
 		return Math.min(7, arg);
-	}// vetBitValue
+	}// getBitValue
 
 	public void bitTest(byte arg, int bit) {
-		byte mask = Z80.BITS[vetBitValue(bit)];
+		byte mask = Z80.BITS[getBitValue(bit)];
 		halfCarry = true;
 		nFlag = false;
 		zero = (arg & mask) != mask;
 	}// bitTest
 
 	public byte bitSet(byte arg, int bit) {
-		byte mask = Z80.BITS[vetBitValue(bit)];
+		byte mask = Z80.BITS[getBitValue(bit)];
 		return (byte) (arg | mask);
 	}// bitTest
 
 	public byte bitRes(byte arg, int bit) {
-		byte mask = Z80.BITS_NOT[vetBitValue(bit)];
+		byte mask = Z80.BITS_NOT[getBitValue(bit)];
 		return (byte) (arg & mask);
 	}// bitTest
 
@@ -356,10 +356,15 @@ public class ArithmeticUnit {
 		return this.getSum()[0];
 	}// addWithCarry
 	
-	public byte[] addWord(int word1,int word2) {
-		byte arg1[] = {(byte)((word1 >>8) & 0XFF),(byte) (word1 & 0XFF)};
-		byte arg2[] = {(byte)((word2 >>8) & 0XFF),(byte) (word2 & 0XFF)};
-		return addWordWithCarry(arg1, arg2, false);
+	public int addWord(int word1,int word2) {
+//		byte arg1[] = {(byte)((word1 >>8) & 0XFF),(byte) (word1 & 0XFF)};
+//		byte arg2[] = {(byte)((word2 >>8) & 0XFF),(byte) (word2 & 0XFF)};
+		byte arg1[] = {(byte)(word1 & 0XFF),(byte) ((word1 >>8) & 0XFF)};
+		byte arg2[] = {(byte)(word2 & 0XFF),(byte) ((word2 >>8) & 0XFF)};
+		
+		
+		byte[] ans = addWordWithCarry(arg1, arg2, false);
+		return (int) (ans[0]<< 8 + ans[1]);
 	}//addWord(int,int)
 
 	public byte[] addWord(byte[] argument1, byte[] argument2) {
