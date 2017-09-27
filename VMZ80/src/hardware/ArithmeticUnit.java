@@ -8,6 +8,7 @@ import codeSupport.Z80;
 public class ArithmeticUnit {
 
 	private static ArithmeticUnit instance = new ArithmeticUnit();
+	private ConditionCodeRegister ccr = ConditionCodeRegister.getInstance();
 
 	// private AppLogger appLogger = AppLogger.getInstance();
 	private static final int SIZE = 16;
@@ -383,6 +384,9 @@ public class ArithmeticUnit {
 		this.setArgument2(argument2);
 		this.add(carryState);
 		setFlags(WORD_ARG);
+		ccr.setNFlag(false);
+		ccr.setHFlag(halfCarry);
+		ccr.setCarryFlag(carry);
 		return this.getSum();
 	}// add
 
