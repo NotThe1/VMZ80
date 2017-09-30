@@ -61,7 +61,7 @@ public class WorkingRegisterSet {
 
 	public void setDoubleReg(Register reg, int value) {
 		byte[] registerValues = splitWord(value);
-		setDoubleReg(reg, registerValues[0], registerValues[1]);
+		setDoubleReg(reg, registerValues[1], registerValues[0]);
 	}// setDoubleReg
 
 	public void setDoubleReg(Register reg, byte[] registerValues) {
