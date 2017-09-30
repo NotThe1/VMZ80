@@ -86,12 +86,12 @@ public class CentralProcessingUnit implements Runnable {
 	// Extended Instructions
 	private int opCodeSetED(Instruction instruction) {
 		int instructionSize = 0;
-		Register source;
-		Register destination;
+		Register sourceRegister;
+		Register destinationRegister;
 		byte[] ansWord;
 		byte sourceByte, destinationByte;
 		byte[] sourceWord, destinationWord;
-		int sourceValue,destinationValue;
+		int sourceValue,destinationValue,sourceLocation,destinationLocation;
 		switch (instruction.page) {
 		case 0: // Page 00
 			log.addError(String.format("bad instruction %02X %02X %02X, at location %04X", instruction.opCode0,
@@ -102,14 +102,14 @@ public class CentralProcessingUnit implements Runnable {
 		case 1: // Page 01
 			switch (instruction.zzz) {
 			case 0:// ED (40,48,50,58,60,68,70,78) - IN r,(C)
-				destination = instruction.singleRegister1;
-				source = instruction.singleRegister2;
+				destinationRegister = instruction.singleRegister1;
+				sourceRegister = instruction.singleRegister2;
 				instructionSize = 2;
 				// DO OPCODE IN r(C) note Register.M special
 				break;
 			case 1:// ED (41,49,51,59,61,69,71,79) - OUT r,(C)
-				destination = instruction.singleRegister1;
-				source = instruction.singleRegister2;
+				destinationRegister = instruction.singleRegister1;
+				sourceRegister = instruction.singleRegister2;
 				instructionSize = 2;
 				// DO OPCODE OUT (C),r note Register.M special
 				break;
@@ -124,20 +124,35 @@ public class CentralProcessingUnit implements Runnable {
 					ansWord = au.subWordWithCarry(destinationWord, sourceWord, ccr.isCarryFlagSet());
 				} // if bit 3
 				wrs.setDoubleReg(instruction.doubleRegister1, ansWord);
-
 				break;
-			case 3:// LD (nn),dd LD dd,(nn)
-				// source = instruction.doubleRegister1;
-				// instructionSize = 4;
-				// bit3 = ((instruction.opCode1 & Z80.BIT_3) == Z80.BIT_3);
-				// if (bit3) {// ALD dd,(nn)
-				// // DO OPCODE LD dd,(nn)
-				// } else {// LD (nn),dd
-				// // DO OPCODE LD (nn),dd
-				// } // if bit 3
+			case 3:// ED (43,53,63,73) - LD (nn),dd | ED (4B,5B,6B,7B) LD dd,(nn)
+				 sourceRegister = instruction.doubleRegister1;
+				 sourceLocation = instruction.getImmediateWord();
+				 instructionSize = 4;
+				 bit3 = ((instruction.opCode1 & Z80.BIT_3) == Z80.BIT_3);
+				 if (bit3) {// ED (4B,5B,6B,7B) LD dd,(nn)
+					 wrs.setDoubleReg(sourceRegister, cpuBuss.read(sourceLocation),cpuBuss.read(sourceLocation+1));
+				 // DO OPCODE LD dd,(nn)
+				 } else {// ED (43,53,63,73) - LD (nn),dd
+					 byte[] valueArray = wrs.getDoubleRegArray(sourceRegister);
+					 cpuBuss.write(sourceLocation, valueArray[0]);
+					 cpuBuss.write(sourceLocation +1,valueArray[1]);
+				 // DO OPCODE LD (nn),dd
+				 } // if bit 3
 				break;
 			case 4:// NEG
 				instructionSize = 2;
+				byte startingValue = wrs.getAcc();
+
+				byte result = au.negate(startingValue);
+				wrs.setAcc(result);
+				
+				ccr.setSignFlag(au.hasSign());
+				ccr.setZeroFlag(au.isZero());
+				ccr.setHFlag(au.hasHalfCarry());
+				ccr.setPvFlag(startingValue == (byte)0X80);
+				ccr.setNFlag(true);
+				ccr.setCarryFlag(startingValue != 00);
 				// DO OPCODE NEG
 				break;
 			case 5:// RETN RETI
@@ -569,39 +584,42 @@ public class CentralProcessingUnit implements Runnable {
 				// DO OPCODE LD rr,dd
 			} // if bit 3
 			break;
-		case 2:
+		case 2: // 02,0A,12,1A,22,2A,32,3A
 			// LD (BC),A LD (DE),A LD (DE),A LD (nn),A
 			// LD A,(BC) LD (DE),A LD HL,(nn) LD A,(nn)
 			switch (instruction.yyy) {
-			case 0: // LD (BC),A
+			case 0: // 02 - LD (BC),A
 				instructionSize = 1;
 				// DO OPCODE LD (BC),A
 				break;
-			case 1: // LD A,(BC)
+			case 1: //0A - LD A,(BC)
 				instructionSize = 1;
 				// DO OPCODE LD A,(BC)
 				break;
-			case 2: // LD (DE),A
+			case 2: //12 - LD (DE),A
 				instructionSize = 1;
 				// DO OPCODE LD (DE),A
 				break;
-			case 3: // LD (DE),A
+			case 3: // 1A - LD A,(DE)
 				instructionSize = 1;
 				// DO OPCODE LD (DE),A
 				break;
-			case 4: // LD (DE),A
+			case 4: //22 - LD (nn),HL
 				instructionSize = 3;
-				// DO OPCODE LD (DE),A
+				 byte[] valueArray = wrs.getDoubleRegArray(instruction.doubleRegister1);
+				 cpuBuss.write(directAddress, valueArray[0]);
+				 cpuBuss.write(directAddress +1,valueArray[1]);
+ 
 				break;
-			case 5: // LD HL,(nn)
+			case 5: //2A -  LD HL,(nn)
 				instructionSize = 3;
-				// DO OPCODE LD HL,(nn)
+				 wrs.setDoubleReg(instruction.doubleRegister1, cpuBuss.read(directAddress),cpuBuss.read(directAddress+1));
 				break;
-			case 6: // LD (nn),A
+			case 6: //32 - LD (nn),A
 				instructionSize = 3;
 				// DO OPCODE LD (nn),A
 				break;
-			case 7: // LD A,(nn)
+			case 7: //3A - LD A,(nn)
 				instructionSize = 3;
 				// DO OPCODE LD A,(nn)
 				break;

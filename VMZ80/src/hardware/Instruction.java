@@ -62,8 +62,9 @@ public class Instruction {
 					this.doubleRegister1 = Z80.doubleRegisters1[this.dd];
 					this.immediateWord = cpuBuss.readWordReversed(wrs.getProgramCounter() + 2);
 					break;
-				// case 4: // ED (44,4C,54,5C,64,6C,74,7C) - NEG and unused
-				// break;
+				 case 4: // ED (44,4C,54,5C,64,6C,74,7C) - NEG and unused
+					this.singleRegister1=Z80.Register.A;
+				 break;
 				// case 5: // ED (45,4D,55,5D,65,6D,75,7D) - RETN
 				// break;
 				case 6: // ED (46,4E,56,5E,66,6E,76,7E) - Page= 1 ZZZ= 6

@@ -499,6 +499,10 @@ public class ArithmeticUnit {
 
 		halfCarry = !(halfCarry ^ halfCarry0);
 		carry = !(carry ^ carry0);
+		ccr.setNFlag(true);
+		ccr.setHFlag(halfCarry);
+		ccr.setCarryFlag(carry);
+
 		return ans;
 	}// subWithCarry
 
