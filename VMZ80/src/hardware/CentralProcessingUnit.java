@@ -233,10 +233,13 @@ public class CentralProcessingUnit implements Runnable {
 
 			switch (instruction.opCode1) {
 			case (byte) 0XA0: // LDI
+				ccr.setPvFlag(!ldi(1));
+				ccr.setHFlag(false);
+				ccr.setNFlag(false);
 				// DO OPCODE LDI
 				break;
 			case (byte) 0XB0: // LDIR
-				// DO OPCODE LDIR
+				ldi(wrs.getDoubleReg(Z80.Register.BC));
 				break;
 			case (byte) 0XA1: // CPI
 				// DO OPCODE CPI
@@ -257,9 +260,13 @@ public class CentralProcessingUnit implements Runnable {
 				// DO OPCODE OTIR
 				break;
 			case (byte) 0XA8: // LDD
+				ccr.setPvFlag(!ldd(1));
+				ccr.setHFlag(false);
+				ccr.setNFlag(false);
 				// DO OPCODE LDD
 				break;
 			case (byte) 0XB8: // LDDR
+				ldd(wrs.getDoubleReg(Z80.Register.BC));
 				// DO OPCODE LDDR
 				break;
 			case (byte) 0XA9: // CPD
@@ -956,6 +963,46 @@ public class CentralProcessingUnit implements Runnable {
 		}// switch
 		return ans;
 	}// conditionTrue
+
+	private boolean ldi(int count) {
+		int hlLocation, deLocation;
+		boolean pvSetting = false;
+		for (int i = 0; i < count; i++) {
+			hlLocation = wrs.getDoubleReg(Z80.Register.HL);
+			deLocation = wrs.getDoubleReg(Z80.Register.DE);
+			cpuBuss.write(deLocation, cpuBuss.read(hlLocation));
+			incrementDoubleRegister(Z80.Register.HL);
+			incrementDoubleRegister(Z80.Register.DE);
+			pvSetting = decrementDoubleRegister(Z80.Register.BC);
+		} // for < count
+		return pvSetting;
+	}// ldi
+
+	private boolean ldd(int count) {
+		int hlLocation, deLocation;
+		boolean pvSetting = false;
+		for (int i = 0; i < count; i++) {
+			hlLocation = wrs.getDoubleReg(Z80.Register.HL);
+			deLocation = wrs.getDoubleReg(Z80.Register.DE);
+			cpuBuss.write(deLocation, cpuBuss.read(hlLocation));
+			decrementDoubleRegister(Z80.Register.HL);
+			decrementDoubleRegister(Z80.Register.DE);
+			pvSetting = decrementDoubleRegister(Z80.Register.BC);
+		} // for < count
+		return pvSetting;
+	}// ldi
+
+	private void incrementDoubleRegister(Register reg) {
+		byte[] values = au.incrementWord(wrs.getDoubleRegArray(reg));
+
+		wrs.setDoubleReg(reg, values[1], values[0]);
+	}// incrementDoubleRegister
+
+	private boolean decrementDoubleRegister(Register reg) {
+		byte[] values = au.decrementWord(wrs.getDoubleRegArray(reg));
+		wrs.setDoubleReg(reg, values);
+		return au.isZero();
+	}// incrementDoubleRegister
 
 	// --------------------------------------------------------------------------------------------------------
 
