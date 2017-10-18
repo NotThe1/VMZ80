@@ -242,7 +242,11 @@ public class CentralProcessingUnit implements Runnable {
 				ldi(wrs.getDoubleReg(Z80.Register.BC));
 				break;
 			case (byte) 0XA1: // CPI
-				// DO OPCODE CPI
+				ccr.setPvFlag(compareMemoryIncrement());
+				ccr.setHFlag(au.hasHalfCarry());
+				ccr.setSignFlag(au.hasSign());
+				ccr.setZeroFlag(au.isZero());
+				
 				break;
 			case (byte) 0XB1: // CPIR
 				// DO OPCODE CPIR
@@ -297,6 +301,21 @@ public class CentralProcessingUnit implements Runnable {
 		}// switch page
 		return instructionSize;
 	}// opCodePageED
+	
+	private boolean compareMemoryIncrement(){
+		boolean flag = false;
+		int hlValue = wrs.getDoubleReg(Register.HL);
+		int bcValue = wrs.getDoubleReg(Register.BC);
+		byte accValue = wrs.getAcc();
+		byte memValue= cpuBuss.read(hlValue);
+		hlValue =(hlValue + 1) & Z80.WORD_MASK;
+		wrs.setDoubleReg(Register.HL, hlValue);
+		bcValue = (bcValue -1) & Z80.WORD_MASK;
+		wrs.setDoubleReg(Register.BC, bcValue);
+		au.compare( accValue,memValue);
+		ccr.setNFlag(true);
+		return bcValue!=0;
+	}//compareMemoryIncrement
 
 	// Bit Instructions
 	private int opCodeSetCB(Instruction instruction) {
