@@ -242,7 +242,7 @@ public class CentralProcessingUnit implements Runnable {
 				ldi(wrs.getDoubleReg(Z80.Register.BC));
 				break;
 			case (byte) 0XA1: // CPI
-				ccr.setPvFlag(compareMemoryIncrement());
+				ccr.setPvFlag(compareMemoryIncDec(+1));
 				ccr.setHFlag(au.hasHalfCarry());
 				ccr.setSignFlag(au.hasSign());
 				ccr.setZeroFlag(au.isZero());
@@ -250,7 +250,7 @@ public class CentralProcessingUnit implements Runnable {
 			case (byte) 0XB1: // CPIR
 				boolean pvFlag = true;
 				while (true) {
-					if (compareMemoryIncrement() == false)
+					if (compareMemoryIncDec(+1) == false)
 						break;
 
 					if (au.isZero())
@@ -286,10 +286,26 @@ public class CentralProcessingUnit implements Runnable {
 				// DO OPCODE LDDR
 				break;
 			case (byte) 0XA9: // CPD
-				// DO OPCODE CPD
+				ccr.setPvFlag(compareMemoryIncDec(-1));
+				ccr.setHFlag(au.hasHalfCarry());
+				ccr.setSignFlag(au.hasSign());
+				ccr.setZeroFlag(au.isZero());
 				break;
 			case (byte) 0XB9: // CPDR
-				// DO OPCODE CPDR
+				 pvFlag = true;
+				while (true) {
+					if (compareMemoryIncDec(-1) == false)
+						break;
+
+					if (au.isZero())
+						break;
+				} // while
+
+				ccr.setPvFlag(pvFlag);
+				ccr.setHFlag(au.hasHalfCarry());
+				ccr.setSignFlag(au.hasSign());
+				ccr.setZeroFlag(au.isZero());
+
 				break;
 			case (byte) 0XAA: // IND
 				// DO OPCODE IND
@@ -314,21 +330,30 @@ public class CentralProcessingUnit implements Runnable {
 		return instructionSize;
 	}// opCodePageED
 
-	private boolean compareMemoryIncrement() {
-		boolean flag = false;
+//	private boolean compareMemoryIncrement() {
+//		return compareMemoryIncDec(+1);
+//	}// compareMemoryIncrement
+//
+//	private boolean compareMemoryDecrement() {
+//		return compareMemoryIncDec(-1);
+//	}// compareMemoryDecrement
+	
+	private boolean compareMemoryIncDec(int delta) {
 		int hlValue = wrs.getDoubleReg(Register.HL);
 		int bcValue = wrs.getDoubleReg(Register.BC);
 		byte accValue = wrs.getAcc();
 		byte memValue = cpuBuss.read(hlValue);
-		hlValue = (hlValue + 1) & Z80.WORD_MASK;
+		hlValue = (hlValue + delta) & Z80.WORD_MASK;
 		wrs.setDoubleReg(Register.HL, hlValue);
 		bcValue = (bcValue - 1) & Z80.WORD_MASK;
 		wrs.setDoubleReg(Register.BC, bcValue);
 		au.compare(accValue, memValue);
 		ccr.setNFlag(true);
 		return bcValue != 0;
-	}// compareMemoryIncrement
+	}// compareMemoryDecrement
+	
 
+	
 	// Bit Instructions
 	private int opCodeSetCB(Instruction instruction) {
 		int instructionSize = 2;
