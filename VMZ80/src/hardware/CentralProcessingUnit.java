@@ -91,7 +91,8 @@ public class CentralProcessingUnit implements Runnable {
 		byte[] ansWord;
 		byte sourceByte, destinationByte;
 		byte[] sourceWord, destinationWord;
-		int sourceValue, destinationValue, sourceLocation, destinationLocation;
+		int sourceValue, destinationValue,  destinationLocation;
+		int  sourceLocation;
 		switch (instruction.page) {
 		case 0: // Page 00
 			log.addError(String.format("bad instruction %02X %02X %02X, at location %04X", instruction.opCode0,
@@ -102,7 +103,7 @@ public class CentralProcessingUnit implements Runnable {
 		case 1: // Page 01
 			switch (instruction.zzz) {
 			case 0:// ED (40,48,50,58,60,68,70,78) - IN r,(C)
-				destinationRegister = instruction.singleRegister1;
+				 destinationRegister = instruction.singleRegister1;
 				sourceRegister = instruction.singleRegister2;
 				instructionSize = 2;
 				// DO OPCODE IN r(C) note Register.M special
@@ -357,19 +358,39 @@ public class CentralProcessingUnit implements Runnable {
 	// Bit Instructions
 	private int opCodeSetCB(Instruction instruction) {
 		int instructionSize = 2;
+		
 		int bit = instruction.bit;
-		Register target = instruction.singleRegister1;
+//		byte bitMask = Z80.BITS[bit];
+
+		Register subject = instruction.singleRegister1;
+		byte sourceByte = wrs.getReg(subject);
+		byte resultByte;
 		switch (instruction.page) {
 		case 0: // Page 00 RLC RRC RL RR SLA SRA SLL SRL
 			switch (instruction.yyy) {
-			case 0: // RLC
+			case 0: // RLC  00-07
+				wrs.setReg(subject,  au.rotateLeft(sourceByte));
+				resultByte = au.rotateLeft(sourceByte);
+				ccr.setSignFlag(au.hasSign());
+				ccr.setZeroFlag(au.isZero());
+				ccr.setHFlag(false);
+				ccr.setPvFlag(au.hasParity());
+				ccr.setNFlag(false);
+				ccr.setCarryFlag(au.hasCarry());
 				// DO OPCODE RLC
 				break;
 			case 1: // RRC
 				// DO OPCODE RRC
 				break;
 			case 2: // RL
-				// DO OPCODE RL
+				wrs.setReg(subject,  au.rotateLeftThru(sourceByte, ccr.isCarryFlagSet()));
+				ccr.setSignFlag(au.hasSign());
+				ccr.setZeroFlag(au.isZero());
+				ccr.setHFlag(false);
+				ccr.setPvFlag(au.hasParity());
+				ccr.setNFlag(false);
+				ccr.setCarryFlag(au.hasCarry());
+
 				break;
 			case 3: // RR
 				// DO OPCODE RR
@@ -387,6 +408,8 @@ public class CentralProcessingUnit implements Runnable {
 				// DO OPCODE SRL
 				break;
 			}// switch yyy
+			ccr.setHFlag(false);
+			ccr.setNFlag(false);
 			break;
 		case 1: // Page 01 BIT b,r
 			// DO OPCODE BIT b,r
