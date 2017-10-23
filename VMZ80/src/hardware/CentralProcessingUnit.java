@@ -91,8 +91,8 @@ public class CentralProcessingUnit implements Runnable {
 		byte[] ansWord;
 		byte sourceByte, destinationByte;
 		byte[] sourceWord, destinationWord;
-		int sourceValue, destinationValue,  destinationLocation;
-		int  sourceLocation;
+		int sourceValue, destinationValue, destinationLocation;
+		int sourceLocation;
 		switch (instruction.page) {
 		case 0: // Page 00
 			log.addError(String.format("bad instruction %02X %02X %02X, at location %04X", instruction.opCode0,
@@ -103,7 +103,7 @@ public class CentralProcessingUnit implements Runnable {
 		case 1: // Page 01
 			switch (instruction.zzz) {
 			case 0:// ED (40,48,50,58,60,68,70,78) - IN r,(C)
-				 destinationRegister = instruction.singleRegister1;
+				destinationRegister = instruction.singleRegister1;
 				sourceRegister = instruction.singleRegister2;
 				instructionSize = 2;
 				// DO OPCODE IN r(C) note Register.M special
@@ -293,7 +293,7 @@ public class CentralProcessingUnit implements Runnable {
 				ccr.setZeroFlag(au.isZero());
 				break;
 			case (byte) 0XB9: // CPDR
-				 pvFlag = true;
+				pvFlag = true;
 				while (true) {
 					if (compareMemoryIncDec(-1) == false)
 						break;
@@ -331,14 +331,14 @@ public class CentralProcessingUnit implements Runnable {
 		return instructionSize;
 	}// opCodePageED
 
-//	private boolean compareMemoryIncrement() {
-//		return compareMemoryIncDec(+1);
-//	}// compareMemoryIncrement
-//
-//	private boolean compareMemoryDecrement() {
-//		return compareMemoryIncDec(-1);
-//	}// compareMemoryDecrement
-	
+	// private boolean compareMemoryIncrement() {
+	// return compareMemoryIncDec(+1);
+	// }// compareMemoryIncrement
+	//
+	// private boolean compareMemoryDecrement() {
+	// return compareMemoryIncDec(-1);
+	// }// compareMemoryDecrement
+
 	private boolean compareMemoryIncDec(int delta) {
 		int hlValue = wrs.getDoubleReg(Register.HL);
 		int bcValue = wrs.getDoubleReg(Register.BC);
@@ -352,15 +352,13 @@ public class CentralProcessingUnit implements Runnable {
 		ccr.setNFlag(true);
 		return bcValue != 0;
 	}// compareMemoryDecrement
-	
 
-	
 	// Bit Instructions
 	private int opCodeSetCB(Instruction instruction) {
 		int instructionSize = 2;
-		
+
 		int bit = instruction.bit;
-//		byte bitMask = Z80.BITS[bit];
+		// byte bitMask = Z80.BITS[bit];
 
 		Register subject = instruction.singleRegister1;
 		byte sourceByte = wrs.getReg(subject);
@@ -368,29 +366,29 @@ public class CentralProcessingUnit implements Runnable {
 		switch (instruction.page) {
 		case 0: // Page 00 RLC RRC RL RR SLA SRA SLL SRL
 			switch (instruction.yyy) {
-			case 0: // RLC  00-07
-				wrs.setReg(subject,  au.rotateLeft(sourceByte));
+			case 0: // RLC 00-07
+				wrs.setReg(subject, au.rotateLeft(sourceByte));
 				break;
 			case 1: // RRC 08-0F
-				wrs.setReg(subject,  au.rotateRight(sourceByte));
+				wrs.setReg(subject, au.rotateRight(sourceByte));
 				break;
 			case 2: // RL 08-0F
-				wrs.setReg(subject,  au.rotateLeftThru(sourceByte, ccr.isCarryFlagSet()));
+				wrs.setReg(subject, au.rotateLeftThru(sourceByte, ccr.isCarryFlagSet()));
 				break;
 			case 3: // RR 18-1F
-				wrs.setReg(subject,  au.rotateRightThru(sourceByte, ccr.isCarryFlagSet()));
+				wrs.setReg(subject, au.rotateRightThru(sourceByte, ccr.isCarryFlagSet()));
 				break;
 			case 4: // SLA
-				wrs.setReg(subject,  au.shiftSLA(sourceByte));
+				wrs.setReg(subject, au.shiftSLA(sourceByte));
 				break;
 			case 5: // SRA
-				wrs.setReg(subject,  au.shiftSRA(sourceByte));
+				wrs.setReg(subject, au.shiftSRA(sourceByte));
 				break;
 			case 6: // SLL ******* not real
-				// wrs.setReg(subject,  au.shiftSLL(sourceByte));
+				// wrs.setReg(subject, au.shiftSLL(sourceByte));
 				break;
 			case 7: // SRL
-				wrs.setReg(subject,  au.shiftSRL(sourceByte));
+				wrs.setReg(subject, au.shiftSRL(sourceByte));
 				break;
 			}// switch yyy
 			ccr.setSignFlag(au.hasSign());
@@ -402,15 +400,19 @@ public class CentralProcessingUnit implements Runnable {
 
 			break;
 		case 1: // Page 01 BIT b,r
-			// DO OPCODE BIT b,r
+			au.bitTest(sourceByte, instruction.bit);
+			ccr.setZeroFlag(au.isZero());
+			ccr.setHFlag(true);
+			ccr.setNFlag(false);
 			break;
 		case 2: // Page 10 RES b,r
-			// DO OPCODE RES b,r
+			resultByte = au.bitRes(sourceByte, instruction.bit);
+			wrs.setReg(subject, resultByte);
 			break;
 		case 3: // Page 11 SET b,r
-			// DO OPCODE SET b,r
+			resultByte = au.bitSet(sourceByte, instruction.bit);
+			wrs.setReg(subject, resultByte);
 			break;
-
 		}// switch instruction Page
 
 		return instructionSize;
