@@ -370,55 +370,36 @@ public class CentralProcessingUnit implements Runnable {
 			switch (instruction.yyy) {
 			case 0: // RLC  00-07
 				wrs.setReg(subject,  au.rotateLeft(sourceByte));
-				ccr.setSignFlag(au.hasSign());
-				ccr.setZeroFlag(au.isZero());
-				ccr.setHFlag(false);
-				ccr.setPvFlag(au.hasParity());
-				ccr.setNFlag(false);
-				ccr.setCarryFlag(au.hasCarry());
 				break;
 			case 1: // RRC 08-0F
 				wrs.setReg(subject,  au.rotateRight(sourceByte));
-				ccr.setSignFlag(au.hasSign());
-				ccr.setZeroFlag(au.isZero());
-				ccr.setHFlag(false);
-				ccr.setPvFlag(au.hasParity());
-				ccr.setNFlag(false);
-				ccr.setCarryFlag(au.hasCarry());
 				break;
 			case 2: // RL 08-0F
 				wrs.setReg(subject,  au.rotateLeftThru(sourceByte, ccr.isCarryFlagSet()));
-				ccr.setSignFlag(au.hasSign());
-				ccr.setZeroFlag(au.isZero());
-				ccr.setHFlag(false);
-				ccr.setPvFlag(au.hasParity());
-				ccr.setNFlag(false);
-				ccr.setCarryFlag(au.hasCarry());
 				break;
 			case 3: // RR 18-1F
 				wrs.setReg(subject,  au.rotateRightThru(sourceByte, ccr.isCarryFlagSet()));
-				ccr.setSignFlag(au.hasSign());
-				ccr.setZeroFlag(au.isZero());
-				ccr.setHFlag(false);
-				ccr.setPvFlag(au.hasParity());
-				ccr.setNFlag(false);
-				ccr.setCarryFlag(au.hasCarry());
 				break;
 			case 4: // SLA
-				// DO OPCODE SLA
+				wrs.setReg(subject,  au.shiftSLA(sourceByte));
 				break;
 			case 5: // SRA
-				// DO OPCODE SRA
+				wrs.setReg(subject,  au.shiftSRA(sourceByte));
 				break;
 			case 6: // SLL ******* not real
-				// DO OPCODE SLL
+				// wrs.setReg(subject,  au.shiftSLL(sourceByte));
 				break;
 			case 7: // SRL
-				// DO OPCODE SRL
+				wrs.setReg(subject,  au.shiftSRL(sourceByte));
 				break;
 			}// switch yyy
+			ccr.setSignFlag(au.hasSign());
+			ccr.setZeroFlag(au.isZero());
 			ccr.setHFlag(false);
+			ccr.setPvFlag(au.hasParity());
 			ccr.setNFlag(false);
+			ccr.setCarryFlag(au.hasCarry());
+
 			break;
 		case 1: // Page 01 BIT b,r
 			// DO OPCODE BIT b,r
