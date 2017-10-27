@@ -103,13 +103,13 @@ public class CentralProcessingUnit implements Runnable {
 		case 1: // Page 01
 			switch (instruction.zzz) {
 			case 0:// ED (40,48,50,58,60,68,70,78) - IN r,(C)
-				// destinationRegister = instruction.singleRegister1;
+					// destinationRegister = instruction.singleRegister1;
 				sourceRegister = instruction.singleRegister2;
 				instructionSize = 2;
 				// DO OPCODE IN r(C) note Register.M special
 				break;
 			case 1:// ED (41,49,51,59,61,69,71,79) - OUT r,(C)
-				// destinationRegister = instruction.singleRegister1;
+					// destinationRegister = instruction.singleRegister1;
 				sourceRegister = instruction.singleRegister2;
 				instructionSize = 2;
 				// DO OPCODE OUT (C),r note Register.M special
@@ -464,22 +464,23 @@ public class CentralProcessingUnit implements Runnable {
 			break;
 		case (byte) 0X22: // LD (dd),IXY
 			instructionSize = 4;
-		byte[] values = wrs.getDoubleRegArray(regIXY);
+			byte[] values = wrs.getDoubleRegArray(regIXY);
 			cpuBuss.writeWord(instruction.immediateWord, values[0], values[1]);
 			break;
 		case (byte) 0X23: // INC IXY
 			instructionSize = 2;
-			// DO OPCODE INC IXY
+			result = wrs.getDoubleRegArray(regIXY);
+			wrs.setDoubleReg(regIXY, au.incrementWord(result));
 			break;
 		case (byte) 0X2A: // LD IXY,(dd)
 			int value = cpuBuss.readWordReversed(instruction.immediateWord);
 			wrs.setDoubleReg(regIXY, value);
 			instructionSize = 4;
-			// DO OPCODE LD IXY,(dd)
 			break;
 		case (byte) 0X2B: // DEC IXY
 			instructionSize = 2;
-			// DO OPCODE DEC IXY
+			result = wrs.getDoubleRegArray(regIXY);
+			wrs.setDoubleReg(regIXY, au.decrementWord(result));
 			break;
 		case (byte) 0X34: // INC (IXY+d)
 			instructionSize = 3;
@@ -554,19 +555,18 @@ public class CentralProcessingUnit implements Runnable {
 		return instructionSize;
 	}// opCodePageDD
 
-//	private byte[] intToByteArray(int value) {
-//		byte[] ans = new byte[2];
-//		ans[0] = (byte) (value & Z80.BYTE_MASK); // lsb
-//		ans[1] = (byte) ((value >> 8) & Z80.BYTE_MASK);
-//		return ans;
-//	}//intToByteArray
-//	
-	private byte[] getValue(int workingValue){
-		byte msb = (byte) ((workingValue & 0XFF00)>>8);
+	// private byte[] intToByteArray(int value) {
+	// byte[] ans = new byte[2];
+	// ans[0] = (byte) (value & Z80.BYTE_MASK); // lsb
+	// ans[1] = (byte) ((value >> 8) & Z80.BYTE_MASK);
+	// return ans;
+	// }//intToByteArray
+	//
+	private byte[] getValue(int workingValue) {
+		byte msb = (byte) ((workingValue & 0XFF00) >> 8);
 		byte lsb = (byte) ((byte) workingValue & 0X00FF);
-		return  new byte[] {lsb,msb};
-	}//getValue
-
+		return new byte[] { lsb, msb };
+	}// getValue
 
 	private int opCodeSetIndexRegistersBit(Instruction instruction) {
 		int instructionSize = 4;
