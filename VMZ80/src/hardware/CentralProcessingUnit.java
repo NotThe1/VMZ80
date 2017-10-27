@@ -464,14 +464,16 @@ public class CentralProcessingUnit implements Runnable {
 			break;
 		case (byte) 0X22: // LD (dd),IXY
 			instructionSize = 4;
-		byte[] value = wrs.getDoubleRegArray(regIXY);
-			cpuBuss.writeWord(instruction.immediateWord, value[0], value[1]);
+		byte[] values = wrs.getDoubleRegArray(regIXY);
+			cpuBuss.writeWord(instruction.immediateWord, values[0], values[1]);
 			break;
 		case (byte) 0X23: // INC IXY
 			instructionSize = 2;
 			// DO OPCODE INC IXY
 			break;
 		case (byte) 0X2A: // LD IXY,(dd)
+			int value = cpuBuss.readWordReversed(instruction.immediateWord);
+			wrs.setDoubleReg(regIXY, value);
 			instructionSize = 4;
 			// DO OPCODE LD IXY,(dd)
 			break;
