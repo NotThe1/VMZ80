@@ -424,6 +424,7 @@ public class CentralProcessingUnit implements Runnable {
 		Register regRR = instruction.doubleRegister2;
 		byte[] arg1, arg2;
 		byte[] result;
+		byte argument, answer;
 		switch (instruction.opCode1) {
 		case (byte) 0X09:// ADD IXY,BC
 		case (byte) 0X19:// ADD IXY,DE
@@ -484,7 +485,16 @@ public class CentralProcessingUnit implements Runnable {
 			break;
 		case (byte) 0X34: // INC (IXY+d)
 			instructionSize = 3;
-			// DO OPCODE INC (IXY+d)
+			argument = cpuBuss.read(instruction.getNetIndexValue());
+			
+			answer = au.increment(argument);
+			ccr.setSignFlag(au.hasSign());
+			ccr.setZeroFlag(au.isZero());
+			ccr.setHFlag(au.hasHalfCarry());
+			ccr.setPvFlag(argument == 0X7F ? true : false);
+			ccr.setNFlag(false);
+
+			cpuBuss.write(instruction.getNetIndexValue(), answer);
 			break;
 		case (byte) 0X35: // DEC (IXY+d)
 			instructionSize = 3;

@@ -30,11 +30,12 @@ public class Instruction {
 	int immediateWord;
 	byte immediateByte;
 	byte indexDisplacement; // used for IXY+d
+	int indexRegisterContents; // used for IXY + d;
 
 	public Instruction() {
 		int currentLocation = wrs.getProgramCounter();
-		 opCode0 = cpuBuss.read(currentLocation);
-		 opCode1 = cpuBuss.read(currentLocation + 1);
+		opCode0 = cpuBuss.read(currentLocation);
+		opCode1 = cpuBuss.read(currentLocation + 1);
 
 		switch (opCode0) {
 		case (byte) 0X0ED: // Extended Instructions
@@ -62,9 +63,9 @@ public class Instruction {
 					this.doubleRegister1 = Z80.doubleRegisters1[this.dd];
 					this.immediateWord = cpuBuss.readWordReversed(wrs.getProgramCounter() + 2);
 					break;
-				 case 4: // ED (44,4C,54,5C,64,6C,74,7C) - NEG and unused
-					this.singleRegister1=Z80.Register.A;
-				 break;
+				case 4: // ED (44,4C,54,5C,64,6C,74,7C) - NEG and unused
+					this.singleRegister1 = Z80.Register.A;
+					break;
 				// case 5: // ED (45,4D,55,5D,65,6D,75,7D) - RETN
 				// break;
 				case 6: // ED (46,4E,56,5E,66,6E,76,7E) - Page= 1 ZZZ= 6
@@ -133,6 +134,7 @@ public class Instruction {
 		case (byte) 0X0DD: // IX Instructions
 		case (byte) 0X0FD: // IY Instructions
 			Z80.Register activeIndexRegister = opCode0 == (byte) 0XDD ? Z80.Register.IX : Z80.Register.IY;
+			indexRegisterContents = wrs.getDoubleReg(activeIndexRegister);
 			// this.doubleRegister1 = opCode0 == (byte) 0XDD ? Z80.Register.IX : Z80.Register.IY;
 			setMembers(opCode1);
 			// this.dd = this.yyy >> 1;
@@ -443,33 +445,33 @@ public class Instruction {
 		this.zzz = source & 0X0007; // only want the value of bits 0,1 & 2
 	}// setMembers
 
-//	public WorkingRegisterSet getWrs() {
-//		return wrs;
-//	}//
+	// public WorkingRegisterSet getWrs() {
+	// return wrs;
+	// }//
 
-//	public CpuBuss getCpuBuss() {
-//		return cpuBuss;
-//	}//
+	// public CpuBuss getCpuBuss() {
+	// return cpuBuss;
+	// }//
 
 	public byte getOpCode0() {
 		return opCode0;
-	}//getOpCode0
+	}// getOpCode0
 
 	public byte getOpCode1() {
 		return opCode1;
-	}//getOpCode1
+	}// getOpCode1
 
 	public int getPage() {
 		return page;
-	}//getPage
+	}// getPage
 
 	public int getYyy() {
 		return yyy;
-	}//getYyy
+	}// getYyy
 
 	public int getZzz() {
 		return zzz;
-	}//getZzz
+	}// getZzz
 
 	// public int getDd() {
 	// return dd;
@@ -477,42 +479,47 @@ public class Instruction {
 
 	public int getBit() {
 		return bit;
-	}//getBit
+	}// getBit
 
 	public Register getSingleRegister1() {
 		return singleRegister1;
-	}//getSingleRegister1
+	}// getSingleRegister1
 
 	public Register getSingleRegister2() {
 		return singleRegister2;
-	}//getSingleRegister2
+	}// getSingleRegister2
 
 	public Register getDoubleRegister1() {
 		return doubleRegister1;
-	}//getDoubleRegister1
+	}// getDoubleRegister1
 
 	public Register getDoubleRegister2() {
 		return doubleRegister2;
-	}//getDoubleRegister2
+	}// getDoubleRegister2
 
 	public ConditionCode getConditionCode() {
 		return conditionCode;
-	}//getConditionCode
+	}// getConditionCode
 
 	public int getImmediateWord() {
 		return immediateWord;
-	}//getImmediateWord
-	
+	}// getImmediateWord
+
 	public byte[] getImmediateWordArray() {
-		byte[] ans = new byte[] { (byte) 00,(byte) 00};
+		byte[] ans = new byte[] { (byte) 00, (byte) 00 };
 		return ans;
-	}//getImmediateWord
+	}// getImmediateWord
 
 	public byte getImmediateByte() {
 		return immediateByte;
-	}//getImmediateByte
+	}// getImmediateByte
 
 	public byte getIndexDisplacement() {
 		return indexDisplacement;
-	}//getIndexDisplacement
+	}// getIndexDisplacement
+
+	public int getNetIndexValue() {
+		int displacement = indexDisplacement;
+		return displacement + indexRegisterContents;
+	}// getNetIndexValue
 }// class OpCode
