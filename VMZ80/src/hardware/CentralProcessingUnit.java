@@ -448,7 +448,9 @@ public class CentralProcessingUnit implements Runnable {
 		case (byte) 0X76: // LD (IXY=d),M
 		case (byte) 0X77: // LD (IXY=d),A
 			instructionSize = 3;
-			// DO OPCODE LD (IXY=d),r
+			argument = wrs.getReg(instruction.singleRegister1);
+			cpuBuss.write(instruction.getNetIndexValue(), argument);
+
 			break;
 		case (byte) 0X46: // LD B,(IXY=d)
 		case (byte) 0X4E: // LD C,(IXY=d)
@@ -456,8 +458,10 @@ public class CentralProcessingUnit implements Runnable {
 		case (byte) 0X5E: // LD E,(IXY=d)
 		case (byte) 0X66: // LD H,(IXY=d)
 		case (byte) 0X6E: // LD L,(IXY=d)
+		case (byte) 0X7E: // LD A,(IXY+d)
 			instructionSize = 3;
-			// DO OPCODE LD r,(IXY=d)
+			argument = cpuBuss.read(instruction.getNetIndexValue());
+			wrs.setReg(instruction.singleRegister1, argument);
 			break;
 		case (byte) 0X21: // LD IXY,dd
 			instructionSize = 4;
@@ -486,7 +490,7 @@ public class CentralProcessingUnit implements Runnable {
 		case (byte) 0X34: // INC (IXY+d)
 			instructionSize = 3;
 			argument = cpuBuss.read(instruction.getNetIndexValue());
-			
+
 			answer = au.increment(argument);
 			ccr.setSignFlag(au.hasSign());
 			ccr.setZeroFlag(au.isZero());
@@ -498,16 +502,25 @@ public class CentralProcessingUnit implements Runnable {
 			break;
 		case (byte) 0X35: // DEC (IXY+d)
 			instructionSize = 3;
-			// DO OPCODE DEC (IXY+d)
+			argument = cpuBuss.read(instruction.getNetIndexValue());
+
+			answer = au.decrement(argument);
+			ccr.setSignFlag(au.hasSign());
+			ccr.setZeroFlag(au.isZero());
+			ccr.setHFlag(au.hasHalfCarry());
+			ccr.setPvFlag(argument == 0X80 ? true : false);
+			ccr.setNFlag(true);
+
+			cpuBuss.write(instruction.getNetIndexValue(), answer);
 			break;
 		case (byte) 0X36: // LD (IXY+d),n
 			instructionSize = 4;
-			// DO OPCODE DEC (IXY+d)
+			cpuBuss.write(instruction.getNetIndexValue(), instruction.immediateByte);
 			break;
-		case (byte) 0X7E: // LD A,IXY
-			instructionSize = 3;
-			// DO OPCODE LD A,IXY
-			break;
+//		case (byte) 0X7E: // LD A,IXY
+//			instructionSize = 3;
+//			// DO OPCODE LD A,IXY
+//			break;
 		case (byte) 0X86: // ADD A,(IXY+d)
 			instructionSize = 3;
 			// DO OPCODE ADD A,(IXY+d)
