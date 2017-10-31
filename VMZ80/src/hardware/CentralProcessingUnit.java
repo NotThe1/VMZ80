@@ -555,23 +555,69 @@ public class CentralProcessingUnit implements Runnable {
 			break;
 		case (byte) 0X9E: // SBC A,(IXY+d)
 			instructionSize = 3;
-			// DO OPCODE SBC A,(IXY+d)
+			argument = cpuBuss.read(instruction.getNetIndexValue());
+			answer = au.subWithCarry(wrs.getAcc(), argument, ccr.isCarryFlagSet());
+			ccr.setSignFlag(au.hasSign());
+			ccr.setZeroFlag(au.isZero());
+			ccr.setHFlag(au.hasHalfCarry());
+			ccr.setPvFlag(au.hasOverflow());
+			ccr.setNFlag(true);
+			ccr.setCarryFlag(au.hasCarry());
+
+			wrs.setAcc(answer);
+
 			break;
 		case (byte) 0XA6: // AND(IXY+d)
 			instructionSize = 3;
-			// DO OPCODE AND(IXY+d)
+			argument = cpuBuss.read(instruction.getNetIndexValue());
+			answer = au.and(wrs.getAcc(), argument);
+			ccr.setSignFlag(au.hasSign());
+			ccr.setZeroFlag(au.isZero());
+			ccr.setHFlag(true);
+			ccr.setPvFlag(au.hasParity());
+			ccr.setNFlag(false);
+			ccr.setCarryFlag(false);
+
+			wrs.setAcc(answer);
 			break;
 		case (byte) 0XAE: // XOR(IXY+d)
 			instructionSize = 3;
-			// DO OPCODE XOR(IXY+d)
+			argument = cpuBuss.read(instruction.getNetIndexValue());
+			answer = au.xor(wrs.getAcc(), argument);
+			ccr.setSignFlag(au.hasSign());
+			ccr.setZeroFlag(au.isZero());
+			ccr.setHFlag(false);
+			ccr.setPvFlag(au.hasParity());
+			ccr.setNFlag(false);
+			ccr.setCarryFlag(false);
+
+			wrs.setAcc(answer);
 			break;
 		case (byte) 0XB6: // OR(IXY+d)
 			instructionSize = 3;
-			// DO OPCODE OR(IXY+d)
+			argument = cpuBuss.read(instruction.getNetIndexValue());
+			answer = au.or(wrs.getAcc(), argument);
+			ccr.setSignFlag(au.hasSign());
+			ccr.setZeroFlag(au.isZero());
+			ccr.setHFlag(false);
+			ccr.setPvFlag(au.hasParity());
+			ccr.setNFlag(false);
+			ccr.setCarryFlag(false);
+
+			wrs.setAcc(answer);
 			break;
 		case (byte) 0XBE: // CP(IXY+d)
 			instructionSize = 3;
-			// DO OPCODE CP(IXY+d)
+			argument = cpuBuss.read(instruction.getNetIndexValue());
+			au.compare(wrs.getAcc(), argument);
+			
+			ccr.setSignFlag(au.hasSign());
+			ccr.setZeroFlag(au.isZero());
+			ccr.setHFlag(au.hasHalfCarry());
+			ccr.setPvFlag(au.hasOverflow());
+			ccr.setNFlag(true);
+			ccr.setCarryFlag(au.hasCarry());
+
 			break;
 		case (byte) 0XE1: // POP IXY
 			instructionSize = 2;
