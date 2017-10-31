@@ -450,7 +450,6 @@ public class CentralProcessingUnit implements Runnable {
 			instructionSize = 3;
 			argument = wrs.getReg(instruction.singleRegister1);
 			cpuBuss.write(instruction.getNetIndexValue(), argument);
-
 			break;
 		case (byte) 0X46: // LD B,(IXY=d)
 		case (byte) 0X4E: // LD C,(IXY=d)
@@ -490,7 +489,6 @@ public class CentralProcessingUnit implements Runnable {
 		case (byte) 0X34: // INC (IXY+d)
 			instructionSize = 3;
 			argument = cpuBuss.read(instruction.getNetIndexValue());
-
 			answer = au.increment(argument);
 			ccr.setSignFlag(au.hasSign());
 			ccr.setZeroFlag(au.isZero());
@@ -503,7 +501,6 @@ public class CentralProcessingUnit implements Runnable {
 		case (byte) 0X35: // DEC (IXY+d)
 			instructionSize = 3;
 			argument = cpuBuss.read(instruction.getNetIndexValue());
-
 			answer = au.decrement(argument);
 			ccr.setSignFlag(au.hasSign());
 			ccr.setZeroFlag(au.isZero());
@@ -517,21 +514,44 @@ public class CentralProcessingUnit implements Runnable {
 			instructionSize = 4;
 			cpuBuss.write(instruction.getNetIndexValue(), instruction.immediateByte);
 			break;
-//		case (byte) 0X7E: // LD A,IXY
-//			instructionSize = 3;
-//			// DO OPCODE LD A,IXY
-//			break;
 		case (byte) 0X86: // ADD A,(IXY+d)
 			instructionSize = 3;
-			// DO OPCODE ADD A,(IXY+d)
+			argument = cpuBuss.read(instruction.getNetIndexValue());
+			answer = au.add(wrs.getAcc(), argument);
+			ccr.setSignFlag(au.hasSign());
+			ccr.setZeroFlag(au.isZero());
+			ccr.setHFlag(au.hasHalfCarry());
+			ccr.setPvFlag(au.hasOverflow());
+			ccr.setNFlag(false);
+			ccr.setCarryFlag(au.hasCarry());
+
+			wrs.setAcc(answer);
 			break;
 		case (byte) 0X8E: // ADC A,(IXY+d)
 			instructionSize = 3;
-			// DO OPCODE ADC A,(IXY+d)
+			argument = cpuBuss.read(instruction.getNetIndexValue());
+			answer = au.addWithCarry(wrs.getAcc(), argument, ccr.isCarryFlagSet());
+			ccr.setSignFlag(au.hasSign());
+			ccr.setZeroFlag(au.isZero());
+			ccr.setHFlag(au.hasHalfCarry());
+			ccr.setPvFlag(au.hasOverflow());
+			ccr.setNFlag(false);
+			ccr.setCarryFlag(au.hasCarry());
+
+			wrs.setAcc(answer);
 			break;
 		case (byte) 0X96: // SUB (IXY+d)
 			instructionSize = 3;
-			// DO OPCODE SUB (IXY+d)
+			argument = cpuBuss.read(instruction.getNetIndexValue());
+			answer = au.sub(wrs.getAcc(), argument);
+			ccr.setSignFlag(au.hasSign());
+			ccr.setZeroFlag(au.isZero());
+			ccr.setHFlag(au.hasHalfCarry());
+			ccr.setPvFlag(au.hasOverflow());
+			ccr.setNFlag(false);
+			ccr.setCarryFlag(au.hasCarry());
+
+			wrs.setAcc(answer);
 			break;
 		case (byte) 0X9E: // SBC A,(IXY+d)
 			instructionSize = 3;

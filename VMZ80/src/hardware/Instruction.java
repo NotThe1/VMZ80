@@ -196,10 +196,10 @@ public class Instruction {
 				this.singleRegister1 = Z80.singleRegisters[yyy];
 				this.indexDisplacement = cpuBuss.read(wrs.getProgramCounter() + 2);
 				break;
-			case (byte) 0X86: // ADD r,(IXY + d)
-			case (byte) 0X8E: // ADC r,(IXY + d)
+			case (byte) 0X86: // ADD A,(IXY + d)
+			case (byte) 0X8E: // ADC A,(IXY + d)
 			case (byte) 0X96: // SUB (IXY + d)
-			case (byte) 0X9E: // SBC r,(IXY + d)
+			case (byte) 0X9E: // SBC A,(IXY + d)
 			case (byte) 0XA6: // AND (IXY + d)
 			case (byte) 0XAE: // XOR (IXY + d)
 			case (byte) 0XB6: // OR (IXY + d)
