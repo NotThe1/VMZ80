@@ -112,11 +112,11 @@ public class CpuBuss extends Observable implements ICore, IcpuBuss {
 	 */
 	private boolean isDebugLocation(int location) {
 		Trap t = traps.get(location);
-		
-//		if (t.equals(Trap.DEBUG))
-//			return true;
-//		return false;
-		
+
+		// if (t.equals(Trap.DEBUG))
+		// return true;
+		// return false;
+
 		if ((t == null) || !t.equals(Trap.DEBUG))
 			return false;
 
@@ -217,10 +217,23 @@ public class CpuBuss extends Observable implements ICore, IcpuBuss {
 	 */
 	@Override
 	public int popWord(int location) {
-		int loByte = (int) core.read(location ) & 0X00FF;
-		int hiByte = (int) (core.read(location+ 1) << 8) & 0XFF00;
+		byte[] values = popWordLoHi( location);
+		int loByte = (int) values[0] & 0X00FF;
+		int hiByte = ((int) values[1] << 8) & 0XFF00;
 		return 0XFFFF & (hiByte + loByte);
 	}// popWord used for stack work
+
+	/**
+	 * reads bytes from location and location +1.Primarily used for stack work.Does not check for traps
+	 * lo <- (location)
+	 * hi <- (location + 1)
+	 */
+	public byte[] popWordLoHi(int location) {
+		byte[] ans = new byte[2];
+		ans[0] = core.read(location);
+		ans[1] = core.read(location + 1);
+		return ans;
+	}
 
 	/**
 	 * Writes bytes in location -1 and location-2. Primarily used for stack work. Does not check for traps

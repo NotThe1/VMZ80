@@ -230,8 +230,8 @@ public class Instruction {
 
 			case (byte) 0X0E3: // EX (SP),IXY
 			case (byte) 0X0F9: // LD SP,IXY
-				this.doubleRegister1 = Z80.Register.SP;
-				this.doubleRegister2 = activeIndexRegister;
+				this.doubleRegister2 = Z80.Register.SP;
+				this.doubleRegister1 = activeIndexRegister;
 				break;
 
 			}// switch opCode1

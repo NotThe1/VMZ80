@@ -259,7 +259,7 @@ public class WorkingRegisterSet {
 	public void setIY(byte[] IYValue) {
 		int hi = (int) (IYValue[1] << 8);
 		int lo = (int) (IYValue[0] & 0X00FF);
-		setIX((hi + lo) & WORD_MASK);
+		setIY((hi + lo) & WORD_MASK);
 	}// setIX
 
 	public void setIY(byte hiByte, byte loByte) {

@@ -610,7 +610,7 @@ public class CentralProcessingUnit implements Runnable {
 			instructionSize = 3;
 			argument = cpuBuss.read(instruction.getNetIndexValue());
 			au.compare(wrs.getAcc(), argument);
-			
+
 			ccr.setSignFlag(au.hasSign());
 			ccr.setZeroFlag(au.isZero());
 			ccr.setHFlag(au.hasHalfCarry());
@@ -621,23 +621,33 @@ public class CentralProcessingUnit implements Runnable {
 			break;
 		case (byte) 0XE1: // POP IXY
 			instructionSize = 2;
-			// DO OPCODE POP IXY
+			result = this.opCode_Pop();
+			if (regIXY.equals(Register.IX)) {
+				wrs.setIX(result);
+			} else {
+				wrs.setIY(result);
+			} // if
 			break;
 		case (byte) 0XE3: // EX (SP)IXY
 			instructionSize = 2;
-			// DO OPCODE EX (SP)IXY
+			int sp = wrs.getStackPointer();
+			arg1 = cpuBuss.popWordLoHi(sp);
+			arg2 = wrs.getDoubleRegArray(regIXY);
+			wrs.setDoubleReg(regIXY, arg1);
+			cpuBuss.write(sp, arg2[0]);
+			cpuBuss.write(sp + 1, arg2[1]);
 			break;
 		case (byte) 0XE5: // PUSH IXY
 			instructionSize = 2;
-			// DO OPCODE PUSH IXY
+			this.opCode_Push(wrs.getDoubleReg(regIXY));
 			break;
 		case (byte) 0XE9: // JP (IXY)
-			instructionSize = 2;
-			// DO OPCODE JP (IXY)
+			instructionSize = 0;
+			wrs.setProgramCounter(wrs.getDoubleReg(regIXY));
 			break;
 		case (byte) 0XF9: // LD SP,IXY
 			instructionSize = 2;
-			// DO OPCODE JP (IXY)
+			wrs.setStackPointer(wrs.getDoubleReg(regIXY));
 			break;
 		}// switch opCode1
 
@@ -1074,6 +1084,18 @@ public class CentralProcessingUnit implements Runnable {
 		return instructionSize;
 	}// opCodePage11
 
+	/**
+	 * gets the top of the stack and adjusts the stack pointer (+2)
+	 * 
+	 * @return result[0] <- (SP), result[1] <- (SP+1)
+	 */
+	private byte[] opCode_Pop() {
+		int spLocation = wrs.getStackPointer();
+		byte[] result = cpuBuss.popWordLoHi(spLocation);
+		wrs.setStackPointer(spLocation + 2);
+		return result;
+	}
+
 	private void opCode_Push(byte hiByte, byte loByte) {
 		int stackLocation = wrs.getStackPointer();
 		cpuBuss.pushWord(stackLocation, hiByte, loByte); // push the return address
@@ -1090,10 +1112,10 @@ public class CentralProcessingUnit implements Runnable {
 		// wrs.setStackPointer(stackLocation - 2);
 	}// opCode_Push
 
-	private void opCode_Jump() {
-		int currentProgramCounter = wrs.getProgramCounter();
-		int memoryLocation = cpuBuss.readWordReversed(currentProgramCounter + 1);
-		wrs.setProgramCounter(memoryLocation);
+	private void opCode_Jump(int targetLocation) {
+		// int currentProgramCounter = wrs.getProgramCounter();
+		// int memoryLocation = cpuBuss.readWordReversed(currentProgramCounter + 1);
+		wrs.setProgramCounter(targetLocation);
 	}// opCode_Jump
 
 	private void opCode_Call() {
