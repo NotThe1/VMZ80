@@ -669,36 +669,54 @@ public class CentralProcessingUnit implements Runnable {
 
 	private int opCodeSetIndexRegistersBit(Instruction instruction) {
 		int instructionSize = 4;
-		int subInstructionPage = cpuBuss.read(wrs.getProgramCounter() + 3) >> 6 & 0B011;
+		int netLocation;
+		byte sourceByte,result =0x00;
+		byte code3 = cpuBuss.read(wrs.getProgramCounter() + 3);
+		int subInstructionPage = code3 >> 6 & 0B011;
+		
+		netLocation = instruction.getNetIndexValue();
+		sourceByte = cpuBuss.read(instruction.getNetIndexValue());
+
 		switch (subInstructionPage) {
 		case 0: // Page 00 RLC RRC RL RR SLA SRA SLL SRL --- (IXY+d)
-			switch (instruction.yyy) {
-			case 0: // RLC (IXY+d)
+
+			switch (code3) {
+			case 0x06: // RLC (IXY+d)
+				result = au.rotateLeft(sourceByte);
 				// DO OPCODE RLC (IXY+d)
 				break;
-			case 1: // RRC (IXY+d)
+			case 0x0E: // RRC (IXY+d)
 				// DO OPCODE RRC (IXY+d)
 				break;
-			case 2: // RL (IXY+d)
-				// DO OPCODE RL (IXY+d)
+			case 0x16: // RL (IXY+d)
+				result =  au.rotateLeftThru(sourceByte, ccr.isCarryFlagSet());
 				break;
-			case 3: // RR (IXY+d)
+			case 0x1E: // RR (IXY+d)
 				// DO OPCODE RR (IXY+d)
 				break;
-			case 4: // SLA (IXY+d)
+			case 0x26: // SLA (IXY+d)
 				// DO OPCODE SLA (IXY+d)
 				break;
-			case 5: // SRA (IXY+d)
+			case 0x2E: // SRA (IXY+d)
 				// DO OPCODE SRA (IXY+d)
 				break;
-			case 6: // SLL (IXY+d)******* not real
+			case 0x36: // SLL (IXY+d)******* not real
 				// DO OPCODE SLL (IXY+d)
 				break;
-			case 7: // SRL (IXY+d)
+			case 0x3E: // SRL (IXY+d)
 				// DO OPCODE SRL (IXY+d)
 				break;
-			}// switch yyy (IXY+d)
-			break;
+			}// switch code3 (IXY+d)
+			cpuBuss.write(netLocation, result);
+
+			ccr.setSignFlag(au.hasSign());
+			ccr.setZeroFlag(au.isZero());
+			ccr.setHFlag(false);
+			ccr.setPvFlag(au.hasParity());
+			ccr.setNFlag(false);
+			ccr.setCarryFlag(au.hasCarry());
+
+			break; // case 0 page 0
 		case 1: // Page 01 BIT b,(IXY+d)
 			// DO OPCODE BIT b,(IXY+d)
 			break;
