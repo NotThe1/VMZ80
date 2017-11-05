@@ -216,7 +216,7 @@ public class Instruction {
 				case 6: // DDCB (m6 and mE)
 					this.doubleRegister1 = activeIndexRegister;
 					this.indexDisplacement = cpuBuss.read(wrs.getProgramCounter() + 2);
-					bit = cpuBuss.read(wrs.getProgramCounter() + 3) >> 3;
+					bit = (cpuBuss.read(wrs.getProgramCounter() + 3) >> 3) & 0x07;
 					break;
 				}// switch zzz3
 

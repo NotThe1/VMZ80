@@ -670,12 +670,13 @@ public class CentralProcessingUnit implements Runnable {
 	private int opCodeSetIndexRegistersBit(Instruction instruction) {
 		int instructionSize = 4;
 		int netLocation;
-		byte sourceByte,result =0x00;
+		byte sourceByte, result = 0x00;
 		byte code3 = cpuBuss.read(wrs.getProgramCounter() + 3);
 		int subInstructionPage = code3 >> 6 & 0B011;
-		
+
 		netLocation = instruction.getNetIndexValue();
-		sourceByte = cpuBuss.read(instruction.getNetIndexValue());
+		// sourceByte = cpuBuss.read(instruction.getNetIndexValue());
+		sourceByte = cpuBuss.read(netLocation);
 
 		switch (subInstructionPage) {
 		case 0: // Page 00 RLC RRC RL RR SLA SRA SLL SRL --- (IXY+d)
@@ -686,25 +687,25 @@ public class CentralProcessingUnit implements Runnable {
 				// DO OPCODE RLC (IXY+d)
 				break;
 			case 0x0E: // RRC (IXY+d)
-				// DO OPCODE RRC (IXY+d)
+				result = au.rotateRight(sourceByte);
 				break;
 			case 0x16: // RL (IXY+d)
-				result =  au.rotateLeftThru(sourceByte, ccr.isCarryFlagSet());
+				result = au.rotateLeftThru(sourceByte, ccr.isCarryFlagSet());
 				break;
 			case 0x1E: // RR (IXY+d)
-				// DO OPCODE RR (IXY+d)
+				result = au.rotateRightThru(sourceByte, ccr.isCarryFlagSet());
 				break;
 			case 0x26: // SLA (IXY+d)
-				// DO OPCODE SLA (IXY+d)
+				result = au.shiftSLA(sourceByte);
 				break;
 			case 0x2E: // SRA (IXY+d)
-				// DO OPCODE SRA (IXY+d)
+				result = au.shiftSRA(sourceByte);
 				break;
 			case 0x36: // SLL (IXY+d)******* not real
 				// DO OPCODE SLL (IXY+d)
 				break;
 			case 0x3E: // SRL (IXY+d)
-				// DO OPCODE SRL (IXY+d)
+				result = au.shiftSRL(sourceByte);
 				break;
 			}// switch code3 (IXY+d)
 			cpuBuss.write(netLocation, result);
@@ -718,13 +719,19 @@ public class CentralProcessingUnit implements Runnable {
 
 			break; // case 0 page 0
 		case 1: // Page 01 BIT b,(IXY+d)
-			// DO OPCODE BIT b,(IXY+d)
+			au.bitTest(sourceByte, instruction.bit);
+			ccr.setZeroFlag(au.isZero());
+			ccr.setHFlag(true);
+			ccr.setNFlag(false);
 			break;
 		case 2: // Page 10 RES b,(IXY+d)
-			// DO OPCODE RES b,(IXY+d)
+			result = au.bitRes(sourceByte, instruction.bit);
+			cpuBuss.write(netLocation, result);
 			break;
 		case 3: // Page 11 SET b,(IXY+d)
-			// DO OPCODE SET b,(IXY+d)
+			result = au.bitSet(sourceByte, instruction.bit);
+			cpuBuss.write(netLocation, result);
+
 			break;
 
 		}// switch instruction Page
