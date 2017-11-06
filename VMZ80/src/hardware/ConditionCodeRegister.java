@@ -46,9 +46,10 @@ public class ConditionCodeRegister  {
 
 	public byte getConditionCode() {
 		// |7|6|5|4|3|2|1|0
-		// |S|Z|0|A|0|P|1|C
+		// |S|Z|0|A|0|P|N|C
 
-		byte conditionCode = (byte) 0B00000010;
+//		byte conditionCode = (byte) 0B00000010;
+		byte conditionCode = (byte) 0B00000000;
 		conditionCode = (byte) ((signFlag) ? conditionCode | Z80.BIT_SIGN : conditionCode & Z80.MASK_SIGN);
 		conditionCode = (byte) ((zeroFlag) ? conditionCode | Z80.BIT_ZERO : conditionCode & Z80.MASK_ZERO);
 		conditionCode = (byte) ((hFlag) ? conditionCode | Z80.BIT_AUX : conditionCode & Z80.MASK_AUX);
@@ -61,7 +62,7 @@ public class ConditionCodeRegister  {
 
 	public void setConditionCode(byte flags) {
 		// |7|6|5|4|3|2|1|0
-		// |S|Z|0|A|0|P|1|C
+		// |S|Z|0|A|0|P|N|C
 
 		setSignFlag((flags & Z80.BIT_SIGN) == Z80.BIT_SIGN);
 		setZeroFlag((flags & Z80.BIT_ZERO) == Z80.BIT_ZERO);

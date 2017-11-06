@@ -311,7 +311,11 @@ public class WorkingRegisterSet {
 	}// loadReg
 
 	public byte getReg(Register reg) {
-		return registers.get(reg);
+		if(reg.equals(Register.F)) {
+			return ConditionCodeRegister.getInstance().getConditionCode();
+		}else {
+			return registers.get(reg);
+		}//if
 	}// getReg
 
 	// return [0] = lsb , [1] = msb
@@ -319,12 +323,14 @@ public class WorkingRegisterSet {
 		return new byte[] { (byte) (wordValue & 0XFF), (byte) ((wordValue >> 8) & 0XFF) };
 	}// split word
 
-	public byte swapAF(byte flags) {
+	public void swapAF() {
 		swap1Reg(Register.A, Register.Ap);
 
 		byte temp = getReg(Register.Fp);
-		setReg(Register.Fp, flags);
-		return temp;
+		setReg(Register.Fp, ConditionCodeRegister.getInstance().getConditionCode());
+		setReg(Register.F,temp);
+		ConditionCodeRegister.getInstance().setConditionCode(temp);
+		return ;
 	}// swapAF
 
 	public void swapMainRegisters() {

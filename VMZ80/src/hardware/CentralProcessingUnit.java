@@ -768,6 +768,7 @@ public class CentralProcessingUnit implements Runnable {
 
 	private int opCodePage00(Instruction instruction) {
 		int sourceValue, destinationValue, ansValue;
+		byte source, destination, ans;
 		byte[] sourceValueArray, destinationValueArray, ansValueArray;
 		int instructionSize = 0;
 		boolean bit3;
@@ -784,31 +785,55 @@ public class CentralProcessingUnit implements Runnable {
 				break;
 			case 1: // EX AF,AF'
 				instructionSize = 1;
-				// DO OPCODE EX AF,AF'
+				wrs.swapAF();
 				break;
 			case 2: // DJNZ e
-				instructionSize = 2;
-				// DO OPCODE DJNZ e
+				source = wrs.getReg(Register.B);
+				ans = au.decrement(source);
+				wrs.setReg(Register.B, ans);
+				if (au.isZero()) {
+					instructionSize = 0;
+					opCode_Jump(currentAddress + instruction.immediateByte + 2);
+				} else {
+					instructionSize = 2;
+				} // if
 				break;
 			case 3: // JR e
-				instructionSize = 2;
-				// DO OPCODE JR e
+				instructionSize = 0;
+				opCode_Jump(currentAddress + instruction.immediateByte + 2);
 				break;
 			case 4: // JR NZ,e
-				instructionSize = 2;
-				// DO OPCODE JR NZ,e
+				if (opCodeConditionTrue(ConditionFlag.NZ)) {
+					instructionSize = 0;
+					opCode_Jump(currentAddress + instruction.immediateByte + 2);
+				} else {
+					instructionSize = 2;
+				} // if
 				break;
 			case 5: // JR Z,e
-				instructionSize = 2;
-				// DO OPCODE JR Z,e
+				if (opCodeConditionTrue(ConditionFlag.Z)) {
+					instructionSize = 0;
+					opCode_Jump(currentAddress + instruction.immediateByte + 2);
+				} else {
+					instructionSize = 2;
+				} // if
 				break;
 			case 6: // JR NC,e
-				instructionSize = 2;
-				// DO OPCODE JR NC,e
+				if (opCodeConditionTrue(ConditionFlag.NC)) {
+					instructionSize = 0;
+					opCode_Jump(currentAddress + instruction.immediateByte + 2);
+				} else {
+					instructionSize = 2;
+				} // if
 				break;
 			case 7: // JR C,e
-				instructionSize = 2;
-				// DO OPCODE JR C,e
+				if (opCodeConditionTrue(ConditionFlag.C)) {
+					instructionSize = 0;
+					opCode_Jump(currentAddress + instruction.immediateByte + 2);
+				} else {
+					instructionSize = 2;
+				} // if
+
 				break;
 			}// switch yyy
 
@@ -977,6 +1002,9 @@ public class CentralProcessingUnit implements Runnable {
 	private int opCodePage11(Instruction instruction) {
 		int instructionSize = 0;
 		boolean bit3;
+		int currentAddress = wrs.getProgramCounter();
+		int directAddress = cpuBuss.readWordReversed(currentAddress + 1);
+
 		switch (instruction.zzz) {
 		case 0: // Conditional Returns
 			instructionSize = 1;
@@ -1012,8 +1040,8 @@ public class CentralProcessingUnit implements Runnable {
 			switch (instruction.yyy) {
 
 			case 0: // JP nn
-				instructionSize = 3;
-				// DO OPCODE JP nn
+				instructionSize = 0;
+				opCode_Jump(directAddress);
 				break;
 			case 1: // CB BITS
 				// Extended Code
