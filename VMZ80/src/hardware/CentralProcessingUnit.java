@@ -768,6 +768,7 @@ public class CentralProcessingUnit implements Runnable {
 
 	private int opCodePage00(Instruction instruction) {
 		int sourceValue, destinationValue, ansValue;
+		int sourceLocation, destinationLocation, ansLocation;
 		byte source, destination, ans;
 		byte[] sourceValueArray, destinationValueArray, ansValueArray;
 		int instructionSize = 0;
@@ -838,8 +839,8 @@ public class CentralProcessingUnit implements Runnable {
 			}// switch yyy
 
 			break;
-		case 1: // LD rr,dd ADD HL,rr
-			bit3 = ((instruction.opCode1 & Z80.BIT_3) == Z80.BIT_3);
+		case 1: // LD rr,dd / ADD HL,rr
+			bit3 = ((instruction.opCode0 & Z80.BIT_3) == Z80.BIT_3);
 			if (bit3) {// ADD HL,rr
 
 				destinationValueArray = wrs.getDoubleRegArray(instruction.doubleRegister1);
@@ -853,8 +854,9 @@ public class CentralProcessingUnit implements Runnable {
 				// wrs.setDoubleReg(instruction.doubleRegister1, ansValue);
 				instructionSize = 1;
 				// DO OPCODE ADD HL,rr
-			} else { // LD rr
+			} else { // LD rr,dd
 				instructionSize = 3;
+				wrs.setDoubleReg(instruction.doubleRegister1, instruction.immediateWord);
 				// DO OPCODE LD rr,dd
 			} // if bit 3
 			break;
@@ -863,20 +865,19 @@ public class CentralProcessingUnit implements Runnable {
 			// LD A,(BC) LD (DE),A LD HL,(nn) LD A,(nn)
 			switch (instruction.yyy) {
 			case 0: // 02 - LD (BC),A
+			case 2: // 12 - LD (DE),A
+				source = wrs.getAcc();
+				destinationLocation = wrs.getDoubleReg(instruction.doubleRegister1);
+				cpuBuss.write(destinationLocation, source);
 				instructionSize = 1;
 				// DO OPCODE LD (BC),A
 				break;
 			case 1: // 0A - LD A,(BC)
+			case 3: // 1A - LD A,(DE)
+				sourceLocation = wrs.getDoubleReg(instruction.doubleRegister1);
+				wrs.setAcc(cpuBuss.read(sourceLocation));
 				instructionSize = 1;
 				// DO OPCODE LD A,(BC)
-				break;
-			case 2: // 12 - LD (DE),A
-				instructionSize = 1;
-				// DO OPCODE LD (DE),A
-				break;
-			case 3: // 1A - LD A,(DE)
-				instructionSize = 1;
-				// DO OPCODE LD (DE),A
 				break;
 			case 4: // 22 - LD (nn),HL
 				instructionSize = 3;
