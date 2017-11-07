@@ -893,22 +893,23 @@ public class CentralProcessingUnit implements Runnable {
 				break;
 			case 6: // 32 - LD (nn),A
 				instructionSize = 3;
-				// DO OPCODE LD (nn),A
+				cpuBuss.write(instruction.immediateWord, wrs.getAcc());
 				break;
 			case 7: // 3A - LD A,(nn)
 				instructionSize = 3;
-				// DO OPCODE LD A,(nn)
+				wrs.setAcc(cpuBuss.read(instruction.immediateWord));
 				break;
 			}// switch yyy
 			break;
 
 		case 3: // INC rr DEC rr
 			instructionSize = 1;
-			bit3 = ((instruction.opCode1 & Z80.BIT_3) == Z80.BIT_3);
-			if (bit3) {// DEC,rr
-				// DO OPCODE DEC,rr
-			} else { // INC rr
-				// DO OPCODE INC,rr
+			sourceValueArray = wrs.getDoubleRegArray(instruction.doubleRegister1);
+			bit3 = ((instruction.opCode0 & Z80.BIT_3) == Z80.BIT_3);
+			if (bit3) {// DEC,rr - 0B,1B,2B,3B
+				wrs.setDoubleReg(instruction.doubleRegister1, au.decrementWord(sourceValueArray));
+			} else { // INC rr	- 03,13,23,33
+				wrs.setDoubleReg(instruction.doubleRegister1, au.incrementWord(sourceValueArray));
 			} // if bit 3
 			break;
 		case 4: // INC r
