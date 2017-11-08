@@ -299,14 +299,14 @@ public class Instruction {
 					}//// switch yyy
 					this.immediateWord = cpuBuss.readWordReversed(wrs.getProgramCounter() + 1);
 					break;
-				case 3: // 03,0B,13,1B,23,2B,33,3B
+				case 3: // 03,0B,13,1B,23,2B,33,3B - INC rr  DEC rr
 					this.doubleRegister1 = Z80.doubleRegisters1[this.yyy >> 1];
 					break;
-				case 4: // 04,0C,14,1C,24,2C,34,3C
-				case 5: // 05,0D,15,1D,25,2D,35,3D
+				case 4: // 04,0C,14,1C,24,2C,34,3C - INC r
+				case 5: // 05,0D,15,1D,25,2D,35,3D - DEC r
 					this.singleRegister1 = Z80.singleRegisters[yyy];
 					break;
-				case 6: // 06,0E,16,1E,26,2E,36,3E
+				case 6: // 06,0E,16,1E,26,2E,36,3E - LD r,n
 					this.singleRegister1 = Z80.singleRegisters[yyy];
 					this.immediateByte = cpuBuss.read(wrs.getProgramCounter() + 1);
 					break;

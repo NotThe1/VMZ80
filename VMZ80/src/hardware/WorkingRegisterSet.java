@@ -5,6 +5,7 @@ import java.util.HashMap;
 import codeSupport.AppLogger;
 import codeSupport.Z80;
 import codeSupport.Z80.Register;
+import memory.IoBuss;
 
 /**
  * 
@@ -173,8 +174,6 @@ public class WorkingRegisterSet {
 		return ans;
 	}// getDoubleReg
 
-
-
 	public void setProgramCounter(int programCounter) {
 		this.programCounter = programCounter & WORD_MASK;
 	}// setProgramCounter
@@ -307,15 +306,26 @@ public class WorkingRegisterSet {
 	}// getReg
 
 	public void setReg(Register reg, byte value) {
-		registers.put(reg, value);
+		if (reg.equals(Register.M)) {
+			IoBuss.getInstance().write(this.getDoubleReg(Register.HL), value);
+		} else {
+			registers.put(reg, value);
+		} // if reg M
 	}// loadReg
 
 	public byte getReg(Register reg) {
-		if(reg.equals(Register.F)) {
-			return ConditionCodeRegister.getInstance().getConditionCode();
-		}else {
-			return registers.get(reg);
-		}//if
+		byte ans;
+		switch (reg) {
+		case F:
+			ans = ConditionCodeRegister.getInstance().getConditionCode();
+			break;
+		case M:
+			ans = IoBuss.getInstance().read(this.getDoubleReg(Register.HL));
+			break;
+		default:
+			ans = registers.get(reg);
+		}// switch
+		return ans;
 	}// getReg
 
 	// return [0] = lsb , [1] = msb
@@ -328,9 +338,9 @@ public class WorkingRegisterSet {
 
 		byte temp = getReg(Register.Fp);
 		setReg(Register.Fp, ConditionCodeRegister.getInstance().getConditionCode());
-		setReg(Register.F,temp);
+		setReg(Register.F, temp);
 		ConditionCodeRegister.getInstance().setConditionCode(temp);
-		return ;
+		return;
 	}// swapAF
 
 	public void swapMainRegisters() {

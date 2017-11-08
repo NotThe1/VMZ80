@@ -914,15 +914,33 @@ public class CentralProcessingUnit implements Runnable {
 			break;
 		case 4: // INC r
 			instructionSize = 1;
+			source = wrs.getReg(instruction.singleRegister1);
+			ans = au.increment(source);
+			ccr.setSignFlag(au.hasSign());
+			ccr.setZeroFlag(au.isZero());
+			ccr.setHFlag(au.hasHalfCarry());
+			ccr.setPvFlag(source == (byte) 0x7F?true:false);
+			ccr.setNFlag(false);
+			
+			wrs.setReg(instruction.singleRegister1, ans);
 			// DO OPCODE INC r
 			break;
 		case 5: // DEC r
 			instructionSize = 1;
-			// DO OPCODE DEC r
+			source = wrs.getReg(instruction.singleRegister1);
+			ans = au.decrement(source);
+			ccr.setSignFlag(au.hasSign());
+			ccr.setZeroFlag(au.isZero());
+			ccr.setHFlag(au.hasHalfCarry());
+			ccr.setPvFlag(source == (byte) 0x80?true:false);
+			ccr.setNFlag(true);
+			
+			wrs.setReg(instruction.singleRegister1, ans);
+
 			break;
 		case 6: // LD r,d
 			instructionSize = 2;
-			// DO OPCODE LD r,d
+			wrs.setReg(instruction.singleRegister1, instruction.immediateByte);
 			break;
 		case 7: // RLCA RRCA RLA RRA DAA CPL SCF CCF
 			instructionSize = 1;
