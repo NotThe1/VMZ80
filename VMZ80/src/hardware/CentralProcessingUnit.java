@@ -946,16 +946,28 @@ public class CentralProcessingUnit implements Runnable {
 			instructionSize = 1;
 			switch (instruction.yyy) {
 			case 0: // RLCA
-				// DO OPCODERLCA
+				wrs.setAcc( au.rotateLeft(wrs.getAcc()));
+				ccr.setHFlag(false);
+				ccr.setNFlag(false);
+				ccr.setCarryFlag(au.hasCarry());
 				break;
 			case 1: // RRCA
-				// DO OPCODE RRCA
+				wrs.setAcc( au.rotateRight(wrs.getAcc()));
+				ccr.setHFlag(false);
+				ccr.setNFlag(false);
+				ccr.setCarryFlag(au.hasCarry());
 				break;
 			case 2: // RLA
-				// DO OPCODE RLA
+				wrs.setAcc( au.rotateLeftThru(wrs.getAcc(), ccr.isCarryFlagSet()));
+				ccr.setHFlag(false);
+				ccr.setNFlag(false);
+				ccr.setCarryFlag(au.hasCarry());
 				break;
 			case 3: // RRA
-				// DO OPCODE RRA
+				wrs.setAcc( au.rotateRightThru(wrs.getAcc(), ccr.isCarryFlagSet()));
+				ccr.setHFlag(false);
+				ccr.setNFlag(false);
+				ccr.setCarryFlag(au.hasCarry());
 				break;
 			case 4: // DAA
 				// DO OPCODE DAA
