@@ -534,7 +534,7 @@ public class ArithmeticUnit {
 	}// clearSets
 		//
 
-	public boolean hasCarry() {
+	public boolean isCarryFlagSet() {
 		return carry;
 	}// isHalfCarrySet
 
@@ -547,7 +547,7 @@ public class ArithmeticUnit {
 	 * result has a different sign, the Overflow Flag is set,
 	 */
 
-	public boolean hasOverflow() {
+	public boolean isOverflowFlagSet() {
 		return overflow;
 	}// hasOverflow
 
@@ -557,19 +557,19 @@ public class ArithmeticUnit {
 	 * 
 	 */
 
-	public boolean hasParity() {
+	public boolean isParityFlagSet() {
 		return parity;
 	}// hasEvenParity
 
-	public boolean hasHalfCarry() {
+	public boolean isHCarryFlagSet() {
 		return halfCarry;
 	}// isHalfCarrySet
 
-	public boolean isZero() {
+	public boolean isZeroFlagSet() {
 		return zero;
 	}// isZero
 
-	public boolean hasSign() {
+	public boolean isSignFlagSet() {
 		return sign;
 	}// hasSign
 

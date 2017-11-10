@@ -148,9 +148,9 @@ public class CentralProcessingUnit implements Runnable {
 				byte result = au.negate(startingValue);
 				wrs.setAcc(result);
 
-				ccr.setSignFlag(au.hasSign());
-				ccr.setZeroFlag(au.isZero());
-				ccr.setHFlag(au.hasHalfCarry());
+				ccr.setSignFlag(au.isSignFlagSet());
+				ccr.setZeroFlag(au.isZeroFlagSet());
+				ccr.setHFlag(au.isHCarryFlagSet());
 				ccr.setPvFlag(startingValue == (byte) 0X80);
 				ccr.setNFlag(true);
 				ccr.setCarryFlag(startingValue != 00);
@@ -244,9 +244,9 @@ public class CentralProcessingUnit implements Runnable {
 				break;
 			case (byte) 0XA1: // CPI
 				ccr.setPvFlag(compareMemoryIncDec(+1));
-				ccr.setHFlag(au.hasHalfCarry());
-				ccr.setSignFlag(au.hasSign());
-				ccr.setZeroFlag(au.isZero());
+				ccr.setHFlag(au.isHCarryFlagSet());
+				ccr.setSignFlag(au.isSignFlagSet());
+				ccr.setZeroFlag(au.isZeroFlagSet());
 				break;
 			case (byte) 0XB1: // CPIR
 				boolean pvFlag = true;
@@ -254,14 +254,14 @@ public class CentralProcessingUnit implements Runnable {
 					if (compareMemoryIncDec(+1) == false)
 						break;
 
-					if (au.isZero())
+					if (au.isZeroFlagSet())
 						break;
 				} // while
 
 				ccr.setPvFlag(pvFlag);
-				ccr.setHFlag(au.hasHalfCarry());
-				ccr.setSignFlag(au.hasSign());
-				ccr.setZeroFlag(au.isZero());
+				ccr.setHFlag(au.isHCarryFlagSet());
+				ccr.setSignFlag(au.isSignFlagSet());
+				ccr.setZeroFlag(au.isZeroFlagSet());
 
 				break;
 			case (byte) 0XA2: // INI
@@ -288,9 +288,9 @@ public class CentralProcessingUnit implements Runnable {
 				break;
 			case (byte) 0XA9: // CPD
 				ccr.setPvFlag(compareMemoryIncDec(-1));
-				ccr.setHFlag(au.hasHalfCarry());
-				ccr.setSignFlag(au.hasSign());
-				ccr.setZeroFlag(au.isZero());
+				ccr.setHFlag(au.isHCarryFlagSet());
+				ccr.setSignFlag(au.isSignFlagSet());
+				ccr.setZeroFlag(au.isZeroFlagSet());
 				break;
 			case (byte) 0XB9: // CPDR
 				pvFlag = true;
@@ -298,14 +298,14 @@ public class CentralProcessingUnit implements Runnable {
 					if (compareMemoryIncDec(-1) == false)
 						break;
 
-					if (au.isZero())
+					if (au.isZeroFlagSet())
 						break;
 				} // while
 
 				ccr.setPvFlag(pvFlag);
-				ccr.setHFlag(au.hasHalfCarry());
-				ccr.setSignFlag(au.hasSign());
-				ccr.setZeroFlag(au.isZero());
+				ccr.setHFlag(au.isHCarryFlagSet());
+				ccr.setSignFlag(au.isSignFlagSet());
+				ccr.setZeroFlag(au.isZeroFlagSet());
 
 				break;
 			case (byte) 0XAA: // IND
@@ -391,17 +391,17 @@ public class CentralProcessingUnit implements Runnable {
 				wrs.setReg(subject, au.shiftSRL(sourceByte));
 				break;
 			}// switch yyy
-			ccr.setSignFlag(au.hasSign());
-			ccr.setZeroFlag(au.isZero());
+			ccr.setSignFlag(au.isSignFlagSet());
+			ccr.setZeroFlag(au.isZeroFlagSet());
 			ccr.setHFlag(false);
-			ccr.setPvFlag(au.hasParity());
+			ccr.setPvFlag(au.isParityFlagSet());
 			ccr.setNFlag(false);
-			ccr.setCarryFlag(au.hasCarry());
+			ccr.setCarryFlag(au.isCarryFlagSet());
 
 			break;
 		case 1: // Page 01 BIT b,r
 			au.bitTest(sourceByte, bit);
-			ccr.setZeroFlag(au.isZero());
+			ccr.setZeroFlag(au.isZeroFlagSet());
 			ccr.setHFlag(true);
 			ccr.setNFlag(false);
 			break;
@@ -436,8 +436,8 @@ public class CentralProcessingUnit implements Runnable {
 			result = au.addWord(arg1, arg2);
 			wrs.setDoubleReg(regIXY, result);
 			ccr.setNFlag(false);
-			ccr.setHFlag(au.hasHalfCarry());
-			ccr.setCarryFlag(au.hasCarry());
+			ccr.setHFlag(au.isHCarryFlagSet());
+			ccr.setCarryFlag(au.isCarryFlagSet());
 			break;
 		case (byte) 0X70: // LD (IXY=d),B
 		case (byte) 0X71: // LD (IXY=d),C
@@ -490,9 +490,9 @@ public class CentralProcessingUnit implements Runnable {
 			instructionSize = 3;
 			argument = cpuBuss.read(instruction.getNetIndexValue());
 			answer = au.increment(argument);
-			ccr.setSignFlag(au.hasSign());
-			ccr.setZeroFlag(au.isZero());
-			ccr.setHFlag(au.hasHalfCarry());
+			ccr.setSignFlag(au.isSignFlagSet());
+			ccr.setZeroFlag(au.isZeroFlagSet());
+			ccr.setHFlag(au.isHCarryFlagSet());
 			ccr.setPvFlag(argument == 0X7F ? true : false);
 			ccr.setNFlag(false);
 
@@ -502,9 +502,9 @@ public class CentralProcessingUnit implements Runnable {
 			instructionSize = 3;
 			argument = cpuBuss.read(instruction.getNetIndexValue());
 			answer = au.decrement(argument);
-			ccr.setSignFlag(au.hasSign());
-			ccr.setZeroFlag(au.isZero());
-			ccr.setHFlag(au.hasHalfCarry());
+			ccr.setSignFlag(au.isSignFlagSet());
+			ccr.setZeroFlag(au.isZeroFlagSet());
+			ccr.setHFlag(au.isHCarryFlagSet());
 			ccr.setPvFlag(argument == 0X80 ? true : false);
 			ccr.setNFlag(true);
 
@@ -518,12 +518,12 @@ public class CentralProcessingUnit implements Runnable {
 			instructionSize = 3;
 			argument = cpuBuss.read(instruction.getNetIndexValue());
 			answer = au.add(wrs.getAcc(), argument);
-			ccr.setSignFlag(au.hasSign());
-			ccr.setZeroFlag(au.isZero());
-			ccr.setHFlag(au.hasHalfCarry());
-			ccr.setPvFlag(au.hasOverflow());
+			ccr.setSignFlag(au.isSignFlagSet());
+			ccr.setZeroFlag(au.isZeroFlagSet());
+			ccr.setHFlag(au.isHCarryFlagSet());
+			ccr.setPvFlag(au.isOverflowFlagSet());
 			ccr.setNFlag(false);
-			ccr.setCarryFlag(au.hasCarry());
+			ccr.setCarryFlag(au.isCarryFlagSet());
 
 			wrs.setAcc(answer);
 			break;
@@ -531,12 +531,12 @@ public class CentralProcessingUnit implements Runnable {
 			instructionSize = 3;
 			argument = cpuBuss.read(instruction.getNetIndexValue());
 			answer = au.addWithCarry(wrs.getAcc(), argument, ccr.isCarryFlagSet());
-			ccr.setSignFlag(au.hasSign());
-			ccr.setZeroFlag(au.isZero());
-			ccr.setHFlag(au.hasHalfCarry());
-			ccr.setPvFlag(au.hasOverflow());
+			ccr.setSignFlag(au.isSignFlagSet());
+			ccr.setZeroFlag(au.isZeroFlagSet());
+			ccr.setHFlag(au.isHCarryFlagSet());
+			ccr.setPvFlag(au.isOverflowFlagSet());
 			ccr.setNFlag(false);
-			ccr.setCarryFlag(au.hasCarry());
+			ccr.setCarryFlag(au.isCarryFlagSet());
 
 			wrs.setAcc(answer);
 			break;
@@ -544,12 +544,12 @@ public class CentralProcessingUnit implements Runnable {
 			instructionSize = 3;
 			argument = cpuBuss.read(instruction.getNetIndexValue());
 			answer = au.sub(wrs.getAcc(), argument);
-			ccr.setSignFlag(au.hasSign());
-			ccr.setZeroFlag(au.isZero());
-			ccr.setHFlag(au.hasHalfCarry());
-			ccr.setPvFlag(au.hasOverflow());
+			ccr.setSignFlag(au.isSignFlagSet());
+			ccr.setZeroFlag(au.isZeroFlagSet());
+			ccr.setHFlag(au.isHCarryFlagSet());
+			ccr.setPvFlag(au.isOverflowFlagSet());
 			ccr.setNFlag(false);
-			ccr.setCarryFlag(au.hasCarry());
+			ccr.setCarryFlag(au.isCarryFlagSet());
 
 			wrs.setAcc(answer);
 			break;
@@ -557,12 +557,12 @@ public class CentralProcessingUnit implements Runnable {
 			instructionSize = 3;
 			argument = cpuBuss.read(instruction.getNetIndexValue());
 			answer = au.subWithCarry(wrs.getAcc(), argument, ccr.isCarryFlagSet());
-			ccr.setSignFlag(au.hasSign());
-			ccr.setZeroFlag(au.isZero());
-			ccr.setHFlag(au.hasHalfCarry());
-			ccr.setPvFlag(au.hasOverflow());
+			ccr.setSignFlag(au.isSignFlagSet());
+			ccr.setZeroFlag(au.isZeroFlagSet());
+			ccr.setHFlag(au.isHCarryFlagSet());
+			ccr.setPvFlag(au.isOverflowFlagSet());
 			ccr.setNFlag(true);
-			ccr.setCarryFlag(au.hasCarry());
+			ccr.setCarryFlag(au.isCarryFlagSet());
 
 			wrs.setAcc(answer);
 
@@ -571,10 +571,10 @@ public class CentralProcessingUnit implements Runnable {
 			instructionSize = 3;
 			argument = cpuBuss.read(instruction.getNetIndexValue());
 			answer = au.and(wrs.getAcc(), argument);
-			ccr.setSignFlag(au.hasSign());
-			ccr.setZeroFlag(au.isZero());
+			ccr.setSignFlag(au.isSignFlagSet());
+			ccr.setZeroFlag(au.isZeroFlagSet());
 			ccr.setHFlag(true);
-			ccr.setPvFlag(au.hasParity());
+			ccr.setPvFlag(au.isParityFlagSet());
 			ccr.setNFlag(false);
 			ccr.setCarryFlag(false);
 
@@ -584,10 +584,10 @@ public class CentralProcessingUnit implements Runnable {
 			instructionSize = 3;
 			argument = cpuBuss.read(instruction.getNetIndexValue());
 			answer = au.xor(wrs.getAcc(), argument);
-			ccr.setSignFlag(au.hasSign());
-			ccr.setZeroFlag(au.isZero());
+			ccr.setSignFlag(au.isSignFlagSet());
+			ccr.setZeroFlag(au.isZeroFlagSet());
 			ccr.setHFlag(false);
-			ccr.setPvFlag(au.hasParity());
+			ccr.setPvFlag(au.isParityFlagSet());
 			ccr.setNFlag(false);
 			ccr.setCarryFlag(false);
 
@@ -597,10 +597,10 @@ public class CentralProcessingUnit implements Runnable {
 			instructionSize = 3;
 			argument = cpuBuss.read(instruction.getNetIndexValue());
 			answer = au.or(wrs.getAcc(), argument);
-			ccr.setSignFlag(au.hasSign());
-			ccr.setZeroFlag(au.isZero());
+			ccr.setSignFlag(au.isSignFlagSet());
+			ccr.setZeroFlag(au.isZeroFlagSet());
 			ccr.setHFlag(false);
-			ccr.setPvFlag(au.hasParity());
+			ccr.setPvFlag(au.isParityFlagSet());
 			ccr.setNFlag(false);
 			ccr.setCarryFlag(false);
 
@@ -611,12 +611,12 @@ public class CentralProcessingUnit implements Runnable {
 			argument = cpuBuss.read(instruction.getNetIndexValue());
 			au.compare(wrs.getAcc(), argument);
 
-			ccr.setSignFlag(au.hasSign());
-			ccr.setZeroFlag(au.isZero());
-			ccr.setHFlag(au.hasHalfCarry());
-			ccr.setPvFlag(au.hasOverflow());
+			ccr.setSignFlag(au.isSignFlagSet());
+			ccr.setZeroFlag(au.isZeroFlagSet());
+			ccr.setHFlag(au.isHCarryFlagSet());
+			ccr.setPvFlag(au.isOverflowFlagSet());
 			ccr.setNFlag(true);
-			ccr.setCarryFlag(au.hasCarry());
+			ccr.setCarryFlag(au.isCarryFlagSet());
 
 			break;
 		case (byte) 0XE1: // POP IXY
@@ -710,17 +710,17 @@ public class CentralProcessingUnit implements Runnable {
 			}// switch code3 (IXY+d)
 			cpuBuss.write(netLocation, result);
 
-			ccr.setSignFlag(au.hasSign());
-			ccr.setZeroFlag(au.isZero());
+			ccr.setSignFlag(au.isSignFlagSet());
+			ccr.setZeroFlag(au.isZeroFlagSet());
 			ccr.setHFlag(false);
-			ccr.setPvFlag(au.hasParity());
+			ccr.setPvFlag(au.isParityFlagSet());
 			ccr.setNFlag(false);
-			ccr.setCarryFlag(au.hasCarry());
+			ccr.setCarryFlag(au.isCarryFlagSet());
 
 			break; // case 0 page 0
 		case 1: // Page 01 BIT b,(IXY+d)
 			au.bitTest(sourceByte, instruction.bit);
-			ccr.setZeroFlag(au.isZero());
+			ccr.setZeroFlag(au.isZeroFlagSet());
 			ccr.setHFlag(true);
 			ccr.setNFlag(false);
 			break;
@@ -792,7 +792,7 @@ public class CentralProcessingUnit implements Runnable {
 				source = wrs.getReg(Register.B);
 				ans = au.decrement(source);
 				wrs.setReg(Register.B, ans);
-				if (au.isZero()) {
+				if (au.isZeroFlagSet()) {
 					instructionSize = 0;
 					opCode_Jump(currentAddress + instruction.immediateByte + 2);
 				} else {
@@ -916,9 +916,9 @@ public class CentralProcessingUnit implements Runnable {
 			instructionSize = 1;
 			source = wrs.getReg(instruction.singleRegister1);
 			ans = au.increment(source);
-			ccr.setSignFlag(au.hasSign());
-			ccr.setZeroFlag(au.isZero());
-			ccr.setHFlag(au.hasHalfCarry());
+			ccr.setSignFlag(au.isSignFlagSet());
+			ccr.setZeroFlag(au.isZeroFlagSet());
+			ccr.setHFlag(au.isHCarryFlagSet());
 			ccr.setPvFlag(source == (byte) 0x7F?true:false);
 			ccr.setNFlag(false);
 			
@@ -929,9 +929,9 @@ public class CentralProcessingUnit implements Runnable {
 			instructionSize = 1;
 			source = wrs.getReg(instruction.singleRegister1);
 			ans = au.decrement(source);
-			ccr.setSignFlag(au.hasSign());
-			ccr.setZeroFlag(au.isZero());
-			ccr.setHFlag(au.hasHalfCarry());
+			ccr.setSignFlag(au.isSignFlagSet());
+			ccr.setZeroFlag(au.isZeroFlagSet());
+			ccr.setHFlag(au.isHCarryFlagSet());
 			ccr.setPvFlag(source == (byte) 0x80?true:false);
 			ccr.setNFlag(true);
 			
@@ -949,25 +949,25 @@ public class CentralProcessingUnit implements Runnable {
 				wrs.setAcc( au.rotateLeft(wrs.getAcc()));
 				ccr.setHFlag(false);
 				ccr.setNFlag(false);
-				ccr.setCarryFlag(au.hasCarry());
+				ccr.setCarryFlag(au.isCarryFlagSet());
 				break;
 			case 1: // RRCA
 				wrs.setAcc( au.rotateRight(wrs.getAcc()));
 				ccr.setHFlag(false);
 				ccr.setNFlag(false);
-				ccr.setCarryFlag(au.hasCarry());
+				ccr.setCarryFlag(au.isCarryFlagSet());
 				break;
 			case 2: // RLA
 				wrs.setAcc( au.rotateLeftThru(wrs.getAcc(), ccr.isCarryFlagSet()));
 				ccr.setHFlag(false);
 				ccr.setNFlag(false);
-				ccr.setCarryFlag(au.hasCarry());
+				ccr.setCarryFlag(au.isCarryFlagSet());
 				break;
 			case 3: // RRA
 				wrs.setAcc( au.rotateRightThru(wrs.getAcc(), ccr.isCarryFlagSet()));
 				ccr.setHFlag(false);
 				ccr.setNFlag(false);
-				ccr.setCarryFlag(au.hasCarry());
+				ccr.setCarryFlag(au.isCarryFlagSet());
 				break;
 			case 4: // DAA
 				// DO OPCODE DAA
@@ -1010,12 +1010,12 @@ public class CentralProcessingUnit implements Runnable {
 		switch (instruction.yyy) {
 		case 0: // ADD A,r
 			result = au.add(accValue, regValue);
-			ccr.setSignFlag(au.hasSign());
-			ccr.setZeroFlag(au.isZero());
-			ccr.setHFlag(au.hasHalfCarry());
-			ccr.setPvFlag(au.hasOverflow());
+			ccr.setSignFlag(au.isSignFlagSet());
+			ccr.setZeroFlag(au.isZeroFlagSet());
+			ccr.setHFlag(au.isHCarryFlagSet());
+			ccr.setPvFlag(au.isOverflowFlagSet());
 			ccr.setNFlag(false);
-			ccr.setCarryFlag(au.hasCarry());
+			ccr.setCarryFlag(au.isCarryFlagSet());
 			wrs.setAcc(result);
 			break;
 		case 1: // ADC A,r
@@ -1023,12 +1023,12 @@ public class CentralProcessingUnit implements Runnable {
 			break;
 		case 2: // SUB r
 			result = au.sub(accValue, regValue);
-			ccr.setSignFlag(au.hasSign());
-			ccr.setZeroFlag(au.isZero());
-			ccr.setHFlag(au.hasHalfCarry());
-			ccr.setPvFlag(au.hasOverflow());
+			ccr.setSignFlag(au.isSignFlagSet());
+			ccr.setZeroFlag(au.isZeroFlagSet());
+			ccr.setHFlag(au.isHCarryFlagSet());
+			ccr.setPvFlag(au.isOverflowFlagSet());
 			ccr.setNFlag(true);
-			ccr.setCarryFlag(au.hasCarry());
+			ccr.setCarryFlag(au.isCarryFlagSet());
 			wrs.setAcc(result);
 			break;
 		case 3: // SBC A,r
@@ -1315,7 +1315,7 @@ public class CentralProcessingUnit implements Runnable {
 	private boolean decrementDoubleRegister(Register reg) {
 		byte[] values = au.decrementWord(wrs.getDoubleRegArray(reg));
 		wrs.setDoubleReg(reg, values);
-		return au.isZero();
+		return au.isZeroFlagSet();
 	}// incrementDoubleRegister
 
 	// --------------------------------------------------------------------------------------------------------
