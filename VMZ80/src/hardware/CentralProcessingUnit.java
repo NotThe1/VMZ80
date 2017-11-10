@@ -976,10 +976,13 @@ public class CentralProcessingUnit implements Runnable {
 				// DO OPCODE CPL
 				break;
 			case 6: // SCF
-				// DO OPCODE SCF
+				ccr.setHFlag(false);
+				ccr.setNFlag(false);
+				ccr.setCarryFlag(true);
 				break;
 			case 7: // CCF
-				// DO OPCODE CCF
+				ccr.setHFlag(ccr.isCarryFlagSet());
+				ccr.setCarryFlag(!ccr.isHFlagSet());
 				break;
 			}// switch yyy
 			break;
@@ -1000,16 +1003,33 @@ public class CentralProcessingUnit implements Runnable {
 	}// opCodePage01
 
 	private int opCodePage10(Instruction instruction) {
+		byte accValue = wrs.getAcc();
+		byte regValue = wrs.getReg(instruction.singleRegister2);
+		byte result;
 		int instructionSize = 1;
 		switch (instruction.yyy) {
 		case 0: // ADD A,r
-			// DO OPCODE ADD A,r
+			result = au.add(accValue, regValue);
+			ccr.setSignFlag(au.hasSign());
+			ccr.setZeroFlag(au.isZero());
+			ccr.setHFlag(au.hasHalfCarry());
+			ccr.setPvFlag(au.hasOverflow());
+			ccr.setNFlag(false);
+			ccr.setCarryFlag(au.hasCarry());
+			wrs.setAcc(result);
 			break;
 		case 1: // ADC A,r
 			// DO OPCODE ADC A,r
 			break;
 		case 2: // SUB r
-			// DO OPCODE SUB r
+			result = au.sub(accValue, regValue);
+			ccr.setSignFlag(au.hasSign());
+			ccr.setZeroFlag(au.isZero());
+			ccr.setHFlag(au.hasHalfCarry());
+			ccr.setPvFlag(au.hasOverflow());
+			ccr.setNFlag(true);
+			ccr.setCarryFlag(au.hasCarry());
+			wrs.setAcc(result);
 			break;
 		case 3: // SBC A,r
 			// DO OPCODE SBC A,r
