@@ -130,8 +130,20 @@ public class ArithmeticUnit {
 		} // if add v Sub
 
 		ans = (byte) (value + fudge);
+		
 		carry = carryOut;
 		halfCarry = halfCarryOut;
+		
+		sign = (ans & Z80.BIT_SIGN) == Z80.BIT_SIGN;
+		zero = ans == (byte) 0x00;
+		
+		BitSet bs = new BitSet(8);
+		bs = BitSet.valueOf(new byte[] {ans});
+		parity = (bs.cardinality() % 2) == 0 ? true : false;
+
+
+
+
 		return ans;
 	}
 	// ----------------------------------------------------------------------------

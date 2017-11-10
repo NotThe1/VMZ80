@@ -970,7 +970,13 @@ public class CentralProcessingUnit implements Runnable {
 				ccr.setCarryFlag(au.isCarryFlagSet());
 				break;
 			case 4: // DAA
-				// DO OPCODE DAA
+				ans = au.daa(wrs.getAcc(), ccr.isNFlagSet(), ccr.isCarryFlagSet(), ccr.isHFlagSet());
+				ccr.setSignFlag(au.isSignFlagSet());
+				ccr.setZeroFlag(au.isZeroFlagSet());
+				ccr.setHFlag(au.isHCarryFlagSet());
+				ccr.setPvFlag(au.isParityFlagSet());
+				ccr.setCarryFlag(au.isCarryFlagSet());
+				wrs.setAcc(ans);
 				break;
 			case 5: // CPL
 				// DO OPCODE CPL
