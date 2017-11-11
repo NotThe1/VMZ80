@@ -1025,7 +1025,14 @@ public class CentralProcessingUnit implements Runnable {
 			wrs.setAcc(result);
 			break;
 		case 1: // ADC A,r
-			// DO OPCODE ADC A,r
+			result = au.addWithCarry(accValue, regValue,ccr.isCarryFlagSet());
+			ccr.setSignFlag(au.isSignFlagSet());
+			ccr.setZeroFlag(au.isZeroFlagSet());
+			ccr.setHFlag(au.isHCarryFlagSet());
+			ccr.setPvFlag(au.isOverflowFlagSet());
+			ccr.setNFlag(false);
+			ccr.setCarryFlag(au.isCarryFlagSet());
+			wrs.setAcc(result);
 			break;
 		case 2: // SUB r
 			result = au.sub(accValue, regValue);
@@ -1038,19 +1045,53 @@ public class CentralProcessingUnit implements Runnable {
 			wrs.setAcc(result);
 			break;
 		case 3: // SBC A,r
-			// DO OPCODE SBC A,r
+			result = au.subWithCarry(accValue, regValue,ccr.isCarryFlagSet());
+			ccr.setSignFlag(au.isSignFlagSet());
+			ccr.setZeroFlag(au.isZeroFlagSet());
+			ccr.setHFlag(au.isHCarryFlagSet());
+			ccr.setPvFlag(au.isOverflowFlagSet());
+			ccr.setNFlag(true);
+			ccr.setCarryFlag(au.isCarryFlagSet());
+			wrs.setAcc(result);
 			break;
 		case 4: // AND r
-			// DO OPCODE AND r
+			result = au.and(accValue, regValue);
+			ccr.setSignFlag(au.isSignFlagSet());
+			ccr.setZeroFlag(au.isZeroFlagSet());
+			ccr.setHFlag(true);
+			ccr.setPvFlag(au.isParityFlagSet());
+			ccr.setNFlag(false);
+			ccr.setCarryFlag(false);
+			wrs.setAcc(result);
 			break;
 		case 5: // XOR r
-			// DO OPCODE XOR r
+			result = au.xor(accValue, regValue);
+			ccr.setSignFlag(au.isSignFlagSet());
+			ccr.setZeroFlag(au.isZeroFlagSet());
+			ccr.setHFlag(false);
+			ccr.setPvFlag(au.isParityFlagSet());
+			ccr.setNFlag(false);
+			ccr.setCarryFlag(false);
+			wrs.setAcc(result);
 			break;
 		case 6: // OR r
-			// DO OPCODE OR r
+			result = au.or(accValue, regValue);
+			ccr.setSignFlag(au.isSignFlagSet());
+			ccr.setZeroFlag(au.isZeroFlagSet());
+			ccr.setHFlag(false);
+			ccr.setPvFlag(au.isParityFlagSet());
+			ccr.setNFlag(false);
+			ccr.setCarryFlag(false);
+			wrs.setAcc(result);
 			break;
 		case 7: // CP r
-			// DO OPCODE CP r
+			au.compare(accValue, regValue);
+			ccr.setSignFlag(au.isSignFlagSet());
+			ccr.setZeroFlag(au.isZeroFlagSet());
+			ccr.setHFlag(au.isHCarryFlagSet());
+			ccr.setPvFlag(au.isOverflowFlagSet());
+			ccr.setNFlag(true);
+			ccr.setCarryFlag(au.isCarryFlagSet());
 			break;
 		}// switch yyy
 
