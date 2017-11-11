@@ -53,7 +53,7 @@ public class CentralProcessingUnit implements Runnable {
 	}// startInstruction
 
 	public void executeInstruction(int currentAddress) {
-		// Register indexRegister = null;
+		this.setError(ErrorStatus.NONE);
 		Instruction instruction = new Instruction();
 		byte opCode = instruction.opCode0;
 		int instructionLength = 0;
@@ -1001,9 +1001,9 @@ public class CentralProcessingUnit implements Runnable {
 	private int opCodePage01(Instruction instruction) {
 		int instructionSize = 1;
 		if (instruction.opCode0 == (byte) 0X76) {// HALT
-			// DO OPCODE HALT
+			setError(ErrorStatus.HALT_INSTRUCTION);
 		} else {// LD r, r1
-				// DO OPCODE LD r, r1
+				wrs.setReg(instruction.singleRegister1, wrs.getReg(instruction.singleRegister2));
 		} // if halt
 		return instructionSize;
 	}// opCodePage01
