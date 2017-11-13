@@ -72,6 +72,10 @@ public class WorkingRegisterSet {
 
 	public void setDoubleReg(Register reg, byte hi, byte lo) {
 		switch (reg) {
+		case AF:
+			setReg(Register.A, hi);
+			setReg(Register.F, lo);
+			break;
 		case BC:
 			setReg(Register.B, hi);
 			setReg(Register.C, lo);
@@ -106,6 +110,9 @@ public class WorkingRegisterSet {
 		int result = 0;
 
 		switch (reg) {
+		case AF:
+			result = (((getReg(Register.A) << 8) + (getReg(Register.F) & BYTE_MASK)) & WORD_MASK);
+			break;
 		case BC:
 			result = (((getReg(Register.B) << 8) + (getReg(Register.C) & BYTE_MASK)) & WORD_MASK);
 			break;
@@ -142,6 +149,10 @@ public class WorkingRegisterSet {
 		byte[] ans = new byte[2];
 
 		switch (reg) {
+		case AF:
+			ans[1] = this.getReg(Register.A);
+			ans[0] = this.getReg(Register.F);
+			break;
 		case BC:
 			ans[1] = this.getReg(Register.B);
 			ans[0] = this.getReg(Register.C);
@@ -306,11 +317,17 @@ public class WorkingRegisterSet {
 	}// getReg
 
 	public void setReg(Register reg, byte value) {
-		if (reg.equals(Register.M)) {
+		switch (reg) {
+		case F:
+			ConditionCodeRegister.getInstance().setConditionCode(value);
+			break;
+		case M:
 			IoBuss.getInstance().write(this.getDoubleReg(Register.HL), value);
-		} else {
+			break;
+		default:
 			registers.put(reg, value);
-		} // if reg M
+		}// switch
+
 	}// loadReg
 
 	public byte getReg(Register reg) {

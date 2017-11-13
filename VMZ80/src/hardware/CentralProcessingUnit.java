@@ -2,6 +2,7 @@ package hardware;
 
 import codeSupport.AppLogger;
 import codeSupport.Z80;
+import codeSupport.Z80.ConditionCode;
 import codeSupport.Z80.Register;
 //import ioSystem.IOController;
 import memory.CpuBuss;
@@ -804,7 +805,7 @@ public class CentralProcessingUnit implements Runnable {
 				opCode_Jump(currentAddress + instruction.immediateByte + 2);
 				break;
 			case 4: // JR NZ,e
-				if (opCodeConditionTrue(ConditionFlag.NZ)) {
+				if (isConditionTrue(ConditionCode.NZ)) {
 					instructionSize = 0;
 					opCode_Jump(currentAddress + instruction.immediateByte + 2);
 				} else {
@@ -812,7 +813,7 @@ public class CentralProcessingUnit implements Runnable {
 				} // if
 				break;
 			case 5: // JR Z,e
-				if (opCodeConditionTrue(ConditionFlag.Z)) {
+				if (isConditionTrue(ConditionCode.Z)) {
 					instructionSize = 0;
 					opCode_Jump(currentAddress + instruction.immediateByte + 2);
 				} else {
@@ -820,7 +821,7 @@ public class CentralProcessingUnit implements Runnable {
 				} // if
 				break;
 			case 6: // JR NC,e
-				if (opCodeConditionTrue(ConditionFlag.NC)) {
+				if (isConditionTrue(ConditionCode.NC)) {
 					instructionSize = 0;
 					opCode_Jump(currentAddress + instruction.immediateByte + 2);
 				} else {
@@ -828,7 +829,7 @@ public class CentralProcessingUnit implements Runnable {
 				} // if
 				break;
 			case 7: // JR C,e
-				if (opCodeConditionTrue(ConditionFlag.C)) {
+				if (isConditionTrue(ConditionCode.C)) {
 					instructionSize = 0;
 					opCode_Jump(currentAddress + instruction.immediateByte + 2);
 				} else {
@@ -908,7 +909,7 @@ public class CentralProcessingUnit implements Runnable {
 			bit3 = ((instruction.opCode0 & Z80.BIT_3) == Z80.BIT_3);
 			if (bit3) {// DEC,rr - 0B,1B,2B,3B
 				wrs.setDoubleReg(instruction.doubleRegister1, au.decrementWord(sourceValueArray));
-			} else { // INC rr	- 03,13,23,33
+			} else { // INC rr - 03,13,23,33
 				wrs.setDoubleReg(instruction.doubleRegister1, au.incrementWord(sourceValueArray));
 			} // if bit 3
 			break;
@@ -919,9 +920,9 @@ public class CentralProcessingUnit implements Runnable {
 			ccr.setSignFlag(au.isSignFlagSet());
 			ccr.setZeroFlag(au.isZeroFlagSet());
 			ccr.setHFlag(au.isHCarryFlagSet());
-			ccr.setPvFlag(source == (byte) 0x7F?true:false);
+			ccr.setPvFlag(source == (byte) 0x7F ? true : false);
 			ccr.setNFlag(false);
-			
+
 			wrs.setReg(instruction.singleRegister1, ans);
 			// DO OPCODE INC r
 			break;
@@ -932,9 +933,9 @@ public class CentralProcessingUnit implements Runnable {
 			ccr.setSignFlag(au.isSignFlagSet());
 			ccr.setZeroFlag(au.isZeroFlagSet());
 			ccr.setHFlag(au.isHCarryFlagSet());
-			ccr.setPvFlag(source == (byte) 0x80?true:false);
+			ccr.setPvFlag(source == (byte) 0x80 ? true : false);
 			ccr.setNFlag(true);
-			
+
 			wrs.setReg(instruction.singleRegister1, ans);
 
 			break;
@@ -946,25 +947,25 @@ public class CentralProcessingUnit implements Runnable {
 			instructionSize = 1;
 			switch (instruction.yyy) {
 			case 0: // RLCA
-				wrs.setAcc( au.rotateLeft(wrs.getAcc()));
+				wrs.setAcc(au.rotateLeft(wrs.getAcc()));
 				ccr.setHFlag(false);
 				ccr.setNFlag(false);
 				ccr.setCarryFlag(au.isCarryFlagSet());
 				break;
 			case 1: // RRCA
-				wrs.setAcc( au.rotateRight(wrs.getAcc()));
+				wrs.setAcc(au.rotateRight(wrs.getAcc()));
 				ccr.setHFlag(false);
 				ccr.setNFlag(false);
 				ccr.setCarryFlag(au.isCarryFlagSet());
 				break;
 			case 2: // RLA
-				wrs.setAcc( au.rotateLeftThru(wrs.getAcc(), ccr.isCarryFlagSet()));
+				wrs.setAcc(au.rotateLeftThru(wrs.getAcc(), ccr.isCarryFlagSet()));
 				ccr.setHFlag(false);
 				ccr.setNFlag(false);
 				ccr.setCarryFlag(au.isCarryFlagSet());
 				break;
 			case 3: // RRA
-				wrs.setAcc( au.rotateRightThru(wrs.getAcc(), ccr.isCarryFlagSet()));
+				wrs.setAcc(au.rotateRightThru(wrs.getAcc(), ccr.isCarryFlagSet()));
 				ccr.setHFlag(false);
 				ccr.setNFlag(false);
 				ccr.setCarryFlag(au.isCarryFlagSet());
@@ -979,7 +980,10 @@ public class CentralProcessingUnit implements Runnable {
 				wrs.setAcc(ans);
 				break;
 			case 5: // CPL
-				// DO OPCODE CPL
+				ans = au.complement(wrs.getAcc());
+				ccr.setHFlag(true);
+				ccr.setNFlag(true);
+				wrs.setAcc(ans);
 				break;
 			case 6: // SCF
 				ccr.setHFlag(false);
@@ -987,8 +991,9 @@ public class CentralProcessingUnit implements Runnable {
 				ccr.setCarryFlag(true);
 				break;
 			case 7: // CCF
-				ccr.setHFlag(ccr.isCarryFlagSet());
+				ccr.setHFlag(ccr.isCarryFlagSet());// previous carry
 				ccr.setCarryFlag(!ccr.isHFlagSet());
+				ccr.setNFlag(false);
 				break;
 			}// switch yyy
 			break;
@@ -1003,7 +1008,7 @@ public class CentralProcessingUnit implements Runnable {
 		if (instruction.opCode0 == (byte) 0X76) {// HALT
 			setError(ErrorStatus.HALT_INSTRUCTION);
 		} else {// LD r, r1
-				wrs.setReg(instruction.singleRegister1, wrs.getReg(instruction.singleRegister2));
+			wrs.setReg(instruction.singleRegister1, wrs.getReg(instruction.singleRegister2));
 		} // if halt
 		return instructionSize;
 	}// opCodePage01
@@ -1025,7 +1030,7 @@ public class CentralProcessingUnit implements Runnable {
 			wrs.setAcc(result);
 			break;
 		case 1: // ADC A,r
-			result = au.addWithCarry(accValue, regValue,ccr.isCarryFlagSet());
+			result = au.addWithCarry(accValue, regValue, ccr.isCarryFlagSet());
 			ccr.setSignFlag(au.isSignFlagSet());
 			ccr.setZeroFlag(au.isZeroFlagSet());
 			ccr.setHFlag(au.isHCarryFlagSet());
@@ -1045,7 +1050,7 @@ public class CentralProcessingUnit implements Runnable {
 			wrs.setAcc(result);
 			break;
 		case 3: // SBC A,r
-			result = au.subWithCarry(accValue, regValue,ccr.isCarryFlagSet());
+			result = au.subWithCarry(accValue, regValue, ccr.isCarryFlagSet());
 			ccr.setSignFlag(au.isSignFlagSet());
 			ccr.setZeroFlag(au.isZeroFlagSet());
 			ccr.setHFlag(au.isHCarryFlagSet());
@@ -1105,19 +1110,26 @@ public class CentralProcessingUnit implements Runnable {
 		int directAddress = cpuBuss.readWordReversed(currentAddress + 1);
 
 		switch (instruction.zzz) {
-		case 0: // Conditional Returns
-			instructionSize = 1;
-			// DO OPCODE Conditional Returns
+		case 0: // Conditional Returns C0,C8,D0,D8.E0.E8.F0.F8
+			// RNZ, RZ, RNC, RC,RPO,RPE,RP,RM
+			if (isConditionTrue(instruction.conditionCode)) {
+				instructionSize = 0;
+				opCode_Return();
+			} else {
+				instructionSize = 1;
+			}//if
 			break;
 		case 1: // POP rr RET JP (HL) LD SP,HL
 			instructionSize = 1;
-			bit3 = ((instruction.opCode1 & Z80.BIT_3) == Z80.BIT_3);
-			if (bit3) {// POP rr
-				// DO OPCODE POP rr
+			bit3 = ((instruction.opCode0 & Z80.BIT_3) == Z80.BIT_3);
+			if (!bit3) {// POP rr
+				byte[] regValue = this.opCode_Pop();
+				wrs.setDoubleReg(instruction.doubleRegister1, regValue);
 			} else {// RET EXX JP (HL) LD SP,HL
 				switch (instruction.yyy) {
 				case 1: // RET
-					// DO OPCODE RET
+					instructionSize = 0;
+					opCode_Return();
 					break;
 				case 3: // EXX
 					// DO OPCODE EXX
@@ -1132,8 +1144,12 @@ public class CentralProcessingUnit implements Runnable {
 			} // if bit 3
 			break;
 		case 2: // Conditional Jumps
-			instructionSize = 3;
-			// DO OPCODE Conditional Jumps
+			if (isConditionTrue(instruction.conditionCode)) {
+				opCode_Jump(directAddress);
+				instructionSize = 0;
+			} else {
+				instructionSize = 3;
+			} // if
 			break;
 		case 3: // JP nn OUT (n),A IN A,(n) EX (SP),HL EX DE,HL DI EI
 			switch (instruction.yyy) {
@@ -1174,19 +1190,23 @@ public class CentralProcessingUnit implements Runnable {
 
 			break;
 		case 4: // Conditional Calls
-			instructionSize = 3;
-			// DO OPCODE Conditional Calls
+			if (isConditionTrue(instruction.conditionCode)) {
+				opCode_Call();
+				instructionSize = 0;
+			} else {
+				instructionSize = 3;
+			} // if
 			break;
 		case 5: // PUSH rr CALL nn
-			bit3 = ((instruction.opCode1 & Z80.BIT_3) == Z80.BIT_3);
-			if (bit3) {// PUSH rr
+			bit3 = ((instruction.opCode0 & Z80.BIT_3) == Z80.BIT_3);
+			if (!bit3) {// PUSH rr
 				instructionSize = 1;
-				// DO OPCODE PUSH rr
+				this.opCode_Push(wrs.getDoubleReg(instruction.doubleRegister1));
 			} else {// RET EXX JP (HL) LD SP,HL
 				switch (instruction.yyy) {
 				case 1: // CALL nn
-					instructionSize = 3;
-					// DO OPCODE CALL nn
+					instructionSize = 0;
+					opCode_Call();
 					break;
 				case 3: // DD IX
 				case 5: // ED EXTD
@@ -1292,7 +1312,7 @@ public class CentralProcessingUnit implements Runnable {
 	 *            to be tested
 	 * @return true if condition is met
 	 */
-	private boolean opCodeConditionTrue(ConditionFlag condition) {
+	private boolean isConditionTrue(ConditionCode condition) {
 		boolean ans = false;
 		switch (condition) {
 		case NZ:
