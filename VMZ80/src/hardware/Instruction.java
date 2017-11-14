@@ -427,7 +427,7 @@ public class Instruction {
 					this.immediateByte = cpuBuss.read(wrs.getProgramCounter() + 1);
 					break;
 				case 7: // RST - C7,CF,D7,DF,E7,EF,F7,FF
-					this.immediateByte = (byte) (this.yyy << 3);
+					//this.immediateByte = (byte) (this.yyy << 3);
 					break;
 				} // switch zzz
 

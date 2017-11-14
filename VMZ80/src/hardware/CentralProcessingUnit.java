@@ -1117,7 +1117,7 @@ public class CentralProcessingUnit implements Runnable {
 				opCode_Return();
 			} else {
 				instructionSize = 1;
-			}//if
+			} // if
 			break;
 		case 1: // POP rr RET JP (HL) LD SP,HL
 			instructionSize = 1;
@@ -1132,13 +1132,14 @@ public class CentralProcessingUnit implements Runnable {
 					opCode_Return();
 					break;
 				case 3: // EXX
-					// DO OPCODE EXX
+					wrs.swapMainRegisters();
 					break;
 				case 5: // JP (HL)
-					// DO OPCODE JP (HL)
+					instructionSize = 0;
+					wrs.setProgramCounter(wrs.getDoubleReg(Register.HL));
 					break;
 				case 7: // LD SP,HL
-					// DO OPCODE LD SP,HL
+					wrs.setStackPointer(wrs.getDoubleReg(Register.HL));
 					break;
 				}// switch yyy
 			} // if bit 3
@@ -1164,27 +1165,37 @@ public class CentralProcessingUnit implements Runnable {
 				break;
 			case 2: // OUT (n),A
 				instructionSize = 2;
-				// DO OPCODE OUT (n),A
+				// ** DO OPCODE OUT (n),A
 				break;
 			case 3: // IN A,(n)
 				instructionSize = 2;
-				// DO OPCODE IN A,(n)
+				// ** DO OPCODE IN A,(n)
 				break;
 			case 4: // EX (SP),HL
 				instructionSize = 1;
-				// DO OPCODE EX (SP),HL
+				int sp = wrs.getStackPointer();
+				byte hi = wrs.getReg(Register.H);
+				byte lo = wrs.getReg(Register.L);
+				wrs.setReg(Register.L, cpuBuss.read(sp));
+				wrs.setReg(Register.H, cpuBuss.read(sp + 1));
+				cpuBuss.write(sp, lo);
+				cpuBuss.write(sp + 1, hi);
 				break;
 			case 5: // EX DE,HL
 				instructionSize = 1;
-				// DO OPCODE EX DE,HL
+				int deBefore = wrs.getDoubleReg(Register.DE);
+				wrs.setDoubleReg(Register.DE, wrs.getDoubleReg(Register.HL));
+				wrs.setDoubleReg(Register.HL, deBefore);
 				break;
 			case 6: // DI
 				instructionSize = 1;
-				// DO OPCODE DI
+				wrs.setIFF1(false);
+				wrs.setIFF2(false);
 				break;
 			case 7: // EI
 				instructionSize = 1;
-				// DO OPCODE EI
+				wrs.setIFF1(true);
+				wrs.setIFF2(true);
 				break;
 			}// switch yyy
 
@@ -1219,37 +1230,99 @@ public class CentralProcessingUnit implements Runnable {
 
 			break;
 		case 6: // ADC A,n ADC A,n SUB n SBC A,n AND n XOR n OR n CP n
+			byte result;
+			byte accValue = wrs.getAcc();
 			instructionSize = 2;
 			switch (instruction.yyy) {
 			case 0: // ADC A,n
-				// DO OPCODE ADC A,n
+				result = au.add(accValue, instruction.immediateByte);
+				ccr.setSignFlag(au.isSignFlagSet());
+				ccr.setZeroFlag(au.isZeroFlagSet());
+				ccr.setHFlag(au.isHCarryFlagSet());
+				ccr.setPvFlag(au.isOverflowFlagSet());
+				ccr.setNFlag(false);
+				ccr.setCarryFlag(au.isCarryFlagSet());
+				wrs.setAcc(result);
 				break;
 			case 1: // ADC A,n
-				// DO OPCODE ADC A,n
+				result = au.addWithCarry(accValue, instruction.immediateByte, ccr.isCarryFlagSet());
+				ccr.setSignFlag(au.isSignFlagSet());
+				ccr.setZeroFlag(au.isZeroFlagSet());
+				ccr.setHFlag(au.isHCarryFlagSet());
+				ccr.setPvFlag(au.isOverflowFlagSet());
+				ccr.setNFlag(false);
+				ccr.setCarryFlag(au.isCarryFlagSet());
+				wrs.setAcc(result);
 				break;
 			case 2: // SUB n
-				// DO OPCODE SUB n
+				result = au.sub(accValue, instruction.immediateByte);
+				ccr.setSignFlag(au.isSignFlagSet());
+				ccr.setZeroFlag(au.isZeroFlagSet());
+				ccr.setHFlag(au.isHCarryFlagSet());
+				ccr.setPvFlag(au.isOverflowFlagSet());
+				ccr.setNFlag(true);
+				ccr.setCarryFlag(au.isCarryFlagSet());
+				wrs.setAcc(result);
 				break;
 			case 3: // SBC A,n
-				// DO OPCODE SBC A,n
+				result = au.subWithCarry(accValue, instruction.immediateByte, ccr.isCarryFlagSet());
+				ccr.setSignFlag(au.isSignFlagSet());
+				ccr.setZeroFlag(au.isZeroFlagSet());
+				ccr.setHFlag(au.isHCarryFlagSet());
+				ccr.setPvFlag(au.isOverflowFlagSet());
+				ccr.setNFlag(true);
+				ccr.setCarryFlag(au.isCarryFlagSet());
+				wrs.setAcc(result);
 				break;
 			case 4: // AND n
-				// DO OPCODE AND n
+				result = au.and(accValue, instruction.immediateByte);
+				ccr.setSignFlag(au.isSignFlagSet());
+				ccr.setZeroFlag(au.isZeroFlagSet());
+				ccr.setHFlag(true);
+				ccr.setPvFlag(au.isParityFlagSet());
+				ccr.setNFlag(false);
+				ccr.setCarryFlag(false);
+				wrs.setAcc(result);
 				break;
 			case 5: // XOR n
-				// DO OPCODE XOR n
+				result = au.xor(accValue, instruction.immediateByte);
+				ccr.setSignFlag(au.isSignFlagSet());
+				ccr.setZeroFlag(au.isZeroFlagSet());
+				ccr.setHFlag(false);
+				ccr.setPvFlag(au.isParityFlagSet());
+				ccr.setNFlag(false);
+				ccr.setCarryFlag(false);
+				wrs.setAcc(result);
 				break;
 			case 6: // OR n
-				// DO OPCODE OR n
+				result = au.or(accValue, instruction.immediateByte);
+				ccr.setSignFlag(au.isSignFlagSet());
+				ccr.setZeroFlag(au.isZeroFlagSet());
+				ccr.setHFlag(false);
+				ccr.setPvFlag(au.isParityFlagSet());
+				ccr.setNFlag(false);
+				ccr.setCarryFlag(false);
+				wrs.setAcc(result);
 				break;
 			case 7: // CP n
-				// DO OPCODE CP n
-				break;
-			}// switch yyy
-				// DO OPCODE
+				au.compare(accValue, instruction.immediateByte);
+				ccr.setSignFlag(au.isSignFlagSet());
+				ccr.setZeroFlag(au.isZeroFlagSet());
+				ccr.setHFlag(au.isHCarryFlagSet());
+				ccr.setPvFlag(au.isOverflowFlagSet());
+				ccr.setNFlag(true);
+				ccr.setCarryFlag(au.isCarryFlagSet());
+				break;			}// switch yyy
+				
 			break;
 		case 7: //
-			// DO OPCODE
+			instructionSize= 0;
+			int PCvalue = wrs.getProgramCounter();
+			opCode_Push(PCvalue);
+			
+			PCvalue = (instruction.opCode0 & 0b0011_1000);
+			
+			wrs.setProgramCounter(PCvalue);
 			break;
 		}// switch yyy
 
