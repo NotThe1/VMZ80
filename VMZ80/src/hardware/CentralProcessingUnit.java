@@ -56,7 +56,8 @@ public class CentralProcessingUnit implements Runnable {
 	public void executeInstruction(int currentAddress) {
 		this.setError(ErrorStatus.NONE);
 		Instruction instruction = new Instruction();
-		byte opCode = instruction.opCode0;
+//		byte opCode = instruction.opCode0;
+		byte opCode = cpuBuss.read(currentAddress);
 		int instructionLength = 0;
 		switch (opCode) {
 		case (byte) 0X0ED: // Extended Instructions
