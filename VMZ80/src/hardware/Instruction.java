@@ -18,6 +18,7 @@ public class Instruction {
 	byte opCode2;
 	int page;
 	int yyy;
+	
 	int zzz;
 	int dd;
 	// boolean bit3;

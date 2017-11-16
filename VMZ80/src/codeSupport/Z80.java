@@ -39,6 +39,23 @@ public class Z80 {
 	public static final int WORD_MASK = 0X00FFFF;
 	public static final int BYTE_MASK = 0X00FF;
 	public static final int HI_BYTE_MASK = 0X00FF00;
+	
+	public static final int MASK_PAGE = 0b1100_0000;
+	public static final int MASK_ZZZ = 0b0000_0111;
+	public static final int MASK_YYY = 0b0011_1000;
+	
+	
+	
+	public static final int MASK_REGISTER_123 = 0b0000_0111;
+	public static final int MASK_REGISTER_345 = 0b0011_1000;
+	
+	public static final int MASK_DOUBLE_REGISTER45 = 0b0011_0000;
+	
+	public static final int MODE_0 = 0;
+	public static final int MODE_1 = 1;
+	public static final int MODE_2 = 2;
+	
+	
 	/**
 	 * registers
 	 */
@@ -127,53 +144,5 @@ public class Z80 {
 			BIT_NOT_7 };
 
 
-	// public static Register[] doubleRegisters3 = new Register[] {Register.BC,
-	// Register.DE,Register.HL,Register.AF};
 
-	// public static final HashMap<String, Byte> conditionTable = new HashMap<>();
-	// static {
-	// conditionTable.put("NZ", (byte) 0b00000000);
-	// conditionTable.put("Z", (byte) 0b00001000);
-	// conditionTable.put("NC", (byte) 0b00010000);
-	// conditionTable.put("C", (byte) 0b00011000);
-	// conditionTable.put("PO", (byte) 0b00100000);
-	// conditionTable.put("PE", (byte) 0b00101000);
-	// conditionTable.put("P", (byte) 0b00110000);
-	// conditionTable.put("M", (byte) 0b00111000);
-	// }// static conditionTable
-
-	// public static final HashMap<String, Byte> registerTable = new HashMap<>();
-	// static {
-	// registerTable.put("A", (byte) 0b00000111);
-	// registerTable.put("B", (byte) 0b00000000);
-	// registerTable.put("C", (byte) 0b00000001);
-	// registerTable.put("D", (byte) 0b00000010);
-	// registerTable.put("E", (byte) 0b00000011);
-	// registerTable.put("H", (byte) 0b00000100);
-	// registerTable.put("L", (byte) 0b00000101);
-	// registerTable.put("M", (byte) 0b00000110);
-	// registerTable.put("(HL)", (byte) 0b00000110);
-	//
-	// registerTable.put("BC", (byte) 0b00000000);
-	// registerTable.put("DE", (byte) 0b00010000);
-	// registerTable.put("HL", (byte) 0b00100000);
-	// registerTable.put("SP", (byte) 0b00110000);
-	// registerTable.put("AF", (byte) 0b00110000);
-	// registerTable.put("IX", (byte) 0b00100000);
-	// registerTable.put("IY", (byte) 0b00100000);
-	//
-	// }// static registerTable
-
-	// public static final HashMap<Integer, Byte> bitTable = new HashMap<>();
-	// static {
-	// bitTable.put(0, (byte) 0b00000000);
-	// bitTable.put(1, (byte) 0b00001000);
-	// bitTable.put(2, (byte) 0b00010000);
-	// bitTable.put(3, (byte) 0b00011000);
-	// bitTable.put(4, (byte) 0b00100000);
-	// bitTable.put(5, (byte) 0b00101000);
-	// bitTable.put(6, (byte) 0b00110000);
-	// bitTable.put(7, (byte) 0b00111000);
-	// }// static bitTable
-
-}
+}// class Z80 
