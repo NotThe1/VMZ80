@@ -32,7 +32,7 @@ public class CentralProcessingUnit implements Runnable {
 	}// getInstance
 
 	private int instructionBase;
-	private int page,yyy,zzz;
+	private int page, yyy, zzz;
 
 	private CentralProcessingUnit() {
 
@@ -66,19 +66,19 @@ public class CentralProcessingUnit implements Runnable {
 		int instructionLength = 0;
 		switch (opCode) {
 		case (byte) 0X0ED: // Extended Instructions
-			instructionLength = opCodeSetED(instruction);
+			instructionLength = opCodeSetED();
 			break;
 		case (byte) 0X0CB: // Bit Instructions
-			instructionLength = opCodeSetCB(instruction);
+			instructionLength = opCodeSetCB();
 			break;
 		case (byte) 0X0DD: // IX Instructions
 		case (byte) 0X0FD: // IY Instructions
 			// indexRegister = instruction.doubleRegister1
 
 			if (instruction.opCode1 == (byte) 0XCB) { // IX/IY bit instructions
-				instructionLength = opCodeSetIndexRegistersBit(instruction);
+				instructionLength = opCodeSetIndexRegistersBit();
 			} else {// IX/IY instructions
-				instructionLength = opCodeSetIndexRegisters(instruction);
+				instructionLength = opCodeSetIndexRegisters();
 			} // if bit instructions
 			break;
 
@@ -91,7 +91,7 @@ public class CentralProcessingUnit implements Runnable {
 	}// executeInstruction
 
 	// Extended Instructions
-	private int opCodeSetED(Instruction instruction) {
+	private int opCodeSetED() {
 		int insBasePlus1 = this.instructionBase + 1;
 		byte opCode1 = cpuBuss.read(insBasePlus1);
 		int instructionSize = 0;
@@ -99,16 +99,17 @@ public class CentralProcessingUnit implements Runnable {
 		byte value;
 		byte[] ansWord, sourceWord, destinationWord;
 		int sourceLocation;
-//		boolean bit3;
-		
+		// boolean bit3;
+
 		page = getPage(insBasePlus1);
 		yyy = getYYY(insBasePlus1);
 		zzz = getZZZ(insBasePlus1);
-		
+
 		switch (page) {
 		case 0: // Page 00
-			log.addError(String.format("bad instruction %02X %02X %02X, at location %04X", instruction.opCode0,
-					instruction.opCode1, instruction.opCode2, wrs.getProgramCounter()));
+			log.addError(String.format("bad instruction %02X %02X %02X, at location %04X",
+					cpuBuss.read(this.instructionBase), cpuBuss.read(this.instructionBase + 1),
+					cpuBuss.read(this.instructionBase + 2), wrs.getProgramCounter()));
 			System.exit(-1);
 			// There are no instructions on page 0
 			break;
@@ -142,7 +143,7 @@ public class CentralProcessingUnit implements Runnable {
 				currentRegister = getDoubleRegister1_45(insBasePlus1);
 				sourceLocation = getImmediateWord(instructionBase + 2);
 				instructionSize = 4;
-				
+
 				if (isBit3Set(insBasePlus1)) {// ED (4B,5B,6B,7B) LD dd,(nn)
 					wrs.setDoubleReg(currentRegister, cpuBuss.read(sourceLocation), cpuBuss.read(sourceLocation + 1));
 				} else {// ED (43,53,63,73) - LD (nn),dd
@@ -151,7 +152,7 @@ public class CentralProcessingUnit implements Runnable {
 					cpuBuss.write(sourceLocation + 1, valueArray[1]);
 				} // if bit 3
 				break;
-			case 4:// NEG  ED 44
+			case 4:// NEG ED 44
 				instructionSize = 2;
 				byte startingValue = wrs.getAcc();
 
@@ -167,13 +168,13 @@ public class CentralProcessingUnit implements Runnable {
 				break;
 			case 5:// RETN RETI
 				instructionSize = 0;
-				if (opCode1 == 0X4D) {// RETI  ED 4D
+				if (opCode1 == 0X4D) {// RETI ED 4D
 					opCode_Return();
-					//TO DO send signal to I/I devices
-				} else {// RETN   ED 45
+					// TO DO send signal to I/I devices
+				} else {// RETN ED 45
 					wrs.setIFF1(wrs.isIFF2Set());
 					opCode_Return();
-						// DO OPCODE RETN
+					// DO OPCODE RETN
 				} // if RETx
 				break;
 			case 6: // IM 0 IM 1 IM 2
@@ -198,13 +199,13 @@ public class CentralProcessingUnit implements Runnable {
 				switch (opCode1) {
 				case 0X47: // LD I,A
 				case 0X4F: // LD R,A
-					wrs.setReg(opCode1 == 0x47?Register.I:Register.R, wrs.getAcc());
+					wrs.setReg(opCode1 == 0x47 ? Register.I : Register.R, wrs.getAcc());
 					// no flag affected
 					break;
 				case 0X57: // LD A,I
 				case 0X5F: // LD R,A
-					value = wrs.getReg(opCode1 == 0x57?Register.I:Register.R);
-					wrs.setReg(instruction.getSingleRegister1(), value);
+					value = wrs.getReg(opCode1 == 0x57 ? Register.I : Register.R);
+					wrs.setAcc(value);
 					ccr.setSignFlag((value & Z80.BIT_7) == Z80.BIT_7);
 					ccr.setZeroFlag(value == (byte) 00);
 					ccr.setHFlag(false);
@@ -367,18 +368,23 @@ public class CentralProcessingUnit implements Runnable {
 	}// compareMemoryDecrement
 
 	// Bit Instructions
-	private int opCodeSetCB(Instruction instruction) {
+	private int opCodeSetCB() {
 		int instructionSize = 2;
+		byte opCode1 = cpuBuss.read(instructionBase + 1);
+		int page = (opCode1 >> 6) & 0X0003; // only want the value of bits 6 & 7
+		int yyy = (opCode1 >> 3) & 0X0007; // only want the value of bits 3,4 & 5
+		int bit = yyy;
 
-		int bit = instruction.bit;
-		// byte bitMask = Z80.BITS[bit];
+		// this.page = (source >> 6) & 0X0003; // only want the value of bits 6 & 7
+		// this.yyy = (source >> 3) & 0X0007; // only want the value of bits 3,4 & 5
+		this.zzz = opCode1 & 0X0007; // only want the value of bits 0,1 & 2
 
-		Register subject = instruction.singleRegister1;
+		Register subject = Z80.singleRegisters[zzz];
 		byte sourceByte = wrs.getReg(subject);
 		byte resultByte;
-		switch (instruction.page) {
+		switch (page) {
 		case 0: // Page 00 RLC RRC RL RR SLA SRA SLL SRL
-			switch (instruction.yyy) {
+			switch (yyy) {
 			case 0: // RLC 00-07
 				wrs.setReg(subject, au.rotateLeft(sourceByte));
 				break;
@@ -431,38 +437,49 @@ public class CentralProcessingUnit implements Runnable {
 		return instructionSize;
 	}// opCodePageCB
 
-	private int opCodeSetIndexRegisters(Instruction instruction) {
+	private int opCodeSetIndexRegisters() {
 		int instructionSize = 0;
-		Register regIXY = instruction.doubleRegister1;
-		Register regRR = instruction.doubleRegister2;
+		Z80.Register activeIndexRegister = cpuBuss.read(instructionBase) == (byte) 0XDD ? Z80.Register.IX
+				: Z80.Register.IY;
+
+		int indexRegisterContents = wrs.getDoubleReg(activeIndexRegister);
+		int indexDisplacement = cpuBuss.read(instructionBase + 2);
+		int netLocation = (indexRegisterContents + indexDisplacement) & Z80.WORD_MASK;
+
+		// Register regIXY = instruction.doubleRegister1;
+		Register regRR; // = instruction.doubleRegister2;
+		Register regR; // Single Register
 		byte[] arg1, arg2;
 		byte[] result;
-		byte argument, answer;
-		switch (instruction.opCode1) {
+		byte argument, answer, immediateByte;
+		int immediateWord;
+		switch (cpuBuss.read(instructionBase + 1)) {
 		case (byte) 0X09:// ADD IXY,BC
 		case (byte) 0X19:// ADD IXY,DE
 		case (byte) 0X29:// ADD IXY,IXY
 		case (byte) 0X39:// ADD IXY,SP
 			instructionSize = 2;
-			arg1 = getValue(wrs.getDoubleReg(regIXY));
+			regRR = Z80.doubleRegisters1[(cpuBuss.read(instructionBase + 1) >> 4) & 0b011];
+			arg1 = getValue(wrs.getDoubleReg(activeIndexRegister));
 			arg2 = getValue(wrs.getDoubleReg(regRR));
 			result = au.addWord(arg1, arg2);
-			wrs.setDoubleReg(regIXY, result);
+			wrs.setDoubleReg(activeIndexRegister, result);
 			ccr.setNFlag(false);
 			ccr.setHFlag(au.isHCarryFlagSet());
 			ccr.setCarryFlag(au.isCarryFlagSet());
 			break;
-		case (byte) 0X70: // LD (IXY=d),B
-		case (byte) 0X71: // LD (IXY=d),C
-		case (byte) 0X72: // LD (IXY=d),D
-		case (byte) 0X73: // LD (IXY=d),E
-		case (byte) 0X74: // LD (IXY=d),H
-		case (byte) 0X75: // LD (IXY=d),L
-		case (byte) 0X76: // LD (IXY=d),M
+		case (byte) 0X70: // LD (IXY+d),B
+		case (byte) 0X71: // LD (IXY+d),C
+		case (byte) 0X72: // LD (IXY+d),D
+		case (byte) 0X73: // LD (IXY+d),E
+		case (byte) 0X74: // LD (IXY+d),H
+		case (byte) 0X75: // LD (IXY+d),L
+		case (byte) 0X76: // LD (IXY+d),M
 		case (byte) 0X77: // LD (IXY=d),A
 			instructionSize = 3;
-			argument = wrs.getReg(instruction.singleRegister1);
-			cpuBuss.write(instruction.getNetIndexValue(), argument);
+			regR = Z80.singleRegisters[cpuBuss.read(instructionBase + 1) & 0b0111];
+			argument = wrs.getReg(regR);
+			cpuBuss.write(netLocation, argument);
 			break;
 		case (byte) 0X46: // LD B,(IXY=d)
 		case (byte) 0X4E: // LD C,(IXY=d)
@@ -472,36 +489,40 @@ public class CentralProcessingUnit implements Runnable {
 		case (byte) 0X6E: // LD L,(IXY=d)
 		case (byte) 0X7E: // LD A,(IXY+d)
 			instructionSize = 3;
-			argument = cpuBuss.read(instruction.getNetIndexValue());
-			wrs.setReg(instruction.singleRegister1, argument);
+			regR = Z80.singleRegisters[(cpuBuss.read(instructionBase + 1) >> 3) & 0b0111];
+			argument = cpuBuss.read(netLocation);
+			wrs.setReg(regR, argument);
 			break;
 		case (byte) 0X21: // LD IXY,dd
 			instructionSize = 4;
-			wrs.setDoubleReg(regIXY, instruction.immediateWord);
+			immediateWord = cpuBuss.readWordReversed(instructionBase + 2);
+			wrs.setDoubleReg(activeIndexRegister, immediateWord);
 			break;
 		case (byte) 0X22: // LD (dd),IXY
 			instructionSize = 4;
-			byte[] values = wrs.getDoubleRegArray(regIXY);
-			cpuBuss.writeWord(instruction.immediateWord, values[0], values[1]);
+			immediateWord = cpuBuss.readWordReversed(instructionBase + 2);
+			byte[] values = wrs.getDoubleRegArray(activeIndexRegister);
+			cpuBuss.writeWord(immediateWord, values[0], values[1]);
 			break;
 		case (byte) 0X23: // INC IXY
 			instructionSize = 2;
-			result = wrs.getDoubleRegArray(regIXY);
-			wrs.setDoubleReg(regIXY, au.incrementWord(result));
+			result = wrs.getDoubleRegArray(activeIndexRegister);
+			wrs.setDoubleReg(activeIndexRegister, au.incrementWord(result));
 			break;
 		case (byte) 0X2A: // LD IXY,(dd)
-			int value = cpuBuss.readWordReversed(instruction.immediateWord);
-			wrs.setDoubleReg(regIXY, value);
+			immediateWord = cpuBuss.readWordReversed(instructionBase + 2);
+			int value = cpuBuss.readWordReversed(immediateWord);
+			wrs.setDoubleReg(activeIndexRegister, value);
 			instructionSize = 4;
 			break;
 		case (byte) 0X2B: // DEC IXY
 			instructionSize = 2;
-			result = wrs.getDoubleRegArray(regIXY);
-			wrs.setDoubleReg(regIXY, au.decrementWord(result));
+			result = wrs.getDoubleRegArray(activeIndexRegister);
+			wrs.setDoubleReg(activeIndexRegister, au.decrementWord(result));
 			break;
 		case (byte) 0X34: // INC (IXY+d)
 			instructionSize = 3;
-			argument = cpuBuss.read(instruction.getNetIndexValue());
+			argument = cpuBuss.read(netLocation);
 			answer = au.increment(argument);
 			ccr.setSignFlag(au.isSignFlagSet());
 			ccr.setZeroFlag(au.isZeroFlagSet());
@@ -509,11 +530,11 @@ public class CentralProcessingUnit implements Runnable {
 			ccr.setPvFlag(argument == 0X7F ? true : false);
 			ccr.setNFlag(false);
 
-			cpuBuss.write(instruction.getNetIndexValue(), answer);
+			cpuBuss.write(netLocation, answer);
 			break;
 		case (byte) 0X35: // DEC (IXY+d)
 			instructionSize = 3;
-			argument = cpuBuss.read(instruction.getNetIndexValue());
+			argument = cpuBuss.read(netLocation);
 			answer = au.decrement(argument);
 			ccr.setSignFlag(au.isSignFlagSet());
 			ccr.setZeroFlag(au.isZeroFlagSet());
@@ -521,15 +542,16 @@ public class CentralProcessingUnit implements Runnable {
 			ccr.setPvFlag(argument == 0X80 ? true : false);
 			ccr.setNFlag(true);
 
-			cpuBuss.write(instruction.getNetIndexValue(), answer);
+			cpuBuss.write(netLocation, answer);
 			break;
 		case (byte) 0X36: // LD (IXY+d),n
 			instructionSize = 4;
-			cpuBuss.write(instruction.getNetIndexValue(), instruction.immediateByte);
+			immediateByte = cpuBuss.read(instructionBase + 3);
+			cpuBuss.write(netLocation, immediateByte);
 			break;
 		case (byte) 0X86: // ADD A,(IXY+d)
 			instructionSize = 3;
-			argument = cpuBuss.read(instruction.getNetIndexValue());
+			argument = cpuBuss.read(netLocation);
 			answer = au.add(wrs.getAcc(), argument);
 			ccr.setSignFlag(au.isSignFlagSet());
 			ccr.setZeroFlag(au.isZeroFlagSet());
@@ -542,7 +564,7 @@ public class CentralProcessingUnit implements Runnable {
 			break;
 		case (byte) 0X8E: // ADC A,(IXY+d)
 			instructionSize = 3;
-			argument = cpuBuss.read(instruction.getNetIndexValue());
+			argument = cpuBuss.read(netLocation);
 			answer = au.addWithCarry(wrs.getAcc(), argument, ccr.isCarryFlagSet());
 			ccr.setSignFlag(au.isSignFlagSet());
 			ccr.setZeroFlag(au.isZeroFlagSet());
@@ -555,7 +577,7 @@ public class CentralProcessingUnit implements Runnable {
 			break;
 		case (byte) 0X96: // SUB (IXY+d)
 			instructionSize = 3;
-			argument = cpuBuss.read(instruction.getNetIndexValue());
+			argument = cpuBuss.read(netLocation);
 			answer = au.sub(wrs.getAcc(), argument);
 			ccr.setSignFlag(au.isSignFlagSet());
 			ccr.setZeroFlag(au.isZeroFlagSet());
@@ -568,7 +590,7 @@ public class CentralProcessingUnit implements Runnable {
 			break;
 		case (byte) 0X9E: // SBC A,(IXY+d)
 			instructionSize = 3;
-			argument = cpuBuss.read(instruction.getNetIndexValue());
+			argument = cpuBuss.read(netLocation);
 			answer = au.subWithCarry(wrs.getAcc(), argument, ccr.isCarryFlagSet());
 			ccr.setSignFlag(au.isSignFlagSet());
 			ccr.setZeroFlag(au.isZeroFlagSet());
@@ -582,7 +604,7 @@ public class CentralProcessingUnit implements Runnable {
 			break;
 		case (byte) 0XA6: // AND(IXY+d)
 			instructionSize = 3;
-			argument = cpuBuss.read(instruction.getNetIndexValue());
+			argument = cpuBuss.read(netLocation);
 			answer = au.and(wrs.getAcc(), argument);
 			ccr.setSignFlag(au.isSignFlagSet());
 			ccr.setZeroFlag(au.isZeroFlagSet());
@@ -595,7 +617,7 @@ public class CentralProcessingUnit implements Runnable {
 			break;
 		case (byte) 0XAE: // XOR(IXY+d)
 			instructionSize = 3;
-			argument = cpuBuss.read(instruction.getNetIndexValue());
+			argument = cpuBuss.read(netLocation);
 			answer = au.xor(wrs.getAcc(), argument);
 			ccr.setSignFlag(au.isSignFlagSet());
 			ccr.setZeroFlag(au.isZeroFlagSet());
@@ -608,7 +630,7 @@ public class CentralProcessingUnit implements Runnable {
 			break;
 		case (byte) 0XB6: // OR(IXY+d)
 			instructionSize = 3;
-			argument = cpuBuss.read(instruction.getNetIndexValue());
+			argument = cpuBuss.read(netLocation);
 			answer = au.or(wrs.getAcc(), argument);
 			ccr.setSignFlag(au.isSignFlagSet());
 			ccr.setZeroFlag(au.isZeroFlagSet());
@@ -621,7 +643,7 @@ public class CentralProcessingUnit implements Runnable {
 			break;
 		case (byte) 0XBE: // CP(IXY+d)
 			instructionSize = 3;
-			argument = cpuBuss.read(instruction.getNetIndexValue());
+			argument = cpuBuss.read(netLocation);
 			au.compare(wrs.getAcc(), argument);
 
 			ccr.setSignFlag(au.isSignFlagSet());
@@ -635,7 +657,7 @@ public class CentralProcessingUnit implements Runnable {
 		case (byte) 0XE1: // POP IXY
 			instructionSize = 2;
 			result = this.opCode_Pop();
-			if (regIXY.equals(Register.IX)) {
+			if (activeIndexRegister.equals(Register.IX)) {
 				wrs.setIX(result);
 			} else {
 				wrs.setIY(result);
@@ -645,22 +667,22 @@ public class CentralProcessingUnit implements Runnable {
 			instructionSize = 2;
 			int sp = wrs.getStackPointer();
 			arg1 = cpuBuss.popWordLoHi(sp);
-			arg2 = wrs.getDoubleRegArray(regIXY);
-			wrs.setDoubleReg(regIXY, arg1);
+			arg2 = wrs.getDoubleRegArray(activeIndexRegister);
+			wrs.setDoubleReg(activeIndexRegister, arg1);
 			cpuBuss.write(sp, arg2[0]);
 			cpuBuss.write(sp + 1, arg2[1]);
 			break;
 		case (byte) 0XE5: // PUSH IXY
 			instructionSize = 2;
-			this.opCode_Push(wrs.getDoubleReg(regIXY));
+			this.opCode_Push(wrs.getDoubleReg(activeIndexRegister));
 			break;
 		case (byte) 0XE9: // JP (IXY)
 			instructionSize = 0;
-			wrs.setProgramCounter(wrs.getDoubleReg(regIXY));
+			wrs.setProgramCounter(wrs.getDoubleReg(activeIndexRegister));
 			break;
 		case (byte) 0XF9: // LD SP,IXY
 			instructionSize = 2;
-			wrs.setStackPointer(wrs.getDoubleReg(regIXY));
+			wrs.setStackPointer(wrs.getDoubleReg(activeIndexRegister));
 			break;
 		}// switch opCode1
 
@@ -680,21 +702,25 @@ public class CentralProcessingUnit implements Runnable {
 		return new byte[] { lsb, msb };
 	}// getValue
 
-	private int opCodeSetIndexRegistersBit(Instruction instruction) {
-		int instructionSize = 4;
-		int netLocation;
-		byte sourceByte, result = 0x00;
-		byte code3 = cpuBuss.read(wrs.getProgramCounter() + 3);
-		int subInstructionPage = code3 >> 6 & 0B011;
+	private int opCodeSetIndexRegistersBit() {
+		Z80.Register activeIndexRegister = cpuBuss.read(instructionBase) == (byte) 0XDD ? Z80.Register.IX
+				: Z80.Register.IY;
 
-		netLocation = instruction.getNetIndexValue();
-		// sourceByte = cpuBuss.read(instruction.getNetIndexValue());
-		sourceByte = cpuBuss.read(netLocation);
+		int indexRegisterContents = wrs.getDoubleReg(activeIndexRegister);
+		int indexDisplacement = cpuBuss.read(instructionBase + 2);
+		int netLocation = (indexRegisterContents + indexDisplacement) & Z80.WORD_MASK;
+
+		int instructionSize = 4;
+		byte result = 0x00;
+		byte opCode3 = cpuBuss.read(wrs.getProgramCounter() + 3);
+		int subInstructionPage = opCode3 >> 6 & 0B011;
+
+		byte sourceByte = cpuBuss.read(netLocation);
 
 		switch (subInstructionPage) {
 		case 0: // Page 00 RLC RRC RL RR SLA SRA SLL SRL --- (IXY+d)
 
-			switch (code3) {
+			switch (opCode3) {
 			case 0x06: // RLC (IXY+d)
 				result = au.rotateLeft(sourceByte);
 				// DO OPCODE RLC (IXY+d)
@@ -732,17 +758,20 @@ public class CentralProcessingUnit implements Runnable {
 
 			break; // case 0 page 0
 		case 1: // Page 01 BIT b,(IXY+d)
-			au.bitTest(sourceByte, instruction.bit);
+			int bit = (cpuBuss.read(instructionBase + 3) >> 3) & 0b0111;
+			au.bitTest(sourceByte, bit);
 			ccr.setZeroFlag(au.isZeroFlagSet());
 			ccr.setHFlag(true);
 			ccr.setNFlag(false);
 			break;
 		case 2: // Page 10 RES b,(IXY+d)
-			result = au.bitRes(sourceByte, instruction.bit);
+			bit = (cpuBuss.read(instructionBase + 3) >> 3) & 0b0111;
+			result = au.bitRes(sourceByte, bit);
 			cpuBuss.write(netLocation, result);
 			break;
 		case 3: // Page 11 SET b,(IXY+d)
-			result = au.bitSet(sourceByte, instruction.bit);
+			bit = (cpuBuss.read(instructionBase + 3) >> 3) & 0b0111;
+			result = au.bitSet(sourceByte, bit);
 			cpuBuss.write(netLocation, result);
 
 			break;
@@ -901,8 +930,7 @@ public class CentralProcessingUnit implements Runnable {
 				break;
 			case 5: // 2A - LD HL,(nn)
 				instructionSize = 3;
-				wrs.setDoubleReg(Register.HL, cpuBuss.read(directAddress),
-						cpuBuss.read(directAddress + 1));
+				wrs.setDoubleReg(Register.HL, cpuBuss.read(directAddress), cpuBuss.read(directAddress + 1));
 				break;
 			case 6: // 32 - LD (nn),A
 				instructionSize = 3;
@@ -1510,27 +1538,25 @@ public class CentralProcessingUnit implements Runnable {
 	}// isError
 
 	//////////////////////////////
-	
+
 	private int getPage(int location) {
 		byte source = cpuBuss.read(location);
-		return (source & Z80.MASK_PAGE) >> 6; 
+		return (source & Z80.MASK_PAGE) >> 6;
 	}// getZZZ
 
 	private int getYYY(int location) {
 		byte source = cpuBuss.read(location);
-		return (source & Z80.MASK_YYY) >> 3; 
+		return (source & Z80.MASK_YYY) >> 3;
 	}// getZZZ
 
 	private int getZZZ(int location) {
 		byte source = cpuBuss.read(location);
-		return source & Z80.MASK_ZZZ; 
+		return source & Z80.MASK_ZZZ;
 	}// getZZZ
-	
+
 	private int getImmediateWord(int location) {
-		return  cpuBuss.readWordReversed(location);
-	}//getImmediateWord
-	
-	
+		return cpuBuss.readWordReversed(location);
+	}// getImmediateWord
 
 	private Register getDoubleRegister1_45(int location) {
 		byte source = cpuBuss.read(location);
