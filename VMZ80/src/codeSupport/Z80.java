@@ -97,6 +97,7 @@ public class Z80 {
 	public static final String COND_PE = "COND_PE";
 	public static final String COND_P = "COND_P";
 	public static final String COND_M = "COND_M";
+	public static final int    MASK_CONDITION_CODE = 0b0011_1000;
 
 	/**
 	 * masks
