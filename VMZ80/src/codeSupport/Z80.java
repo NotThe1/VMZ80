@@ -45,7 +45,6 @@ public class Z80 {
 	public static final int MASK_YYY = 0b0011_1000;
 	
 	
-	
 	public static final int MASK_REGISTER_123 = 0b0000_0111;
 	public static final int MASK_REGISTER_345 = 0b0011_1000;
 	
