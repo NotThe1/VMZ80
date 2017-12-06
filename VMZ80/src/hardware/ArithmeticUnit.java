@@ -2,6 +2,7 @@ package hardware;
 
 import java.util.BitSet;
 
+import codeSupport.AppLogger;
 import codeSupport.Z80;
 //import codeSupport.Z80;
 
@@ -10,7 +11,7 @@ public class ArithmeticUnit {
 	private static ArithmeticUnit instance = new ArithmeticUnit();
 	private ConditionCodeRegister ccr = ConditionCodeRegister.getInstance();
 
-	// private AppLogger appLogger = AppLogger.getInstance();
+	private AppLogger log = AppLogger.getInstance();
 	private static final int SIZE = 16;
 	private BitSet augend = new BitSet(SIZE);
 	private BitSet addend = new BitSet(SIZE);
@@ -63,86 +64,90 @@ public class ArithmeticUnit {
 				fudge = (byte) 0X9A;
 				break;
 			default:
-				// report error
+				String message = String.format(
+						"[au] daa()%n bad flagMix%n" + " value: %02X, subtractFlag: %s, carryIn: %s,halfCarryIn: %s",
+						value, subtractFlag, carryIn, halfCarryIn);
+				log.addError(message);
+				CentralProcessingUnit.setError(ErrorStatus.ARITHMETIC_UNIT_ERROR);
 			}// switch Subtraction
 
 		} else {// Addition
 			byte loNibble = (byte) (value & 0X0F);
-			byte hiNibble = (byte) ((value & 0XF0) >>4);
+			byte hiNibble = (byte) ((value & 0XF0) >> 4);
 			switch (flagMix) {
 			case 0:// !carryIn and !halfCarryIn
-				if (loNibble < 0X0A){//(0-9)
-					if(hiNibble < 0X0A){//0-9)
+				if (loNibble < 0X0A) {// (0-9)
+					if (hiNibble < 0X0A) {// 0-9)
 						carryOut = false;
 						halfCarryOut = false;
 						fudge = (byte) 0X00;
-					}else{//(A-F)
+					} else {// (A-F)
 						carryOut = true;
 						halfCarryOut = false;
 						fudge = (byte) 0X60;
-					}//if hiNibble
-					
-				}else{//(A-F)
-					if(hiNibble < 0X09){//(0-8)
+					} // if hiNibble
+
+				} else {// (A-F)
+					if (hiNibble < 0X09) {// (0-8)
 						carryOut = false;
 						halfCarryOut = true;
-						fudge = (byte) 0X06 ;
-					}else{//(9-F)
-						carryOut =true;
+						fudge = (byte) 0X06;
+					} else {// (9-F)
+						carryOut = true;
 						halfCarryOut = true;
 						fudge = (byte) 0X66;
 
-					}//if hiNibble
-					
-				}// if loNibble
-				
+					} // if hiNibble
+
+				} // if loNibble
+
 				break;
 			case 1:// !carryIn and halfCarryIn
-					halfCarryOut = false;
-				if(hiNibble >9){
+				halfCarryOut = false;
+				if (hiNibble > 9) {
 					carryOut = true;
 					fudge = (byte) 0X066;
-				}else{
+				} else {
 					carryOut = false;
 					fudge = (byte) 0X006;
 				}
 				break;
 			case 2:// carryIn and !halfCarryIn
 				carryOut = true;
-				if (loNibble < 0X0A){
+				if (loNibble < 0X0A) {
 					fudge = (byte) 0X060;
 					halfCarryOut = false;
-				}else{
+				} else {
 					fudge = (byte) 0X066;
 					halfCarryOut = true;
-				}//if
+				} // if
 				break;
 			case 3:// carryIn and halfCarryIn
-				fudge =(byte) 0X66;
+				fudge = (byte) 0X66;
 				carryOut = true;
 				halfCarryOut = false;
 				break;
 			default:
-				// report error
+				String message = String.format(
+						"[au] daa()%n bad flagMix%n" + " value: %02X, subtractFlag: %s, carryIn: %s,halfCarryIn: %s",
+						value, subtractFlag, carryIn, halfCarryIn);
+				log.addError(message);
+				CentralProcessingUnit.setError(ErrorStatus.ARITHMETIC_UNIT_ERROR);
 			}// switch Addition
-
 
 		} // if add v Sub
 
 		ans = (byte) (value + fudge);
-		
+
 		carry = carryOut;
 		halfCarry = halfCarryOut;
-		
+
 		sign = (ans & Z80.BIT_SIGN) == Z80.BIT_SIGN;
 		zero = ans == (byte) 0x00;
-		
+
 		BitSet bs = new BitSet(8);
-		bs = BitSet.valueOf(new byte[] {ans});
+		bs = BitSet.valueOf(new byte[] { ans });
 		parity = (bs.cardinality() % 2) == 0 ? true : false;
-
-
-
 
 		return ans;
 	}
@@ -264,7 +269,7 @@ public class ArithmeticUnit {
 		return getSum()[0];
 	}// rotateRight
 
-//------------------ shift SLA, SRA, SRL
+	// ------------------ shift SLA, SRA, SRL
 	private byte shiftRight(byte arg, boolean zeroSeed) {
 		clearSets();
 		setSum(arg);
@@ -292,16 +297,16 @@ public class ArithmeticUnit {
 	public byte shiftSRA(byte arg) {
 		return shiftRight(arg, false);
 	}// shiftSRA
-	
+
 	public byte shiftSLA(byte arg) {
-		return shiftSLASLL(arg,false);
-	}//shiftSLA
-	
+		return shiftSLASLL(arg, false);
+	}// shiftSLA
+
 	public byte shiftSLL(byte arg) {
-		return shiftSLASLL(arg,true);
-	}//shiftSLA
-	
-	public byte shiftSLASLL(byte arg,boolean seed) {
+		return shiftSLASLL(arg, true);
+	}// shiftSLA
+
+	public byte shiftSLASLL(byte arg, boolean seed) {
 		clearSets();
 		setSum(arg);
 		boolean originalBit7 = sum.get(7);
@@ -319,7 +324,7 @@ public class ArithmeticUnit {
 	// -----------------------------------------------------------------------------------------------------
 
 	private int getBitValue(int arg) {
-//		int index = Math.max(arg, 0);
+		// int index = Math.max(arg, 0);
 		return Math.min(7, arg);
 	}// getBitValue
 
@@ -368,28 +373,26 @@ public class ArithmeticUnit {
 		setFlags(BYTE_ARG);
 		return this.getSum()[0];
 	}// addWithCarry
-	
-	public int addWord(int word1,int word2) {
-//		byte arg1[] = {(byte)((word1 >>8) & 0XFF),(byte) (word1 & 0XFF)};
-//		byte arg2[] = {(byte)((word2 >>8) & 0XFF),(byte) (word2 & 0XFF)};
-		byte arg1[] = {(byte)(word1 & 0XFF),(byte) ((word1 >>8) & 0XFF)};
-		byte arg2[] = {(byte)(word2 & 0XFF),(byte) ((word2 >>8) & 0XFF)};
-		
-		
+
+	public int addWord(int word1, int word2) {
+		// byte arg1[] = {(byte)((word1 >>8) & 0XFF),(byte) (word1 & 0XFF)};
+		// byte arg2[] = {(byte)((word2 >>8) & 0XFF),(byte) (word2 & 0XFF)};
+		byte arg1[] = { (byte) (word1 & 0XFF), (byte) ((word1 >> 8) & 0XFF) };
+		byte arg2[] = { (byte) (word2 & 0XFF), (byte) ((word2 >> 8) & 0XFF) };
+
 		byte[] ans = addWordWithCarry(arg1, arg2, false);
-		return (int) (ans[0]<< 8 + ans[1]);
-	}//addWord(int,int)
+		return (int) (ans[0] << 8 + ans[1]);
+	}// addWord(int,int)
 
 	public byte[] addWord(byte[] argument1, byte[] argument2) {
 		return addWordWithCarry(argument1, argument2, false);
 	}// add
-	
-	public byte[] addWordWithCarry(int word1,int word2, boolean carryState) {
-		byte arg1[] = {(byte)((word1 >>8) & 0XFF),(byte) (word1 & 0XFF)};
-		byte arg2[] = {(byte)((word2 >>8) & 0XFF),(byte) (word2 & 0XFF)};
-		return addWordWithCarry(arg1, arg2, carryState);
-	}//addWord(int,int)
 
+	public byte[] addWordWithCarry(int word1, int word2, boolean carryState) {
+		byte arg1[] = { (byte) ((word1 >> 8) & 0XFF), (byte) (word1 & 0XFF) };
+		byte arg2[] = { (byte) ((word2 >> 8) & 0XFF), (byte) (word2 & 0XFF) };
+		return addWordWithCarry(arg1, arg2, carryState);
+	}// addWord(int,int)
 
 	public byte[] addWordWithCarry(byte[] argument1, byte[] argument2, boolean carryState) {
 		this.setArgument1(argument1);
@@ -433,6 +436,12 @@ public class ArithmeticUnit {
 				carryIn.set(bitIndex + 1, true);
 				break;
 			default:
+				String message = String.format(
+						"[au] add()%n bad bitCount: %02X%n"
+				+ " augend: %s ,addend: %s ,carryIn: %s",
+						augend,addend,carryIn);
+				log.addError(message);
+				CentralProcessingUnit.setError(ErrorStatus.ARITHMETIC_UNIT_ERROR);
 			}// switch
 		} // for
 
@@ -452,6 +461,9 @@ public class ArithmeticUnit {
 			// ok
 			break;
 		default:
+			String message = String.format("[au] getSum(): bad ans.length: %02X%n",ans.length);
+			log.addError(message);
+			CentralProcessingUnit.setError(ErrorStatus.ARITHMETIC_UNIT_ERROR);
 		}// switch
 		return ans;
 	}// getSum
@@ -459,7 +471,7 @@ public class ArithmeticUnit {
 	public byte subWithCarry(byte argument1, byte argument2, boolean carryState) {
 		signArg1 = (argument1 & Z80.BIT_SIGN) == Z80.BIT_SIGN;
 		signArg2 = (argument2 & Z80.BIT_SIGN) == Z80.BIT_SIGN;
-		
+
 		byte arg2 = argument2;
 		boolean halfCarry0 = false;
 		boolean carry0 = false;
@@ -471,13 +483,11 @@ public class ArithmeticUnit {
 
 		byte subtrahend = this.complement(arg2);
 		arg2 = this.increment(subtrahend);
-		
-//		halfCarry0 = halfCarry | halfCarry0;
-//		carry0 = carry | carry0;
+
+		// halfCarry0 = halfCarry | halfCarry0;
+		// carry0 = carry | carry0;
 		halfCarry0 = halfCarry ^ halfCarry0;
 		carry0 = carry ^ carry0;
-		
-
 
 		byte ans = this.add(argument1, arg2);
 		setFlags(BYTE_ARG, true);
@@ -489,7 +499,7 @@ public class ArithmeticUnit {
 	public byte[] subWordWithCarry(byte[] argument1, byte[] argument2, boolean carryState) {
 		signArg1 = (argument1[1] & Z80.BIT_SIGN) == Z80.BIT_SIGN;
 		signArg2 = (argument2[1] & Z80.BIT_SIGN) == Z80.BIT_SIGN;
-		
+
 		byte[] arg2 = argument2.clone();
 		boolean halfCarry0 = false;
 		boolean carry0 = false;
@@ -500,12 +510,11 @@ public class ArithmeticUnit {
 			carry0 = carry;
 		} // if
 
-
 		byte[] subtrahend = this.complementWord(arg2);
 		subtrahend = this.incrementWord(subtrahend);
-				
+
 		halfCarry0 = halfCarry ^ halfCarry0;
-		carry0 = carry^carry0 ;
+		carry0 = carry ^ carry0;
 		byte[] ans = this.addWord(argument1, subtrahend);
 		setFlags(WORD_ARG, true);
 

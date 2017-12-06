@@ -21,18 +21,18 @@ public class CentralProcessingUnit implements Runnable {
 	private ConditionCodeRegister ccr = ConditionCodeRegister.getInstance();
 	private WorkingRegisterSet wrs = WorkingRegisterSet.getInstance();
 	private ArithmeticUnit au = ArithmeticUnit.getInstance();
-	private ErrorStatus error;
 	private int interruptMode = Z80.MODE_0;
 	// private IOController ioController;
 
 	private AppLogger log = AppLogger.getInstance();
+	private static ErrorStatus error = ErrorStatus.NONE;
 
 	public static CentralProcessingUnit getInstance() {
 		return instance;
 	}// getInstance
 
 	private int instructionBase;
-//	private int page, yyy, zzz;
+	// private int page, yyy, zzz;
 
 	private CentralProcessingUnit() {
 
@@ -74,7 +74,7 @@ public class CentralProcessingUnit implements Runnable {
 		case (byte) 0X0FD: // IY Instructions
 			// indexRegister = instruction.doubleRegister1
 
-			if (cpuBuss.read(instructionBase +1) == (byte) 0XCB) { // IX/IY bit instructions
+			if (cpuBuss.read(instructionBase + 1) == (byte) 0XCB) { // IX/IY bit instructions
 				instructionLength = opCodeSetIndexRegistersBit();
 			} else {// IX/IY instructions
 				instructionLength = opCodeSetIndexRegisters();
@@ -83,7 +83,6 @@ public class CentralProcessingUnit implements Runnable {
 
 		default: // Main instructions
 			instructionLength = opCodeSetMain();
-
 		}// switch opCode
 		wrs.incrementProgramCounter(instructionLength);
 		return;
@@ -104,10 +103,7 @@ public class CentralProcessingUnit implements Runnable {
 
 		switch (page) {
 		case 0: // Page 00
-			log.addError(String.format("bad instruction %02X %02X %02X, at location %04X",
-					cpuBuss.read(this.instructionBase), cpuBuss.read(this.instructionBase + 1),
-					cpuBuss.read(this.instructionBase + 2), wrs.getProgramCounter()));
-			System.exit(-1);
+			reportOpCodeError();
 			// There are no instructions on page 0
 			break;
 		case 1: // Page 01
@@ -232,9 +228,11 @@ public class CentralProcessingUnit implements Runnable {
 					ccr.setNFlag(false);
 					break;
 				default:
+					reportOpCodeError();
 				}// switch opCode1
 				break;
 			default:
+				reportOpCodeError();
 			}// switch zzz
 			break;
 
@@ -338,7 +336,6 @@ public class CentralProcessingUnit implements Runnable {
 		return instructionSize;
 	}// opCodePageED
 
-
 	private boolean compareMemoryIncDec(int delta) {
 		int hlValue = wrs.getDoubleReg(Register.HL);
 		int bcValue = wrs.getDoubleReg(Register.BC);
@@ -356,13 +353,12 @@ public class CentralProcessingUnit implements Runnable {
 	// Bit Instructions
 	private int opCodeSetCB() {
 		int instructionSize = 2;
-		int page = getPage(instructionBase+1);
-		int yyy = getYYY(instructionBase+1);
-		int zzz = getZZZ(instructionBase+1);	
+		int page = getPage(instructionBase + 1);
+		int yyy = getYYY(instructionBase + 1);
+		int zzz = getZZZ(instructionBase + 1);
 		int targetBit = yyy;
 
-
-		Register subject = getSingleRegister012(instructionBase+1);
+		Register subject = getSingleRegister012(instructionBase + 1);
 		byte sourceByte = wrs.getReg(subject);
 		byte resultByte;
 		switch (page) {
@@ -428,11 +424,11 @@ public class CentralProcessingUnit implements Runnable {
 		int indexDisplacement = cpuBuss.read(instructionBase + 2);
 		int netLocation = (indexRegisterContents + indexDisplacement) & Z80.WORD_MASK;
 
-		Register regDouble,regSingle;
-		byte[] arg1, arg2,result;
+		Register regDouble, regSingle;
+		byte[] arg1, arg2, result;
 		byte argument, answer, immediateByte;
 		int immediateWord;
-		
+
 		switch (cpuBuss.read(instructionBase + 1)) {
 		case (byte) 0X09:// ADD IXY,BC
 		case (byte) 0X19:// ADD IXY,DE
@@ -480,7 +476,7 @@ public class CentralProcessingUnit implements Runnable {
 			break;
 		case (byte) 0X22: // LD (dd),IXY
 			instructionSize = 4;
-		immediateWord = getImmediateWord(instructionBase + 2);
+			immediateWord = getImmediateWord(instructionBase + 2);
 			byte[] values = wrs.getDoubleRegArray(activeIndexRegister);
 			cpuBuss.writeWord(immediateWord, values[0], values[1]);
 			break;
@@ -685,7 +681,7 @@ public class CentralProcessingUnit implements Runnable {
 		int netLocation = (indexRegisterContents + indexDisplacement) & Z80.WORD_MASK;
 
 		byte result = 0x00;
-		int page = getPage(instructionBase+3);
+		int page = getPage(instructionBase + 3);
 		byte sourceByte = cpuBuss.read(netLocation);
 
 		switch (page) {
@@ -771,8 +767,7 @@ public class CentralProcessingUnit implements Runnable {
 			instructionSize = opCodePage11();
 			break;
 		default:
-			// TODO setError(ErrorStatus.INVALID_OPCODE);
-
+			reportOpCodeError();
 		}// Switch page
 		return instructionSize;
 	}// opCodePageSingle
@@ -844,7 +839,7 @@ public class CentralProcessingUnit implements Runnable {
 					instructionSize = 2;
 				} // if
 				break;
-				
+
 			}// switch yyy
 
 			break;
@@ -857,7 +852,7 @@ public class CentralProcessingUnit implements Runnable {
 				wrs.setDoubleReg(Register.HL, ansValueArray);
 			} else { // LD rr,dd - 01,11,21,31
 				instructionSize = 3;
-				wrs.setDoubleReg(getDoubleRegister1_45(instructionBase), getImmediateWord(instructionBase+1));
+				wrs.setDoubleReg(getDoubleRegister1_45(instructionBase), getImmediateWord(instructionBase + 1));
 			} // if bit 3
 			break;
 		case 2: // 02,0A,12,1A,22,2A,32,3A
@@ -903,7 +898,7 @@ public class CentralProcessingUnit implements Runnable {
 		case 3: // INC rr / DEC rr - 03,13,23,33/0B,1B,2B,3B
 			instructionSize = 1;
 			byte[] sourceValueArray = wrs.getDoubleRegArray(getDoubleRegister1_45(instructionBase));
-			if  (isBit3Set(instructionBase)) {// DEC,rr - 0B,1B,2B,3B
+			if (isBit3Set(instructionBase)) {// DEC,rr - 0B,1B,2B,3B
 				wrs.setDoubleReg(getDoubleRegister1_45(instructionBase), au.decrementWord(sourceValueArray));
 			} else { // INC rr - 03,13,23,33
 				wrs.setDoubleReg(getDoubleRegister1_45(instructionBase), au.incrementWord(sourceValueArray));
@@ -935,7 +930,7 @@ public class CentralProcessingUnit implements Runnable {
 			break;
 		case 6: // LD r,d - 06,0E,16,1E,26,2E,36,3E
 			instructionSize = 2;
-			wrs.setReg(getSingleRegister345(instructionBase), getImmediateByte(instructionBase+1));
+			wrs.setReg(getSingleRegister345(instructionBase), getImmediateByte(instructionBase + 1));
 			break;
 		case 7: // RLCA RRCA RLA RRA DAA CPL SCF CCF - 07,0F,17,1F,27,2F,37,3F
 			instructionSize = 1;
@@ -1214,7 +1209,7 @@ public class CentralProcessingUnit implements Runnable {
 					instructionSize = 0;
 					opCode_Call();
 					break;
-				case 3: // DD IX 
+				case 3: // DD IX
 				case 5: // ED EXTD
 				case 7: // FD IY
 					// Extended Code
@@ -1228,11 +1223,11 @@ public class CentralProcessingUnit implements Runnable {
 			instructionSize = 2;
 			byte result;
 			byte accValue = wrs.getAcc();
-	///		byte immediateByte = cpuBuss.read(instructionBase + 1);
+			/// byte immediateByte = cpuBuss.read(instructionBase + 1);
 
 			switch (yyy) {
 			case 0: // ADD A,n - C6
-				result = au.add(accValue, getImmediateByte(instructionBase+1));
+				result = au.add(accValue, getImmediateByte(instructionBase + 1));
 				ccr.setSignFlag(au.isSignFlagSet());
 				ccr.setZeroFlag(au.isZeroFlagSet());
 				ccr.setHFlag(au.isHCarryFlagSet());
@@ -1242,7 +1237,7 @@ public class CentralProcessingUnit implements Runnable {
 				wrs.setAcc(result);
 				break;
 			case 1: // ADC A,n - CE
-				result = au.addWithCarry(accValue, getImmediateByte(instructionBase+1), ccr.isCarryFlagSet());
+				result = au.addWithCarry(accValue, getImmediateByte(instructionBase + 1), ccr.isCarryFlagSet());
 				ccr.setSignFlag(au.isSignFlagSet());
 				ccr.setZeroFlag(au.isZeroFlagSet());
 				ccr.setHFlag(au.isHCarryFlagSet());
@@ -1252,7 +1247,7 @@ public class CentralProcessingUnit implements Runnable {
 				wrs.setAcc(result);
 				break;
 			case 2: // SUB n - D6
-				result = au.sub(accValue,getImmediateByte(instructionBase+1));
+				result = au.sub(accValue, getImmediateByte(instructionBase + 1));
 				ccr.setSignFlag(au.isSignFlagSet());
 				ccr.setZeroFlag(au.isZeroFlagSet());
 				ccr.setHFlag(au.isHCarryFlagSet());
@@ -1262,7 +1257,7 @@ public class CentralProcessingUnit implements Runnable {
 				wrs.setAcc(result);
 				break;
 			case 3: // SBC A,n - DE
-				result = au.subWithCarry(accValue, getImmediateByte(instructionBase+1), ccr.isCarryFlagSet());
+				result = au.subWithCarry(accValue, getImmediateByte(instructionBase + 1), ccr.isCarryFlagSet());
 				ccr.setSignFlag(au.isSignFlagSet());
 				ccr.setZeroFlag(au.isZeroFlagSet());
 				ccr.setHFlag(au.isHCarryFlagSet());
@@ -1272,7 +1267,7 @@ public class CentralProcessingUnit implements Runnable {
 				wrs.setAcc(result);
 				break;
 			case 4: // AND n - E6
-				result = au.and(accValue, getImmediateByte(instructionBase+1));
+				result = au.and(accValue, getImmediateByte(instructionBase + 1));
 				ccr.setSignFlag(au.isSignFlagSet());
 				ccr.setZeroFlag(au.isZeroFlagSet());
 				ccr.setHFlag(true);
@@ -1282,7 +1277,7 @@ public class CentralProcessingUnit implements Runnable {
 				wrs.setAcc(result);
 				break;
 			case 5: // XOR n - EE
-				result = au.xor(accValue, getImmediateByte(instructionBase+1));
+				result = au.xor(accValue, getImmediateByte(instructionBase + 1));
 				ccr.setSignFlag(au.isSignFlagSet());
 				ccr.setZeroFlag(au.isZeroFlagSet());
 				ccr.setHFlag(false);
@@ -1292,7 +1287,7 @@ public class CentralProcessingUnit implements Runnable {
 				wrs.setAcc(result);
 				break;
 			case 6: // OR n - F6
-				result = au.or(accValue, getImmediateByte(instructionBase+1));
+				result = au.or(accValue, getImmediateByte(instructionBase + 1));
 				ccr.setSignFlag(au.isSignFlagSet());
 				ccr.setZeroFlag(au.isZeroFlagSet());
 				ccr.setHFlag(false);
@@ -1302,7 +1297,7 @@ public class CentralProcessingUnit implements Runnable {
 				wrs.setAcc(result);
 				break;
 			case 7: // CP n - FE
-				au.compare(accValue, getImmediateByte(instructionBase+1));
+				au.compare(accValue, getImmediateByte(instructionBase + 1));
 				ccr.setSignFlag(au.isSignFlagSet());
 				ccr.setZeroFlag(au.isZeroFlagSet());
 				ccr.setHFlag(au.isHCarryFlagSet());
@@ -1315,10 +1310,10 @@ public class CentralProcessingUnit implements Runnable {
 			break;
 		case 7: // RST - C7,CF,D7,DF,E7,EF,F7,F8
 			instructionSize = 0;
-			int PCvalue = wrs.getProgramCounter()+1;
+			int PCvalue = wrs.getProgramCounter() + 1;
 			opCode_Push(PCvalue);
 
-			PCvalue = (cpuBuss.read(instructionBase)& 0b0011_1000);
+			PCvalue = (cpuBuss.read(instructionBase) & 0b0011_1000);
 
 			wrs.setProgramCounter(PCvalue);
 			break;
@@ -1404,7 +1399,9 @@ public class CentralProcessingUnit implements Runnable {
 			ans = ccr.isSignFlagSet() ? true : false;
 			break;
 		default:
-
+			String message = String.format("[cpu] isConditionTrue() - bad condition: %s", condition);
+			log.addError(message);
+			setError(ErrorStatus.INVALID_CONDITION_CODE);
 		}// switch
 		return ans;
 	}// conditionTrue
@@ -1450,14 +1447,14 @@ public class CentralProcessingUnit implements Runnable {
 
 	// --------------------------------------------------------------------------------------------------------
 
-//	private byte[] splitWord(int wordValue) {
-//		return new byte[] { (byte) ((wordValue >> 8) & 0XFF), (byte) (wordValue & 0XFF) };
-//	}// split word
-//
-//	private byte[] splitWordReverse(int wordValue) {
-//		return new byte[] { (byte) (wordValue & 0XFF), (byte) ((wordValue >> 8) & 0XFF) };
-//	}// split word
-//
+	// private byte[] splitWord(int wordValue) {
+	// return new byte[] { (byte) ((wordValue >> 8) & 0XFF), (byte) (wordValue & 0XFF) };
+	// }// split word
+	//
+	// private byte[] splitWordReverse(int wordValue) {
+	// return new byte[] { (byte) (wordValue & 0XFF), (byte) ((wordValue >> 8) & 0XFF) };
+	// }// split word
+	//
 	/**
 	 * Retrieves an error of ErrorStatus
 	 * 
@@ -1473,8 +1470,8 @@ public class CentralProcessingUnit implements Runnable {
 	 * @param error
 	 *            type of error to record
 	 */
-	public void setError(ErrorStatus error) {
-		this.error = error;
+	public static void setError(ErrorStatus error) {
+		error = error;
 	}// setErrorFlag
 
 	/**
@@ -1485,6 +1482,13 @@ public class CentralProcessingUnit implements Runnable {
 	public boolean isError() {
 		return error.equals(ErrorStatus.NONE) ? false : true;
 	}// isError
+
+	private void reportOpCodeError() {
+		String message = String.format("[cpu] Bad opCode: %02X,Location: %04X", cpuBuss.read(instructionBase),
+				instructionBase);
+		log.addError(message);
+		setError(ErrorStatus.INVALID_OPCODE);
+	}// reportOpCodeError
 
 	//////////////////////////////
 
@@ -1538,7 +1542,7 @@ public class CentralProcessingUnit implements Runnable {
 	private boolean isBit3Set(int location) {
 		return (cpuBuss.read(location) & Z80.BIT_3) == (Z80.BIT_3);
 	}// isBit3Set
-	
+
 	private ConditionCode getConditionCode(int location) {
 		byte source = cpuBuss.read(location);
 		return Z80.conditionCode[(source & Z80.MASK_CONDITION_CODE) >> 3];

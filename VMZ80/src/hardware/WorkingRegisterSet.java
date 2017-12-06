@@ -102,7 +102,9 @@ public class WorkingRegisterSet {
 			setIY(hi, lo);
 			break;
 		default:
-			// just fall thru
+			String message = String.format("[wrs] setDoubleReg() - bad register %s", reg);
+			log.addError(message);
+			CentralProcessingUnit.setError(ErrorStatus.WORKING_REGISTER_SET_ERROR);
 		}// switch
 	}// setDoubleReg
 
@@ -138,7 +140,7 @@ public class WorkingRegisterSet {
 		default:
 			log.addError(String.format("[workingRegisterSet] %n getDoubleReg-%s at location %04X,", reg,
 					this.programCounter));
-			System.exit(-1);
+			CentralProcessingUnit.setError(ErrorStatus.WORKING_REGISTER_SET_ERROR);
 		}// switch
 
 		return result;
@@ -179,7 +181,9 @@ public class WorkingRegisterSet {
 			ans = splitWord(this.getIY());
 			break;
 		default:
-			// just use 0;
+			String message = String.format("[wrs] getDoubleRegArray() - bad register %s", reg);
+			log.addError(message);
+			CentralProcessingUnit.setError(ErrorStatus.WORKING_REGISTER_SET_ERROR);
 		}// switch
 
 		return ans;

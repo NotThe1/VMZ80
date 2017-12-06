@@ -30,7 +30,7 @@ public class AppLogger {
 		try {
 			docLog.remove(0, docLog.getLength());
 		} catch (BadLocationException e) {
-			// TODO Auto-generated catch block
+			System.err.println("[AppLogger]: clear() -  Remove exception");
 			e.printStackTrace();
 		} // try
 	}// clear
