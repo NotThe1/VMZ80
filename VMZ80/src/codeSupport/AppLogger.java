@@ -118,7 +118,7 @@ public class AppLogger {
 	public static final Integer ERROR = 2;
 	public static final Integer SPECIAL = 4;
 
-	private static final String EMPTY_STRING = "";
+//	private static final String EMPTY_STRING = "";
 	private static final String NL = System.lineSeparator();
 
 }// class AppLogger

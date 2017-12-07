@@ -22,10 +22,10 @@ public class ConditionCodeRegister  {
 
 	private boolean signFlag = false; // set to most significant bit (7)
 	private boolean zeroFlag = false; // set if result = 0;
-	private boolean bit5Flag = false; 
+//	private boolean bit5Flag = false; 
 	private boolean hFlag = false;
 	
-	private boolean bit3Flag = false; 
+//	private boolean bit3Flag = false; 
 	private boolean pvFlag = false; // set to one if even parity, reset if odd
 	private boolean nFlag = false;
 	private boolean carryFlag = false;

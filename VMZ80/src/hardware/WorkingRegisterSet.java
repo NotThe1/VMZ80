@@ -113,17 +113,17 @@ public class WorkingRegisterSet {
 
 		switch (reg) {
 		case AF:
-			result = (((getReg(Register.A) << 8) + (getReg(Register.F) & BYTE_MASK)) & WORD_MASK);
+			result = (((getReg(Register.A) << 8) + (getReg(Register.F) & Z80.BYTE_MASK)) & Z80.WORD_MASK);
 			break;
 		case BC:
-			result = (((getReg(Register.B) << 8) + (getReg(Register.C) & BYTE_MASK)) & WORD_MASK);
+			result = (((getReg(Register.B) << 8) + (getReg(Register.C) & Z80.BYTE_MASK)) & Z80.WORD_MASK);
 			break;
 		case DE:
-			result = (((getReg(Register.D) << 8) + (getReg(Register.E) & BYTE_MASK)) & WORD_MASK);
+			result = (((getReg(Register.D) << 8) + (getReg(Register.E) & Z80.BYTE_MASK)) & Z80.WORD_MASK);
 			break;
 		case HL:
 		case M:
-			result = (((getReg(Register.H) << 8) + (getReg(Register.L) & BYTE_MASK)) & WORD_MASK);
+			result = (((getReg(Register.H) << 8) + (getReg(Register.L) & Z80.BYTE_MASK)) & Z80.WORD_MASK);
 			break;
 		case SP:
 			result = this.getStackPointer();
@@ -190,23 +190,23 @@ public class WorkingRegisterSet {
 	}// getDoubleReg
 
 	public void setProgramCounter(int programCounter) {
-		this.programCounter = programCounter & WORD_MASK;
+		this.programCounter = programCounter & Z80.WORD_MASK;
 	}// setProgramCounter
 
 	public void setProgramCounter(byte[] programCounterValue) {
 		int hi = (int) (programCounterValue[1] << 8);
 		int lo = (int) (programCounterValue[0] & 0X00FF);
-		setProgramCounter((hi + lo) & WORD_MASK);
+		setProgramCounter((hi + lo) & Z80.WORD_MASK);
 	}// setProgramCounter
 
 	public void setProgramCounter(byte hiByte, byte loByte) {
 		int hi = (int) (hiByte << 8);
 		int lo = (int) (loByte & 0X00FF);
-		setProgramCounter((hi + lo) & WORD_MASK);
+		setProgramCounter((hi + lo) & Z80.WORD_MASK);
 	}// setStackPointer
 
 	public void incrementProgramCounter(int delta) {// setProgramCounter
-		setProgramCounter((this.programCounter + delta & WORD_MASK));
+		setProgramCounter((this.programCounter + delta & Z80.WORD_MASK));
 	}// incrementProgramCounter
 
 	public int getProgramCounter() {
@@ -218,19 +218,19 @@ public class WorkingRegisterSet {
 	}// getProgramCounterArray
 
 	public void setStackPointer(int stackPointerValue) {
-		this.stackPointer = stackPointerValue & WORD_MASK;
+		this.stackPointer = stackPointerValue & Z80.WORD_MASK;
 	}// setStackPointer
 
 	public void setStackPointer(byte[] stackPointerValue) {
 		int hi = (int) (stackPointerValue[1] << 8);
 		int lo = (int) (stackPointerValue[0] & 0X00FF);
-		setStackPointer((hi + lo) & WORD_MASK);
+		setStackPointer((hi + lo) & Z80.WORD_MASK);
 	}// setStackPointer
 
 	public void setStackPointer(byte hiByte, byte loByte) {
 		int hi = (int) (hiByte << 8);
 		int lo = (int) (loByte & 0X00FF);
-		setStackPointer((hi + lo) & WORD_MASK);
+		setStackPointer((hi + lo) & Z80.WORD_MASK);
 
 	}// setStackPointer
 
@@ -243,19 +243,19 @@ public class WorkingRegisterSet {
 	}// getStackPointerarray
 
 	public void setIX(int ixValue) {
-		this.IX = ixValue & WORD_MASK;
+		this.IX = ixValue & Z80.WORD_MASK;
 	}// setIX
 
 	public void setIX(byte[] IXValue) {
 		int hi = (int) (IXValue[1] << 8);
 		int lo = (int) (IXValue[0] & 0X00FF);
-		setIX((hi + lo) & WORD_MASK);
+		setIX((hi + lo) & Z80.WORD_MASK);
 	}// setIX
 
 	public void setIX(byte hiByte, byte loByte) {
 		int hi = (int) (hiByte << 8);
 		int lo = (int) (loByte & 0X00FF);
-		this.IX = (hi + lo) & WORD_MASK;
+		this.IX = (hi + lo) & Z80.WORD_MASK;
 	}// setIX
 
 	public int getIX() {
@@ -267,19 +267,19 @@ public class WorkingRegisterSet {
 	}// getIXarray
 
 	public void setIY(int IYValue) {
-		this.IY = IYValue & WORD_MASK;
+		this.IY = IYValue & Z80.WORD_MASK;
 	}// setIY
 
 	public void setIY(byte[] IYValue) {
 		int hi = (int) (IYValue[1] << 8);
 		int lo = (int) (IYValue[0] & 0X00FF);
-		setIY((hi + lo) & WORD_MASK);
+		setIY((hi + lo) & Z80.WORD_MASK);
 	}// setIX
 
 	public void setIY(byte hiByte, byte loByte) {
 		int hi = (int) (hiByte << 8);
 		int lo = (int) (loByte & 0X00FF);
-		setIY((hi + lo) & WORD_MASK);
+		setIY((hi + lo) & Z80.WORD_MASK);
 	}// setIY
 
 	public int getIY() {
@@ -301,7 +301,7 @@ public class WorkingRegisterSet {
 	// public void setStackPointer(byte hiByte, byte loByte) {
 	// int hi = (int) (hiByte << 8);
 	// int lo = (int) (loByte & 0X00FF);
-	// this.stackPointer = (hi + lo) & WORD_MASK;
+	// this.stackPointer = (hi + lo) & Z80.WORD_MASK;
 	// }// setIX
 
 	public void setIFF1(boolean state) {
@@ -379,8 +379,8 @@ public class WorkingRegisterSet {
 		setReg(register, temp);
 	}// swap1Reg
 
-	private static final int WORD_MASK = Z80.WORD_MASK;
-	private static final int BYTE_MASK = Z80.BYTE_MASK;
-	private static final int HI_BYTE_MASK = Z80.HI_BYTE_MASK;
+//	private static final int WORD_MASK = Z80.WORD_MASK;
+//	private static final int BYTE_MASK = Z80.BYTE_MASK;
+//	private static final int HI_BYTE_MASK = Z80.HI_BYTE_MASK;
 
 }// class WorkingRegisterSet

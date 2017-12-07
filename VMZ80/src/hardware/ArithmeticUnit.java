@@ -381,7 +381,8 @@ public class ArithmeticUnit {
 		byte arg2[] = { (byte) (word2 & 0XFF), (byte) ((word2 >> 8) & 0XFF) };
 
 		byte[] ans = addWordWithCarry(arg1, arg2, false);
-		return (int) (ans[0] << 8 + ans[1]);
+		return (ans[0] * 0x0100) + ans[1];
+//		return (int) (ans[0] << 8 + ans[1]);
 	}// addWord(int,int)
 
 	public byte[] addWord(byte[] argument1, byte[] argument2) {
@@ -439,7 +440,7 @@ public class ArithmeticUnit {
 				String message = String.format(
 						"[au] add()%n bad bitCount: %02X%n"
 				+ " augend: %s ,addend: %s ,carryIn: %s",
-						augend,addend,carryIn);
+						bitCount,augend,addend,carryIn);
 				log.addError(message);
 				CentralProcessingUnit.setError(ErrorStatus.ARITHMETIC_UNIT_ERROR);
 			}// switch

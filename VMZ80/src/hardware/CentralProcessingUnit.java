@@ -21,18 +21,19 @@ public class CentralProcessingUnit implements Runnable {
 	private ConditionCodeRegister ccr = ConditionCodeRegister.getInstance();
 	private WorkingRegisterSet wrs = WorkingRegisterSet.getInstance();
 	private ArithmeticUnit au = ArithmeticUnit.getInstance();
-	private int interruptMode = Z80.MODE_0;
+	private AppLogger log = AppLogger.getInstance();
 	// private IOController ioController;
 
-	private AppLogger log = AppLogger.getInstance();
-	private static ErrorStatus error = ErrorStatus.NONE;
-
+	
+	private static ErrorStatus errorCurrent = ErrorStatus.NONE;
+	private int instructionBase;
+	private int interruptMode = Z80.MODE_0;
+	
+	
 	public static CentralProcessingUnit getInstance() {
 		return instance;
 	}// getInstance
 
-	private int instructionBase;
-	// private int page, yyy, zzz;
 
 	private CentralProcessingUnit() {
 
@@ -59,7 +60,7 @@ public class CentralProcessingUnit implements Runnable {
 
 	public void executeInstruction(int currentAddress) {
 		this.instructionBase = currentAddress;
-		this.setError(ErrorStatus.NONE);
+		setError(ErrorStatus.NONE);
 
 		byte opCode = cpuBuss.read(currentAddress);
 		int instructionLength;
@@ -355,7 +356,7 @@ public class CentralProcessingUnit implements Runnable {
 		int instructionSize = 2;
 		int page = getPage(instructionBase + 1);
 		int yyy = getYYY(instructionBase + 1);
-		int zzz = getZZZ(instructionBase + 1);
+//		int zzz = getZZZ(instructionBase + 1);
 		int targetBit = yyy;
 
 		Register subject = getSingleRegister012(instructionBase + 1);
@@ -515,7 +516,7 @@ public class CentralProcessingUnit implements Runnable {
 			ccr.setSignFlag(au.isSignFlagSet());
 			ccr.setZeroFlag(au.isZeroFlagSet());
 			ccr.setHFlag(au.isHCarryFlagSet());
-			ccr.setPvFlag(argument == 0X80 ? true : false);
+			ccr.setPvFlag(argument == -128 ? true : false);
 			ccr.setNFlag(true);
 
 			cpuBuss.write(netLocation, answer);
@@ -1461,7 +1462,7 @@ public class CentralProcessingUnit implements Runnable {
 	 * @return error type of error
 	 */
 	public ErrorStatus getError() {
-		return this.error;
+		return errorCurrent;
 	}// setErrorFlag
 
 	/**
@@ -1471,7 +1472,7 @@ public class CentralProcessingUnit implements Runnable {
 	 *            type of error to record
 	 */
 	public static void setError(ErrorStatus error) {
-		error = error;
+		errorCurrent = error;
 	}// setErrorFlag
 
 	/**
@@ -1480,7 +1481,7 @@ public class CentralProcessingUnit implements Runnable {
 	 * @return false if no error, else true
 	 */
 	public boolean isError() {
-		return error.equals(ErrorStatus.NONE) ? false : true;
+		return errorCurrent.equals(ErrorStatus.NONE) ? false : true;
 	}// isError
 
 	private void reportOpCodeError() {
