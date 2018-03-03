@@ -1,7 +1,14 @@
 package codeSupport;
 
 import java.awt.Color;
-import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Date;
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import javax.swing.text.BadLocationException;
 import javax.swing.text.SimpleAttributeSet;
@@ -24,64 +31,131 @@ public class AppLogger {
 	public void setDoc(StyledDocument docLog) {
 		this.docLog = docLog;
 	}// setTextPane
-	// ---------------------------------------------------------------------
+		// ---------------------------------------------------------------------
 
 	public void clear() {
 		try {
 			docLog.remove(0, docLog.getLength());
 		} catch (BadLocationException e) {
-			System.err.println("[AppLogger]: clear() -  Remove exception");
 			e.printStackTrace();
 		} // try
 	}// clear
-	
-	public void addNL(int linesToSkip){	
+
+	public void addNL(int linesToSkip) {
 		int lines = Math.max(linesToSkip, 0);
 		lines = Math.min(lines, 15);
 		StringBuilder sb = new StringBuilder();
-		for (int i = 0; i < lines;i++){
+		for (int i = 0; i < lines; i++) {
 			sb.append(NL);
-		}//for
-		insertListing(sb.toString(),null);
-	}//addNL
-	
-	public void addNL(){
-		insertListing(NL,null);
-	}//addNL
-	private void addMeta(SimpleAttributeSet attr,String... message){
+		} // for
+		insertListing(sb.toString(), null);
+	}// addNL
+
+	public void addNL() {
+		insertListing(NL, null);
+	}// addNL
+
+	private void addMeta(SimpleAttributeSet attr, String... message) {
 		StringBuilder sb = new StringBuilder();
-		for ( int i = 0; i<message.length;i++){
+		for (int i = 0; i < message.length; i++) {
 			sb.append(message[i]);
 			sb.append(NL);
-		}//for
+		} // for
 		insertListing(sb.toString(), attr);
-	}//addMeta
-	
-	public void addInfo(String... message){
-		addMeta(attrBlack,message);
-	}//addInfo
+	}// addMeta
 
-	public void addWarning(String... message){
-		addMeta(attrBlue,message);
-	}//addInfo
+	public void addInfo(String... message) {
+		addMeta(attrBlack, message);
+	}// addInfo
 
-	public void addError(String... message){
-		addMeta(attrRed,message);
-	}//addInfo
+	public void addWarning(String... message) {
+		addMeta(attrBlue, message);
+	}// addInfo
 
-	public void addSpecial(String... message){
-		addMeta(attrTeal,message);
-	}//addInfo
-	
-	public void addTimeStamp(){
-		addMeta(attrSilver,LocalDateTime.now().toString());
-	}//addTimeStamp
-	
-	public void addTimeStamp(String message) {
-		insertListing(message + " " + LocalDateTime.now().toString() + System.lineSeparator(), attrSilver);
+	public void addError(String... message) {
+		addMeta(attrRed, message);
+	}// addInfo
+
+	public void addSpecial(String... message) {
+		addMeta(attrTeal, message);
+	}// addInfo
+
+	// ----------Time-------------------------------
+
+	public Date addTimeStamp() {
+		Date now = new Date();
+		addMeta(attrSilver, now.toString());
+		return now;
+	}//
+
+	// public void addTimeStamp() {
+	// addMeta(attrSilver, LocalDateTime.now().toString());
+	// }// addTimeStamp
+
+	public Date addTimeStamp(String message) {
+		Date now = new Date();
+		insertListing(message + " " + now.toString() + System.lineSeparator(), attrSilver);
+		return now;
 	}// addTimeStamp
 
-	
+	// public void addTimeStamp(String message) {
+	// insertListing(message + " " + LocalDateTime.now().toString() + System.lineSeparator(), attrSilver);
+	// }// addTimeStamp
+
+	public Date addElapsedTime(Date startTime) {
+		Date endTime = new Date();
+		String message = getElapsedTimeToString(startTime, endTime);
+		insertListing(message + " " + endTime.toString() + System.lineSeparator(), attrSilver);
+		return endTime;
+	}// addElapsedTime
+
+	public Date addElapsedTime(Date startTime, String message) {
+		Date endTime = new Date();
+		insertListing(message + " " + endTime.toString() + System.lineSeparator(), attrSilver);
+		String elapsedTime = getElapsedTimeToString(startTime, endTime);
+		insertListing(elapsedTime + System.lineSeparator(), attrSilver);
+		return endTime;
+	}// addElapsedTime
+
+	private static String getElapsedTimeToString(Date startDate, Date endDate) {
+		String result = "";
+		Map<TimeUnit, Long> times = getElapsedTime(startDate, endDate);
+		List<TimeUnit> timeUnits = new ArrayList<TimeUnit>(EnumSet.allOf(TimeUnit.class));
+		long duration;
+		boolean nonZeroFlag = false;
+
+		for (TimeUnit timeUnit : timeUnits) {
+			duration = times.get(timeUnit);
+			if (duration == 0) {
+				if (!nonZeroFlag) {
+					continue;
+				} // if skip zero value
+			} else {
+				nonZeroFlag = true;
+			} // outer if
+			result = String.format("%s = %,d, %s ", timeUnit.toString(), times.get(timeUnit), result);
+		} // for time Unit
+
+		return result;
+	}// getElapsedTimeToString
+
+	public static Map<TimeUnit, Long> getElapsedTime(Date startDate, Date endDate) {
+		Map<TimeUnit, Long> result = new HashMap<TimeUnit, Long>();
+		long diffInMilliseconds = endDate.getTime() - startDate.getTime();
+		List<TimeUnit> timeUnits = new ArrayList<TimeUnit>(EnumSet.allOf(TimeUnit.class));
+		Collections.reverse(timeUnits); // Days to Nanoseconds
+		long difference, milliSecondsLeftPerUnit;
+		for (TimeUnit timeUnit : timeUnits) {
+			difference = timeUnit.convert(diffInMilliseconds, TimeUnit.MILLISECONDS);
+			result.put(timeUnit, difference);
+			milliSecondsLeftPerUnit = timeUnit.toMillis(difference);
+			diffInMilliseconds -= milliSecondsLeftPerUnit;
+		} // for each time unit
+		return result;
+	}// getElapsedTime
+
+	// ----------Time-------------------------------
+
 	private void insertListing(String str, SimpleAttributeSet attr) {
 		try {
 			docLog.insertString(docLog.getLength(), str, attr);
@@ -118,7 +192,7 @@ public class AppLogger {
 	public static final Integer ERROR = 2;
 	public static final Integer SPECIAL = 4;
 
-//	private static final String EMPTY_STRING = "";
+	private static final String EMPTY_STRING = "";
 	private static final String NL = System.lineSeparator();
 
 }// class AppLogger
