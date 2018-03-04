@@ -3,7 +3,6 @@ package disks.utility;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
-import java.awt.EventQueue;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
@@ -18,7 +17,8 @@ import java.util.prefs.Preferences;
 
 import javax.swing.AbstractButton;
 import javax.swing.Box;
-import javax.swing.JFrame;
+import javax.swing.JDialog;
+import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
@@ -32,28 +32,36 @@ import javax.swing.JToolBar;
 import javax.swing.border.BevelBorder;
 import javax.swing.border.LineBorder;
 
-public class DiskUtility {
+import codeSupport.AppLogger;
+import codeSupport.FilePicker;
+
+public class DiskUtility extends JDialog{
+
+	private static final long serialVersionUID = 1L;
+	AppLogger log = AppLogger.getInstance();
+	private static DiskUtility  instance = new DiskUtility();
+	
+	public static DiskUtility getInstance() {
+		return instance;
+	}//getInstance
 
 	AdapterForDiskUtility adapterForDiskUtility = new AdapterForDiskUtility();
 
 
 
-	/**
-	 * Launch the application.
-	 */
-	public static void main(String[] args) {
-		EventQueue.invokeLater(new Runnable() {
-			public void run() {
-				try {
-					DiskUtility window = new DiskUtility();
-					window.frameBase.setVisible(true);
-				} catch (Exception e) {
-					e.printStackTrace();
-				}//try
-			}//run
-		});
-	}// main
-	
+//	public static void main(String[] args) {
+//		EventQueue.invokeLater(new Runnable() {
+//			public void run() {
+//				try {
+//					DiskUtility window = new DiskUtility();
+//					window.frameBase.setVisible(true);
+//				} catch (Exception e) {
+//					e.printStackTrace();
+//				}//try
+//			}//run
+//		});
+//	}// main
+//	
 	private void doDisplayBase(AbstractButton button){
 		//  selected =  display Decimal
 		if (button.isSelected()) {
@@ -65,9 +73,50 @@ public class DiskUtility {
 
 	
 	//---------------------------------------------------------
+	//---------------------------------------------------------
+	
+	private void manageFileMenus(String source) {
+		switch (source) {
+		case MNU_TOOLS_NEW:
+		case MNU_DISK_LOAD:
+			mnuToolsNew.setEnabled(false);
+			mnuDiskLoad.setEnabled(false);
+			mnuDiskClose.setEnabled(true);
+			mnuDiskSave.setEnabled(true);
+			mnuDiskSaveAs.setEnabled(true);
+//			mnuDiskExit.setEnabled(true);
+			break;
+		case MNU_DISK_CLOSE:
+			mnuToolsNew.setEnabled(true);
+			mnuDiskLoad.setEnabled(true);
+			mnuDiskClose.setEnabled(false);
+			mnuDiskSave.setEnabled(false);
+			mnuDiskSaveAs.setEnabled(false);
+//			mnuDiskExit.setEnabled(true);
+		case MNU_DISK_SAVE:
+		case MNU_DISK_SAVE_AS:
+		case MNU_DISK_EXIT:
+			break;
+		default:
+		}// switch
+	}//manageFileMenus
+	//---------------------------------------------------------
 	
 	private void doDiskLoad(){
-		System.out.println("** [doDiskLoad] **");
+		JFileChooser fc = FilePicker.getDiskPicker();
+		if (fc.showOpenDialog(this) ==JFileChooser.CANCEL_OPTION) {
+			log.addInfo("Bailed out of disk open");
+			return;
+		}//if - cancelled
+		String absoluteFilePath = fc.getSelectedFile().getAbsolutePath();
+		if (!fc.getSelectedFile().exists()) {
+			log.addError(absoluteFilePath + " Does Not Exist");
+			return;
+		}// if - is it there
+		
+//		diskSetup(absoluteFilePath);
+		manageFileMenus(MNU_DISK_LOAD);
+		
 	}//doFileNew
 	private void doDiskClose(){
 		System.out.println("** [doDiskClose] **");
@@ -98,10 +147,10 @@ public class DiskUtility {
 ////////////////////////////////////////////////////////////////////////////////////////
 	private void appClose() {
 		Preferences myPrefs =  Preferences.userNodeForPackage(DiskUtility.class).node(this.getClass().getSimpleName());
-		Dimension dim = frameBase.getSize();
+		Dimension dim = this.getSize();
 		myPrefs.putInt("Height", dim.height);
 		myPrefs.putInt("Width", dim.width);
-		Point point = frameBase.getLocation();
+		Point point = this.getLocation();
 		myPrefs.putInt("LocX", point.x);
 		myPrefs.putInt("LocY", point.y);
 		
@@ -111,14 +160,19 @@ public class DiskUtility {
 
 	private void appInit() {
 		Preferences myPrefs =  Preferences.userNodeForPackage(DiskUtility.class).node(this.getClass().getSimpleName());
-		frameBase.setSize(myPrefs.getInt("Width", 761), myPrefs.getInt("Height", 693));
-		frameBase.setLocation(myPrefs.getInt("LocX", 100), myPrefs.getInt("LocY", 100));
+		this.setSize(myPrefs.getInt("Width", 761), myPrefs.getInt("Height", 693));
+		this.setLocation(myPrefs.getInt("LocX", 100), myPrefs.getInt("LocY", 100));
 		
 		tabbedPane.setSelectedIndex(myPrefs.getInt("Tab", 0));
 		myPrefs = null;
 	}// appInit
+	
+	/**
+	 * Launch the application.
+	 */
 
-	public DiskUtility() {
+
+	private DiskUtility() {
 		initialize();
 		appInit();
 	}// Constructor
@@ -127,11 +181,10 @@ public class DiskUtility {
 	 * Initialize the contents of the frame.
 	 */
 	private void initialize() {
-		frameBase = new JFrame();
-		frameBase.setTitle("DiskUtility   A.0");
-		frameBase.setBounds(100, 100, 450, 300);
-		frameBase.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		frameBase.addWindowListener(new WindowAdapter() {
+		this.setTitle("DiskUtility   A.0");
+		this.setBounds(100, 100, 450, 300);
+//		frameBase.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		this.addWindowListener(new WindowAdapter() {
 			@Override
 			public void windowClosing(WindowEvent arg0) {
 				appClose();
@@ -142,7 +195,7 @@ public class DiskUtility {
 		gridBagLayout.rowHeights = new int[] { 0, 0, 0, 25, 0 };
 		gridBagLayout.columnWeights = new double[] { 1.0, Double.MIN_VALUE };
 		gridBagLayout.rowWeights = new double[] { 0.0, 0.0, 1.0, 0.0, Double.MIN_VALUE };
-		frameBase.getContentPane().setLayout(gridBagLayout);
+		this.getContentPane().setLayout(gridBagLayout);
 		
 		JPanel topPanel = new JPanel();
 		GridBagConstraints gbc_topPanel = new GridBagConstraints();
@@ -151,7 +204,7 @@ public class DiskUtility {
 		gbc_topPanel.fill = GridBagConstraints.VERTICAL;
 		gbc_topPanel.gridx = 0;
 		gbc_topPanel.gridy = 0;
-		frameBase.getContentPane().add(topPanel, gbc_topPanel);
+		this.getContentPane().add(topPanel, gbc_topPanel);
 		GridBagLayout gbl_topPanel = new GridBagLayout();
 		gbl_topPanel.columnWidths = new int[]{0, 90, 0, 90, 0};
 		gbl_topPanel.rowHeights = new int[]{0, 0};
@@ -191,7 +244,7 @@ public class DiskUtility {
 		gbc_lblActiveDisk.insets = new Insets(0, 0, 5, 0);
 		gbc_lblActiveDisk.gridx = 0;
 		gbc_lblActiveDisk.gridy = 1;
-		frameBase.getContentPane().add(lblActiveDisk, gbc_lblActiveDisk);
+		this.getContentPane().add(lblActiveDisk, gbc_lblActiveDisk);
 		
 		mainPanel = new JPanel();
 		GridBagConstraints gbc_mainPanel = new GridBagConstraints();
@@ -199,7 +252,7 @@ public class DiskUtility {
 		gbc_mainPanel.fill = GridBagConstraints.BOTH;
 		gbc_mainPanel.gridx = 0;
 		gbc_mainPanel.gridy = 2;
-		frameBase.getContentPane().add(mainPanel, gbc_mainPanel);
+		this.getContentPane().add(mainPanel, gbc_mainPanel);
 		mainPanel.setLayout(new GridLayout(1, 0, 0, 0));
 		
 		tabbedPane = new JTabbedPane(JTabbedPane.TOP);
@@ -544,15 +597,15 @@ public class DiskUtility {
 		gbc_panelStatus.fill = GridBagConstraints.BOTH;
 		gbc_panelStatus.gridx = 0;
 		gbc_panelStatus.gridy = 3;
-		frameBase.getContentPane().add(panelStatus, gbc_panelStatus);
+		this.getContentPane().add(panelStatus, gbc_panelStatus);
 
 		JMenuBar menuBar = new JMenuBar();
-		frameBase.setJMenuBar(menuBar);
+		this.setJMenuBar(menuBar);
 		
 		JMenu mnuDisk = new JMenu("Disk");
 		menuBar.add(mnuDisk);
 		
-		JMenuItem mnuDiskLoad = new JMenuItem("Load ...");
+		mnuDiskLoad = new JMenuItem("Load ...");
 		mnuDiskLoad.setName(MNU_DISK_LOAD);
 		mnuDiskLoad.addActionListener(adapterForDiskUtility);
 		mnuDisk.add(mnuDiskLoad);
@@ -560,7 +613,7 @@ public class DiskUtility {
 		JSeparator separator98 = new JSeparator();
 		mnuDisk.add(separator98);
 		
-		JMenuItem mnuDiskClose = new JMenuItem("Close...");
+		mnuDiskClose = new JMenuItem("Close...");
 		mnuDiskClose.setName(MNU_DISK_CLOSE);
 		mnuDiskClose.addActionListener(adapterForDiskUtility);
 		mnuDisk.add(mnuDiskClose);
@@ -568,12 +621,12 @@ public class DiskUtility {
 		JSeparator separator99 = new JSeparator();
 		mnuDisk.add(separator99);
 		
-		JMenuItem mnuDiskSave = new JMenuItem("Save...");
+		mnuDiskSave = new JMenuItem("Save...");
 		mnuDiskSave.setName(MNU_DISK_SAVE);
 		mnuDiskSave.addActionListener(adapterForDiskUtility);
 		mnuDisk.add(mnuDiskSave);
 		
-		JMenuItem mnuDiskSaveAs = new JMenuItem("Save As...");
+		mnuDiskSaveAs = new JMenuItem("Save As...");
 		mnuDiskSaveAs.setName(MNU_DISK_SAVE_AS);
 		mnuDiskSaveAs.addActionListener(adapterForDiskUtility);
 		mnuDisk.add(mnuDiskSaveAs);
@@ -589,12 +642,12 @@ public class DiskUtility {
 		JMenu mnTools = new JMenu("Tools");
 		menuBar.add(mnTools);
 		
-		JMenuItem mnuToolsNew = new JMenuItem("New Disk");
+		mnuToolsNew = new JMenuItem("New Disk");
 		mnuToolsNew.setName(MNU_TOOLS_NEW);
 		mnuToolsNew.addActionListener(adapterForDiskUtility);
 		mnTools.add(mnuToolsNew);
 		
-		JMenuItem mnuToolsUpdate = new JMenuItem("Update System on Disk");
+		mnuToolsUpdate = new JMenuItem("Update System on Disk");
 		mnuToolsUpdate.setName(MNU_TOOLS_UPDATE);
 		mnuToolsUpdate.addActionListener(adapterForDiskUtility);
 		mnTools.add(mnuToolsUpdate);
@@ -621,7 +674,7 @@ public class DiskUtility {
 	private static final String TB_DISPLAY_HEX = "Display Hex";;
 
 	//////////////////////////////////////////////////////////////////////////
-	private JFrame frameBase;
+//	private JFrame frameBase;
 	private JPanel mainPanel;
 	private JToggleButton tbDisplayBase;
 	private JToggleButton tbBootable;
@@ -633,6 +686,12 @@ public class DiskUtility {
 	private JLabel lblRawS1;
 	private JLabel lblS2;
 	private JLabel lblRC;
+	private JMenuItem mnuDiskLoad;
+	private JMenuItem mnuDiskClose;
+	private JMenuItem mnuDiskSave;
+	private JMenuItem mnuDiskSaveAs;
+	private JMenuItem mnuToolsNew;
+	private JMenuItem mnuToolsUpdate;
 	//////////////////////////////////////////////////////////////////////////
 
 	class AdapterForDiskUtility implements ActionListener {
