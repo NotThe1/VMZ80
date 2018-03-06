@@ -89,6 +89,23 @@ public class DiskDrive {
 		this.bootable = diskMetric.isBootDisk();
 		this.description = diskMetric.descriptor;
 	}// resolveDiskType
+	
+	// ---------------------------------------
+	
+	public String getDiskType() {
+		return this.diskType;
+	}// getDiskType
+
+	public String getFileAbsoluteName() {
+		return this.fileAbsoluteName;
+	}// getFileAbsoluteName
+
+
+	public String getFileLocalName() {
+		return this.fileLocalName;
+	}// getFileLocalName
+
+
 
 	// ---------------------------------------
 	private Vector<VDiskErrorListener> vdiskErrorListeners = new Vector<VDiskErrorListener>();
