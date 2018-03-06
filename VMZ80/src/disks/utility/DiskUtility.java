@@ -45,6 +45,7 @@ import disks.RawDiskDrive;
 import utilities.filePicker.FilePicker;
 import utilities.hdNumberBox.HDNumberBox;
 import utilities.hdNumberBox.HDSeekPanel;
+import utilities.hexEdit.HexEditPanelSimple;
 
 public class DiskUtility extends JDialog {
 	private static final long serialVersionUID = 1L;
@@ -122,11 +123,38 @@ public class DiskUtility extends JDialog {
 		
 		if(!state) {
 			manageFileMenus(MNU_DISK_CLOSE);
+			panelSectorDisplay.loadData(NO_ACTIVE_DISK.getBytes());
+			btnExport.setEnabled(false);
+			btnImport.setEnabled(false);
 			
+			scrollDirectoryTable.setViewportView(null);
+			showDirectoryDetail(new byte[32]);
+			
+			panelFileHex.loadData(NO_ACTIVE_DISK.getBytes());
 		}//if - state is false
 		
 		
 	}// haveDisk
+	
+	private void showDirectoryDetail(byte[] rawDirectory) {
+		lblRawUser.setText(String.format("%02X", rawDirectory[0]));
+
+		lblRawName.setText(String.format("%02X %02X %02X %02X %02X %02X %02X %02X ", rawDirectory[1], rawDirectory[2],
+				rawDirectory[3], rawDirectory[4], rawDirectory[5], rawDirectory[6], rawDirectory[7], rawDirectory[8]));
+		lblRawType.setText(String.format("%02X %02X %02X", rawDirectory[9], rawDirectory[10], rawDirectory[11]));
+		lblRawEX.setText(String.format("%02X", rawDirectory[12]));
+		lblRawS1.setText(String.format("%02X", rawDirectory[13]));
+		lblRawS2.setText(String.format("%02X", rawDirectory[14]));
+
+		lblRawRC.setText(String.format("%02X", rawDirectory[15]));
+
+		lblRawAllocation.setText(String.format(
+				"%02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X", rawDirectory[16],
+				rawDirectory[17], rawDirectory[18], rawDirectory[19], rawDirectory[20], rawDirectory[21],
+				rawDirectory[22], rawDirectory[23], rawDirectory[24], rawDirectory[25], rawDirectory[26],
+				rawDirectory[27], rawDirectory[28], rawDirectory[29], rawDirectory[30], rawDirectory[31]));
+
+	}//showDirectoryDetail
 
 	private void refreshMetrics(boolean state) {
 
@@ -486,14 +514,14 @@ public class DiskUtility extends JDialog {
 		gbc_label1.gridy = 0;
 		panelRawName.add(label1, gbc_label1);
 
-		lblName = new JLabel("00 00 00 00 00 00 00 00");
-		lblName.setForeground(Color.BLUE);
-		lblName.setFont(new Font("Courier New", Font.BOLD, 15));
-		GridBagConstraints gbc_lblName = new GridBagConstraints();
-		gbc_lblName.anchor = GridBagConstraints.NORTH;
-		gbc_lblName.gridx = 0;
-		gbc_lblName.gridy = 1;
-		panelRawName.add(lblName, gbc_lblName);
+		lblRawName = new JLabel("00 00 00 00 00 00 00 00");
+		lblRawName.setForeground(Color.BLUE);
+		lblRawName.setFont(new Font("Courier New", Font.BOLD, 15));
+		GridBagConstraints gbc_lblRawName = new GridBagConstraints();
+		gbc_lblRawName.anchor = GridBagConstraints.NORTH;
+		gbc_lblRawName.gridx = 0;
+		gbc_lblRawName.gridy = 1;
+		panelRawName.add(lblRawName, gbc_lblRawName);
 
 		JPanel panelRawType = new JPanel();
 		panelRawType.setBorder(new LineBorder(new Color(0, 0, 0), 1, true));
@@ -518,14 +546,14 @@ public class DiskUtility extends JDialog {
 		gbc_label2.gridy = 0;
 		panelRawType.add(label2, gbc_label2);
 
-		lblType = new JLabel("00 00 00");
-		lblType.setForeground(Color.BLUE);
-		lblType.setFont(new Font("Courier New", Font.BOLD, 15));
-		GridBagConstraints gbc_lblType = new GridBagConstraints();
-		gbc_lblType.anchor = GridBagConstraints.NORTH;
-		gbc_lblType.gridx = 0;
-		gbc_lblType.gridy = 1;
-		panelRawType.add(lblType, gbc_lblType);
+		lblRawType = new JLabel("00 00 00");
+		lblRawType.setForeground(Color.BLUE);
+		lblRawType.setFont(new Font("Courier New", Font.BOLD, 15));
+		GridBagConstraints gbc_lblRawType = new GridBagConstraints();
+		gbc_lblRawType.anchor = GridBagConstraints.NORTH;
+		gbc_lblRawType.gridx = 0;
+		gbc_lblRawType.gridy = 1;
+		panelRawType.add(lblRawType, gbc_lblRawType);
 
 		JPanel panelEX = new JPanel();
 		panelEX.setBorder(new LineBorder(new Color(0, 0, 0), 1, true));
@@ -550,7 +578,7 @@ public class DiskUtility extends JDialog {
 		gbc_label3.gridy = 0;
 		panelEX.add(label3, gbc_label3);
 
-		JLabel lblRawEX = new JLabel("00");
+		lblRawEX = new JLabel("00");
 		lblRawEX.setForeground(Color.BLUE);
 		lblRawEX.setFont(new Font("Courier New", Font.BOLD, 15));
 		GridBagConstraints gbc_lblRawEX = new GridBagConstraints();
@@ -614,14 +642,14 @@ public class DiskUtility extends JDialog {
 		gbc_label6.gridy = 0;
 		panelS2.add(label6, gbc_label6);
 
-		lblS2 = new JLabel("00");
-		lblS2.setForeground(Color.BLUE);
-		lblS2.setFont(new Font("Courier New", Font.BOLD, 15));
-		GridBagConstraints gbc_lblS2 = new GridBagConstraints();
-		gbc_lblS2.anchor = GridBagConstraints.NORTH;
-		gbc_lblS2.gridx = 0;
-		gbc_lblS2.gridy = 1;
-		panelS2.add(lblS2, gbc_lblS2);
+		lblRawS2 = new JLabel("00");
+		lblRawS2.setForeground(Color.BLUE);
+		lblRawS2.setFont(new Font("Courier New", Font.BOLD, 15));
+		GridBagConstraints gbc_lblRawS2 = new GridBagConstraints();
+		gbc_lblRawS2.anchor = GridBagConstraints.NORTH;
+		gbc_lblRawS2.gridx = 0;
+		gbc_lblRawS2.gridy = 1;
+		panelS2.add(lblRawS2, gbc_lblRawS2);
 
 		JPanel panelRC = new JPanel();
 		panelRC.setBorder(new LineBorder(new Color(0, 0, 0), 1, true));
@@ -645,14 +673,14 @@ public class DiskUtility extends JDialog {
 		gbc_label7.gridy = 0;
 		panelRC.add(label7, gbc_label7);
 
-		lblRC = new JLabel("00");
-		lblRC.setForeground(Color.BLUE);
-		lblRC.setFont(new Font("Courier New", Font.BOLD, 15));
-		GridBagConstraints gbc_lblRC = new GridBagConstraints();
-		gbc_lblRC.anchor = GridBagConstraints.NORTH;
-		gbc_lblRC.gridx = 0;
-		gbc_lblRC.gridy = 1;
-		panelRC.add(lblRC, gbc_lblRC);
+		lblRawRC = new JLabel("00");
+		lblRawRC.setForeground(Color.BLUE);
+		lblRawRC.setFont(new Font("Courier New", Font.BOLD, 15));
+		GridBagConstraints gbc_lblRawRC = new GridBagConstraints();
+		gbc_lblRawRC.anchor = GridBagConstraints.NORTH;
+		gbc_lblRawRC.gridx = 0;
+		gbc_lblRawRC.gridy = 1;
+		panelRC.add(lblRawRC, gbc_lblRawRC);
 
 		JPanel panelAllocationVector = new JPanel();
 		panelAllocationVector.setBorder(new LineBorder(new Color(0, 0, 0), 1, true));
@@ -676,20 +704,20 @@ public class DiskUtility extends JDialog {
 		gbc_label8.gridy = 0;
 		panelAllocationVector.add(label8, gbc_label8);
 
-		JLabel label = new JLabel("00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00");
-		label.setForeground(Color.BLUE);
-		label.setFont(new Font("Courier New", Font.BOLD, 15));
-		GridBagConstraints gbc_label = new GridBagConstraints();
-		gbc_label.gridx = 0;
-		gbc_label.gridy = 1;
-		panelAllocationVector.add(label, gbc_label);
+		lblRawAllocation = new JLabel("00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00");
+		lblRawAllocation.setForeground(Color.BLUE);
+		lblRawAllocation.setFont(new Font("Courier New", Font.BOLD, 15));
+		GridBagConstraints gbc_lblRawAllocation = new GridBagConstraints();
+		gbc_lblRawAllocation.gridx = 0;
+		gbc_lblRawAllocation.gridy = 1;
+		panelAllocationVector.add(lblRawAllocation, gbc_lblRawAllocation);
 
-		JScrollPane scrollPaneDirectoryTable = new JScrollPane();
-		GridBagConstraints gbc_scrollPaneDirectoryTable = new GridBagConstraints();
-		gbc_scrollPaneDirectoryTable.fill = GridBagConstraints.BOTH;
-		gbc_scrollPaneDirectoryTable.gridx = 0;
-		gbc_scrollPaneDirectoryTable.gridy = 1;
-		tabDirectory.add(scrollPaneDirectoryTable, gbc_scrollPaneDirectoryTable);
+		scrollDirectoryTable = new JScrollPane();
+		GridBagConstraints gbc_scrollDirectoryTable = new GridBagConstraints();
+		gbc_scrollDirectoryTable.fill = GridBagConstraints.BOTH;
+		gbc_scrollDirectoryTable.gridx = 0;
+		gbc_scrollDirectoryTable.gridy = 1;
+		tabDirectory.add(scrollDirectoryTable, gbc_scrollDirectoryTable);
 
 		JPanel tabFile = new JPanel();
 		tabbedPane.addTab("File View", null, tabFile, null);
@@ -725,6 +753,7 @@ public class DiskUtility extends JDialog {
 
 		JLabel label10 = new JLabel("Head");
 		GridBagConstraints gbc_label10 = new GridBagConstraints();
+		gbc_label10.fill = GridBagConstraints.HORIZONTAL;
 		gbc_label10.insets = new Insets(0, 0, 0, 5);
 		gbc_label10.gridx = 0;
 		gbc_label10.gridy = 0;
@@ -809,6 +838,7 @@ public class DiskUtility extends JDialog {
 		gbc_panelPhysicalDisplay.gridx = 0;
 		gbc_panelPhysicalDisplay.gridy = 1;
 		tabPhysical.add(panelPhysicalDisplay, gbc_panelPhysicalDisplay);
+		
 		GridBagLayout gbl_panelPhysicalDisplay = new GridBagLayout();
 		gbl_panelPhysicalDisplay.columnWidths = new int[]{0, 0, 0};
 		gbl_panelPhysicalDisplay.rowHeights = new int[]{0, 0, 0};
@@ -816,26 +846,27 @@ public class DiskUtility extends JDialog {
 		gbl_panelPhysicalDisplay.rowWeights = new double[]{1.0, 0.0, Double.MIN_VALUE};
 		panelPhysicalDisplay.setLayout(gbl_panelPhysicalDisplay);
 		
-		JPanel panel = new JPanel();
-		GridBagConstraints gbc_panel = new GridBagConstraints();
-		gbc_panel.insets = new Insets(0, 0, 5, 0);
-		gbc_panel.fill = GridBagConstraints.BOTH;
-		gbc_panel.gridx = 1;
-		gbc_panel.gridy = 0;
-		panelPhysicalDisplay.add(panel, gbc_panel);
-		GridBagLayout gbl_panel = new GridBagLayout();
-		gbl_panel.columnWidths = new int[]{0};
-		gbl_panel.rowHeights = new int[]{0};
-		gbl_panel.columnWeights = new double[]{Double.MIN_VALUE};
-		gbl_panel.rowWeights = new double[]{Double.MIN_VALUE};
-		panel.setLayout(gbl_panel);
-		
 		Component horizontalStrut_3 = Box.createHorizontalStrut(20);
 		GridBagConstraints gbc_horizontalStrut_3 = new GridBagConstraints();
-		gbc_horizontalStrut_3.insets = new Insets(0, 0, 0, 5);
+		gbc_horizontalStrut_3.insets = new Insets(0, 0, 5, 5);
 		gbc_horizontalStrut_3.gridx = 0;
-		gbc_horizontalStrut_3.gridy = 1;
+		gbc_horizontalStrut_3.gridy = 0;
 		panelPhysicalDisplay.add(horizontalStrut_3, gbc_horizontalStrut_3);
+		
+//		GridBagLayout gbl_panelSectorDisplay = new GridBagLayout();
+//		gbl_panelSectorDisplay.columnWidths = new int[]{0};
+//		gbl_panelSectorDisplay.rowHeights = new int[]{0};
+//		gbl_panelSectorDisplay.columnWeights = new double[]{Double.MIN_VALUE};
+//		gbl_panelSectorDisplay.rowWeights = new double[]{Double.MIN_VALUE};
+//		panelSectorDisplay.setLayout(gbl_panelSectorDisplay);
+		
+		panelSectorDisplay = new HexEditPanelSimple();
+		GridBagConstraints gbc_panelSectorDisplay = new GridBagConstraints();
+		gbc_panelSectorDisplay.insets = new Insets(0, 0, 5, 0);
+		gbc_panelSectorDisplay.fill = GridBagConstraints.BOTH;
+		gbc_panelSectorDisplay.gridx = 1;
+		gbc_panelSectorDisplay.gridy = 0;
+		panelPhysicalDisplay.add(panelSectorDisplay, gbc_panelSectorDisplay);
 		
 		JPanel panelSeek = new JPanel();
 		GridBagConstraints gbc_panelSeek = new GridBagConstraints();
@@ -1281,12 +1312,12 @@ public class DiskUtility extends JDialog {
 	private JToggleButton tbBootable;
 	private JTabbedPane tabbedPane;
 	private JLabel lblActiveDisk;
-	private JLabel lblName;
+	private JLabel lblRawName;
 	private JLabel lblRawUser;
-	private JLabel lblType;
+	private JLabel lblRawType;
 	private JLabel lblRawS1;
-	private JLabel lblS2;
-	private JLabel lblRC;
+	private JLabel lblRawS2;
+	private JLabel lblRawRC;
 	private JMenuItem mnuDiskLoad;
 	private JMenuItem mnuDiskClose;
 	private JMenuItem mnuDiskSave;
@@ -1310,6 +1341,10 @@ public class DiskUtility extends JDialog {
 	private JTextField txtNativeFileInOut;
 	private JButton btnExport;
 	private JButton btnImport;
+	private HexEditPanelSimple panelSectorDisplay;
+	private JScrollPane scrollDirectoryTable;
+	private JLabel lblRawAllocation;
+	private JLabel lblRawEX;
 	//////////////////////////////////////////////////////////////////////////
 
 	class AdapterForDiskUtility implements ActionListener {
