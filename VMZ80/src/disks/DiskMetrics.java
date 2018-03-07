@@ -78,7 +78,8 @@ public class DiskMetrics {
 		this.blockSizeInBytes = this.sectorsPerBlock * this.bytesPerSector;
 	}// setSectorsPerBlock
 
-	private void setBootDisk(boolean state) {
+	public
+	void setBootDisk(boolean state) {
 		this.bootDisk = state;
 	}// setBootDisk
 	// ==============================================================================================================
@@ -130,6 +131,10 @@ public class DiskMetrics {
 		}//if
 		return ans;
 	}//getDirectoryStartSector
+	
+	public int getDirectoryEntriesPerSector() {
+		return this.bytesPerSector / Disk.DIRECTORY_ENTRY_SIZE;
+	}//getDirectoryEntriesPerSector
 
 	// DRM - Highest Disk Entry Position
 	public int getDRM() {

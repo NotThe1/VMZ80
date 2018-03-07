@@ -92,6 +92,17 @@ public class DiskDrive {
 	
 	// ---------------------------------------
 	
+	public byte[] read() {
+		setSectorPosition();
+		disk.get(readSector);
+		return readSector;
+	}//read
+	
+	private void setSectorPosition() {
+		int offset = currentAbsoluteSector * bytesPerSector;
+		disk.position(offset);
+	}//setSectorPosition
+	
 	public String getDiskType() {
 		return this.diskType;
 	}// getDiskType
@@ -104,6 +115,112 @@ public class DiskDrive {
 	public String getFileLocalName() {
 		return this.fileLocalName;
 	}// getFileLocalName
+	
+	private void homeHeads() {
+		this.currentHead = 0;
+		this.currentTrack = 0;
+		this.currentSector = 0;
+		this.currentAbsoluteSector=0;
+	}// homeHeads
+	
+	public boolean setCurrentAbsoluteSector(int currentAbsoluteSector) {
+		boolean result = false;
+		if ( validateAbsoluteSector(currentAbsoluteSector)) {
+			this.currentAbsoluteSector = currentAbsoluteSector;
+			int sectorsPerTrackHead = this.sectorsPerTrack * this.heads;
+			int headSectors = currentAbsoluteSector % sectorsPerTrackHead;
+			setCurrentHead(headSectors / sectorsPerTrack); // /sectorsPerTrackHead
+			setCurrentTrack(currentAbsoluteSector / sectorsPerTrackHead);
+			setCurrentSector((currentAbsoluteSector % sectorsPerTrack) + 1); // sectorsPerTrackHead
+			result = true;				
+		}//if valid sector
+		return result;
+	}//setCurretAbsoluteSector
+	
+	public boolean setCurrentAbsoluteSector(int head, int track, int sector) {
+		boolean result = false;
+		if (validateHead(head) && validateSector(sector) && validateTrack(track)) {
+			int absoluteSector = (sector - 1) + (head * this.sectorsPerTrack)
+					+ (track * this.sectorsPerTrack * this.heads);
+			if (validateAbsoluteSector(absoluteSector)) {
+				this.currentAbsoluteSector = absoluteSector;
+				this.currentHead = head;
+				this.currentTrack = track;
+				this.currentSector = sector;
+				result = true;
+			} // inner if
+		}// if validate
+		return result;
+	}//setCurrentAbsoluteSector
+	
+	public void setCurrentHead(int currentHead) {
+		if (validateHead(currentHead)) {
+			this.currentHead = currentHead;
+		} // if
+	}// setCurrentHead
+
+	public void setCurrentTrack(int currentTrack) {
+		if (validateTrack(currentTrack)) {
+			this.currentTrack = currentTrack;
+		} // if
+	}// setCurrentTrack
+
+	public void setCurrentSector(int currentSector) {
+		if (validateSector(currentSector)) {
+			this.currentSector = currentSector;
+		} // if
+	}// setCurrentSector
+	
+//	public boolean setCurrentAbsoluteSector(int head, int track, int sector) {
+//		boolean result = false;
+//		
+//		return result;
+//	}//setCurrentAbsoluteSector
+	
+	private boolean validateAbsoluteSector(int absoluteSector) {
+		// between 0 and totalSectorsOnDisk - 1	
+		boolean result = true;
+		if(!((absoluteSector >= 0) && (absoluteSector< totalSectorsOnDisk))){
+			homeHeads();
+			fireVDiskError((long) absoluteSector,ERR_ABSOLUTE_SECTOR);
+			result = false;
+		}//if
+		return result;
+	}//validateAbsoluteSector
+	
+	private boolean validateHead(int head) {
+		boolean result = true;
+		// between 0 and heads-1
+		if (!((head >= 0) & (head < heads))) {
+			homeHeads();
+			fireVDiskError((long) head, ERR_HEAD);
+			result = false;
+		} // if
+		return result;
+	}// validateHead
+	
+	private boolean validateTrack(int track) {
+		boolean result = true;
+		// between 0 and tracksPerHead-1
+		if (!((track >= 0) & (track < tracksPerHead))) {
+			homeHeads();
+			fireVDiskError((long) track, ERR_TRACK);
+			result = false;
+		} // if
+		return result;
+	}// validateTrack
+
+	private boolean validateSector(int sector) {
+		// between 1 andsectorsPerTrack
+		boolean result = true;
+		if (!((sector > 0) & (sector <= sectorsPerTrack))) {
+			homeHeads();
+			fireVDiskError((long) sector, ERR_SECTOR);
+			result = false;
+		} // if
+		return result;
+	}// validateSector
+
 
 
 
