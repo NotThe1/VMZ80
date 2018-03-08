@@ -48,6 +48,7 @@ import javax.swing.table.TableColumnModel;
 import codeSupport.AppLogger;
 import disks.CPMDirectory;
 import disks.CPMDirectoryEntry;
+import disks.CPMFile;
 import disks.Disk;
 import disks.DiskMetrics;
 import disks.RawDiskDrive;
@@ -68,6 +69,7 @@ public class DiskUtility extends JDialog {
 	private FileCpmModel fileCpmModel = new FileCpmModel();
 	private DirectoryTableModel directoryTableModel= new DirectoryTableModel();
 	private CPMDirectory directory;
+	private CPMFile cpmFile;
 
 	private int heads;
 	private int tracksPerHead;
@@ -80,6 +82,8 @@ public class DiskUtility extends JDialog {
 	private int maxDirectoryEntry;
 	private int maxBlockNumber;
 	private byte[] diskSector;
+	
+	private String hostDirectory;
 
 	// private String radixFormat;
 
@@ -193,7 +197,7 @@ public class DiskUtility extends JDialog {
 	
 	private void dirFillDirectoryTable() {
 		directoryTableModel.clear();
-			
+		fileCpmModel.clear();
 		CPMDirectoryEntry directoryEntry;
 		for (int directoryIndex = 0; directoryIndex < diskMetrics.getDRM()+1; directoryIndex ++) {
 			directoryEntry = directory.getDirectoryEntry(directoryIndex);
@@ -204,7 +208,8 @@ public class DiskUtility extends JDialog {
 			}//if
 		}//for each directory entry
 		showDirectoryDetail(0);
-		
+		directoryTable.setRowSelectionInterval(0, 0);
+//		directoryTable.updateUI();
 		cbFileNames.setSelectedIndex(0);
 		cbCPMFileInOut.setSelectedIndex(0);
 	}//dirMakeDirectoryTable
@@ -230,7 +235,7 @@ public class DiskUtility extends JDialog {
 			btnExport.setEnabled(false);
 			btnImport.setEnabled(false);
 
-			scrollDirectoryTable.setViewportView(null);
+			directoryTableModel.clear();
 			showDirectoryDetail(new byte[32]);
 
 			panelFileHex.loadData(NO_ACTIVE_DISK.getBytes());
@@ -242,7 +247,8 @@ public class DiskUtility extends JDialog {
 			nativeFile = null;
 			txtHostFileInOut.setText(EMPTY_STRING);
 			txtHostFileInOut.setToolTipText(EMPTY_STRING);
-			// cbCPMFileInOut.removeAllItems();
+			cbFileNames.setSelectedIndex(-1);
+			cbCPMFileInOut.setSelectedIndex(-1);
 
 		} // if - state is false
 
@@ -397,8 +403,11 @@ public class DiskUtility extends JDialog {
 	}// doFileNew
 
 	private void doDiskClose() {
-		System.out.println("** [doDiskClose] **");
-
+		if(diskDrive !=null) {
+			diskDrive.dismount();
+			diskDrive = null;
+		}//if - have diskDrive
+		haveDisk(false);
 	}// doFileOpen
 
 	private void doDiskSave() {
@@ -415,9 +424,33 @@ public class DiskUtility extends JDialog {
 		appClose();
 		System.exit(0);
 	}// doFileExit
+	
+	private void doDisplaySelectedFile() {
+		if(panelFileHex.isDataChanged()) {
+			byte[] changedData = panelFileHex.unloadData();
+			cpmFile.write(changedData);
+			lblActiveDisk.setForeground(Color.RED);
+		}// if dirty file
+		
+		if (cbFileNames.getItemCount()==0) {
+			return;
+		}//if empty
+		
+		DirEntry de = (DirEntry) cbFileNames.getSelectedItem();
+		String fileName = de.fileName;
+		cpmFile = CPMFile.getCPMFile(diskDrive, directory, fileName);
+		lblRecordCount.setText(String.format(getRadixFormat(), cpmFile.getRecordCount()));
+		lblReadOnly.setVisible(cpmFile.isReadOnly());
+		lblSystemFile.setVisible(cpmFile.isSystemFile());
+		
+		byte[] dataToDisplay = cpmFile.getRecordCount()==0?NO_ACTIVE_DISK.getBytes(): cpmFile.readRaw();
+		panelFileHex.loadData(dataToDisplay);
+		
+	}//doDisplaySelectedFile
 
 	private void doToolsNew() {
 		System.out.println("DiskUtility.doToolsNew()");
+		
 	}// doToolsNew
 
 	private void doToolsUpdate() {
@@ -433,7 +466,8 @@ public class DiskUtility extends JDialog {
 		Point point = this.getLocation();
 		myPrefs.putInt("LocX", point.x);
 		myPrefs.putInt("LocY", point.y);
-
+		
+		myPrefs.put("HostDirectory", hostDirectory);
 		myPrefs.putInt("Tab", tabbedPane.getSelectedIndex());
 		myPrefs = null;
 	}// appClose
@@ -443,6 +477,7 @@ public class DiskUtility extends JDialog {
 		this.setSize(myPrefs.getInt("Width", 761), myPrefs.getInt("Height", 693));
 		this.setLocation(myPrefs.getInt("LocX", 100), myPrefs.getInt("LocY", 100));
 
+		hostDirectory = myPrefs.get("HostDirectory", System.getProperty(USER_HOME, THIS_DIR));
 		tabbedPane.setSelectedIndex(myPrefs.getInt("Tab", 0));
 		myPrefs = null;
 
@@ -453,8 +488,12 @@ public class DiskUtility extends JDialog {
 
 		cbFileNames.setModel(fileCpmModel);
 		cbCPMFileInOut.setModel(fileCpmModel);
-		tableDirectory.setModel(directoryTableModel);
-		dirAdjustTableLook(tableDirectory);
+		directoryTable.setModel(directoryTableModel);
+		dirAdjustTableLook(directoryTable);
+		
+		haveDisk(false);
+		manageFileMenus(MNU_DISK_CLOSE);
+
 
 	}// appInit
 
@@ -846,12 +885,13 @@ public class DiskUtility extends JDialog {
 		gbc_scrollDirectoryTable.gridy = 1;
 		tabDirectory.add(scrollDirectoryTable, gbc_scrollDirectoryTable);
 		
-		tableDirectory = new JTable();
-		tableDirectory.setName(TABLE_DIRECTORY);;
-		tableDirectory.getSelectionModel().addListSelectionListener(adapterForDiskUtility);
-		tableDirectory.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
-		tableDirectory.setFont(new Font("Tahoma",Font.PLAIN,14));
-		scrollDirectoryTable.setViewportView(tableDirectory);
+		directoryTable = new JTable();
+		directoryTable.setBorder(new LineBorder(Color.RED));
+		directoryTable.setName(TABLE_DIRECTORY);;
+		directoryTable.getSelectionModel().addListSelectionListener(adapterForDiskUtility);
+		directoryTable.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+		directoryTable.setFont(new Font("Tahoma",Font.PLAIN,14));
+		scrollDirectoryTable.setViewportView(directoryTable);
 
 		JPanel tabFile = new JPanel();
 		tabbedPane.addTab("File View", null, tabFile, null);
@@ -878,6 +918,8 @@ public class DiskUtility extends JDialog {
 		panelFileSelection.setLayout(gbl_panelFileSelection);
 
 		cbFileNames = new JComboBox<DirEntry>();
+		cbFileNames.setName(CB_FILE_NAMES);
+		cbFileNames.addActionListener(adapterForDiskUtility);
 		cbFileNames.setPreferredSize(new Dimension(200, 20));
 		GridBagConstraints gbc_cbFileNames = new GridBagConstraints();
 		gbc_cbFileNames.fill = GridBagConstraints.HORIZONTAL;
@@ -898,7 +940,7 @@ public class DiskUtility extends JDialog {
 		lblRecordCount.setFont(new Font("Arial", Font.BOLD, 15));
 		GridBagConstraints gbc_lblRecordCount = new GridBagConstraints();
 		gbc_lblRecordCount.insets = new Insets(0, 0, 0, 5);
-		gbc_lblRecordCount.gridx = 2;
+		gbc_lblRecordCount.gridx = 4;
 		gbc_lblRecordCount.gridy = 0;
 		panelFileSelection.add(lblRecordCount, gbc_lblRecordCount);
 
@@ -913,7 +955,7 @@ public class DiskUtility extends JDialog {
 		label25.setFont(new Font("Arial", Font.PLAIN, 13));
 		GridBagConstraints gbc_label25 = new GridBagConstraints();
 		gbc_label25.insets = new Insets(0, 0, 0, 5);
-		gbc_label25.gridx = 4;
+		gbc_label25.gridx = 2;
 		gbc_label25.gridy = 0;
 		panelFileSelection.add(label25, gbc_label25);
 
@@ -1565,6 +1607,14 @@ public class DiskUtility extends JDialog {
 	private static final String TB_DISPLAY_HEX = "Display Hex";
 
 	private static final String TABLE_DIRECTORY = "tableDirectory";
+	
+	public static final String USER_HOME = "user.home";
+	public static final String THIS_DIR = ".";
+	
+	private final static String CB_FILE_NAMES = "cbFileNames";
+	private final static String CB_CPM_FILE_IN_OUT = "cbCpmFIleInOut";
+
+
 
 	//////////////////////////////////////////////////////////////////////////
 	// private JFrame frameBase;
@@ -1612,7 +1662,7 @@ public class DiskUtility extends JDialog {
 	private JLabel lblReadOnly;
 	private JLabel lblSystemFile;
 	private JComboBox cbCPMFileInOut;
-	private JTable tableDirectory;
+	private JTable directoryTable;
 	//////////////////////////////////////////////////////////////////////////
 
 	class AdapterForDiskUtility implements ActionListener,ListSelectionListener  {
@@ -1643,7 +1693,9 @@ public class DiskUtility extends JDialog {
 			case MNU_TOOLS_UPDATE:
 				doToolsUpdate();
 				break;
-
+				
+			case CB_FILE_NAMES:
+				doDisplaySelectedFile();
 			case TB_BOOTABLE:
 				// doBootable();
 				break;
@@ -1652,8 +1704,7 @@ public class DiskUtility extends JDialog {
 				doDisplayBase(((AbstractButton) actionEvent.getSource()));
 				break;
 			 default:
-				 log.addError("[actionPerformed] unknown name " + name + ".");
-				
+				 log.addError("[actionPerformed] unknown name " + name + ".");			
 			}// switch
 		}// actionPerformed
 
@@ -1662,7 +1713,7 @@ public class DiskUtility extends JDialog {
 			if (listSelectionEvent.getValueIsAdjusting()) {
 				return;
 			} // if
-			showDirectoryDetail(tableDirectory.getSelectedRow());
+			showDirectoryDetail(directoryTable.getSelectedRow());
 
 //			String name = ((Component) listSelectionEvent.getSource()).getName();
 //			switch(name) {
