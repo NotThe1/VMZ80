@@ -130,6 +130,23 @@ public class DiskDrive {
 	public String getDiskType() {
 		return this.diskType;
 	}// getDiskType
+	
+	public int getCurrentAbsoluteSector() {
+		return currentAbsoluteSector;
+	}// getCurrentAbsoluteSector
+
+	public int getCurrentHead() {
+		return currentHead;
+	}// getCurrentHead
+
+	public int getCurrentTrack() {
+		return currentTrack;
+	}// getCurrentTrack
+
+	public int getCurrentSector() {
+		return currentSector;
+	}// getCurrentSector
+
 
 	public String getFileAbsoluteName() {
 		return this.fileAbsoluteName;

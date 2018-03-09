@@ -23,6 +23,10 @@ class FileCpmModel extends AbstractListModel<DirEntry> implements ComboBoxModel<
 	public void clear() {
 		modelItemList.clear();
 	}// clear
+	
+	public boolean isEmpty() {
+		return modelItemList.isEmpty();
+	}//isEmpty
 
 	@Override
 	public DirEntry getElementAt(int index) {
@@ -62,4 +66,6 @@ class FileCpmModel extends AbstractListModel<DirEntry> implements ComboBoxModel<
 	public boolean exists(DirEntry dirEntry) {
 		return this.exists(dirEntry.fileName);
 	}//exists
+	
+
 }// class FileCpmModel

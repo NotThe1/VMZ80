@@ -14,4 +14,31 @@
 	<natures>
 		<nature>org.eclipse.jdt.core.javanature</nature>
 	</natures>
+	<linkedResources>
+		<link>
+			<name>resources/BDOS.mem</name>
+			<type>1</type>
+			<locationURI>PARENT-2-PROJECT_LOC/assemblerZ80/assemblerZ80/Code/currentOS/BDOS.mem</locationURI>
+		</link>
+		<link>
+			<name>resources/BIOS.mem</name>
+			<type>1</type>
+			<locationURI>PARENT-2-PROJECT_LOC/assemblerZ80/assemblerZ80/Code/currentOS/BIOS.mem</locationURI>
+		</link>
+		<link>
+			<name>resources/BootSector.mem</name>
+			<type>1</type>
+			<locationURI>PARENT-2-PROJECT_LOC/assemblerZ80/assemblerZ80/Code/currentOS/BootSector.mem</locationURI>
+		</link>
+		<link>
+			<name>resources/CCP.mem</name>
+			<type>1</type>
+			<locationURI>PARENT-2-PROJECT_LOC/assemblerZ80/assemblerZ80/Code/currentOS/CCP.mem</locationURI>
+		</link>
+		<link>
+			<name>resources/ROM.mem</name>
+			<type>1</type>
+			<locationURI>PARENT-2-PROJECT_LOC/assemblerZ80/assemblerZ80/Code/currentOS/ROM.mem</locationURI>
+		</link>
+	</linkedResources>
 </projectDescription>

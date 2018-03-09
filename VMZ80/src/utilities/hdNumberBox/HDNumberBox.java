@@ -79,10 +79,20 @@ public class HDNumberBox extends JPanel {
 		setNewValue(newValue);
 		return;
 	}// setValue
+	
+	public void setValueQuiet(int newValue) {
+		muteNumberChangeEvent = true;
+		setNewValue(newValue);
+		muteNumberChangeEvent = false;
+	}//setValueQuiet
 
 	public void setMaxValue(int newMaxValue) {
 		numberModel.setMaximum(newMaxValue);
 	}// setMaxValue
+	
+	public void setMinValue(int newMinValue) {
+		numberModel.setMinimum(newMinValue);
+	}//setMinValue
 
 	public void setDecimalDisplay() {
 		setDecimalDisplay(true);
@@ -110,10 +120,10 @@ public class HDNumberBox extends JPanel {
 		return showDecimal;
 	}// isDecimalDisplay
 
-	public void mute(boolean state) {
-		muteNumberChangeEvent = state;
-	}// mute
-
+//	private void mute(boolean state) {
+//		muteNumberChangeEvent = state;
+//	}// mute
+//
 	// ---------------------------------------
 
 	private void displayValue() {
@@ -124,6 +134,8 @@ public class HDNumberBox extends JPanel {
 		txtValueDisplay.setText(stringValue);
 		txtValueDisplay.repaint();
 	}// showValue
+	
+	
 
 	void setNewValue(int newValue) {
 		newValue = Math.min(newValue, (int) numberModel.getMaximum()); // upper

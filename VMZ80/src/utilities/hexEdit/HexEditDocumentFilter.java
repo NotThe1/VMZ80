@@ -303,6 +303,7 @@ public class HexEditDocumentFilter extends DocumentFilter {
 		hexSourceChangeListeners.remove(hexSourceChangeListener);
 	}//removeHexSourceChangeListener
 	
+	@SuppressWarnings("unchecked")
 	private void fireHexSourceChange(int location, byte value){
 		if(hexSourceChangeListeners.size() == 0){
 			return;		// no listeners
@@ -312,7 +313,7 @@ public class HexEditDocumentFilter extends DocumentFilter {
 			workingSourceChangeListeners =(Vector<HexSourceChangeListener>) hexSourceChangeListeners.clone();
 			HexSourceChangeEvent hexSourceChangeEvent = new HexSourceChangeEvent(this,location,value);
 			
-			for(HexSourceChangeListener listener:hexSourceChangeListeners){
+			for(HexSourceChangeListener listener:workingSourceChangeListeners){
 				listener.dataChanged(hexSourceChangeEvent);
 			}//for
 		}//sync

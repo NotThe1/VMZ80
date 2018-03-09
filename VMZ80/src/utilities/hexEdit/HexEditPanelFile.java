@@ -46,13 +46,17 @@ public class HexEditPanelFile extends HexEditPanelBase {
 		
 		loadDataCommon(source.capacity());
 
-		
 	}// loadDocument
 	
 	public void closeFile(){
 		try {
+			if(fileMap != null) {
+				fileMap =null;
+			}//if 
+			
 			if (fileChannel != null) {
 				fileChannel.close();
+				fileChannel = null;
 			} //if
 		} catch (IOException e) {
 			e.printStackTrace();
