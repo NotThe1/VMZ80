@@ -14,6 +14,7 @@ import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -225,6 +226,23 @@ public class DiskUtility extends JDialog {
 			cbFileNames.setSelectedIndex(0);
 			cbCPMFileInOut.setSelectedIndex(0);
 		} // if no CPM files
+		
+		int count = fileCpmModel.getSize();
+		log.addNL();
+		log.addSpecial("fileCpmModel");
+		for(int i = 0; i < count;i++) {
+			log.addSpecial(String.format("count: %d, File: %s", i,fileCpmModel.getElementAt(i).fileName));
+		}//for count
+		
+		 count = cbFileNames.getItemCount();
+		log.addNL();
+		log.addSpecial("cbFileNames");
+		for(int i = 0; i < count;i++) {
+			log.addSpecial(String.format("count: %d, File: %s", i,cbFileNames.getItemAt(i)));
+		}//for count
+		
+		
+		
 	}// dirMakeDirectoryTable
 
 	private void displayPhysicalSector(int absoluteSector) {
@@ -569,36 +587,115 @@ public class DiskUtility extends JDialog {
 	}// doGetHostFile
 
 	private void doExport() {
-		
-		if(cbCPMFileInOut.getItemCount()== 0) {
-			return;
-		}//if empty list
-		DirEntry dirEntry = (DirEntry) cbCPMFileInOut.getSelectedItem();
-		
-		String fileName =  dirEntry.fileName;
 
-//		if(!fileCpmModel.exists(fileName)) {
-//			cbCPMFileInOut.setSelectedItem(EMPTY_STRING);
-//		}// if not really there
-//		cbCPMFileInOut.setSelectedItem(fileName);
-		
+		if (cbCPMFileInOut.getItemCount() == 0) {
+			return;
+		} // if empty list
+		DirEntry dirEntry = (DirEntry) cbCPMFileInOut.getSelectedItem();
+		String fileName = dirEntry.fileName;
+
+		// if(!fileCpmModel.exists(fileName)) {
+		// cbCPMFileInOut.setSelectedItem(EMPTY_STRING);
+		// }// if not really there
+		// cbCPMFileInOut.setSelectedItem(fileName);
+
 		cpmFile = CPMFile.getCPMFile(diskDrive, directory, fileName);
-		
+
 		ByteArrayInputStream bis = new ByteArrayInputStream(cpmFile.readNet());
-		
+
 		try {
-			Files.copy(bis, Paths.get(hostFile.getAbsolutePath()),StandardCopyOption.REPLACE_EXISTING);
+			Files.copy(bis, Paths.get(hostFile.getAbsolutePath()), StandardCopyOption.REPLACE_EXISTING);
 		} catch (IOException ioe) {
-			String message = String.format("Exported %s to %s", fileName,hostFile.getAbsolutePath());
+			String message = String.format("Exported %s to %s", fileName, hostFile.getAbsolutePath());
 			log.addInfo(message);
-		}// try
-		
-		
+		} // try
+
 	}// doExport
 
 	private void doImport() {
 		System.out.println("DiskUtility.()");
+
+		boolean deleteFile = false;
+		DirEntry dirEntry = (DirEntry) cbCPMFileInOut.getSelectedItem();
+		String cpmFileName = dirEntry.fileName;
+
+		if (fileCpmModel.exists(cpmFileName)) {
+			this.getContentPane();
+			if (JOptionPane.showConfirmDialog((Component) this, "File Exits, Do you want to overwrite?",
+					"Copying a Native File to a CPM file", JOptionPane.YES_NO_OPTION,
+					JOptionPane.WARNING_MESSAGE) == JOptionPane.NO_OPTION) {
+				return;
+			} // if
+			deleteFile = true;
+		} // if file exists
+
+		// Do we have enough space on the CP/M disk to do this?
+		if (!enoughSpaceOnCPM(deleteFile, cpmFileName, hostFile)) {
+			return;
+		} // if - enough space
+
+		if (deleteFile) {
+			directory.deleteFile(cpmFileName);
+		} // if delete
+
+		/*
+		 * We have all the pieces needed to actually move the file. We need to get a directory entry and some storage
+		 * for the file
+		 */
+		
+		ByteArrayOutputStream bos = new ByteArrayOutputStream();
+		try {
+			Files.copy(Paths.get(hostFile.getAbsolutePath()), bos);
+		} catch (Exception e) {
+			log.addError("Failed to read file: " + hostFile.getAbsolutePath());
+			return;
+		}// try
+		
+		byte[] dataToWrite = bos.toByteArray();
+		
+		CPMFile newCPMFile = CPMFile.createCPMFile(diskDrive, directory, cpmFileName);
+		newCPMFile.writeNewFile(dataToWrite);
+		
+		//need the two display methods run on separate threads
+		javax.swing.SwingUtilities.invokeLater(new Runnable() {
+			public void run() {
+//				displayPhysicalSector(0);
+			}
+		});
+		displayDirectoryView();
+
+		
+//		javax.swing.SwingUtilities.invokeLater(new Runnable() {
+//			public void run() {
+//				displayDirectoryView();
+//			}
+//		});
+		
+//		String diskName = diskDrive.getFileAbsoluteName();
+//		doDiskClose();
+//		diskSetup(diskName);
+//		manageFileMenus(MNU_DISK_LOAD);	
+		//need the two display methods run on separate threads
+
 	}// doImport
+
+	private boolean enoughSpaceOnCPM(boolean deleteFlag, String cpmFileName, File sourceFile) {
+		boolean result;
+		int blocksNeeded = (int) Math.ceil(sourceFile.length() / (float) diskMetrics.getBytesPerBlock());
+		int availableBlocks = directory.getAvailableBlockCount();
+		availableBlocks = deleteFlag ? availableBlocks + directory.getFileBlocksCount(cpmFileName) : availableBlocks;
+
+		if (availableBlocks > blocksNeeded) {
+			result = true;
+		} else {
+			String msg = String.format("Not enough space on CPM disk%n" + "Blocks Available: %,d -Blocks  Need: %,d",
+					availableBlocks, blocksNeeded);
+			JOptionPane.showMessageDialog((Component) this, msg, "Copying a host file to CPM",
+					JOptionPane.WARNING_MESSAGE);
+			result = false;
+		} // if
+		return result;
+	}// enoughSpaceOnCPM
 
 	////////////////////////////////////////////////////////////////////////////////////////
 	private void appClose() {
@@ -1639,6 +1736,9 @@ public class DiskUtility extends JDialog {
 		panelImportExport0.add(lblFile, gbc_lblFile);
 
 		cbCPMFileInOut = new JComboBox<DirEntry>();
+		cbCPMFileInOut.setName(CB_CPM_FILE_IN_OUT);
+//		cbCPMFileInOut.addActionListener(adapterForDiskUtility);
+		cbCPMFileInOut.setEditable(true);
 		cbCPMFileInOut.setMaximumSize(new Dimension(200, 20));
 		cbCPMFileInOut.setMinimumSize(new Dimension(200, 20));
 		cbCPMFileInOut.setPreferredSize(new Dimension(200, 20));
@@ -1862,6 +1962,7 @@ public class DiskUtility extends JDialog {
 
 			case BTN_IMPORT:
 				doImport();
+				int a = 5;
 				break;
 
 			case CB_FILE_NAMES:
