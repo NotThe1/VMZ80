@@ -215,8 +215,8 @@ public class DiskUtility extends JDialog {
 			directoryEntry = directory.getDirectoryEntry(directoryIndex);
 			directoryTableModel.addRow(directoryIndex, directoryEntry);
 			if ((!directoryEntry.isEmpty()) && directoryEntry.getActualExtentNumber() == 0) {
-				fileCpmModel.add(new DirEntry(directoryEntry.getNameAndTypePeriod(), directoryIndex));
-				log.addInfo(directoryEntry.getNameAndTypePeriod());
+				fileCpmModel.add(directoryEntry.getNameAndTypePeriod());
+//				log.addInfo(directoryEntry.getNameAndTypePeriod());
 			} // if
 		} // for each directory entry
 		showDirectoryDetail(0);
@@ -227,21 +227,22 @@ public class DiskUtility extends JDialog {
 			cbCPMFileInOut.setSelectedIndex(0);
 		} // if no CPM files
 		
-		int count = fileCpmModel.getSize();
-		log.addNL();
-		log.addSpecial("fileCpmModel");
-		for(int i = 0; i < count;i++) {
-			log.addSpecial(String.format("count: %d, File: %s", i,fileCpmModel.getElementAt(i).fileName));
-		}//for count
+//		int count = fileCpmModel.getSize();
+//		log.addNL();
+//		log.addSpecial("fileCpmModel");
+//		for(int i = 0; i < count;i++) {
+//			log.addSpecial(String.format("count: %d, File: %s", i,fileCpmModel.getElementAt(i)));
+//		}//for count
+//		
+//		 count = cbFileNames.getItemCount();
+//		log.addNL();
+//		log.addSpecial("cbFileNames");
+//		for(int i = 0; i < count;i++) {
+//			log.addSpecial(String.format("count: %d, File: %s", i,cbFileNames.getItemAt(i)));
+//		}//for count
 		
-		 count = cbFileNames.getItemCount();
-		log.addNL();
-		log.addSpecial("cbFileNames");
-		for(int i = 0; i < count;i++) {
-			log.addSpecial(String.format("count: %d, File: %s", i,cbFileNames.getItemAt(i)));
-		}//for count
-		
-		
+		cbFileNames.updateUI();
+		cbCPMFileInOut.updateUI();
 		
 	}// dirMakeDirectoryTable
 
@@ -530,8 +531,8 @@ public class DiskUtility extends JDialog {
 			return;
 		} // if empty
 
-		DirEntry de = (DirEntry) cbFileNames.getSelectedItem();
-		String fileName = de.fileName;
+		 
+		String fileName = (String) cbFileNames.getSelectedItem();
 		cpmFile = CPMFile.getCPMFile(diskDrive, directory, fileName);
 		lblRecordCount.setText(String.format(getRadixFormat(), cpmFile.getRecordCount()));
 		lblReadOnly.setVisible(cpmFile.isReadOnly());
@@ -591,8 +592,7 @@ public class DiskUtility extends JDialog {
 		if (cbCPMFileInOut.getItemCount() == 0) {
 			return;
 		} // if empty list
-		DirEntry dirEntry = (DirEntry) cbCPMFileInOut.getSelectedItem();
-		String fileName = dirEntry.fileName;
+		String fileName = (String) cbCPMFileInOut.getSelectedItem();
 
 		// if(!fileCpmModel.exists(fileName)) {
 		// cbCPMFileInOut.setSelectedItem(EMPTY_STRING);
@@ -616,8 +616,7 @@ public class DiskUtility extends JDialog {
 		System.out.println("DiskUtility.()");
 
 		boolean deleteFile = false;
-		DirEntry dirEntry = (DirEntry) cbCPMFileInOut.getSelectedItem();
-		String cpmFileName = dirEntry.fileName;
+		String cpmFileName = (String) cbCPMFileInOut.getSelectedItem();
 
 		if (fileCpmModel.exists(cpmFileName)) {
 			this.getContentPane();
@@ -1154,7 +1153,7 @@ public class DiskUtility extends JDialog {
 		gbl_panelFileSelection.rowWeights = new double[] { 0.0, Double.MIN_VALUE };
 		panelFileSelection.setLayout(gbl_panelFileSelection);
 
-		cbFileNames = new JComboBox<DirEntry>();
+		cbFileNames = new JComboBox<String>();
 		cbFileNames.setName(CB_FILE_NAMES);
 		cbFileNames.addActionListener(adapterForDiskUtility);
 		cbFileNames.setPreferredSize(new Dimension(200, 20));
@@ -1735,7 +1734,7 @@ public class DiskUtility extends JDialog {
 		gbc_lblFile.gridy = 2;
 		panelImportExport0.add(lblFile, gbc_lblFile);
 
-		cbCPMFileInOut = new JComboBox<DirEntry>();
+		cbCPMFileInOut = new JComboBox<String>();
 		cbCPMFileInOut.setName(CB_CPM_FILE_IN_OUT);
 //		cbCPMFileInOut.addActionListener(adapterForDiskUtility);
 		cbCPMFileInOut.setEditable(true);
@@ -1915,8 +1914,8 @@ public class DiskUtility extends JDialog {
 	private JScrollPane scrollDirectoryTable;
 	private JLabel lblRawAllocation;
 	private JLabel lblRawEX;
-	private JComboBox<DirEntry> cbFileNames;
-	private JComboBox<DirEntry> cbCPMFileInOut;
+	private JComboBox<String> cbFileNames;
+	private JComboBox<String> cbCPMFileInOut;
 	private JLabel lblRecordCount;
 	private HexEditPanelSimple panelFileHex;
 	private JLabel lblReadOnly;

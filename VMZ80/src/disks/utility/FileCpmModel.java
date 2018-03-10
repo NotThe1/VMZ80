@@ -6,18 +6,18 @@ import java.util.List;
 import javax.swing.AbstractListModel;
 import javax.swing.ComboBoxModel;
 
-class FileCpmModel extends AbstractListModel<DirEntry> implements ComboBoxModel<DirEntry> {
+class FileCpmModel extends AbstractListModel<String> implements ComboBoxModel<String> {
 	private static final long serialVersionUID = 1L;
 	
-	List<DirEntry> modelItemList;
-	DirEntry selection = null;
+	List<String> modelItemList;
+	String selection = null;
 
 	public FileCpmModel() {
-		modelItemList = new ArrayList<DirEntry>();
+		modelItemList = new ArrayList<String>();
 	}// Constructor
 
-	public void add(DirEntry item) {
-		modelItemList.add(item);
+	public void add(String item) {
+		modelItemList.add(item.trim());
 	}// add
 	
 	public void clear() {
@@ -29,7 +29,7 @@ class FileCpmModel extends AbstractListModel<DirEntry> implements ComboBoxModel<
 	}//isEmpty
 
 	@Override
-	public DirEntry getElementAt(int index) {
+	public String getElementAt(int index) {
 		return modelItemList.get(index);
 	}// getElementAt
 
@@ -39,33 +39,29 @@ class FileCpmModel extends AbstractListModel<DirEntry> implements ComboBoxModel<
 	}// getSize
 
 	@Override
-	public DirEntry getSelectedItem() {
+	public String getSelectedItem() {
 		return selection;
 	}// getSelectedItem
 
 	@Override
 	public void setSelectedItem(Object arg0) {
-		if (arg0 instanceof DirEntry) {
-			selection = (DirEntry) arg0;
-		} else {
-			selection = new DirEntry((String) arg0, -1);
-		}// if
+		if (arg0 instanceof String) {
+			selection = (String) arg0;
+		}//if
 	}// setSelectedItem
 	
 	public boolean exists(String fileName){
-		boolean ans = false;
-		for(DirEntry de:modelItemList){
-			if(de.fileName.equals(fileName)){
-				ans = true;
-				break;
-			}//if
-		}//for
-		return ans;
+		return modelItemList.contains(fileName);
+//		boolean ans = false;
+//		for(String de:modelItemList){
+//			if(de.fileName.equals(fileName)){
+//				ans = true;
+//				break;
+//			}//if
+//		}//for
+//		return ans;
 	}//exists
 	
-	public boolean exists(DirEntry dirEntry) {
-		return this.exists(dirEntry.fileName);
-	}//exists
-	
+
 
 }// class FileCpmModel
