@@ -37,11 +37,13 @@ import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JRadioButton;
 import javax.swing.JScrollPane;
 import javax.swing.JSeparator;
 import javax.swing.JTabbedPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
+import javax.swing.JTextPane;
 import javax.swing.JToggleButton;
 import javax.swing.JToolBar;
 import javax.swing.SpinnerNumberModel;
@@ -53,6 +55,9 @@ import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.TableColumnModel;
+import javax.swing.text.SimpleAttributeSet;
+import javax.swing.text.StyleConstants;
+import javax.swing.text.StyledDocument;
 
 import codeSupport.AppLogger;
 import disks.CPMDirectory;
@@ -95,6 +100,9 @@ public class DiskUtility extends JDialog {
 	private byte[] diskSector;
 
 	private String hostDirectory;
+
+	private int fileMatchCount;
+	private static StyledDocument doc;
 
 	// private String radixFormat;
 
@@ -216,7 +224,7 @@ public class DiskUtility extends JDialog {
 			directoryTableModel.addRow(directoryIndex, directoryEntry);
 			if ((!directoryEntry.isEmpty()) && directoryEntry.getActualExtentNumber() == 0) {
 				fileCpmModel.add(directoryEntry.getNameAndTypePeriod());
-//				log.addInfo(directoryEntry.getNameAndTypePeriod());
+				// log.addInfo(directoryEntry.getNameAndTypePeriod());
 			} // if
 		} // for each directory entry
 		showDirectoryDetail(0);
@@ -226,24 +234,24 @@ public class DiskUtility extends JDialog {
 			cbFileNames.setSelectedIndex(0);
 			cbCPMFileInOut.setSelectedIndex(0);
 		} // if no CPM files
-		
-//		int count = fileCpmModel.getSize();
-//		log.addNL();
-//		log.addSpecial("fileCpmModel");
-//		for(int i = 0; i < count;i++) {
-//			log.addSpecial(String.format("count: %d, File: %s", i,fileCpmModel.getElementAt(i)));
-//		}//for count
-//		
-//		 count = cbFileNames.getItemCount();
-//		log.addNL();
-//		log.addSpecial("cbFileNames");
-//		for(int i = 0; i < count;i++) {
-//			log.addSpecial(String.format("count: %d, File: %s", i,cbFileNames.getItemAt(i)));
-//		}//for count
-		
+
+		// int count = fileCpmModel.getSize();
+		// log.addNL();
+		// log.addSpecial("fileCpmModel");
+		// for(int i = 0; i < count;i++) {
+		// log.addSpecial(String.format("count: %d, File: %s", i,fileCpmModel.getElementAt(i)));
+		// }//for count
+		//
+		// count = cbFileNames.getItemCount();
+		// log.addNL();
+		// log.addSpecial("cbFileNames");
+		// for(int i = 0; i < count;i++) {
+		// log.addSpecial(String.format("count: %d, File: %s", i,cbFileNames.getItemAt(i)));
+		// }//for count
+
 		cbFileNames.updateUI();
 		cbCPMFileInOut.updateUI();
-		
+
 	}// dirMakeDirectoryTable
 
 	private void displayPhysicalSector(int absoluteSector) {
@@ -479,7 +487,7 @@ public class DiskUtility extends JDialog {
 			return;
 		} // if - cancelled
 		File targetFile = fc.getSelectedFile();
-
+		String targetDirectory = targetFile.getParent();
 		String targetFileName = targetFile.getName();
 		targetFileName = cleanupFileName(targetFileName, ".F3HD");
 		String sourceFileName = diskDrive.getFileAbsoluteName();
@@ -492,7 +500,10 @@ public class DiskUtility extends JDialog {
 
 		doDiskClose();
 		try {
-			Files.copy(Paths.get(sourceFileName), Paths.get(targetFileName), StandardCopyOption.REPLACE_EXISTING);
+			Files.copy(Paths.get(sourceFileName), Paths.get(targetDirectory, targetFileName),
+					StandardCopyOption.REPLACE_EXISTING);
+			log.addInfo("SourceFileName: " + sourceFileName);
+			log.addInfo("targetFileName: " + targetFileName);
 		} catch (IOException e) {
 			log.addError("Failed to copy from " + sourceFileName + " to " + targetFileName);
 		} // try
@@ -531,7 +542,6 @@ public class DiskUtility extends JDialog {
 			return;
 		} // if empty
 
-		 
 		String fileName = (String) cbFileNames.getSelectedItem();
 		cpmFile = CPMFile.getCPMFile(diskDrive, directory, fileName);
 		lblRecordCount.setText(String.format(getRadixFormat(), cpmFile.getRecordCount()));
@@ -592,21 +602,25 @@ public class DiskUtility extends JDialog {
 		if (cbCPMFileInOut.getItemCount() == 0) {
 			return;
 		} // if empty list
-		String fileName = (String) cbCPMFileInOut.getSelectedItem();
+		String hostFilePath = hostFile.getAbsolutePath();
 
-		// if(!fileCpmModel.exists(fileName)) {
-		// cbCPMFileInOut.setSelectedItem(EMPTY_STRING);
-		// }// if not really there
-		// cbCPMFileInOut.setSelectedItem(fileName);
+		if (new File(hostFilePath).exists()) {
+			if (JOptionPane.showConfirmDialog((Component) this, "Host File Exits, Do you want to overwrite?",
+					"Copying a CPM file to a Native File ", JOptionPane.YES_NO_OPTION,
+					JOptionPane.WARNING_MESSAGE) == JOptionPane.NO_OPTION) {
+				return;
+			} // if
+		} // if file exists
 
-		cpmFile = CPMFile.getCPMFile(diskDrive, directory, fileName);
+		String cpmFileName = (String) cbCPMFileInOut.getSelectedItem();
+		cpmFile = CPMFile.getCPMFile(diskDrive, directory, cpmFileName);
 
 		ByteArrayInputStream bis = new ByteArrayInputStream(cpmFile.readNet());
 
 		try {
-			Files.copy(bis, Paths.get(hostFile.getAbsolutePath()), StandardCopyOption.REPLACE_EXISTING);
+			Files.copy(bis, Paths.get(hostFilePath), StandardCopyOption.REPLACE_EXISTING);
 		} catch (IOException ioe) {
-			String message = String.format("Exported %s to %s", fileName, hostFile.getAbsolutePath());
+			String message = String.format("Exported %s to %s", cpmFileName, hostFilePath);
 			log.addInfo(message);
 		} // try
 
@@ -619,7 +633,6 @@ public class DiskUtility extends JDialog {
 		String cpmFileName = (String) cbCPMFileInOut.getSelectedItem();
 
 		if (fileCpmModel.exists(cpmFileName)) {
-			this.getContentPane();
 			if (JOptionPane.showConfirmDialog((Component) this, "File Exits, Do you want to overwrite?",
 					"Copying a Native File to a CPM file", JOptionPane.YES_NO_OPTION,
 					JOptionPane.WARNING_MESSAGE) == JOptionPane.NO_OPTION) {
@@ -641,40 +654,39 @@ public class DiskUtility extends JDialog {
 		 * We have all the pieces needed to actually move the file. We need to get a directory entry and some storage
 		 * for the file
 		 */
-		
+
 		ByteArrayOutputStream bos = new ByteArrayOutputStream();
 		try {
 			Files.copy(Paths.get(hostFile.getAbsolutePath()), bos);
 		} catch (Exception e) {
 			log.addError("Failed to read file: " + hostFile.getAbsolutePath());
 			return;
-		}// try
-		
+		} // try
+
 		byte[] dataToWrite = bos.toByteArray();
-		
+
 		CPMFile newCPMFile = CPMFile.createCPMFile(diskDrive, directory, cpmFileName);
 		newCPMFile.writeNewFile(dataToWrite);
-		
-		//need the two display methods run on separate threads
+
+		// need the two display methods run on separate threads
 		javax.swing.SwingUtilities.invokeLater(new Runnable() {
 			public void run() {
-//				displayPhysicalSector(0);
+				// displayPhysicalSector(0);
 			}
 		});
 		displayDirectoryView();
 
-		
-//		javax.swing.SwingUtilities.invokeLater(new Runnable() {
-//			public void run() {
-//				displayDirectoryView();
-//			}
-//		});
-		
-//		String diskName = diskDrive.getFileAbsoluteName();
-//		doDiskClose();
-//		diskSetup(diskName);
-//		manageFileMenus(MNU_DISK_LOAD);	
-		//need the two display methods run on separate threads
+		// javax.swing.SwingUtilities.invokeLater(new Runnable() {
+		// public void run() {
+		// displayDirectoryView();
+		// }
+		// });
+
+		// String diskName = diskDrive.getFileAbsoluteName();
+		// doDiskClose();
+		// diskSetup(diskName);
+		// manageFileMenus(MNU_DISK_LOAD);
+		// need the two display methods run on separate threads
 
 	}// doImport
 
@@ -696,6 +708,171 @@ public class DiskUtility extends JDialog {
 		return result;
 	}// enoughSpaceOnCPM
 
+	// catalogs
+
+	private void doChangeDiskType() {
+		Object[] options = { "F3HD", "F3DD", "F5HD", "F5DD", "F5ED", "F8SS", "F8DS" };
+		Object selectType = JOptionPane.showInputDialog(null, "Choose Disk Type", "Type",
+				JOptionPane.INFORMATION_MESSAGE, null, options, options[0]);
+		// String diskType = (String) selectType !=null?(String) selectType:"F3HD";
+		lblDiskType.setText((String) selectType != null ? (String) selectType : "F3HD");
+	}// doChangeDiskType
+
+	private void doChangeDiskFolder() {
+		JFileChooser fc = new JFileChooser(lblFolder.getText());
+		fc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+		if (fc.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
+			lblFolder.setText(fc.getSelectedFile().getAbsolutePath());
+		} // if
+
+	}// doChangeDiskFolder
+
+	private void doFindFiles() {
+		System.out.println("DiskUtility.doFindFiles()");
+
+		String rawString = txtFindFileName.getText();
+
+		scrollPaneCatalog.setViewportView(txtCatalog);
+		setAttributes();
+		clearCatalog(txtCatalog.getStyledDocument());
+		fileMatchCount = 0;
+		Pattern searchPattern = makePattern();
+		findFiles(new File(lblFolder.getText()), searchPattern);
+		lblCatalogHeader
+				.setText(String.format("%,d matches for search pattern %s", fileMatchCount, txtFindFileName.getText()));
+		txtCatalog.setCaretPosition(0);
+		btnPrintResult.setVisible(fileMatchCount == 0 ? false : true);
+
+	}// doFindFiles
+
+	private void findFiles(File enterFile, Pattern p) {
+		File[] files = enterFile.listFiles();
+		for (File file : files) {
+			if (rbRecurse.isSelected() && file.isDirectory()) {
+				findFiles(file, p);
+			} else if (file.getName().toUpperCase().endsWith(PERIOD + lblDiskType.getText())) {
+				processTheFile(file, p);
+			} else {
+				// skip
+			} // if recursive
+
+		} // for files
+	}// findFiles
+
+	private void processTheFile(File file, Pattern p) {
+		StringBuilder result = new StringBuilder();
+		RawDiskDrive diskDrive = new RawDiskDrive(file.getAbsolutePath());
+		DiskMetrics diskMetrics = DiskMetrics.getDiskMetric(lblDiskType.getText());
+
+		byte[] diskSector;
+
+		int firstDirectorySector = diskMetrics.getDirectoryStartSector();
+		int lastDirectorySector = diskMetrics.getDirectoryLastSector();
+		int entriesPerSector = diskMetrics.bytesPerSector / Disk.DIRECTORY_ENTRY_SIZE;
+
+		for (int sector = firstDirectorySector; sector < lastDirectorySector + 1; sector++) {
+			diskDrive.setCurrentAbsoluteSector(sector);
+			diskSector = diskDrive.read();
+			for (int entry = 0; entry < entriesPerSector; entry++) {
+				String cpmFileName = extractName(diskSector, entry);
+				if (cpmFileName != null) {
+					Matcher m = p.matcher(cpmFileName);
+					if (m.matches()) {
+						result.append(String.format("%s%n", cpmFileName));
+						fileMatchCount++;
+					} // if matches
+				} // if not null
+			} // for each entry
+		} // for each sector
+
+		if (result.length() > 0) {
+			try {
+				doc.insertString(doc.getLength(), String.format("%n\t\tDisk - %s:%n", file.getName()), attrTeal);
+				doc.insertString(doc.getLength(), result.toString(), attrMaroon);
+			} catch (Exception e) {
+				log.addError("Failed to update Catalog for disk: " + file.getName());
+			} // try
+		} // if there are matches
+
+	}// processTheFile
+
+	private String extractName(byte[] sector, int index) {
+		String result;
+		int startIndex = index * Disk.DIRECTORY_ENTRY_SIZE;
+
+		if (sector[startIndex] == Disk.EMPTY_ENTRY) {// if empty entry
+			result = null;
+		} else if (sector[startIndex + Disk.DIR_EX] != 0) {// only want extent 0. 1 file name only
+			result = null;
+		} else {
+			byte[] nameArray = new byte[Disk.DIR_NAME_SIZE + Disk.DIR_TYPE_SIZE]; // 8 + 3
+			for (int i = 0; i < nameArray.length; i++) {
+				nameArray[i] = sector[startIndex + i + 1];
+			} // for each byte
+			result = new String(nameArray);
+		} // if
+		return result;
+	}// extractName
+
+	private void clearCatalog(StyledDocument styledDocument) {
+		try {
+			styledDocument.remove(0, styledDocument.getLength());
+		} catch (Exception e) {
+			log.addError("Failed to clear the Catalog");
+		} //
+		btnPrintResult.setVisible(false);
+	}// clearCatalog
+
+	private void doPrintResult() {
+		System.out.println("DiskUtility.doPrintResult()");
+	}// doPrintResult
+
+	private void doListFiles() {
+		System.out.println("DiskUtility.doListFiles()");
+	}// doListFiles
+
+	private Pattern makePattern() {
+		String name, ext;
+		String sourceFileName = txtFindFileName.getText().trim();
+		if (sourceFileName.contains(PERIOD)) {
+			String[] targetSet = sourceFileName.split("\\.");
+			name = targetSet[0];
+			ext = targetSet[1];
+		} else {
+			name = sourceFileName;
+			ext = SPACE_3; // three spaces
+		} // if period in name
+
+		String patternStr = getPattern(name, 8) + getPattern(ext, 3);
+		return Pattern.compile(patternStr);
+	}// makePattern
+
+	private String getPattern(String s, int size) {
+		StringBuilder sb = new StringBuilder();
+		boolean foundStar = false;
+		String subjectString;
+		int i = 0; // need this for after loop
+		for (; i < s.length(); i++) {
+			subjectString = s.substring(i, i + 1);
+			if (subjectString.equals(STAR)) {
+				foundStar = true;
+				break;
+			} else if (subjectString.equals(QUESTION_MARK)) {
+				sb.append(PERIOD);
+			} else {
+				sb.append(subjectString);
+			} // if * or ? or whatever
+		} // for all of s
+
+		String padString = foundStar ? PERIOD : SPACE;
+		// picked up index "i" from above
+		for (; i < size; i++) {
+			sb.append(padString);
+		} // for - padding
+
+		return new String(sb);
+	}// getPattern
+
 	////////////////////////////////////////////////////////////////////////////////////////
 	private void appClose() {
 		if (diskDrive != null) {
@@ -712,7 +889,10 @@ public class DiskUtility extends JDialog {
 		myPrefs.putInt("LocY", point.y);
 
 		myPrefs.put("HostDirectory", hostDirectory);
+		myPrefs.put("CatalogFolder", lblFolder.getText());
+		myPrefs.put("FindFileName", txtFindFileName.getText());
 		myPrefs.putInt("Tab", tabbedPane.getSelectedIndex());
+		
 		myPrefs = null;
 	}// appClose
 
@@ -722,6 +902,8 @@ public class DiskUtility extends JDialog {
 		this.setLocation(myPrefs.getInt("LocX", 100), myPrefs.getInt("LocY", 100));
 
 		hostDirectory = myPrefs.get("HostDirectory", System.getProperty(USER_HOME, THIS_DIR));
+		lblFolder.setText( myPrefs.get("CatalogFolder", System.getProperty(USER_HOME, THIS_DIR)));
+		txtFindFileName.setText( myPrefs.get("FindFileName", "*.*"));
 		tabbedPane.setSelectedIndex(myPrefs.getInt("Tab", 0));
 		myPrefs = null;
 
@@ -737,6 +919,8 @@ public class DiskUtility extends JDialog {
 
 		haveDisk(false);
 		manageFileMenus(MNU_DISK_CLOSE);
+
+		doc = txtCatalog.getStyledDocument();
 
 	}// appInit
 
@@ -1718,6 +1902,8 @@ public class DiskUtility extends JDialog {
 		panelImportExport0.add(btnHostFile, gbc_btnHostFile);
 
 		txtHostFileInOut = new JTextField();
+		txtHostFileInOut.setFont(new Font("Arial", Font.BOLD, 13));
+		txtHostFileInOut.setEditable(false);
 		GridBagConstraints gbc_txtHostFileInOut = new GridBagConstraints();
 		gbc_txtHostFileInOut.fill = GridBagConstraints.HORIZONTAL;
 		gbc_txtHostFileInOut.insets = new Insets(0, 0, 5, 0);
@@ -1735,8 +1921,9 @@ public class DiskUtility extends JDialog {
 		panelImportExport0.add(lblFile, gbc_lblFile);
 
 		cbCPMFileInOut = new JComboBox<String>();
+		cbCPMFileInOut.setFont(new Font("Arial", Font.BOLD, 13));
 		cbCPMFileInOut.setName(CB_CPM_FILE_IN_OUT);
-//		cbCPMFileInOut.addActionListener(adapterForDiskUtility);
+		// cbCPMFileInOut.addActionListener(adapterForDiskUtility);
 		cbCPMFileInOut.setEditable(true);
 		cbCPMFileInOut.setMaximumSize(new Dimension(200, 20));
 		cbCPMFileInOut.setMinimumSize(new Dimension(200, 20));
@@ -1771,11 +1958,127 @@ public class DiskUtility extends JDialog {
 		JPanel tabCatalog = new JPanel();
 		tabbedPane.addTab("Catalog", null, tabCatalog, null);
 		GridBagLayout gbl_tabCatalog = new GridBagLayout();
-		gbl_tabCatalog.columnWidths = new int[] { 0 };
-		gbl_tabCatalog.rowHeights = new int[] { 0 };
-		gbl_tabCatalog.columnWeights = new double[] { Double.MIN_VALUE };
-		gbl_tabCatalog.rowWeights = new double[] { Double.MIN_VALUE };
+		gbl_tabCatalog.columnWidths = new int[] { 0, 0 };
+		gbl_tabCatalog.rowHeights = new int[] { 0, 0, 0 };
+		gbl_tabCatalog.columnWeights = new double[] { 1.0, Double.MIN_VALUE };
+		gbl_tabCatalog.rowWeights = new double[] { 0.0, 1.0, Double.MIN_VALUE };
 		tabCatalog.setLayout(gbl_tabCatalog);
+
+		JPanel panel = new JPanel();
+		panel.setBorder(new BevelBorder(BevelBorder.LOWERED, null, null, null, null));
+		GridBagConstraints gbc_panel = new GridBagConstraints();
+		gbc_panel.insets = new Insets(0, 0, 5, 0);
+		gbc_panel.fill = GridBagConstraints.BOTH;
+		gbc_panel.gridx = 0;
+		gbc_panel.gridy = 0;
+		tabCatalog.add(panel, gbc_panel);
+		GridBagLayout gbl_panel = new GridBagLayout();
+		gbl_panel.columnWidths = new int[] { 0, 0, 0, 0, 0, 0 };
+		gbl_panel.rowHeights = new int[] { 0, 0, 0, 0, 0, 0 };
+		gbl_panel.columnWeights = new double[] { 0.0, 0.0, 0.0, 0.0, 1.0, Double.MIN_VALUE };
+		gbl_panel.rowWeights = new double[] { 0.0, 0.0, 0.0, 0.0, 0.0, Double.MIN_VALUE };
+		panel.setLayout(gbl_panel);
+
+		JButton btnChangeDiskType = new JButton("Change Disk Type");
+		btnChangeDiskType.setName(BTN_CHANGE_DISK_TYPE);
+		btnChangeDiskType.addActionListener(adapterForDiskUtility);
+		GridBagConstraints gbc_btnChangeDIskType = new GridBagConstraints();
+		gbc_btnChangeDIskType.fill = GridBagConstraints.HORIZONTAL;
+		gbc_btnChangeDIskType.insets = new Insets(0, 0, 5, 5);
+		gbc_btnChangeDIskType.gridx = 1;
+		gbc_btnChangeDIskType.gridy = 0;
+		panel.add(btnChangeDiskType, gbc_btnChangeDIskType);
+
+		lblDiskType = new JLabel("F3HD");
+		lblDiskType.setFont(new Font("Tahoma", Font.BOLD, 14));
+		GridBagConstraints gbc_lblDiskType = new GridBagConstraints();
+		gbc_lblDiskType.fill = GridBagConstraints.VERTICAL;
+		gbc_lblDiskType.insets = new Insets(0, 0, 5, 5);
+		gbc_lblDiskType.gridx = 2;
+		gbc_lblDiskType.gridy = 0;
+		panel.add(lblDiskType, gbc_lblDiskType);
+
+		JButton btnChangeDiskFolder = new JButton("Change Disk Folder");
+		btnChangeDiskFolder.setName(BTN_CHANGE_DISK_FOLDER);
+		btnChangeDiskFolder.addActionListener(adapterForDiskUtility);
+		GridBagConstraints gbc_btnChangeDiskFolder = new GridBagConstraints();
+		gbc_btnChangeDiskFolder.fill = GridBagConstraints.HORIZONTAL;
+		gbc_btnChangeDiskFolder.insets = new Insets(0, 0, 5, 5);
+		gbc_btnChangeDiskFolder.gridx = 1;
+		gbc_btnChangeDiskFolder.gridy = 1;
+		panel.add(btnChangeDiskFolder, gbc_btnChangeDiskFolder);
+
+		lblFolder = new JLabel("C:\\");
+		lblFolder.setForeground(Color.BLUE);
+		lblFolder.setFont(new Font("Arial", Font.BOLD, 15));
+		GridBagConstraints gbc_lblFolder = new GridBagConstraints();
+		gbc_lblFolder.anchor = GridBagConstraints.WEST;
+		gbc_lblFolder.gridwidth = 3;
+		gbc_lblFolder.insets = new Insets(0, 0, 5, 5);
+		gbc_lblFolder.gridx = 2;
+		gbc_lblFolder.gridy = 1;
+		panel.add(lblFolder, gbc_lblFolder);
+
+		rbRecurse = new JRadioButton("Recurse Folder");
+		GridBagConstraints gbc_rbRecurse = new GridBagConstraints();
+		gbc_rbRecurse.insets = new Insets(0, 0, 5, 5);
+		gbc_rbRecurse.gridx = 1;
+		gbc_rbRecurse.gridy = 2;
+		panel.add(rbRecurse, gbc_rbRecurse);
+
+		JButton btnFindFiles = new JButton("Find");
+		btnFindFiles.setName(BTN_FIND_FILES);
+		btnFindFiles.addActionListener(adapterForDiskUtility);
+		GridBagConstraints gbc_btnFindFiles = new GridBagConstraints();
+		gbc_btnFindFiles.fill = GridBagConstraints.HORIZONTAL;
+		gbc_btnFindFiles.insets = new Insets(0, 0, 5, 5);
+		gbc_btnFindFiles.gridx = 1;
+		gbc_btnFindFiles.gridy = 3;
+		panel.add(btnFindFiles, gbc_btnFindFiles);
+
+		txtFindFileName = new JTextField();
+		txtFindFileName.setText("p*.*");
+		txtFindFileName.setFont(new Font("Tahoma", Font.PLAIN, 13));
+		GridBagConstraints gbc_txtFindFileName = new GridBagConstraints();
+		gbc_txtFindFileName.anchor = GridBagConstraints.WEST;
+		gbc_txtFindFileName.insets = new Insets(0, 0, 5, 5);
+		gbc_txtFindFileName.gridx = 2;
+		gbc_txtFindFileName.gridy = 3;
+		panel.add(txtFindFileName, gbc_txtFindFileName);
+		txtFindFileName.setColumns(10);
+
+		btnPrintResult = new JButton("Print Result");
+		btnPrintResult.setName(BTN_PRINT_RESULT);
+		btnPrintResult.addActionListener(adapterForDiskUtility);
+		GridBagConstraints gbc_btnPrintResult = new GridBagConstraints();
+		gbc_btnPrintResult.insets = new Insets(0, 0, 5, 5);
+		gbc_btnPrintResult.gridx = 3;
+		gbc_btnPrintResult.gridy = 3;
+		panel.add(btnPrintResult, gbc_btnPrintResult);
+
+		JButton btnListFiles = new JButton("List Files");
+		btnListFiles.setName(BTN_LIST_FILES);
+		btnListFiles.addActionListener(adapterForDiskUtility);
+		GridBagConstraints gbc_btnListFiles = new GridBagConstraints();
+		gbc_btnListFiles.insets = new Insets(0, 0, 0, 5);
+		gbc_btnListFiles.fill = GridBagConstraints.HORIZONTAL;
+		gbc_btnListFiles.gridx = 1;
+		gbc_btnListFiles.gridy = 4;
+		panel.add(btnListFiles, gbc_btnListFiles);
+
+		scrollPaneCatalog = new JScrollPane();
+		GridBagConstraints gbc_scrollPaneCatalog = new GridBagConstraints();
+		gbc_scrollPaneCatalog.fill = GridBagConstraints.BOTH;
+		gbc_scrollPaneCatalog.gridx = 0;
+		gbc_scrollPaneCatalog.gridy = 1;
+		tabCatalog.add(scrollPaneCatalog, gbc_scrollPaneCatalog);
+
+		lblCatalogHeader = new JLabel(EMPTY_STRING);
+		scrollPaneCatalog.setColumnHeaderView(lblCatalogHeader);
+
+		txtCatalog = new JTextPane();
+		txtCatalog.setFont(new Font("Courier New", Font.PLAIN, 15));
+		scrollPaneCatalog.setViewportView(txtCatalog);
 
 		JPanel panelStatus = new JPanel();
 		panelStatus.setBorder(new BevelBorder(BevelBorder.LOWERED, null, null, null, null));
@@ -1840,7 +2143,37 @@ public class DiskUtility extends JDialog {
 
 	}// initialize
 
+	/////////////////////////////////////////////////////////
+
+	private SimpleAttributeSet attrBlack = new SimpleAttributeSet();
+	private SimpleAttributeSet attrBlue = new SimpleAttributeSet();
+	private SimpleAttributeSet attrGray = new SimpleAttributeSet();
+	private SimpleAttributeSet attrGreen = new SimpleAttributeSet();
+	private SimpleAttributeSet attrRed = new SimpleAttributeSet();
+	private SimpleAttributeSet attrSilver = new SimpleAttributeSet();
+	private SimpleAttributeSet attrNavy = new SimpleAttributeSet();
+	private SimpleAttributeSet attrMaroon = new SimpleAttributeSet();
+	private SimpleAttributeSet attrTeal = new SimpleAttributeSet();
+
+	private void setAttributes() {
+		StyleConstants.setForeground(attrNavy, new Color(0, 0, 128));
+		StyleConstants.setForeground(attrBlack, new Color(0, 0, 0));
+		StyleConstants.setForeground(attrBlue, new Color(0, 0, 255));
+		StyleConstants.setForeground(attrGreen, new Color(0, 128, 0));
+		StyleConstants.setForeground(attrTeal, new Color(0, 128, 128));
+		StyleConstants.setForeground(attrGray, new Color(128, 128, 128));
+		StyleConstants.setForeground(attrSilver, new Color(192, 192, 192));
+		StyleConstants.setForeground(attrRed, new Color(255, 0, 0));
+		StyleConstants.setForeground(attrMaroon, new Color(128, 0, 0));
+	}// setAttributes
+
 	static final String EMPTY_STRING = "";
+	static final String PERIOD = ".";
+	static final String QUESTION_MARK = "?";
+	static final String STAR = "*"; // Asterisk
+	static final String SPACE = " "; //
+	static final String SPACE_3 = SPACE + SPACE + SPACE; // three spaces
+
 	static final String NO_ACTIVE_DISK = "<No Active Disk>";
 	static final String NO_ACTIVE_FILE = "<No Active File>";
 
@@ -1874,6 +2207,12 @@ public class DiskUtility extends JDialog {
 	public static final String BTN_IMPORT = "btnImport";
 	public static final String BTN_EXPORT = "btnExport";
 	public static final String BTN_HOST_FILE = "btnHostFile";
+
+	public static final String BTN_CHANGE_DISK_TYPE = "btnChangeDiskType";
+	public static final String BTN_CHANGE_DISK_FOLDER = "btnChangeDiskFolder";
+	public static final String BTN_FIND_FILES = "btnFindFiles";
+	public static final String BTN_LIST_FILES = "btnListFiles";
+	public static final String BTN_PRINT_RESULT = "btnPrintResult";
 
 	//////////////////////////////////////////////////////////////////////////
 	// private JFrame frameBase;
@@ -1921,6 +2260,14 @@ public class DiskUtility extends JDialog {
 	private JLabel lblReadOnly;
 	private JLabel lblSystemFile;
 	private JTable directoryTable;
+	private JRadioButton rbRecurse;
+	private JLabel lblFolder;
+	private JLabel lblDiskType;
+	private JLabel lblCatalogHeader;
+	private JTextPane txtCatalog;
+	private JScrollPane scrollPaneCatalog;
+	private JButton btnPrintResult;
+	private JTextField txtFindFileName;
 	//////////////////////////////////////////////////////////////////////////
 
 	class AdapterForDiskUtility implements ActionListener, ListSelectionListener, HDNumberValueChangeListener {
@@ -1971,6 +2318,23 @@ public class DiskUtility extends JDialog {
 				// selected = display Decimal
 				doDisplayBase(((AbstractButton) actionEvent.getSource()));
 				break;
+
+			case BTN_CHANGE_DISK_TYPE:
+				doChangeDiskType();
+				break;
+			case BTN_CHANGE_DISK_FOLDER:
+				doChangeDiskFolder();
+				break;
+			case BTN_FIND_FILES:
+				doFindFiles();
+				break;
+			case BTN_PRINT_RESULT:
+				doPrintResult();
+				break;
+			case BTN_LIST_FILES:
+				doListFiles();
+				break;
+
 			default:
 				log.addError("[actionPerformed] unknown name " + name + ".");
 			}// switch
