@@ -19,7 +19,7 @@ public class Z80 {
 	}// enum conditionCode
 	
 	/**
-	 * tables
+	 *  tables
 	 */
 
 	public static Register[] singleRegisters = new Register[] { Register.B, Register.C, Register.D, Register.E,

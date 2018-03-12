@@ -9,7 +9,7 @@ package memory;
  * 
  *          <p>
  *          ICore is the interface that acts as the physical memory.
- *          <p>
+ *          <p> 
  *          ICore is a base level interface. It represents the memory in a virtual machine.
  */
 public interface ICore {

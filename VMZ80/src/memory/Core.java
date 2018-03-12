@@ -9,7 +9,7 @@ import java.util.Observable;
  * @author Frank Martyn
  * @version 1.0
  * 
- *          <p>
+ *          <p> 
  *          Core is the class that acts as the physical memory.
  *          <p>
  *          Core is a base level object. It represents the memory in a virtual machine.

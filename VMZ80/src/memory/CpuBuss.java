@@ -18,7 +18,7 @@ import memory.Core.Trap;
  *  I/O - monitors specific location to start Disk I/O operations 
  *  
  *  The CPU also requires word sized transfer of data. along with Push and Pop operations
- */
+ */ 
 public class CpuBuss extends Observable implements ICore, IcpuBuss {
 	private static CpuBuss instance = new CpuBuss();
 	private Core core;

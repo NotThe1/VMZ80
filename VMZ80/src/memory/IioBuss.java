@@ -7,7 +7,7 @@ package memory;
  * 
  *          <p>
  *          IioBuss acts as the physical memory - I/O device interaction.
- *          <p>
+ *          <p> 
  *          It represents the I/O devices access to memory in a virtual machine.
  * 
  *          The distinguishing characteristics of I/O interaction with the memory is that it does not participate in any

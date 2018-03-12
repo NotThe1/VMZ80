@@ -23,13 +23,13 @@ import javax.swing.JPanel;
 import javax.swing.JSeparator;
 import javax.swing.border.BevelBorder;
 
+import codeSupport.AppLogger;
 import disks.utility.UpdateSystemDisk;
 
 public class Z80Machine {
 
 	ApplicationAdapter applicationAdapter = new ApplicationAdapter();
-
-
+AppLogger log = AppLogger.getInstance();
 
 	/**
 	 * Launch the application.
