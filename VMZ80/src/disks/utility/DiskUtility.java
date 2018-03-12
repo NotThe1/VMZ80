@@ -13,6 +13,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.awt.print.PrinterException;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -20,15 +21,19 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.prefs.Preferences;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import javax.swing.AbstractButton;
 import javax.swing.Box;
+import javax.swing.InputVerifier;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
+import javax.swing.JComponent;
 import javax.swing.JDialog;
 import javax.swing.JFileChooser;
 import javax.swing.JLabel;
@@ -55,6 +60,7 @@ import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.TableColumnModel;
+import javax.swing.text.JTextComponent;
 import javax.swing.text.SimpleAttributeSet;
 import javax.swing.text.StyleConstants;
 import javax.swing.text.StyledDocument;
@@ -103,6 +109,9 @@ public class DiskUtility extends JDialog {
 
 	private int fileMatchCount;
 	private static StyledDocument doc;
+	
+	private CatalogTableModel catalogTableModel = new CatalogTableModel();
+	private JTable catalogTable = new JTable(catalogTableModel);
 
 	// private String radixFormat;
 
@@ -728,10 +737,6 @@ public class DiskUtility extends JDialog {
 	}// doChangeDiskFolder
 
 	private void doFindFiles() {
-		System.out.println("DiskUtility.doFindFiles()");
-
-		String rawString = txtFindFileName.getText();
-
 		scrollPaneCatalog.setViewportView(txtCatalog);
 		setAttributes();
 		clearCatalog(txtCatalog.getStyledDocument());
@@ -825,10 +830,48 @@ public class DiskUtility extends JDialog {
 
 	private void doPrintResult() {
 		System.out.println("DiskUtility.doPrintResult()");
+		if(scrollPaneCatalog.getViewport().getView() instanceof JTable) {
+			printCatalog(catalogTable);
+		}else if(scrollPaneCatalog.getViewport().getView() instanceof JTextPane) {
+			printListing(txtCatalog,lblCatalogHeader.getText());
+		}else {
+			log.addError("Attempted to print unknow result");
+		}//if
 	}// doPrintResult
+	
+	private void printListing(JTextPane textPane,String name) {
+		Font originalFont = textPane.getFont();
+		String fontName = originalFont.getName();
+
+		try {
+			textPane.setFont(new Font(fontName, Font.PLAIN, 8));
+			MessageFormat header = new MessageFormat(name);
+			MessageFormat footer = new MessageFormat(new Date().toString() + "           Page - {0}");
+			textPane.print(header, footer);
+			textPane.setFont(originalFont);
+		} catch (PrinterException pe) {
+			log.addError("fail to print listing from \"Find\"" + pe.getMessage());
+		} // try
+	
+	}//printListing
+	
+	private void printCatalog(JTable table) {	
+		try {
+			MessageFormat header = new MessageFormat("Disk Catalog");
+			MessageFormat footer = new MessageFormat(new Date().toString() + "                      Page - ) {0}");
+			table.print(JTable.PrintMode.FIT_WIDTH,header,footer);
+		} catch (PrinterException pe) {
+			log.addError("fail to print listing from \"List\"" + pe.getMessage());
+		}//try
+	}//printCatalog
 
 	private void doListFiles() {
-		System.out.println("DiskUtility.doListFiles()");
+		btnPrintResult.setVisible(false);
+		scrollPaneCatalog.setViewportView(catalogTable);
+		catalogTableModel.clear();
+		catGetEntries(new File(lblFolder.getText()),catalogTableModel);
+		catalogTable.setModel(catalogTableModel);
+		btnPrintResult.setVisible(catalogTable.getRowCount()==0?false:true);
 	}// doListFiles
 
 	private Pattern makePattern() {
@@ -872,6 +915,61 @@ public class DiskUtility extends JDialog {
 
 		return new String(sb);
 	}// getPattern
+	
+	private void catGetEntries(File enterFile,CatalogTableModel model) {
+		File[] files = enterFile.listFiles();
+		for (File file : files) {
+			if (rbRecurse.isSelected() && file.isDirectory()) {
+				catGetEntries(file, model);
+			} else if (file.getName().toUpperCase().endsWith(PERIOD + lblDiskType.getText())) {
+				catGetDiskInfo(file, model);
+			} else {
+				// skip
+			} // if recursive
+		} // for files
+	}//catGetEntries
+	
+	private void catGetDiskInfo(File file, CatalogTableModel model) {
+//		String path = file.getAbsolutePath();
+		String disk = file.getName();
+		String location = file.getParent();
+		
+		RawDiskDrive  diskDrive = new RawDiskDrive (file.getAbsolutePath());
+		DiskMetrics diskMetrics = DiskMetrics.getDiskMetric(lblDiskType.getText());
+		
+		byte[] diskSector;
+		int firstDirectorySector = diskMetrics.getDirectoryStartSector();
+		int lastDirectorySector = diskMetrics.getDirectoryLastSector();
+		int entriesPerSector = diskMetrics.bytesPerSector / Disk.DIRECTORY_ENTRY_SIZE;
+		
+		String cpmFileName;
+		for(int sector = firstDirectorySector; sector < lastDirectorySector+1; sector++) {
+			diskDrive.setCurrentAbsoluteSector(sector);
+			diskSector = diskDrive.read();
+			for(int entry = 0; entry < entriesPerSector; entry++) {
+				cpmFileName = extractName(diskSector,entry);
+				if(cpmFileName!=null) {
+					model.addRow(new Object[] {cpmFileName,disk,location});
+				}// if filename
+			}//for each entry	
+		}//for each sector
+	}//catGetDiskInfo
+	
+	private void catAdjustTableLook(JTable table) {
+		Font realColumnFont = table.getFont();
+		// get the width of the letter "W"
+		int charWidth = table.getFontMetrics(realColumnFont).getWidths()[0x57];
+		TableColumnModel tcm = table.getColumnModel();
+		tcm.getColumn(0).setPreferredWidth(charWidth * 13);	 // cpmFile
+		tcm.getColumn(1).setPreferredWidth(charWidth * 25);	 // Disk
+		tcm.getColumn(2).setPreferredWidth(charWidth * 40);	 // Location
+		
+		DefaultTableCellRenderer leftAlign = new DefaultTableCellRenderer();
+		leftAlign.setHorizontalAlignment(JLabel.LEFT);
+		tcm.getColumn(0).setCellRenderer(leftAlign);
+		tcm.getColumn(1).setCellRenderer(leftAlign);
+		tcm.getColumn(2).setCellRenderer(leftAlign);
+	}//catAdjustTableLook
 
 	////////////////////////////////////////////////////////////////////////////////////////
 	private void appClose() {
@@ -892,7 +990,7 @@ public class DiskUtility extends JDialog {
 		myPrefs.put("CatalogFolder", lblFolder.getText());
 		myPrefs.put("FindFileName", txtFindFileName.getText());
 		myPrefs.putInt("Tab", tabbedPane.getSelectedIndex());
-		
+
 		myPrefs = null;
 	}// appClose
 
@@ -902,8 +1000,8 @@ public class DiskUtility extends JDialog {
 		this.setLocation(myPrefs.getInt("LocX", 100), myPrefs.getInt("LocY", 100));
 
 		hostDirectory = myPrefs.get("HostDirectory", System.getProperty(USER_HOME, THIS_DIR));
-		lblFolder.setText( myPrefs.get("CatalogFolder", System.getProperty(USER_HOME, THIS_DIR)));
-		txtFindFileName.setText( myPrefs.get("FindFileName", "*.*"));
+		lblFolder.setText(myPrefs.get("CatalogFolder", System.getProperty(USER_HOME, THIS_DIR)));
+		txtFindFileName.setText(myPrefs.get("FindFileName", "*.*"));
 		tabbedPane.setSelectedIndex(myPrefs.getInt("Tab", 0));
 		myPrefs = null;
 
@@ -921,6 +1019,11 @@ public class DiskUtility extends JDialog {
 		manageFileMenus(MNU_DISK_CLOSE);
 
 		doc = txtCatalog.getStyledDocument();
+		
+		catalogTable.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+		catalogTable.setFont(new Font("Courier New", Font.PLAIN, 14));
+		catalogTable.setAutoCreateRowSorter(true);
+		catAdjustTableLook(catalogTable);
 
 	}// appInit
 
@@ -2037,7 +2140,7 @@ public class DiskUtility extends JDialog {
 		panel.add(btnFindFiles, gbc_btnFindFiles);
 
 		txtFindFileName = new JTextField();
-		txtFindFileName.setText("p*.*");
+		txtFindFileName.setInputVerifier(new FileNameVerifier());
 		txtFindFileName.setFont(new Font("Tahoma", Font.PLAIN, 13));
 		GridBagConstraints gbc_txtFindFileName = new GridBagConstraints();
 		gbc_txtFindFileName.anchor = GridBagConstraints.WEST;
@@ -2074,11 +2177,13 @@ public class DiskUtility extends JDialog {
 		tabCatalog.add(scrollPaneCatalog, gbc_scrollPaneCatalog);
 
 		lblCatalogHeader = new JLabel(EMPTY_STRING);
+		lblCatalogHeader.setFont(new Font("Tahoma", Font.BOLD, 16));
+		lblCatalogHeader.setHorizontalAlignment(SwingConstants.CENTER);
 		scrollPaneCatalog.setColumnHeaderView(lblCatalogHeader);
 
 		txtCatalog = new JTextPane();
 		txtCatalog.setFont(new Font("Courier New", Font.PLAIN, 15));
-		scrollPaneCatalog.setViewportView(txtCatalog);
+//		scrollPaneCatalog.setViewportView(txtCatalog);
 
 		JPanel panelStatus = new JPanel();
 		panelStatus.setBorder(new BevelBorder(BevelBorder.LOWERED, null, null, null, null));
@@ -2366,5 +2471,33 @@ public class DiskUtility extends JDialog {
 			}// switch
 		}// valueChanged
 	}// class AdapterAction
+
+	public class FileNameVerifier extends InputVerifier {
+		String fileNameRegex = "[\\w|\\?]{0,7}[\\w|\\?|*]{1}\\.?[\\w|\\?]{0,2}[\\w|\\?|*]?";
+		Pattern p = Pattern.compile(fileNameRegex);
+
+		private final Color INVALID_COLOR = Color.RED;
+		private final Color VALID_COLOR = Color.BLACK;
+
+		@Override
+		public boolean verify(JComponent jc) {
+			boolean result;
+			JTextComponent jtc = (JTextComponent) jc;
+			String text = jtc.getText();
+			jtc.setText(text.toUpperCase());
+			Matcher m = p.matcher(text);
+			if (m.matches()) {
+				jtc.setForeground(VALID_COLOR);
+				jtc.setSelectedTextColor(VALID_COLOR);
+				result = true;
+			} else {
+				jtc.setForeground(INVALID_COLOR);
+				jtc.setSelectedTextColor(INVALID_COLOR);
+				result = false;
+			} // if matches
+			return result;
+		}// verify
+
+	}// FileNameVerifier
 
 }// class GUItemplate
