@@ -11,11 +11,15 @@ import java.awt.Insets;
 import java.awt.Point;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.util.LinkedList;
 import java.util.Queue;
 import java.util.prefs.Preferences;
 
+import javax.swing.Box;
 import javax.swing.ButtonGroup;
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -31,14 +35,18 @@ import javax.swing.JSpinner;
 import javax.swing.JTextArea;
 import javax.swing.border.LineBorder;
 import javax.swing.border.TitledBorder;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
+import javax.swing.text.BadLocationException;
 import javax.swing.text.Document;
 
+import codeSupport.AppLogger;
 
 public class TTYZ80 {
 
 	private AdapterTTY adapterTTY = new AdapterTTY();
-	
-//	AppLogger log = AppLogger.getInstance();
+
+	AppLogger log = AppLogger.getInstance();
 
 	private ButtonGroup bgBehavior;
 
@@ -47,9 +55,9 @@ public class TTYZ80 {
 	private boolean truncateColumns;
 	private int tabSize;
 
-	private char lastKey;
+//	private char lastKey;
 
-	Queue<Byte> keyboardBuffer;
+	Queue<Byte> keyboardBuffer= new LinkedList<Byte>();
 
 	/**
 	 * Launch the application.
@@ -68,31 +76,52 @@ public class TTYZ80 {
 	}//
 
 	///////////////////////////////////////////////////////////////////////////////////////
-
+	private void doKeyTyped(KeyEvent keyEvent) {
+		byte keyByte = (byte) keyEvent.getKeyChar();	
+		keyboardBuffer.add(keyByte);
+		showStatus(keyEvent.getKeyChar());
+	}//dokeyTyped
+	
+	private void showStatus(char keyChar) {
+		lblKeyChar.setText(String.format("Last Char = %s [0x%02X]", keyChar,(byte)keyChar));
+		lblKeyText.setText(String.format("Keyboard buffer size = %d", keyboardBuffer.size()));
+	}//showStatus
+	
+	private void clearDoc() {
+		try {
+			screen.remove(0, screen.getLength());
+		} catch (BadLocationException e) {
+			log.addError("Failed to clear screen: " + e.getMessage());
+		}//try
+	}// clearDoc
+	
+	///////////////////////////////////////////////////////////////////////////////////////
+	
 	private void doClearScreen() {
 		System.out.println("TTY.doClearScreen()");
+		clearDoc();
 	}//
 
 	private void doClearInBuffer() {
 		System.out.println("TTY.doClearInBuffer()");
 	}//
 
-	private void doColumnBehavior(){
+	private void doColumnBehavior() {
 		System.out.println("TTY.doColumnBehavior()");
-		
+
 		if (mnuBehaviorTruncate.isSelected()) {
 			truncateColumns = true;
 			textScreen.setLineWrap(false);
-		}else if (mnuBehaviorWrap.isSelected()) {
+		} else if (mnuBehaviorWrap.isSelected()) {
 			truncateColumns = false;
 			textScreen.setLineWrap(true);
-		}else if (mnuBehaviorExtend.isSelected()) {
+		} else if (mnuBehaviorExtend.isSelected()) {
 			truncateColumns = false;
 			textScreen.setLineWrap(false);
-		}else {
-			
+		} else {
+
 		}
-	}//doColumnBehavior
+	}// doColumnBehavior
 
 	private void doSetFont() {
 		System.out.println("TTY.doSetFont()");
@@ -109,6 +138,10 @@ public class TTYZ80 {
 	private void doSetCaretColor() {
 		System.out.println("TTY.doSetCaretColor()");
 	}//
+
+	private void doColumnsChanged() {
+		maxColumn = (int) spinnerColumns.getValue();
+	}// doColumnsChanged
 
 	public void close() {
 		appClose();
@@ -167,25 +200,18 @@ public class TTYZ80 {
 		tabSize = 9;
 
 		doColumnBehavior();
-		// spinnerColumns.setValue(maxColumn);
+		spinnerColumns.setValue(maxColumn);
+
+		// textScreen.setCaret(new FancyCaret());
 		//
-		// spinnerColumns.getModel().addChangeListener(new ChangeListener() {
-		// @Override
-		// public void stateChanged(ChangeEvent changeEvent) {
-		// maxColumn = (int) spinnerColumns.getValue();
-		// }// stateChanged
-		// });
-		//
-		// // textScreen.setCaret(new FancyCaret());
-		//
-		// textScreen.setEditable(false);
-		// textScreen.getCaret().setVisible(true);
+		 textScreen.setEditable(false);
+		 textScreen.getCaret().setVisible(true);
 		// textScreen.addKeyListener(this);
 		// keyboardBuffer = new LinkedList<Byte>();
 		//
-		// screen = textScreen.getDocument();
-		// clearDoc();
-		// frameTTY.setVisible(true);
+		 screen = textScreen.getDocument();
+		 clearDoc();
+		 frameTTY.setVisible(true);
 
 	}// appInit
 
@@ -272,12 +298,14 @@ public class TTYZ80 {
 		gbl_panelColumns.rowWeights = new double[] { 0.0, Double.MIN_VALUE };
 		panelColumns.setLayout(gbl_panelColumns);
 
-		JSpinner spinner = new JSpinner();
-		spinner.setPreferredSize(new Dimension(90, 20));
-		GridBagConstraints gbc_spinner = new GridBagConstraints();
-		gbc_spinner.gridx = 0;
-		gbc_spinner.gridy = 0;
-		panelColumns.add(spinner, gbc_spinner);
+		spinnerColumns = new JSpinner();
+		spinnerColumns.setName(SPINNER_COLUMNS);
+		spinnerColumns.addChangeListener(adapterTTY);
+		spinnerColumns.setPreferredSize(new Dimension(90, 20));
+		GridBagConstraints gbc_spinnerColumns = new GridBagConstraints();
+		gbc_spinnerColumns.gridx = 0;
+		gbc_spinnerColumns.gridy = 0;
+		panelColumns.add(spinnerColumns, gbc_spinnerColumns);
 
 		JPanel panelScreen = new JPanel();
 		GridBagConstraints gbc_panelScreen = new GridBagConstraints();
@@ -301,6 +329,7 @@ public class TTYZ80 {
 		panelScreen.add(scrollPane, gbc_scrollPane);
 
 		textScreen = new JTextArea();
+		textScreen.addKeyListener(adapterTTY);
 		scrollPane.setViewportView(textScreen);
 
 		JPanel panelStatus = new JPanel();
@@ -323,6 +352,13 @@ public class TTYZ80 {
 		gbc_lblKeyChar.gridx = 0;
 		gbc_lblKeyChar.gridy = 0;
 		panelStatus.add(lblKeyChar, gbc_lblKeyChar);
+		
+		Component horizontalStrut = Box.createHorizontalStrut(20);
+		GridBagConstraints gbc_horizontalStrut = new GridBagConstraints();
+		gbc_horizontalStrut.insets = new Insets(0, 0, 0, 5);
+		gbc_horizontalStrut.gridx = 1;
+		gbc_horizontalStrut.gridy = 0;
+		panelStatus.add(horizontalStrut, gbc_horizontalStrut);
 
 		lblKeyText = new JLabel("<Start>");
 		GridBagConstraints gbc_lblKeyText = new GridBagConstraints();
@@ -330,6 +366,13 @@ public class TTYZ80 {
 		gbc_lblKeyText.gridx = 2;
 		gbc_lblKeyText.gridy = 0;
 		panelStatus.add(lblKeyText, gbc_lblKeyText);
+		
+		Component horizontalStrut_1 = Box.createHorizontalStrut(20);
+		GridBagConstraints gbc_horizontalStrut_1 = new GridBagConstraints();
+		gbc_horizontalStrut_1.insets = new Insets(0, 0, 0, 5);
+		gbc_horizontalStrut_1.gridx = 3;
+		gbc_horizontalStrut_1.gridy = 0;
+		panelStatus.add(horizontalStrut_1, gbc_horizontalStrut_1);
 
 		lblReleased = new JLabel("<Start>");
 		GridBagConstraints gbc_lblReleased = new GridBagConstraints();
@@ -399,7 +442,7 @@ public class TTYZ80 {
 	}// initialize
 		/////////////////////////////////////////////////////////
 
-	class AdapterTTY implements ActionListener {
+	class AdapterTTY implements ActionListener, ChangeListener, KeyListener {
 
 		@Override
 		public void actionPerformed(ActionEvent actionEvent) {
@@ -431,6 +474,32 @@ public class TTYZ80 {
 			}// switch
 		}// actionPerformed
 
+		@Override
+		public void stateChanged(ChangeEvent changeEvent) {
+			String name = ((Component) changeEvent.getSource()).getName();
+			if (name.equals(SPINNER_COLUMNS)) {
+				doColumnsChanged();
+			} else {
+				log.addError("Bad State change, name is: " + name + ".");
+			} // if
+
+		}// stateChanged
+
+		@Override
+		public void keyPressed(KeyEvent keyEvent) {
+			/* not implemented */
+		}// keyPressed
+
+		@Override
+		public void keyReleased(KeyEvent keyEvent) {
+			/* not implemented */
+		}// keyReleased
+
+		@Override
+		public void keyTyped(KeyEvent keyEvent) {
+			doKeyTyped(keyEvent);
+		}// keyTyped
+
 	}// class AdapterTTY
 
 	private static final String EMPTY_STRING = "";
@@ -447,6 +516,8 @@ public class TTYZ80 {
 	private static final String MNU_PROPERTIES_BACKGROUND_COLOR = "mnuPropertiesBackgroundColor";
 	private static final String MNU_PROPERTIES_CARET_COLOR = "mnuPropertiesCaretColor";
 
+	private static final String SPINNER_COLUMNS = "spinnerColumns";
+
 	private JFrame frameTTY;
 	private JLabel lblKeyChar;
 	private JLabel lblKeyText;
@@ -455,5 +526,6 @@ public class TTYZ80 {
 	private JRadioButtonMenuItem mnuBehaviorWrap;
 	private JRadioButtonMenuItem mnuBehaviorExtend;
 	private JTextArea textScreen;
+	private JSpinner spinnerColumns;
 
 }// class TTY

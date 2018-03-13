@@ -5,7 +5,7 @@ import codeSupport.Z80;
 // |7|6|5|4|3|2|1|0
 // |S|Z|0|A|0|P|1|C
 /**
- * 
+ *  
  * @author Frank Martyn
  * @version 1.0
  *
