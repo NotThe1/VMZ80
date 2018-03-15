@@ -9,6 +9,9 @@ abstract public class DeviceZ80 {
 	private Byte addressOut;
 	private Byte addressStatus;
 
+//	private PipedOutputStream[] pipesOut = new  PipedOutputStream[3];
+//	private PipedInputStream[] pipesIn = new PipedInputStream[3];
+
 	private String name;
 	private IOType type;
 	private String errMessage;
@@ -38,19 +41,19 @@ abstract public class DeviceZ80 {
 			throw new IOExceptionZ80(errMessage);
 		} // if input
 	}// Constructor
-	
-	public DeviceZ80(String name, IOType type, Byte addressIn, Byte addressOut,	Byte addressStatus) {
-		this(name,type,true,addressIn,true,addressOut,addressStatus);
-	}//Constructor - all addresses
+
+	public DeviceZ80(String name, IOType type, Byte addressIn, Byte addressOut, Byte addressStatus) {
+		this(name, type, true, addressIn, true, addressOut, addressStatus);
+	}// Constructor - all addresses
 
 	public boolean isInput() {
 		return this.inputFlag;
-	}//isInput
+	}// isInput
 
 	public boolean isOutput() {
 		return this.outputFlag;
-	}//isInput
-	
+	}// isInput
+
 	public void setOutput(boolean output) {
 		this.outputFlag = output;
 	}// setOutput
@@ -58,7 +61,7 @@ abstract public class DeviceZ80 {
 	public void setInput(boolean input) {
 		this.inputFlag = input;
 	}// setIinput
-	
+
 	public Byte getAddressIn() {
 		return addressIn;
 	}// getAddressIn
@@ -98,13 +101,31 @@ abstract public class DeviceZ80 {
 	public void setType(IOType type) {
 		this.type = type;
 	}// setType
+	
+//	public void setAddOutPipes(PipedOutputStream pipeOut,PipedInputStream pipeIn) {
+//		pipesOut[PIPE_OUT] = pipeOut;
+//		pipesIn[PIPE_OUT] = pipeIn;
+//	}//setAddInPipes
+//
+//	public void setAddInPipes(PipedOutputStream pipeOut,PipedInputStream pipeIn) {
+//		pipesOut[PIPE_IN] = pipeOut;
+//		pipesIn[PIPE_IN] = pipeIn;
+//	}//setAddInPipes
+//
+//	public void setAddStatusPipes(PipedOutputStream pipeOut,PipedInputStream pipeIn) {
+//		pipesOut[PIPE_STATUS] = pipeOut;
+//		pipesIn[PIPE_STATUS] = pipeIn;
+//	}//setAddInPipes
 
 	abstract public void byteFromCPU(Byte address, Byte value);
 
 	abstract public byte byteToCPU(Byte address);
-	
-	abstract public void close();
 
+	abstract public void close();
+	
+//	public static final int PIPE_IN = 0;
+//	public static final int PIPE_OUT = 1;
+//	public static final int PIPE_STATUS = 2;
 
 
 }// class DeviceZ80

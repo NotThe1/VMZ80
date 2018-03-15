@@ -39,10 +39,14 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.Document;
+import javax.swing.text.Element;
 
+import codeSupport.ASCII_CODES;
 import codeSupport.AppLogger;
+import ioSystem.DeviceZ80;
+import ioSystem.IOType;
 
-public class TTYZ80 {
+public class TTYZ80 extends DeviceZ80 {
 
 	private AdapterTTY adapterTTY = new AdapterTTY();
 
@@ -55,9 +59,9 @@ public class TTYZ80 {
 	private boolean truncateColumns;
 	private int tabSize;
 
-//	private char lastKey;
+	// private char lastKey;
 
-	Queue<Byte> keyboardBuffer= new LinkedList<Byte>();
+	Queue<Byte> keyboardBuffer = new LinkedList<Byte>();
 
 	/**
 	 * Launch the application.
@@ -75,28 +79,132 @@ public class TTYZ80 {
 		});
 	}//
 
+	@Override
+	public byte byteToCPU(Byte address) {
+		byte ans = 0x00;
+		;
+		if (address.equals(IN)) {
+			if (!keyboardBuffer.isEmpty()) {
+				ans = keyboardBuffer.poll();
+			} // if buffer not empty
+		} else if (address.equals(STATUS)) {
+			ans = (byte) (keyboardBuffer.size() + 1);
+		} else {
+			ans = (byte) 0XFF;
+		} // if
+		return ans;
+	}// byteToCPU
+
+	@Override
+	public void byteFromCPU(Byte address, Byte value) {
+		char c = (char) ((byte) value);
+		int usi = Byte.toUnsignedInt(value);
+
+		if (usi < 0x20) {// Non printables
+			switch (c) {
+			case ASCII_CODES.BS:
+				 doBackSpace();
+				break;
+			case ASCII_CODES.TAB:
+				 doTab();
+				break;
+			case ASCII_CODES.LF: // 0x0A
+				 display(Character.toString(c));
+				break;
+			case ASCII_CODES.CR: // 0x0D
+				/* Ignore CR */
+				break;
+			default:
+				/* Ignore the rest */
+				break;
+
+			}// switch
+
+		} else if ((usi >= 0x20) && (usi <= 0x7F)) {
+			/* all the printable characters */
+			 displayPrintable(Character.toString(c));
+		} else {
+			/* above ascii into EBDIC */
+		} // if
+
+	}// byteFromCPU
+	
+	private void displayPrintable(String s) {
+		Element lastElement = getLastElement();
+		if(!truncateColumns) { // drop anything beyond the max column
+			display(s);
+		}else if ((lastElement.getEndOffset() - lastElement.getStartOffset()) < this.maxColumn){
+			display(s);
+		}else {
+			/* ignore this string  */
+		}//if
+		String message = String.format("Screen End = %d, Document end = %d",
+				screen.getDefaultRootElement().getEndOffset(),screen.getLength());
+		log.addInfo(message);
+		textScreen.setCaretPosition(screen.getLength());
+//		textScreen.setCaretPosition(screen.getDefaultRootElement().getEndOffset()-1);
+		
+	}//displayPrintable
+	
+	private void display(String s) {
+		// Element[] elements = doc.getRootElements();
+		try {
+			screen.insertString(screen.getLength(), s, null);
+		} catch (BadLocationException e) {
+			log.addError("[TTYZ80.display()]  insert out of bounds");
+		}
+	}// display
+	
+	private void doTab() {
+		Element lastElement = getLastElement();
+		int column = lastElement.getEndOffset() - lastElement.getStartOffset();
+		int numberOfSpaces = tabSize -(column % tabSize);
+		for (int i = 0; i < numberOfSpaces; i++) {
+			displayPrintable(SPACE);
+		}
+	}//doTab;
+	
+	private void doBackSpace() {
+		int currentPosition = screen.getLength();
+		Element lastElement = getLastElement();
+		if(currentPosition > lastElement.getStartOffset()) {
+			try {
+				screen.remove(currentPosition - 1, 1);
+			} catch (Exception e) {
+				log.addError("[TTYZ80.doBackSpace] - backspace failure");
+			}//try
+		}//if
+	}//doBackSpace
+	
+	private Element getLastElement() {
+		Element root = screen.getDefaultRootElement();
+		return root.getElement(root.getElementCount()-1);
+	}//getLastElement
+
+
+
 	///////////////////////////////////////////////////////////////////////////////////////
 	private void doKeyTyped(KeyEvent keyEvent) {
-		byte keyByte = (byte) keyEvent.getKeyChar();	
+		byte keyByte = (byte) keyEvent.getKeyChar();
 		keyboardBuffer.add(keyByte);
 		showStatus(keyEvent.getKeyChar());
-	}//dokeyTyped
-	
+	}// dokeyTyped
+
 	private void showStatus(char keyChar) {
-		lblKeyChar.setText(String.format("Last Char = %s [0x%02X]", keyChar,(byte)keyChar));
+		lblKeyChar.setText(String.format("Last Char = %s [0x%02X]", keyChar, (byte) keyChar));
 		lblKeyText.setText(String.format("Keyboard buffer size = %d", keyboardBuffer.size()));
-	}//showStatus
-	
+	}// showStatus
+
 	private void clearDoc() {
 		try {
 			screen.remove(0, screen.getLength());
 		} catch (BadLocationException e) {
 			log.addError("Failed to clear screen: " + e.getMessage());
-		}//try
+		} // try
 	}// clearDoc
-	
+
 	///////////////////////////////////////////////////////////////////////////////////////
-	
+
 	private void doClearScreen() {
 		System.out.println("TTY.doClearScreen()");
 		clearDoc();
@@ -204,14 +312,14 @@ public class TTYZ80 {
 
 		// textScreen.setCaret(new FancyCaret());
 		//
-		 textScreen.setEditable(false);
-		 textScreen.getCaret().setVisible(true);
+		textScreen.setEditable(false);
+		textScreen.getCaret().setVisible(true);
 		// textScreen.addKeyListener(this);
 		// keyboardBuffer = new LinkedList<Byte>();
 		//
-		 screen = textScreen.getDocument();
-		 clearDoc();
-		 frameTTY.setVisible(true);
+		screen = textScreen.getDocument();
+		clearDoc();
+		frameTTY.setVisible(true);
 
 	}// appInit
 
@@ -219,6 +327,7 @@ public class TTYZ80 {
 	 * Create the application.
 	 */
 	public TTYZ80() {
+		super("tty", IOType.CHARACTER_IN_OUT, IN, OUT, STATUS);
 		initialize();
 		appInit();
 	}// Constructor
@@ -352,7 +461,7 @@ public class TTYZ80 {
 		gbc_lblKeyChar.gridx = 0;
 		gbc_lblKeyChar.gridy = 0;
 		panelStatus.add(lblKeyChar, gbc_lblKeyChar);
-		
+
 		Component horizontalStrut = Box.createHorizontalStrut(20);
 		GridBagConstraints gbc_horizontalStrut = new GridBagConstraints();
 		gbc_horizontalStrut.insets = new Insets(0, 0, 0, 5);
@@ -366,7 +475,7 @@ public class TTYZ80 {
 		gbc_lblKeyText.gridx = 2;
 		gbc_lblKeyText.gridy = 0;
 		panelStatus.add(lblKeyText, gbc_lblKeyText);
-		
+
 		Component horizontalStrut_1 = Box.createHorizontalStrut(20);
 		GridBagConstraints gbc_horizontalStrut_1 = new GridBagConstraints();
 		gbc_horizontalStrut_1.insets = new Insets(0, 0, 0, 5);
@@ -502,7 +611,12 @@ public class TTYZ80 {
 
 	}// class AdapterTTY
 
+	public static final byte IN = (byte) 0X0EC;
+	public static final byte OUT = (byte) 0X0EC;
+	public static final byte STATUS = (byte) 0X0ED;
+
 	private static final String EMPTY_STRING = "";
+	private static final String SPACE = " ";
 
 	private static final String BTN_CLEAR_SCREEN = "btnClearScreen";
 	private static final String BTN_CLEAR_IN_BUFFER = "btnClearKeyboardBuffer";
