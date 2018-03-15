@@ -138,9 +138,7 @@ public class TTYZ80 extends DeviceZ80 {
 		}else {
 			/* ignore this string  */
 		}//if
-		String message = String.format("Screen End = %d, Document end = %d",
-				screen.getDefaultRootElement().getEndOffset(),screen.getLength());
-		log.addInfo(message);
+
 		textScreen.setCaretPosition(screen.getLength());
 //		textScreen.setCaretPosition(screen.getDefaultRootElement().getEndOffset()-1);
 		
