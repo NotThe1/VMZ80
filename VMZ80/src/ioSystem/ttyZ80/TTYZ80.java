@@ -3,7 +3,6 @@ package ioSystem.ttyZ80;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
-import java.awt.EventQueue;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
@@ -15,6 +14,7 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.io.IOException;
 import java.util.LinkedList;
 import java.util.Queue;
 import java.util.prefs.Preferences;
@@ -43,10 +43,10 @@ import javax.swing.text.Element;
 
 import codeSupport.ASCII_CODES;
 import codeSupport.AppLogger;
-import ioSystem.DeviceZ80;
+import ioSystem.DeviceZ80_A;
 import ioSystem.IOType;
 
-public class TTYZ80 extends DeviceZ80 {
+public class TTYZ80 extends DeviceZ80_A implements Runnable {
 
 	private AdapterTTY adapterTTY = new AdapterTTY();
 
@@ -63,20 +63,27 @@ public class TTYZ80 extends DeviceZ80 {
 
 	Queue<Byte> keyboardBuffer = new LinkedList<Byte>();
 
-	/**
-	 * Launch the application.
-	 */
-	public static void main(String[] args) {
-		EventQueue.invokeLater(new Runnable() {
-			public void run() {
-				try {
-					TTYZ80 window = new TTYZ80();
-					window.frameTTY.setVisible(true);
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-			}
-		});
+//	/**
+//	 * Launch the application.
+//	 */
+//	public static void main(String[] args) {
+//		EventQueue.invokeLater(new Runnable() {
+//			public void run() {
+//				try {
+//					TTYZ80 window = new TTYZ80();
+//					window.frameTTY.setVisible(true);
+//				} catch (Exception e) {
+//					e.printStackTrace();
+//				}
+//			}
+//		});
+//	}//
+	
+	public void run() {
+		while (true) {
+			
+		}
+		
 	}//
 
 	@Override
@@ -182,6 +189,15 @@ public class TTYZ80 extends DeviceZ80 {
 
 
 	///////////////////////////////////////////////////////////////////////////////////////
+	private void doKeyTyped1(KeyEvent keyEvent) {
+		try {
+			this.pipeOut_Out.write(keyEvent.getKeyChar());
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}//try
+	}//doKeyTyped1  *******************
+	
 	private void doKeyTyped(KeyEvent keyEvent) {
 		byte keyByte = (byte) keyEvent.getKeyChar();
 		keyboardBuffer.add(keyByte);
@@ -604,7 +620,8 @@ public class TTYZ80 extends DeviceZ80 {
 
 		@Override
 		public void keyTyped(KeyEvent keyEvent) {
-			doKeyTyped(keyEvent);
+			doKeyTyped1(keyEvent);
+//			doKeyTyped(keyEvent);
 		}// keyTyped
 
 	}// class AdapterTTY
