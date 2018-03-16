@@ -8,20 +8,19 @@ import java.util.HashSet;
 import java.util.Set;
 
 import codeSupport.AppLogger;
-import ioSystem.ttyZ80.TTYZ80_A;
+import ioSystem.ttyZ80.TTYZ80;
 
 public class IOController {
 	private AppLogger log = AppLogger.getInstance();
 	private static IOController instance = new IOController();
 
-	private Set<DeviceZ80_A> devicePopulation = new HashSet<>();
+	private Set<DeviceZ80> devicePopulation = new HashSet<>();
 
 	private HashMap<Byte, DeviceInputStatus> devicesInput = new HashMap<>();
 	private HashMap<Byte, DeviceOutput> devicesOutput = new HashMap<>();
 	private HashMap<Byte, DeviceInputStatus> devicesStatus = new HashMap<>();
 
-	private TTYZ80_A tty = new TTYZ80_A();;
-//	private DeviceZ80_A device;
+	private TTYZ80 tty = new TTYZ80();;
 
 	public static IOController getInstance() {
 		return instance;
@@ -33,44 +32,43 @@ public class IOController {
 			Thread threadTTY = new Thread(tty);
 			threadTTY.start();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			log.addError("[IOController.IOController()]  Failed to Add a Device: " + e.getMessage());
 		} // try
 	}// Constructor
 
-	private void addDevice(TTYZ80_A device) throws IOException {
-		PipedOutputStream os;// = new PipedOutputStream();
-		PipedInputStream is;// = new PipedInputStream(pos);
+	private void addDevice(TTYZ80 device) throws IOException {
+		PipedOutputStream os; // Sender
+		PipedInputStream is; // Receiver
 		if (device.getAddressIn() != null) {
 			os = new PipedOutputStream(); // Sender
 			is = new PipedInputStream(os); // Receiver
-			devicesInput.put(device.getAddressIn(), new DeviceInputStatus(device,is));
-			device.setPipeIn( os);
+			devicesInput.put(device.getAddressIn(), new DeviceInputStatus(device, is));
+			device.setPipeIn(os);
 		} // if input
 
 		if (device.getAddressOut() != null) {
 			os = new PipedOutputStream();
 			is = new PipedInputStream(os);
-			devicesOutput.put(device.getAddressOut(), new DeviceOutput(device,os));
+			devicesOutput.put(device.getAddressOut(), new DeviceOutput(device, os));
 			device.setPipeOut(is);
 		} // if input
 
 		if (device.getAddressStatus() != null) {
 			os = new PipedOutputStream();
 			is = new PipedInputStream(os);
-			devicesStatus.put(device.getAddressStatus(), new DeviceInputStatus(device,is));
+			devicesStatus.put(device.getAddressStatus(), new DeviceInputStatus(device, is));
 			device.setPipeStatus(os);
 		} // if input
 		devicePopulation.add(device);
 	}// addDevice
 
 	public void close() {
-		for (DeviceZ80_A d : devicePopulation) {
+		for (DeviceZ80 d : devicePopulation) {
 			if (d != null) {
 				d.close();
 				d = null;
 			} // if
-		} //
+		} // for each device
 	}// close
 
 	public void byteToDevice(byte address, byte value) {
@@ -80,54 +78,43 @@ public class IOController {
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
-			}
-			// device.byteFromCPU(address, value);
+			} // try
 		} else {
 			log.addError(String.format("[byteToDevice] could not identify device at: %02X", address));
 		} // if
 	}// byteToDevice
 
 	public Byte byteFromDevice(Byte address) throws IOException {
-
 		Byte value = 0x00;
-		if(devicesInput.containsKey(address)) {
-			if(devicesInput.get(address).is.available()>0) {
+		if (devicesInput.containsKey(address)) {
+			if (devicesInput.get(address).is.available() > 0) {
 				value = (byte) devicesInput.get(address).is.read();
-			}//if something to read
-		}//if input device
+			} // if something to read
+		} // if input device
 
 		return value;
-
 	}// byteFromDevice
 
-	// public String stringFromDevice(Byte address) {
-	// return byteFromDevice(address).toString();
-	//
-	// }// stringFromDevice
-
-	
 	/* this is really just a structure */
 	class DeviceInputStatus {
-		public TTYZ80_A device;
+		public TTYZ80 device;
 		public PipedInputStream is;
 
-		public DeviceInputStatus(TTYZ80_A device, PipedInputStream is) {
-			this.device= device;
+		public DeviceInputStatus(TTYZ80 device, PipedInputStream is) {
+			this.device = device;
 			this.is = is;
 		}// Constructor
 	}// class DeviceInputStatus
-	
+
 	/* this is really just a structure */
 	class DeviceOutput {
-		public TTYZ80_A device;
+		public TTYZ80 device;
 		public PipedOutputStream os;
 
-		public DeviceOutput(TTYZ80_A device, PipedOutputStream os) {
-			this.device= device;
+		public DeviceOutput(TTYZ80 device, PipedOutputStream os) {
+			this.device = device;
 			this.os = os;
 		}// Constructor
 	}// class DeviceOutput
-	
-	
 
 }// class IOController
