@@ -8,7 +8,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import codeSupport.AppLogger;
-import ioSystem.ttyZ80.TTYZ80;
+import ioSystem.ttyZ80.TTYZ80_A;
 
 public class IOController {
 	private AppLogger log = AppLogger.getInstance();
@@ -16,12 +16,12 @@ public class IOController {
 
 	private Set<DeviceZ80_A> devicePopulation = new HashSet<>();
 
-	private HashMap<Byte, DeviceZ80_A> devicesInput = new HashMap<>();
-	private HashMap<Byte, DeviceZ80_A> devicesOutput = new HashMap<>();
-	private HashMap<Byte, DeviceZ80_A> devicesStatus = new HashMap<>();
+	private HashMap<Byte, DeviceInputStatus> devicesInput = new HashMap<>();
+	private HashMap<Byte, DeviceOutput> devicesOutput = new HashMap<>();
+	private HashMap<Byte, DeviceInputStatus> devicesStatus = new HashMap<>();
 
-	private TTYZ80 tty = new TTYZ80();;
-	private DeviceZ80_A device;
+	private TTYZ80_A tty = new TTYZ80_A();;
+//	private DeviceZ80_A device;
 
 	public static IOController getInstance() {
 		return instance;
@@ -35,31 +35,31 @@ public class IOController {
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-		}
+		} // try
 	}// Constructor
 
-	private void addDevice(DeviceZ80_A device) throws IOException {
+	private void addDevice(TTYZ80_A device) throws IOException {
 		PipedOutputStream os;// = new PipedOutputStream();
 		PipedInputStream is;// = new PipedInputStream(pos);
 		if (device.getAddressIn() != null) {
-			devicesInput.put(device.getAddressIn(), device);
-			os = new PipedOutputStream();
-			is = new PipedInputStream(os);
-			device.setPipesIn(is, os);
+			os = new PipedOutputStream(); // Sender
+			is = new PipedInputStream(os); // Receiver
+			devicesInput.put(device.getAddressIn(), new DeviceInputStatus(device,is));
+			device.setPipeIn( os);
 		} // if input
 
 		if (device.getAddressOut() != null) {
-			devicesOutput.put(device.getAddressOut(), device);
 			os = new PipedOutputStream();
 			is = new PipedInputStream(os);
-			device.setPipesOut(is, os);
+			devicesOutput.put(device.getAddressOut(), new DeviceOutput(device,os));
+			device.setPipeOut(is);
 		} // if input
 
 		if (device.getAddressStatus() != null) {
-			devicesStatus.put(device.getAddressStatus(), device);
 			os = new PipedOutputStream();
 			is = new PipedInputStream(os);
-			device.setPipesIn(is, os);
+			devicesStatus.put(device.getAddressStatus(), new DeviceInputStatus(device,is));
+			device.setPipeStatus(os);
 		} // if input
 		devicePopulation.add(device);
 	}// addDevice
@@ -75,8 +75,13 @@ public class IOController {
 
 	public void byteToDevice(byte address, byte value) {
 		if (devicesOutput.containsKey(address)) {
-			device = devicesOutput.get(address);
-			device.byteFromCPU(address, value);
+			try {
+				devicesOutput.get(address).os.write(value);
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			// device.byteFromCPU(address, value);
 		} else {
 			log.addError(String.format("[byteToDevice] could not identify device at: %02X", address));
 		} // if
@@ -85,39 +90,44 @@ public class IOController {
 	public Byte byteFromDevice(Byte address) throws IOException {
 
 		Byte value = 0x00;
-		if (devicesInput.containsKey(address)) {
-			device = devicesInput.get(address);
-			if (device.pipeOut_In.available()>0 )
+		if(devicesInput.containsKey(address)) {
+			if(devicesInput.get(address).is.available()>0) {
+				value = (byte) devicesInput.get(address).is.read();
+			}//if something to read
+		}//if input device
 
-			value = (byte) device.pipeOut_In.read();
-
-		} else if (devicesStatus.containsKey(address)) {
-			device = devicesStatus.get(address);
-			value = device.byteToCPU(address);
-		} else {
-			log.addError(String.format("[byteFromDevice] could not identify device at: %02X", address));
-			value = null;
-		} // if
 		return value;
 
-		///////////////////////////////////////////////
-		// Byte value;
-		// if (devicesInput.containsKey(address)) {
-		// device = devicesInput.get(address);
-		// value = device.byteToCPU(address);
-		// } else if (devicesStatus.containsKey(address)) {
-		// device = devicesStatus.get(address);
-		// value = device.byteToCPU(address);
-		// } else {
-		// log.addError(String.format("[byteFromDevice] could not identify device at: %02X", address));
-		// value = null;
-		// } // if
-		// return value;
 	}// byteFromDevice
 
-//	public String stringFromDevice(Byte address) {
-//		return byteFromDevice(address).toString();
-//
-//	}// stringFromDevice
+	// public String stringFromDevice(Byte address) {
+	// return byteFromDevice(address).toString();
+	//
+	// }// stringFromDevice
+
+	
+	/* this is really just a structure */
+	class DeviceInputStatus {
+		public TTYZ80_A device;
+		public PipedInputStream is;
+
+		public DeviceInputStatus(TTYZ80_A device, PipedInputStream is) {
+			this.device= device;
+			this.is = is;
+		}// Constructor
+	}// class DeviceInputStatus
+	
+	/* this is really just a structure */
+	class DeviceOutput {
+		public TTYZ80_A device;
+		public PipedOutputStream os;
+
+		public DeviceOutput(TTYZ80_A device, PipedOutputStream os) {
+			this.device= device;
+			this.os = os;
+		}// Constructor
+	}// class DeviceOutput
+	
+	
 
 }// class IOController

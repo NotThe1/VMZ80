@@ -15,18 +15,18 @@ import java.awt.event.KeyListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.IOException;
-import java.util.LinkedList;
-import java.util.Queue;
 import java.util.prefs.Preferences;
 
 import javax.swing.Box;
 import javax.swing.ButtonGroup;
 import javax.swing.JButton;
+import javax.swing.JColorChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JRadioButtonMenuItem;
 import javax.swing.JScrollPane;
@@ -43,81 +43,64 @@ import javax.swing.text.Element;
 
 import codeSupport.ASCII_CODES;
 import codeSupport.AppLogger;
-import ioSystem.DeviceZ80;
-import ioSystem.IOType;
+import ioSystem.DeviceZ80_A;
+import utilities.fontPicker.FontChooser;
 
-public class TTYZ80 extends DeviceZ80 implements Runnable {
+public class TTYZ80_A extends DeviceZ80_A {
 
-	private AdapterTTY adapterTTY;// = new AdapterTTY();
-//	private AdapterTTY adapterTTY = new AdapterTTY();
+	private AdapterTTY adapterTTY = new AdapterTTY();
 
 	AppLogger log = AppLogger.getInstance();
-
-	private ButtonGroup bgBehavior;
 
 	private Document screen;
 	private int maxColumn;
 	private boolean truncateColumns;
 	private int tabSize;
 
-	// private char lastKey;
-
-	Queue<Byte> keyboardBuffer = new LinkedList<Byte>();
-
-//	/**
-//	 * Launch the application.
-//	 */
-//	public static void main(String[] args) {
-//		EventQueue.invokeLater(new Runnable() {
-//			public void run() {
-//				try {
-//					TTYZ80 window = new TTYZ80();
-//					window.frameTTY.setVisible(true);
-//				} catch (Exception e) {
-//					e.printStackTrace();
-//				}
-//			}
-//		});
-//	}//
-	
 	public void run() {
+		long delay = 500;
 		while (true) {
-			
-		}
-		
-	}//
+			try {
+				if (pipeOut.available() == 0) {
+					Thread.sleep(delay);
+				} else {
+					byteFromCPU((byte) pipeOut.read());
+					// log.addError("[TTYZ80_A.run()] ");
+				} // if
+			} catch (IOException | InterruptedException e) {
+				log.addError("[TTYZ80_A.run()]  IOException: " + e.getMessage());
+				// e.printStackTrace();
+			} // try
+		} // while
+
+	}// run
 
 	@Override
-	public byte byteToCPU(Byte address) {
-		byte ans = 0x00;
-		;
-		if (address.equals(IN)) {
-			if (!keyboardBuffer.isEmpty()) {
-				ans = keyboardBuffer.poll();
-			} // if buffer not empty
-		} else if (address.equals(STATUS)) {
-			ans = (byte) (keyboardBuffer.size() + 1);
-		} else {
-			ans = (byte) 0XFF;
-		} // if
-		return ans;
+	public void byteToCPU(Byte value) {
+		try {
+			this.pipeIn.write(value);
+			// this.pipeIn.flush();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} // try
 	}// byteToCPU
 
 	@Override
-	public void byteFromCPU(Byte address, Byte value) {
+	public void byteFromCPU(Byte value) {
 		char c = (char) ((byte) value);
 		int usi = Byte.toUnsignedInt(value);
 
 		if (usi < 0x20) {// Non printables
 			switch (c) {
 			case ASCII_CODES.BS:
-				 doBackSpace();
+				doBackSpace();
 				break;
 			case ASCII_CODES.TAB:
-				 doTab();
+				doTab();
 				break;
 			case ASCII_CODES.LF: // 0x0A
-				 display(Character.toString(c));
+				display(Character.toString(c));
 				break;
 			case ASCII_CODES.CR: // 0x0D
 				/* Ignore CR */
@@ -130,84 +113,74 @@ public class TTYZ80 extends DeviceZ80 implements Runnable {
 
 		} else if ((usi >= 0x20) && (usi <= 0x7F)) {
 			/* all the printable characters */
-			 displayPrintable(Character.toString(c));
+			displayPrintable(Character.toString(c));
 		} else {
 			/* above ascii into EBDIC */
 		} // if
 
 	}// byteFromCPU
-	
+
 	private void displayPrintable(String s) {
 		Element lastElement = getLastElement();
-		if(!truncateColumns) { // drop anything beyond the max column
+
+		if (!truncateColumns) { // drop anything beyond the max column
 			display(s);
-		}else if ((lastElement.getEndOffset() - lastElement.getStartOffset()) < this.maxColumn){
+		} else if ((lastElement.getEndOffset() - lastElement.getStartOffset()) < this.maxColumn) {
 			display(s);
-		}else {
-			/* ignore this string  */
-		}//if
+		} else {
+			/* ignore this string */
+		} // if
 
 		textScreen.setCaretPosition(screen.getLength());
-//		textScreen.setCaretPosition(screen.getDefaultRootElement().getEndOffset()-1);
-		
-	}//displayPrintable
-	
+	}// displayPrintable
+
 	private void display(String s) {
 		// Element[] elements = doc.getRootElements();
 		try {
 			screen.insertString(screen.getLength(), s, null);
 		} catch (BadLocationException e) {
-			log.addError("[TTYZ80.display()]  insert out of bounds");
-		}
+			log.addError("[TTYZ80_A.display()]  insert out of bounds");
+		} // try
 	}// display
-	
+
 	private void doTab() {
 		Element lastElement = getLastElement();
 		int column = lastElement.getEndOffset() - lastElement.getStartOffset();
-		int numberOfSpaces = tabSize -(column % tabSize);
+		int numberOfSpaces = tabSize - (column % tabSize);
 		for (int i = 0; i < numberOfSpaces; i++) {
 			displayPrintable(SPACE);
-		}
-	}//doTab;
-	
+		} // for
+	}// doTab;
+
 	private void doBackSpace() {
 		int currentPosition = screen.getLength();
 		Element lastElement = getLastElement();
-		if(currentPosition > lastElement.getStartOffset()) {
+		if (currentPosition > lastElement.getStartOffset()) {
 			try {
 				screen.remove(currentPosition - 1, 1);
 			} catch (Exception e) {
-				log.addError("[TTYZ80.doBackSpace] - backspace failure");
-			}//try
-		}//if
-	}//doBackSpace
-	
+				log.addError("[TTYZ80_A.doBackSpace] - backspace failure");
+			} // try
+		} // if
+	}// doBackSpace
+
 	private Element getLastElement() {
 		Element root = screen.getDefaultRootElement();
-		return root.getElement(root.getElementCount()-1);
-	}//getLastElement
-
-
+		return root.getElement(root.getElementCount() - 1);
+	}// getLastElement
 
 	///////////////////////////////////////////////////////////////////////////////////////
-	private void doKeyTyped1(KeyEvent keyEvent) {
-		try {
-			this.pipeOut_Out.write(keyEvent.getKeyChar());
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}//try
-	}//doKeyTyped1  *******************
-	
-	private void doKeyTyped(KeyEvent keyEvent) {
-		byte keyByte = (byte) keyEvent.getKeyChar();
-		keyboardBuffer.add(keyByte);
-		showStatus(keyEvent.getKeyChar());
-	}// dokeyTyped
+	// private void doKeyTyped1(KeyEvent keyEvent) {
+	// try {
+	// this.pipeIn.write(keyEvent.getKeyChar());
+	// } catch (IOException e) {
+	// // TODO Auto-generated catch block
+	// e.printStackTrace();
+	// } // try
+	// }// doKeyTyped1 *******************
 
 	private void showStatus(char keyChar) {
 		lblKeyChar.setText(String.format("Last Char = %s [0x%02X]", keyChar, (byte) keyChar));
-		lblKeyText.setText(String.format("Keyboard buffer size = %d", keyboardBuffer.size()));
 	}// showStatus
 
 	private void clearDoc() {
@@ -221,17 +194,19 @@ public class TTYZ80 extends DeviceZ80 implements Runnable {
 	///////////////////////////////////////////////////////////////////////////////////////
 
 	private void doClearScreen() {
-		System.out.println("TTY.doClearScreen()");
 		clearDoc();
-	}//
+	}// doClearScreen
 
 	private void doClearInBuffer() {
-		System.out.println("TTY.doClearInBuffer()");
-	}//
+		try {
+			pipeOut.skip(pipeOut.available());
+		} catch (IOException e) {
+			log.addError("[TTYZ80_A.run()]  IOException: " + e.getMessage());
+			// e.printStackTrace();
+		} // try
+	}// doClearInBuffer
 
 	private void doColumnBehavior() {
-		System.out.println("TTY.doColumnBehavior()");
-
 		if (mnuBehaviorTruncate.isSelected()) {
 			truncateColumns = true;
 			textScreen.setLineWrap(false);
@@ -243,24 +218,61 @@ public class TTYZ80 extends DeviceZ80 implements Runnable {
 			textScreen.setLineWrap(false);
 		} else {
 
-		}
+		} // if
 	}// doColumnBehavior
 
 	private void doSetFont() {
-		System.out.println("TTY.doSetFont()");
-	}//
+		Font cf = textScreen.getFont();
+		String style;
+		switch (cf.getStyle()) {
+		case Font.PLAIN:
+			style = "Plain";
+			break;
+		case Font.BOLD:
+			style = "Bold";
+			break;
+		case Font.ITALIC:
+			style = "Italic";
+			break;
+		case Font.ITALIC | Font.BOLD:
+			style = "Bold Italic";
+			break;
+		default:
+			style = "Plain";
+		}// switch
+		
+		FontChooser fontChooser = new FontChooser(frameTTY,cf.getFamily(),style,cf.getSize());
+		
+		if(fontChooser.showDialog()== JOptionPane.OK_OPTION) {
+			textScreen.setFont(fontChooser.selectedFont());
+		}//if
+		fontChooser = null;
+		textScreen.getCaret().setVisible(true);
+	}// doSetFont
 
 	private void doSetTextColor() {
-		System.out.println("TTY.doSetTextColor()");
-	}//
+		Color color = JColorChooser.showDialog(frameTTY, "Font Color", textScreen.getForeground());
+		if (color !=null) {
+			textScreen.setForeground(color);
+			textScreen.getCaret().setVisible(true);
+		}//if
+	}// doSetTextColor
 
 	private void doSetBackgroundColor() {
-		System.out.println("TTY.doSetBackgroundColor()");
-	}//
+		Color color = JColorChooser.showDialog(frameTTY, "Font Color", textScreen.getBackground());
+		if (color !=null) {
+			textScreen.setBackground(color);
+			textScreen.getCaret().setVisible(true);
+		}//if
+	}// doSetBackgroundColor
 
 	private void doSetCaretColor() {
-		System.out.println("TTY.doSetCaretColor()");
-	}//
+		Color color = JColorChooser.showDialog(frameTTY, "Font Color", textScreen.getCaretColor());
+		if (color !=null) {
+			textScreen.setCaretColor(color);
+			textScreen.getCaret().setVisible(true);
+		}//if	
+	}// doSetCaretColor
 
 	private void doColumnsChanged() {
 		maxColumn = (int) spinnerColumns.getValue();
@@ -272,7 +284,7 @@ public class TTYZ80 extends DeviceZ80 implements Runnable {
 
 	//////////////////////////////////////////////////////////////////////////////////////
 	private void appClose() {
-		Preferences myPrefs = Preferences.userNodeForPackage(TTYZ80.class).node(this.getClass().getSimpleName());
+		Preferences myPrefs = Preferences.userNodeForPackage(TTYZ80_A.class).node(this.getClass().getSimpleName());
 		Dimension dim = frameTTY.getSize();
 		myPrefs.putInt("Height", dim.height);
 		myPrefs.putInt("Width", dim.width);
@@ -300,7 +312,7 @@ public class TTYZ80 extends DeviceZ80 implements Runnable {
 	}// appClose
 
 	private void appInit() {
-		Preferences myPrefs = Preferences.userNodeForPackage(TTYZ80.class).node(this.getClass().getSimpleName());
+		Preferences myPrefs = Preferences.userNodeForPackage(TTYZ80_A.class).node(this.getClass().getSimpleName());
 		frameTTY.setSize(myPrefs.getInt("Width", 761), myPrefs.getInt("Height", 693));
 		frameTTY.setLocation(myPrefs.getInt("LocX", 100), myPrefs.getInt("LocY", 100));
 
@@ -341,9 +353,8 @@ public class TTYZ80 extends DeviceZ80 implements Runnable {
 	/**
 	 * Create the application.
 	 */
-	public TTYZ80() {
-		super("tty", IOType.CHARACTER_IN_OUT, IN, OUT, STATUS);
-		adapterTTY = new AdapterTTY();
+	public TTYZ80_A() {
+		super("tty",  IN, OUT, STATUS);
 		initialize();
 		appInit();
 	}// Constructor
@@ -400,7 +411,7 @@ public class TTYZ80 extends DeviceZ80 implements Runnable {
 		gbc_btnClearScreen.gridy = 0;
 		panelClear.add(btnClearScreen, gbc_btnClearScreen);
 
-		JButton btnClearInBuffer = new JButton("Keyboard Buffer");
+		JButton btnClearInBuffer = new JButton("Input Buffer");
 		btnClearInBuffer.setName(BTN_CLEAR_IN_BUFFER);
 		btnClearInBuffer.addActionListener(adapterTTY);
 		GridBagConstraints gbc_btnClearInBuffer = new GridBagConstraints();
@@ -486,6 +497,7 @@ public class TTYZ80 extends DeviceZ80 implements Runnable {
 		panelStatus.add(horizontalStrut, gbc_horizontalStrut);
 
 		lblKeyText = new JLabel("<Start>");
+		lblKeyText.setVisible(false);
 		GridBagConstraints gbc_lblKeyText = new GridBagConstraints();
 		gbc_lblKeyText.insets = new Insets(0, 0, 0, 5);
 		gbc_lblKeyText.gridx = 2;
@@ -500,6 +512,7 @@ public class TTYZ80 extends DeviceZ80 implements Runnable {
 		panelStatus.add(horizontalStrut_1, gbc_horizontalStrut_1);
 
 		lblReleased = new JLabel("<Start>");
+		lblReleased.setVisible(false);
 		GridBagConstraints gbc_lblReleased = new GridBagConstraints();
 		gbc_lblReleased.gridx = 4;
 		gbc_lblReleased.gridy = 0;
@@ -622,15 +635,15 @@ public class TTYZ80 extends DeviceZ80 implements Runnable {
 
 		@Override
 		public void keyTyped(KeyEvent keyEvent) {
-			doKeyTyped1(keyEvent);
-//			doKeyTyped(keyEvent);
+			byteToCPU((byte) keyEvent.getKeyChar());
+			showStatus(keyEvent.getKeyChar());
 		}// keyTyped
 
 	}// class AdapterTTY
 
-	public static final byte IN = (byte) 0X0EC;
-	public static final byte OUT = (byte) 0X0EC;
-	public static final byte STATUS = (byte) 0X0ED;
+	public static final Byte IN = (byte) 0X0EC;
+	public static final Byte OUT = (byte) 0X0EC;
+	public static final Byte STATUS = (byte) 0X0ED;
 
 	private static final String EMPTY_STRING = "";
 	private static final String SPACE = " ";
@@ -658,5 +671,20 @@ public class TTYZ80 extends DeviceZ80 implements Runnable {
 	private JRadioButtonMenuItem mnuBehaviorExtend;
 	private JTextArea textScreen;
 	private JSpinner spinnerColumns;
+
+	@Override
+	public Byte getAddressIn() {
+		return IN;
+	}// getAddressIn
+
+	@Override
+	public Byte getAddressOut() {
+		return OUT;
+	}// getAddressOut
+
+	@Override
+	public Byte getAddressStatus() {
+		return STATUS;
+	}// getAddressStatus
 
 }// class TTY
