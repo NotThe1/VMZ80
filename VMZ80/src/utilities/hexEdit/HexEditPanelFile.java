@@ -33,9 +33,11 @@ public class HexEditPanelFile extends HexEditPanelBase {
 		
 //		System.out.printf("[loadData] sourceLength %,d%n", sourceLength);
 //		System.out.printf("[loadData] Max Value %,d  [%08X]%n", Integer.MAX_VALUE, Integer.MAX_VALUE);
-		try {
-			fileChannel = new RandomAccessFile(sourceFile, "rw").getChannel();
+		try(RandomAccessFile raf = new RandomAccessFile(sourceFile, "rw")) {
+			fileChannel = raf.getChannel();
+//			fileChannel = new RandomAccessFile(sourceFile, "rw").getChannel();
 			fileMap = fileChannel.map(FileChannel.MapMode.READ_WRITE, 0, fileChannel.size());// this.totalBytesOnDisk);
+			fileChannel.close();
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

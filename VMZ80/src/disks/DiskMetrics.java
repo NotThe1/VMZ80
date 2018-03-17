@@ -238,6 +238,6 @@ public class DiskMetrics {
 	private static final Object[] f8SS = new Object[] { 1, 77, 26, 128, 8, 2, true, "F8SS", "8\"    SS   256 KB" };
 	private static final Object[] f8DS = new Object[] { 2, 77, 26, 128, 8, 2, true, "F8DS", "8\"    DS   512 KB" };
 
-	private static final Object[] allFileTypes = new Object[] { f5DD, f5HD, f8SS, f8DS, f3DD, f3HD, f3ED };
+//	private static final Object[] allFileTypes = new Object[] { f5DD, f5HD, f8SS, f8DS, f3DD, f3HD, f3ED };
 
 }// class DiskMetrics

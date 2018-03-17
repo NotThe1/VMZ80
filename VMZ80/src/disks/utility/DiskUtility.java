@@ -96,7 +96,7 @@ public class DiskUtility extends JDialog {
 	private int heads;
 	private int tracksPerHead;
 	private int sectorsPerTrack;
-	private int bytesPerSector;
+//	private int bytesPerSector;
 	private int tracksBeforeDirectory;
 	private int blockSizeInSectors;
 	private int totalTracks;
@@ -343,7 +343,7 @@ public class DiskUtility extends JDialog {
 		heads = state ? diskMetrics.heads : 0;
 		tracksPerHead = state ? diskMetrics.tracksPerHead : 0;
 		sectorsPerTrack = state ? diskMetrics.sectorsPerTrack : 0;
-		bytesPerSector = state ? diskMetrics.bytesPerSector : 0;
+//		bytesPerSector = state ? diskMetrics.bytesPerSector : 0;
 		totalTracks = state ? heads * tracksPerHead : 0;
 		totalSectors = state ? diskMetrics.getTotalSectorsOnDisk() : 0;
 
@@ -2413,7 +2413,6 @@ public class DiskUtility extends JDialog {
 
 			case BTN_IMPORT:
 				doImport();
-				int a = 5;
 				break;
 
 			case CB_FILE_NAMES:

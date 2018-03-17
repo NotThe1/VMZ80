@@ -2,6 +2,7 @@ package disks.utility;
 
 public class CatalogTableModel extends MyTableModel {
 
+	private static final long serialVersionUID = 1L;
 	public CatalogTableModel() {
 		super(new String[] {FILE,DISK,LOCATION});
 		// TODO Auto-generated constructor stub

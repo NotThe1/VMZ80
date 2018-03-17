@@ -16,7 +16,7 @@ import codeSupport.AppLogger;
 public class DiskDrive {
 	
 	private String diskType;
-	private boolean bootable;
+//	private boolean bootable;
 	protected int heads;
 	private int currentHead;
 	protected int tracksPerHead;
@@ -86,7 +86,7 @@ public class DiskDrive {
 		this.sectorsPerHead = diskMetric.getTotalSectorsPerHead();
 		this.totalSectorsOnDisk = diskMetric.getTotalSectorsOnDisk();
 		this.totalBytesOnDisk = diskMetric.getTotalBytes();
-		this.bootable = diskMetric.isBootDisk();
+//		this.bootable = diskMetric.isBootDisk();
 		this.description = diskMetric.descriptor;
 	}// resolveDiskType
 	
@@ -327,8 +327,8 @@ public class DiskDrive {
 	private static final String ERR_HEAD = "Invalid Head";
 	private static final String ERR_SECTOR = "Invalid Sector";
 	private static final String ERR_ABSOLUTE_SECTOR = "Invalid Absolute Sector";
-	private static final String ERR_DISK = "Invalid Disk - ";
-	private static final String ERR_SECTOR_SIZE = "Write buffer size does not match disk sector size";
+//	private static final String ERR_DISK = "Invalid Disk - ";
+//	private static final String ERR_SECTOR_SIZE = "Write buffer size does not match disk sector size";
 	private static final String ERR_IO = "Physical I/O Error - ";
 
 	

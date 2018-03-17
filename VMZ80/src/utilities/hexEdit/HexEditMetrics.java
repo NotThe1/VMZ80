@@ -104,7 +104,7 @@ public class HexEditMetrics {
 	private static final int ADDRESS_PAD = 3;
 	private static final int DATA_PAD = 3;
 
-	private static final String DOC_HEADER = "       00 01 02 03 04 05 06 07  08 09 0A 0B 0C 0D 0E 0F  ";
-	private static final String SPACE = " ";
+//	private static final String DOC_HEADER = "       00 01 02 03 04 05 06 07  08 09 0A 0B 0C 0D 0E 0F  ";
+//	private static final String SPACE = " ";
 
 }// class HexEditMetric

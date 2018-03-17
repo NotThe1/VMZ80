@@ -44,7 +44,7 @@ import javax.swing.text.Element;
 import codeSupport.ASCII_CODES;
 import codeSupport.AppLogger;
 import ioSystem.DeviceZ80;
-import utilities.fontPicker.FontChooser;
+import utilities.fontChooser.FontChooser;
 
 public class TTYZ80 extends DeviceZ80 implements Runnable {
 

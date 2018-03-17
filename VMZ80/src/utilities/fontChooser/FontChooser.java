@@ -1,4 +1,4 @@
-package utilities.fontPicker;
+package utilities.fontChooser;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -133,37 +133,15 @@ public class FontChooser extends JDialog implements ListSelectionListener, Actio
 		doSelection();
 	}// appInit
 
-	private void appClose() {
-
-	}// appClose
+	// private void appClose() {
+	//
+	// }// appClose
 
 //	public void close() {
 //
 //	}// close
 
-//	public FontChooser(Font font) {
-//		switch (font.getStyle()) {
-//		case Font.PLAIN:
-//			initStyle = "Plain";
-//			break;
-//		case Font.BOLD:
-//			initStyle = "Bold";
-//			break;
-//		case Font.ITALIC:
-//			initStyle = "Italic";
-//			break;
-//		case Font.BOLD | Font.ITALIC:
-//			initStyle = "Bold Italic";
-//			break;
-//		default:
-//			initStyle = DEFAULT_STYLE;
-//		}// switch
-//
-//		initFamily = font.getFamily();
-//		initSize = font.getSize();
-//		initialize();
-//		appInit();
-//	}// Constructor
+
 
 	public FontChooser(Window w,String fontFamily, String fontStyle, Integer fontSize) {
 		super(w,"Font Chooser",Dialog.DEFAULT_MODALITY_TYPE);
@@ -266,7 +244,7 @@ public class FontChooser extends JDialog implements ListSelectionListener, Actio
 		scrollPane.setBounds(10, 65, 221, 214);
 		panel.add(scrollPane);
 
-		listFamily = new JList();
+		listFamily = new JList<String>();
 		scrollPane.setViewportView(listFamily);
 		listFamily.setBorder(new LineBorder(new Color(0, 0, 0)));
 		listFamily.setFont(new Font("Tahoma", Font.PLAIN, 11));
@@ -276,7 +254,7 @@ public class FontChooser extends JDialog implements ListSelectionListener, Actio
 		scrollPane_1.setBounds(254, 65, 96, 214);
 		panel.add(scrollPane_1);
 
-		listStyle = new JList();
+		listStyle = new JList<String>();
 		scrollPane_1.setViewportView(listStyle);
 		listStyle.setBorder(new LineBorder(new Color(0, 0, 0)));
 		listStyle.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
@@ -286,7 +264,7 @@ public class FontChooser extends JDialog implements ListSelectionListener, Actio
 		scrollPane_2.setBounds(373, 65, 75, 214);
 		panel.add(scrollPane_2);
 
-		listSize = new JList();
+		listSize = new JList<Integer>();
 		scrollPane_2.setViewportView(listSize);
 		listSize.setBorder(new LineBorder(new Color(0, 0, 0)));
 		listSize.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
