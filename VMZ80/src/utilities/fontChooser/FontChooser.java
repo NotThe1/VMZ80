@@ -152,10 +152,35 @@ public class FontChooser extends JDialog implements ListSelectionListener, Actio
 		appInit();
 	}// Constructor
 
-//	public FontChooser() {
-//		this(DEFAULT_FAMILY, DEFAULT_STYLE, DEFAULT_SIZE);
-//	}// Constructor
+	public FontChooser(Window w,Font currentFont) {
+		super(w,"Font Chooser",Dialog.DEFAULT_MODALITY_TYPE);
+		
+		String style;
+		switch (currentFont.getStyle()) {
+		case Font.PLAIN:
+			style = "Plain";
+			break;
+		case Font.BOLD:
+			style = "Bold";
+			break;
+		case Font.ITALIC:
+			style = "Italic";
+			break;
+		case Font.ITALIC | Font.BOLD:
+			style = "Bold Italic";
+			break;
+		default:
+			style = "Plain";
+		}// switch
+		
+		this.initStyle = style;
+		this.initFamily = currentFont.getFamily();
+		this.initSize  = currentFont.getSize();
 
+		initialize();
+		appInit();
+
+	}// Constructor
 	// -------------------------------------------------------------------------
 
 	public int showDialog() {

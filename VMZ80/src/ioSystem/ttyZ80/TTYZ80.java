@@ -211,31 +211,13 @@ public class TTYZ80 extends DeviceZ80 implements Runnable {
 		} // if
 	}// doColumnBehavior
 
-	private void doSetFont() {
-		Font cf = textScreen.getFont();
-		String style;
-		switch (cf.getStyle()) {
-		case Font.PLAIN:
-			style = "Plain";
-			break;
-		case Font.BOLD:
-			style = "Bold";
-			break;
-		case Font.ITALIC:
-			style = "Italic";
-			break;
-		case Font.ITALIC | Font.BOLD:
-			style = "Bold Italic";
-			break;
-		default:
-			style = "Plain";
-		}// switch
-		
-		FontChooser fontChooser = new FontChooser(frameTTY,cf.getFamily(),style,cf.getSize());
-		
+	private void doSetFont() {	
+		FontChooser fontChooser = new FontChooser(frameTTY,textScreen.getFont());
+				
 		if(fontChooser.showDialog()== JOptionPane.OK_OPTION) {
 			textScreen.setFont(fontChooser.selectedFont());
 		}//if
+		
 		fontChooser = null;
 		textScreen.getCaret().setVisible(true);
 	}// doSetFont
