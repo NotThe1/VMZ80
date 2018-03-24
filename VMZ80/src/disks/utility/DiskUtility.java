@@ -51,7 +51,6 @@ import javax.swing.JTextField;
 import javax.swing.JTextPane;
 import javax.swing.JToggleButton;
 import javax.swing.JToolBar;
-import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingConstants;
 import javax.swing.border.BevelBorder;
 import javax.swing.border.LineBorder;
@@ -383,30 +382,49 @@ public class DiskUtility extends JDialog {
 	}// setRadixFormat
 
 	private void setHeadTrackSectorSize(RawDiskDrive diskDrive) {
-		((SpinnerNumberModel) hdnHead.getNumberModel()).setValue(0);
-		((SpinnerNumberModel) hdnTrack.getNumberModel()).setValue(0);
-		((SpinnerNumberModel) hdnSector.getNumberModel()).setValue(1);
-
 		// hdnSeekPanel.mute(true);
 		// hdnSeekPanel.setValue(0);
 		// hdnSeekPanel.mute(false);
+//		((SpinnerNumberModel) hdnHead.getNumberModel()).setValue(0);
+//		((SpinnerNumberModel) hdnTrack.getNumberModel()).setValue(0);
+//		((SpinnerNumberModel) hdnSector.getNumberModel()).setValue(1);
+		
+//		hdnHead.setValue(0);
+//		hdnTrack.setValue(0);
+//		hdnSector.setValue(0);
 
 		hdnSeekPanel.setValueQuiet(0);
 
+
+
 		if (diskDrive == null) {
-			((SpinnerNumberModel) hdnHead.getNumberModel()).setMaximum(0);
-			((SpinnerNumberModel) hdnTrack.getNumberModel()).setMaximum(0);
-			((SpinnerNumberModel) hdnSector.getNumberModel()).setMaximum(1);
-			((SpinnerNumberModel) hdnSector.getNumberModel()).setMinimum(1);
+//			((SpinnerNumberModel) hdnHead.getNumberModel()).setMaximum(0);
+//			((SpinnerNumberModel) hdnTrack.getNumberModel()).setMaximum(0);
+//			((SpinnerNumberModel) hdnSector.getNumberModel()).setMaximum(1);
+//			((SpinnerNumberModel) hdnSector.getNumberModel()).setMinimum(1);
+			
+			hdnHead.setMaxValue(0);
+			hdnTrack.setMaxValue(0);
+			hdnSector.setMaxValue(1);
+			hdnSector.setMinValue(1);
+			
 			hdnSeekPanel.setMaxValue(0);
 
 		} else {
-			((SpinnerNumberModel) hdnHead.getNumberModel()).setMaximum(diskDrive.getHeads() - 1);
-			((SpinnerNumberModel) hdnTrack.getNumberModel()).setMaximum(diskDrive.getTracksPerHead() - 1);
-			((SpinnerNumberModel) hdnSector.getNumberModel()).setMaximum(diskDrive.getSectorsPerTrack());
+//			((SpinnerNumberModel) hdnHead.getNumberModel()).setMaximum(diskDrive.getHeads() - 1);
+//			((SpinnerNumberModel) hdnTrack.getNumberModel()).setMaximum(diskDrive.getTracksPerHead() - 1);
+//			((SpinnerNumberModel) hdnSector.getNumberModel()).setMaximum(diskDrive.getSectorsPerTrack());
+			
+			hdnHead.setMaxValue(diskDrive.getHeads() - 1);
+			hdnTrack.setMaxValue(diskDrive.getTracksPerHead() - 1);
+			hdnSector.setMaxValue(diskDrive.getSectorsPerTrack());
+			
+			
 			hdnSeekPanel.setMaxValue(diskDrive.getTotalSectorsOnDisk() - 1);
 		} // if
 		hdnSeekPanel.setMinValue(0);
+		
+
 
 	}// setHeadTrackSectorSize
 
