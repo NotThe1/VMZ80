@@ -30,6 +30,7 @@ import java.util.regex.Pattern;
 
 import javax.swing.AbstractButton;
 import javax.swing.Box;
+import javax.swing.DefaultComboBoxModel;
 import javax.swing.InputVerifier;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
@@ -87,7 +88,7 @@ public class DiskUtility extends JDialog {
 	private DiskMetrics diskMetrics;
 
 	private File hostFile;
-	private FileCpmModel fileCpmModel = new FileCpmModel();
+	private DefaultComboBoxModel<String> fileCpmModel = new DefaultComboBoxModel<String>();
 	private DirectoryTableModel directoryTableModel = new DirectoryTableModel();
 	private CPMDirectory directory;
 	private CPMFile cpmFile;
@@ -95,7 +96,6 @@ public class DiskUtility extends JDialog {
 	private int heads;
 	private int tracksPerHead;
 	private int sectorsPerTrack;
-//	private int bytesPerSector;
 	private int tracksBeforeDirectory;
 	private int blockSizeInSectors;
 	private int totalTracks;
@@ -108,7 +108,7 @@ public class DiskUtility extends JDialog {
 
 	private int fileMatchCount;
 	private static StyledDocument doc;
-	
+
 	private CatalogTableModel catalogTableModel = new CatalogTableModel();
 	private JTable catalogTable = new JTable(catalogTableModel);
 
@@ -225,37 +225,23 @@ public class DiskUtility extends JDialog {
 
 	private void dirFillDirectoryTable() {
 		directoryTableModel.clear();
-		fileCpmModel.clear();
+		fileCpmModel.removeAllElements();
 		CPMDirectoryEntry directoryEntry;
 		for (int directoryIndex = 0; directoryIndex < diskMetrics.getDRM() + 1; directoryIndex++) {
 			directoryEntry = directory.getDirectoryEntry(directoryIndex);
 			directoryTableModel.addRow(directoryIndex, directoryEntry);
 			if ((!directoryEntry.isEmpty()) && directoryEntry.getActualExtentNumber() == 0) {
-				fileCpmModel.add(directoryEntry.getNameAndTypePeriod());
+				fileCpmModel.addElement(directoryEntry.getNameAndTypePeriod());
 				// log.addInfo(directoryEntry.getNameAndTypePeriod());
 			} // if
 		} // for each directory entry
 		showDirectoryDetail(0);
 		directoryTable.setRowSelectionInterval(0, 0);
 		// directoryTable.updateUI();
-		if (!fileCpmModel.isEmpty()) {
+		if (fileCpmModel.getSize() > 0) {
 			cbFileNames.setSelectedIndex(0);
 			cbCPMFileInOut.setSelectedIndex(0);
 		} // if no CPM files
-
-		// int count = fileCpmModel.getSize();
-		// log.addNL();
-		// log.addSpecial("fileCpmModel");
-		// for(int i = 0; i < count;i++) {
-		// log.addSpecial(String.format("count: %d, File: %s", i,fileCpmModel.getElementAt(i)));
-		// }//for count
-		//
-		// count = cbFileNames.getItemCount();
-		// log.addNL();
-		// log.addSpecial("cbFileNames");
-		// for(int i = 0; i < count;i++) {
-		// log.addSpecial(String.format("count: %d, File: %s", i,cbFileNames.getItemAt(i)));
-		// }//for count
 
 		cbFileNames.updateUI();
 		cbCPMFileInOut.updateUI();
@@ -287,8 +273,7 @@ public class DiskUtility extends JDialog {
 			showDirectoryDetail(new byte[32]);
 
 			panelFileHex.loadData(NO_ACTIVE_FILE.getBytes());
-			fileCpmModel.clear();
-			// cbFileNames.setModel(new FileCpmModel());
+			fileCpmModel.removeAllElements();
 			lblRecordCount.setText("0");
 			lblReadOnly.setVisible(false);
 			lblSystemFile.setVisible(false);
@@ -342,7 +327,7 @@ public class DiskUtility extends JDialog {
 		heads = state ? diskMetrics.heads : 0;
 		tracksPerHead = state ? diskMetrics.tracksPerHead : 0;
 		sectorsPerTrack = state ? diskMetrics.sectorsPerTrack : 0;
-//		bytesPerSector = state ? diskMetrics.bytesPerSector : 0;
+		// bytesPerSector = state ? diskMetrics.bytesPerSector : 0;
 		totalTracks = state ? heads * tracksPerHead : 0;
 		totalSectors = state ? diskMetrics.getTotalSectorsOnDisk() : 0;
 
@@ -382,49 +367,24 @@ public class DiskUtility extends JDialog {
 	}// setRadixFormat
 
 	private void setHeadTrackSectorSize(RawDiskDrive diskDrive) {
-		// hdnSeekPanel.mute(true);
-		// hdnSeekPanel.setValue(0);
-		// hdnSeekPanel.mute(false);
-//		((SpinnerNumberModel) hdnHead.getNumberModel()).setValue(0);
-//		((SpinnerNumberModel) hdnTrack.getNumberModel()).setValue(0);
-//		((SpinnerNumberModel) hdnSector.getNumberModel()).setValue(1);
-		
-//		hdnHead.setValue(0);
-//		hdnTrack.setValue(0);
-//		hdnSector.setValue(0);
-
+		hdnHead.setValueQuiet(0);
+		hdnTrack.setValueQuiet(0);
+		hdnSector.setValueQuiet(1);
 		hdnSeekPanel.setValueQuiet(0);
-
-
-
+		
+		hdnSeekPanel.setMinValue(0);
 		if (diskDrive == null) {
-//			((SpinnerNumberModel) hdnHead.getNumberModel()).setMaximum(0);
-//			((SpinnerNumberModel) hdnTrack.getNumberModel()).setMaximum(0);
-//			((SpinnerNumberModel) hdnSector.getNumberModel()).setMaximum(1);
-//			((SpinnerNumberModel) hdnSector.getNumberModel()).setMinimum(1);
-			
 			hdnHead.setMaxValue(0);
 			hdnTrack.setMaxValue(0);
 			hdnSector.setMaxValue(1);
 			hdnSector.setMinValue(1);
-			
 			hdnSeekPanel.setMaxValue(0);
-
 		} else {
-//			((SpinnerNumberModel) hdnHead.getNumberModel()).setMaximum(diskDrive.getHeads() - 1);
-//			((SpinnerNumberModel) hdnTrack.getNumberModel()).setMaximum(diskDrive.getTracksPerHead() - 1);
-//			((SpinnerNumberModel) hdnSector.getNumberModel()).setMaximum(diskDrive.getSectorsPerTrack());
-			
 			hdnHead.setMaxValue(diskDrive.getHeads() - 1);
 			hdnTrack.setMaxValue(diskDrive.getTracksPerHead() - 1);
 			hdnSector.setMaxValue(diskDrive.getSectorsPerTrack());
-			
-			
 			hdnSeekPanel.setMaxValue(diskDrive.getTotalSectorsOnDisk() - 1);
 		} // if
-		hdnSeekPanel.setMinValue(0);
-		
-
 
 	}// setHeadTrackSectorSize
 
@@ -459,7 +419,6 @@ public class DiskUtility extends JDialog {
 			mnuDiskClose.setEnabled(true);
 			mnuDiskSave.setEnabled(true);
 			mnuDiskSaveAs.setEnabled(true);
-			// mnuDiskExit.setEnabled(true);
 			break;
 		case MNU_DISK_CLOSE:
 			mnuToolsNew.setEnabled(true);
@@ -467,7 +426,6 @@ public class DiskUtility extends JDialog {
 			mnuDiskClose.setEnabled(false);
 			mnuDiskSave.setEnabled(false);
 			mnuDiskSaveAs.setEnabled(false);
-			// mnuDiskExit.setEnabled(true);
 		case MNU_DISK_SAVE:
 		case MNU_DISK_SAVE_AS:
 		case MNU_DISK_EXIT:
@@ -659,7 +617,7 @@ public class DiskUtility extends JDialog {
 		boolean deleteFile = false;
 		String cpmFileName = (String) cbCPMFileInOut.getSelectedItem();
 
-		if (fileCpmModel.exists(cpmFileName)) {
+		if (fileCpmModel.getIndexOf(cpmFileName) != -1) {
 			if (JOptionPane.showConfirmDialog((Component) this, "File Exits, Do you want to overwrite?",
 					"Copying a Native File to a CPM file", JOptionPane.YES_NO_OPTION,
 					JOptionPane.WARNING_MESSAGE) == JOptionPane.NO_OPTION) {
@@ -848,16 +806,16 @@ public class DiskUtility extends JDialog {
 
 	private void doPrintResult() {
 		System.out.println("DiskUtility.doPrintResult()");
-		if(scrollPaneCatalog.getViewport().getView() instanceof JTable) {
+		if (scrollPaneCatalog.getViewport().getView() instanceof JTable) {
 			printCatalog(catalogTable);
-		}else if(scrollPaneCatalog.getViewport().getView() instanceof JTextPane) {
-			printListing(txtCatalog,lblCatalogHeader.getText());
-		}else {
+		} else if (scrollPaneCatalog.getViewport().getView() instanceof JTextPane) {
+			printListing(txtCatalog, lblCatalogHeader.getText());
+		} else {
 			log.addError("Attempted to print unknow result");
-		}//if
+		} // if
 	}// doPrintResult
-	
-	private void printListing(JTextPane textPane,String name) {
+
+	private void printListing(JTextPane textPane, String name) {
 		Font originalFont = textPane.getFont();
 		String fontName = originalFont.getName();
 
@@ -870,26 +828,26 @@ public class DiskUtility extends JDialog {
 		} catch (PrinterException pe) {
 			log.addError("fail to print listing from \"Find\"" + pe.getMessage());
 		} // try
-	
-	}//printListing
-	
-	private void printCatalog(JTable table) {	
+
+	}// printListing
+
+	private void printCatalog(JTable table) {
 		try {
 			MessageFormat header = new MessageFormat("Disk Catalog");
 			MessageFormat footer = new MessageFormat(new Date().toString() + "                      Page - ) {0}");
-			table.print(JTable.PrintMode.FIT_WIDTH,header,footer);
+			table.print(JTable.PrintMode.FIT_WIDTH, header, footer);
 		} catch (PrinterException pe) {
 			log.addError("fail to print listing from \"List\"" + pe.getMessage());
-		}//try
-	}//printCatalog
+		} // try
+	}// printCatalog
 
 	private void doListFiles() {
 		btnPrintResult.setVisible(false);
 		scrollPaneCatalog.setViewportView(catalogTable);
 		catalogTableModel.clear();
-		catGetEntries(new File(lblFolder.getText()),catalogTableModel);
+		catGetEntries(new File(lblFolder.getText()), catalogTableModel);
 		catalogTable.setModel(catalogTableModel);
-		btnPrintResult.setVisible(catalogTable.getRowCount()==0?false:true);
+		btnPrintResult.setVisible(catalogTable.getRowCount() == 0 ? false : true);
 	}// doListFiles
 
 	private Pattern makePattern() {
@@ -933,8 +891,8 @@ public class DiskUtility extends JDialog {
 
 		return new String(sb);
 	}// getPattern
-	
-	private void catGetEntries(File enterFile,CatalogTableModel model) {
+
+	private void catGetEntries(File enterFile, CatalogTableModel model) {
 		File[] files = enterFile.listFiles();
 		for (File file : files) {
 			if (rbRecurse.isSelected() && file.isDirectory()) {
@@ -945,49 +903,49 @@ public class DiskUtility extends JDialog {
 				// skip
 			} // if recursive
 		} // for files
-	}//catGetEntries
-	
+	}// catGetEntries
+
 	private void catGetDiskInfo(File file, CatalogTableModel model) {
-//		String path = file.getAbsolutePath();
+		// String path = file.getAbsolutePath();
 		String disk = file.getName();
 		String location = file.getParent();
-		
-		RawDiskDrive  diskDrive = new RawDiskDrive (file.getAbsolutePath());
+
+		RawDiskDrive diskDrive = new RawDiskDrive(file.getAbsolutePath());
 		DiskMetrics diskMetrics = DiskMetrics.getDiskMetric(lblDiskType.getText());
-		
+
 		byte[] diskSector;
 		int firstDirectorySector = diskMetrics.getDirectoryStartSector();
 		int lastDirectorySector = diskMetrics.getDirectoryLastSector();
 		int entriesPerSector = diskMetrics.bytesPerSector / Disk.DIRECTORY_ENTRY_SIZE;
-		
+
 		String cpmFileName;
-		for(int sector = firstDirectorySector; sector < lastDirectorySector+1; sector++) {
+		for (int sector = firstDirectorySector; sector < lastDirectorySector + 1; sector++) {
 			diskDrive.setCurrentAbsoluteSector(sector);
 			diskSector = diskDrive.read();
-			for(int entry = 0; entry < entriesPerSector; entry++) {
-				cpmFileName = extractName(diskSector,entry);
-				if(cpmFileName!=null) {
-					model.addRow(new Object[] {cpmFileName,disk,location});
-				}// if filename
-			}//for each entry	
-		}//for each sector
-	}//catGetDiskInfo
-	
+			for (int entry = 0; entry < entriesPerSector; entry++) {
+				cpmFileName = extractName(diskSector, entry);
+				if (cpmFileName != null) {
+					model.addRow(new Object[] { cpmFileName, disk, location });
+				} // if filename
+			} // for each entry
+		} // for each sector
+	}// catGetDiskInfo
+
 	private void catAdjustTableLook(JTable table) {
 		Font realColumnFont = table.getFont();
 		// get the width of the letter "W"
 		int charWidth = table.getFontMetrics(realColumnFont).getWidths()[0x57];
 		TableColumnModel tcm = table.getColumnModel();
-		tcm.getColumn(0).setPreferredWidth(charWidth * 13);	 // cpmFile
-		tcm.getColumn(1).setPreferredWidth(charWidth * 25);	 // Disk
-		tcm.getColumn(2).setPreferredWidth(charWidth * 40);	 // Location
-		
+		tcm.getColumn(0).setPreferredWidth(charWidth * 13); // cpmFile
+		tcm.getColumn(1).setPreferredWidth(charWidth * 25); // Disk
+		tcm.getColumn(2).setPreferredWidth(charWidth * 40); // Location
+
 		DefaultTableCellRenderer leftAlign = new DefaultTableCellRenderer();
 		leftAlign.setHorizontalAlignment(JLabel.LEFT);
 		tcm.getColumn(0).setCellRenderer(leftAlign);
 		tcm.getColumn(1).setCellRenderer(leftAlign);
 		tcm.getColumn(2).setCellRenderer(leftAlign);
-	}//catAdjustTableLook
+	}// catAdjustTableLook
 
 	////////////////////////////////////////////////////////////////////////////////////////
 	private void appClose() {
@@ -1037,7 +995,7 @@ public class DiskUtility extends JDialog {
 		manageFileMenus(MNU_DISK_CLOSE);
 
 		doc = txtCatalog.getStyledDocument();
-		
+
 		catalogTable.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
 		catalogTable.setFont(new Font("Courier New", Font.PLAIN, 14));
 		catalogTable.setAutoCreateRowSorter(true);
@@ -1058,7 +1016,7 @@ public class DiskUtility extends JDialog {
 	 * Initialize the contents of the frame.
 	 */
 	private void initialize() {
-		this.setTitle("DiskUtility   A.0");
+		this.setTitle("DiskUtility   2.0");
 		this.setBounds(100, 100, 655, 626);
 		// frameBase.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		this.addWindowListener(new WindowAdapter() {
@@ -2201,7 +2159,7 @@ public class DiskUtility extends JDialog {
 
 		txtCatalog = new JTextPane();
 		txtCatalog.setFont(new Font("Courier New", Font.PLAIN, 15));
-//		scrollPaneCatalog.setViewportView(txtCatalog);
+		// scrollPaneCatalog.setViewportView(txtCatalog);
 
 		JPanel panelStatus = new JPanel();
 		panelStatus.setBorder(new BevelBorder(BevelBorder.LOWERED, null, null, null, null));
