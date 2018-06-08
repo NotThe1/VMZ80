@@ -32,7 +32,7 @@ public class IOController {
 			Thread threadTTY = new Thread(tty);
 			threadTTY.start();
 		} catch (IOException e) {
-			log.addError("[IOController.IOController()]  Failed to Add a Device: " + e.getMessage());
+			log.error("[IOController.IOController()]  Failed to Add a Device: " + e.getMessage());
 		} // try
 	}// Constructor
 
@@ -80,7 +80,7 @@ public class IOController {
 				e.printStackTrace();
 			} // try
 		} else {
-			log.addError(String.format("[byteToDevice] could not identify device at: %02X", address));
+			log.error(String.format("[byteToDevice] could not identify device at: %02X", address));
 		} // if
 	}// byteToDevice
 

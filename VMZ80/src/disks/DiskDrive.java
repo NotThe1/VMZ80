@@ -61,7 +61,7 @@ public class DiskDrive {
 			fileLocalName = file.getName();
 			
 		}catch (IOException ioException){
-			log.addError("[DiskDrive]: " + ERR_IO + ioException.getMessage());
+			log.error("[DiskDrive]: " + ERR_IO + ioException.getMessage());
 			fireVDiskError(1l,ERR_IO + ioException.getMessage());
 		}//try
 		readSector = new byte[bytesPerSector];
@@ -97,7 +97,7 @@ public class DiskDrive {
 			raf.close();
 			raf = null;
 		} catch (IOException ioe) {
-			log.addWarning("Failed Attempt to dismount diskDrive - " + ioe.getMessage());
+			log.warn("Failed Attempt to dismount diskDrive - " + ioe.getMessage());
 		}//try - RandomAccessFile
 		
 		if(disk!=null) {
@@ -109,7 +109,7 @@ public class DiskDrive {
 			try {
 				fileChannel.close();
 			} catch (IOException ioe) {
-				log.addWarning("Failed Attempt to close fileChannel - " + ioe.getMessage());
+				log.warn("Failed Attempt to close fileChannel - " + ioe.getMessage());
 			}//try - close
 			fileChannel = null;
 		}//if - FileChannel
@@ -260,7 +260,7 @@ public class DiskDrive {
 		boolean result = true;
 		if (!((sector > 0) & (sector <= sectorsPerTrack))) {
 			homeHeads();
-			log.addError("Not valid sector - " + sector);
+			log.error("Not valid sector - " + sector);
 			fireVDiskError((long) sector, ERR_SECTOR);
 			result = false;
 		} // if
@@ -270,7 +270,7 @@ public class DiskDrive {
 	public void write(byte[] sector) {
 		writeSector.clear();
 		if(sector.length!= bytesPerSector) {
-			log.addError("Not valid sector size - " + sector.length);
+			log.error("Not valid sector size - " + sector.length);
 			fireVDiskError((long) sector.length,ERR_SECTOR);
 		}else {
 			setSectorPosition();

@@ -438,12 +438,12 @@ public class DiskUtility extends JDialog {
 	private void doDiskLoad() {
 		JFileChooser fc = FilePicker.getDiskPicker();
 		if (fc.showOpenDialog(this) == JFileChooser.CANCEL_OPTION) {
-			log.addInfo("Bailed out of disk open");
+			log.info("Bailed out of disk open");
 			return;
 		} // if - cancelled
 		String absoluteFilePath = fc.getSelectedFile().getAbsolutePath();
 		if (!fc.getSelectedFile().exists()) {
-			log.addError(absoluteFilePath + " Does Not Exist");
+			log.error(absoluteFilePath + " Does Not Exist");
 			return;
 		} // if - is it there
 
@@ -468,7 +468,7 @@ public class DiskUtility extends JDialog {
 		System.out.println("** [doDiskSaveAs] **");
 		JFileChooser fc = FilePicker.getDiskPicker();
 		if (fc.showOpenDialog(this) == JFileChooser.CANCEL_OPTION) {
-			log.addInfo("Bailed out of disk open");
+			log.info("Bailed out of disk open");
 			return;
 		} // if - cancelled
 		File targetFile = fc.getSelectedFile();
@@ -487,10 +487,10 @@ public class DiskUtility extends JDialog {
 		try {
 			Files.copy(Paths.get(sourceFileName), Paths.get(targetDirectory, targetFileName),
 					StandardCopyOption.REPLACE_EXISTING);
-			log.addInfo("SourceFileName: " + sourceFileName);
-			log.addInfo("targetFileName: " + targetFileName);
+			log.info("SourceFileName: " + sourceFileName);
+			log.info("targetFileName: " + targetFileName);
 		} catch (IOException e) {
-			log.addError("Failed to copy from " + sourceFileName + " to " + targetFileName);
+			log.error("Failed to copy from " + sourceFileName + " to " + targetFileName);
 		} // try
 		diskSetup(targetFileName);
 		manageFileMenus(MNU_DISK_LOAD);
@@ -542,7 +542,7 @@ public class DiskUtility extends JDialog {
 		System.out.println("DiskUtility.doToolsNew()");
 		File newFile = MakeNewDisk.makeNewDisk();
 		if (newFile == null) {
-			log.addError("Failed to make a new Disk");
+			log.error("Failed to make a new Disk");
 			return;
 		} // if no new disk
 
@@ -606,7 +606,7 @@ public class DiskUtility extends JDialog {
 			Files.copy(bis, Paths.get(hostFilePath), StandardCopyOption.REPLACE_EXISTING);
 		} catch (IOException ioe) {
 			String message = String.format("Exported %s to %s", cpmFileName, hostFilePath);
-			log.addInfo(message);
+			log.info(message);
 		} // try
 
 	}// doExport
@@ -644,7 +644,7 @@ public class DiskUtility extends JDialog {
 		try {
 			Files.copy(Paths.get(hostFile.getAbsolutePath()), bos);
 		} catch (Exception e) {
-			log.addError("Failed to read file: " + hostFile.getAbsolutePath());
+			log.error("Failed to read file: " + hostFile.getAbsolutePath());
 			return;
 		} // try
 
@@ -771,7 +771,7 @@ public class DiskUtility extends JDialog {
 				doc.insertString(doc.getLength(), String.format("%n\t\tDisk - %s:%n", file.getName()), attrTeal);
 				doc.insertString(doc.getLength(), result.toString(), attrMaroon);
 			} catch (Exception e) {
-				log.addError("Failed to update Catalog for disk: " + file.getName());
+				log.error("Failed to update Catalog for disk: " + file.getName());
 			} // try
 		} // if there are matches
 
@@ -799,7 +799,7 @@ public class DiskUtility extends JDialog {
 		try {
 			styledDocument.remove(0, styledDocument.getLength());
 		} catch (Exception e) {
-			log.addError("Failed to clear the Catalog");
+			log.error("Failed to clear the Catalog");
 		} //
 		btnPrintResult.setVisible(false);
 	}// clearCatalog
@@ -811,7 +811,7 @@ public class DiskUtility extends JDialog {
 		} else if (scrollPaneCatalog.getViewport().getView() instanceof JTextPane) {
 			printListing(txtCatalog, lblCatalogHeader.getText());
 		} else {
-			log.addError("Attempted to print unknow result");
+			log.error("Attempted to print unknow result");
 		} // if
 	}// doPrintResult
 
@@ -826,7 +826,7 @@ public class DiskUtility extends JDialog {
 			textPane.print(header, footer);
 			textPane.setFont(originalFont);
 		} catch (PrinterException pe) {
-			log.addError("fail to print listing from \"Find\"" + pe.getMessage());
+			log.error("fail to print listing from \"Find\"" + pe.getMessage());
 		} // try
 
 	}// printListing
@@ -837,7 +837,7 @@ public class DiskUtility extends JDialog {
 			MessageFormat footer = new MessageFormat(new Date().toString() + "                      Page - ) {0}");
 			table.print(JTable.PrintMode.FIT_WIDTH, header, footer);
 		} catch (PrinterException pe) {
-			log.addError("fail to print listing from \"List\"" + pe.getMessage());
+			log.error("fail to print listing from \"List\"" + pe.getMessage());
 		} // try
 	}// printCatalog
 
@@ -2157,10 +2157,10 @@ public class DiskUtility extends JDialog {
 		lblCatalogHeader.setFont(new Font("Tahoma", Font.BOLD, 16));
 		lblCatalogHeader.setHorizontalAlignment(SwingConstants.CENTER);
 		scrollPaneCatalog.setColumnHeaderView(lblCatalogHeader);
-
+		
 		txtCatalog = new JTextPane();
 		txtCatalog.setFont(new Font("Courier New", Font.PLAIN, 15));
-		// scrollPaneCatalog.setViewportView(txtCatalog);
+//		scrollPaneCatalog.setViewportView(txtCatalog);
 
 		JPanel panelStatus = new JPanel();
 		panelStatus.setBorder(new BevelBorder(BevelBorder.LOWERED, null, null, null, null));
@@ -2346,10 +2346,10 @@ public class DiskUtility extends JDialog {
 	private JLabel lblFolder;
 	private JLabel lblDiskType;
 	private JLabel lblCatalogHeader;
-	private JTextPane txtCatalog;
 	private JScrollPane scrollPaneCatalog;
 	private JButton btnPrintResult;
 	private JTextField txtFindFileName;
+	private JTextPane txtCatalog;
 	//////////////////////////////////////////////////////////////////////////
 
 	class AdapterForDiskUtility implements ActionListener, ListSelectionListener, HDNumberValueChangeListener {
@@ -2417,7 +2417,7 @@ public class DiskUtility extends JDialog {
 				break;
 
 			default:
-				log.addError("[actionPerformed] unknown name " + name + ".");
+				log.error("[actionPerformed] unknown name " + name + ".");
 			}// switch
 		}// actionPerformed
 
@@ -2443,7 +2443,7 @@ public class DiskUtility extends JDialog {
 				selectedNewPhysicalSector(true);
 				break;
 			default:
-				log.addWarning("Unrecognized HDNumberValueChange change.");
+				log.warn("Unrecognized HDNumberValueChange change.");
 			}// switch
 		}// valueChanged
 	}// class AdapterAction

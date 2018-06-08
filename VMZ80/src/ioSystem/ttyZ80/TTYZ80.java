@@ -68,7 +68,7 @@ public class TTYZ80 extends DeviceZ80 implements Runnable {
 					// log.addError("[TTYZ80.run()] ");
 				} // if
 			} catch (IOException | InterruptedException e) {
-				log.addError("[TTYZ80.run()]  IOException: " + e.getMessage());
+				log.error("[TTYZ80.run()]  IOException: " + e.getMessage());
 				// e.printStackTrace();
 			} // try
 		} // while
@@ -139,7 +139,7 @@ public class TTYZ80 extends DeviceZ80 implements Runnable {
 		try {
 			screen.insertString(screen.getLength(), s, null);
 		} catch (BadLocationException e) {
-			log.addError("[TTYZ80.display()]  insert out of bounds");
+			log.error("[TTYZ80.display()]  insert out of bounds");
 		} // try
 	}// display
 
@@ -159,7 +159,7 @@ public class TTYZ80 extends DeviceZ80 implements Runnable {
 			try {
 				screen.remove(currentPosition - 1, 1);
 			} catch (Exception e) {
-				log.addError("[TTYZ80.doBackSpace] - backspace failure");
+				log.error("[TTYZ80.doBackSpace] - backspace failure");
 			} // try
 		} // if
 	}// doBackSpace
@@ -177,7 +177,7 @@ public class TTYZ80 extends DeviceZ80 implements Runnable {
 		try {
 			screen.remove(0, screen.getLength());
 		} catch (BadLocationException e) {
-			log.addError("Failed to clear screen: " + e.getMessage());
+			log.error("Failed to clear screen: " + e.getMessage());
 		} // try
 	}// clearDoc
 
@@ -191,7 +191,7 @@ public class TTYZ80 extends DeviceZ80 implements Runnable {
 		try {
 			pipeOut.skip(pipeOut.available());
 		} catch (IOException e) {
-			log.addError("[TTYZ80.run()]  IOException: " + e.getMessage());
+			log.error("[TTYZ80.run()]  IOException: " + e.getMessage());
 			// e.printStackTrace();
 		} // try
 	}// doClearInBuffer
@@ -590,7 +590,7 @@ public class TTYZ80 extends DeviceZ80 implements Runnable {
 			if (name.equals(SPINNER_COLUMNS)) {
 				doColumnsChanged();
 			} else {
-				log.addError("Bad State change, name is: " + name + ".");
+				log.error("Bad State change, name is: " + name + ".");
 			} // if
 
 		}// stateChanged

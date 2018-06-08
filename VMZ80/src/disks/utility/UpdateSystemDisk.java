@@ -88,7 +88,7 @@ public class UpdateSystemDisk {
 
 		File[] files = fc.getSelectedFiles();
 		for (File file : files) {
-			log.addInfo("Updated System on " + file.toString());
+			log.info("Updated System on " + file.toString());
 //			System.out.printf("File: %s%n", file);
 			updateDisk(file);
 		}

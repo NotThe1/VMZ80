@@ -1401,7 +1401,7 @@ public class CentralProcessingUnit implements Runnable {
 			break;
 		default:
 			String message = String.format("[cpu] isConditionTrue() - bad condition: %s", condition);
-			log.addError(message);
+			log.error(message);
 			setError(ErrorStatus.INVALID_CONDITION_CODE);
 		}// switch
 		return ans;
@@ -1487,7 +1487,7 @@ public class CentralProcessingUnit implements Runnable {
 	private void reportOpCodeError() {
 		String message = String.format("[cpu] Bad opCode: %02X,Location: %04X", cpuBuss.read(instructionBase),
 				instructionBase);
-		log.addError(message);
+		log.error(message);
 		setError(ErrorStatus.INVALID_OPCODE);
 	}// reportOpCodeError
 
