@@ -1,5 +1,9 @@
 package utilities.hexEditPanel;
 
+/*
+* @version 1.0
+*/
+
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
@@ -230,7 +234,7 @@ public class HexEditDisplayPanel extends JPanel implements Runnable {
 
 	private void addHexLineToDocument(int currentAddress, byte[] data) {
 		String strAddress = getAddress(currentAddress);
-		String strData = getData(data);
+		String strData = getHexData(data);
 		String strAscii = getAscii(data);
 
 		try {
@@ -251,7 +255,7 @@ public class HexEditDisplayPanel extends JPanel implements Runnable {
 		return String.format(FORMAT_ADDR, currentAddress);
 	}// getAddress
 
-	private String getData(byte[] data) {
+	private String getHexData(byte[] data) {
 		StringBuilder sb = new StringBuilder();
 		int i = 0;
 		for (; i < data.length; i++) {
