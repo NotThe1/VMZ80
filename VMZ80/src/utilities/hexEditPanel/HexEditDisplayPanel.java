@@ -311,6 +311,19 @@ public class HexEditDisplayPanel extends JPanel implements Runnable {
 		source.put(data);
 		source.rewind();
 	}// setData
+	
+	public ByteBuffer getDataByteBuffer() {
+		ByteBuffer bb = ByteBuffer.allocate(source.capacity());
+		bb.rewind();
+		return bb;
+	}//getDataByteBuffer
+	
+	public byte[] getData() {
+		byte[] b = new byte[dataSize];
+		source.rewind();
+		source.get(b,0,dataSize);
+		return b;
+	}//getData
 
 	protected void setUpScrollBar() {
 		if (source == null) {

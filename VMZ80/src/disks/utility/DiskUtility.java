@@ -3,6 +3,7 @@ package disks.utility;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
+import java.awt.EventQueue;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
@@ -77,7 +78,7 @@ import utilities.hdNumberBox.HDNumberBox;
 import utilities.hdNumberBox.HDNumberValueChangeEvent;
 import utilities.hdNumberBox.HDNumberValueChangeListener;
 import utilities.hdNumberBox.HDSeekPanel;
-import utilities.hexEdit.HexEditPanelSimple;
+import utilities.hexEditPanel.HexEditDisplayPanel;
 
 public class DiskUtility extends JDialog {
 	private static final long serialVersionUID = 1L;
@@ -123,19 +124,19 @@ public class DiskUtility extends JDialog {
 	AdapterForDiskUtility adapterForDiskUtility = new AdapterForDiskUtility();
 	private ArrayList<HDNumberBox> hdNumberBoxes = new ArrayList<HDNumberBox>();;
 
-	// public static void main(String[] args) {
-	// EventQueue.invokeLater(new Runnable() {
-	// public void run() {
-	// try {
-	// DiskUtility window = new DiskUtility();
-	// window.frameBase.setVisible(true);
-	// } catch (Exception e) {
-	// e.printStackTrace();
-	// }//try
-	// }//run
-	// });
-	// }// main
-	//
+	public static void main(String[] args) {
+		EventQueue.invokeLater(new Runnable() {
+			public void run() {
+				try {
+					DiskUtility window = getInstance();
+					window.setVisible(true);
+				} catch (Exception e) {
+					e.printStackTrace();
+				} // try
+			}// run
+		});
+	}// main
+
 	private void doDisplayBase(AbstractButton button) {
 		// selected = display Decimal
 		if (button.isSelected()) {
@@ -170,18 +171,20 @@ public class DiskUtility extends JDialog {
 
 	private void dirAdjustTableLook(JTable table) {
 		Font realColumnFont = table.getFont();
-		int charWidth = table.getFontMetrics(realColumnFont).getWidths()[0X57];
+//		int charWidth = table.getFontMetrics(realColumnFont).getWidths()[0X57];
+		
+		int charWidth = table.getFontMetrics(table.getFont()).charWidth('W');
 
 		TableColumnModel tableColumn = table.getColumnModel();
-		tableColumn.getColumn(0).setPreferredWidth(charWidth * 3);
-		tableColumn.getColumn(1).setPreferredWidth(charWidth * 9);
+		tableColumn.getColumn(0).setPreferredWidth(charWidth * 5);
+		tableColumn.getColumn(1).setPreferredWidth(charWidth * 10);
 		tableColumn.getColumn(2).setPreferredWidth(charWidth * 4);
-		tableColumn.getColumn(3).setPreferredWidth(charWidth * 3);
-		tableColumn.getColumn(4).setPreferredWidth(charWidth * 4);
-		tableColumn.getColumn(5).setPreferredWidth(charWidth * 4);
-		tableColumn.getColumn(6).setPreferredWidth(charWidth * 3);
-		tableColumn.getColumn(7).setPreferredWidth(charWidth * 3);
-		tableColumn.getColumn(8).setPreferredWidth(charWidth * 3);
+		tableColumn.getColumn(3).setPreferredWidth(charWidth * 4);
+		tableColumn.getColumn(4).setPreferredWidth(charWidth * 7);
+		tableColumn.getColumn(5).setPreferredWidth(charWidth * 7);
+		tableColumn.getColumn(6).setPreferredWidth(charWidth * 5);
+		tableColumn.getColumn(7).setPreferredWidth(charWidth * 5);
+		tableColumn.getColumn(8).setPreferredWidth(charWidth * 4);
 
 		DefaultTableCellRenderer rightAlign = new DefaultTableCellRenderer();
 		rightAlign.setHorizontalAlignment(JLabel.RIGHT);
@@ -237,7 +240,7 @@ public class DiskUtility extends JDialog {
 		} // for each directory entry
 		showDirectoryDetail(0);
 		directoryTable.setRowSelectionInterval(0, 0);
-		// directoryTable.updateUI();
+		directoryTable.updateUI();
 		if (fileCpmModel.getSize() > 0) {
 			cbFileNames.setSelectedIndex(0);
 			cbCPMFileInOut.setSelectedIndex(0);
@@ -254,7 +257,9 @@ public class DiskUtility extends JDialog {
 		} // if - sector out of bounds
 
 		diskDrive.setCurrentAbsoluteSector(absoluteSector);
-		panelSectorDisplay.loadData(diskDrive.read());
+		// panelSectorDisplay.loadData(diskDrive.read());
+		panelSectorDisplay.setData(diskDrive.read());
+		panelSectorDisplay.run();
 	}// displayPhysicalSector
 
 	private void haveDisk(boolean state) {
@@ -265,14 +270,16 @@ public class DiskUtility extends JDialog {
 
 		if (!state) {
 			manageFileMenus(MNU_DISK_CLOSE);
-			panelSectorDisplay.loadData(NO_ACTIVE_DISK.getBytes());
+			// panelSectorDisplay.loadData(NO_ACTIVE_DISK.getBytes());
+			panelSectorDisplay.setData(NO_ACTIVE_DISK.getBytes());
 			btnExport.setEnabled(false);
 			btnImport.setEnabled(false);
 
 			directoryTableModel.clear();
 			showDirectoryDetail(new byte[32]);
 
-			panelFileHex.loadData(NO_ACTIVE_FILE.getBytes());
+			// panelFileHex.loadData(NO_ACTIVE_FILE.getBytes());
+			panelFileHex.setData(NO_ACTIVE_FILE.getBytes());
 			fileCpmModel.removeAllElements();
 			lblRecordCount.setText("0");
 			lblReadOnly.setVisible(false);
@@ -371,7 +378,7 @@ public class DiskUtility extends JDialog {
 		hdnTrack.setValueQuiet(0);
 		hdnSector.setValueQuiet(1);
 		hdnSeekPanel.setValueQuiet(0);
-		
+
 		hdnSeekPanel.setMinValue(0);
 		if (diskDrive == null) {
 			hdnHead.setMaxValue(0);
@@ -390,7 +397,7 @@ public class DiskUtility extends JDialog {
 
 	private void selectedNewPhysicalSector(boolean fromSeekPanel) {
 		if (panelSectorDisplay.isDataChanged()) {
-			diskDrive.write(panelSectorDisplay.unloadData());
+			// diskDrive.write(panelSectorDisplay.unloadData());
 		} // if dirty
 
 		int newSector = hdnSeekPanel.getValue();
@@ -513,14 +520,14 @@ public class DiskUtility extends JDialog {
 
 	private void doDiskExit() {
 		appClose();
-//		System.exit(0);
+		// System.exit(0);
 	}// doFileExit
 
 	private void doDisplaySelectedFile() {
 		if (panelFileHex.isDataChanged()) {
-			byte[] changedData = panelFileHex.unloadData();
-			cpmFile.write(changedData);
-			lblActiveDisk.setForeground(Color.RED);
+			 byte[] changedData = panelFileHex.getData();
+			 cpmFile.write(changedData);
+			 lblActiveDisk.setForeground(Color.RED);
 		} // if dirty file
 
 		if (cbFileNames.getItemCount() == 0) {
@@ -534,7 +541,8 @@ public class DiskUtility extends JDialog {
 		lblSystemFile.setVisible(cpmFile.isSystemFile());
 
 		byte[] dataToDisplay = cpmFile.getRecordCount() == 0 ? NO_ACTIVE_FILE.getBytes() : cpmFile.readRaw();
-		panelFileHex.loadData(dataToDisplay);
+		panelFileHex.setData(dataToDisplay);
+		panelFileHex.run();
 
 	}// doDisplaySelectedFile
 
@@ -1385,12 +1393,12 @@ public class DiskUtility extends JDialog {
 		tabDirectory.add(scrollDirectoryTable, gbc_scrollDirectoryTable);
 
 		directoryTable = new JTable();
-		directoryTable.setBorder(new LineBorder(Color.RED));
+		directoryTable.setBorder(null);
 		directoryTable.setName(TABLE_DIRECTORY);
 		;
 		directoryTable.getSelectionModel().addListSelectionListener(adapterForDiskUtility);
 		directoryTable.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
-		directoryTable.setFont(new Font("Tahoma", Font.PLAIN, 14));
+		directoryTable.setFont(new Font("Courier New", Font.BOLD, 16));
 		scrollDirectoryTable.setViewportView(directoryTable);
 
 		JPanel tabFile = new JPanel();
@@ -1497,9 +1505,9 @@ public class DiskUtility extends JDialog {
 		gbc_panelFileDislay.gridy = 1;
 		tabFile.add(panelFileDislay, gbc_panelFileDislay);
 		GridBagLayout gbl_panelFileDislay = new GridBagLayout();
-		gbl_panelFileDislay.columnWidths = new int[] { 0, 0, 0 };
+		gbl_panelFileDislay.columnWidths = new int[] { 0, 779, 0 };
 		gbl_panelFileDislay.rowHeights = new int[] { 0, 0 };
-		gbl_panelFileDislay.columnWeights = new double[] { 0.0, 1.0, Double.MIN_VALUE };
+		gbl_panelFileDislay.columnWeights = new double[] { 0.0, 0.0, Double.MIN_VALUE };
 		gbl_panelFileDislay.rowWeights = new double[] { 1.0, Double.MIN_VALUE };
 		panelFileDislay.setLayout(gbl_panelFileDislay);
 
@@ -1510,9 +1518,9 @@ public class DiskUtility extends JDialog {
 		gbc_horizontalStrut_8.gridy = 0;
 		panelFileDislay.add(horizontalStrut_8, gbc_horizontalStrut_8);
 
-		panelFileHex = new HexEditPanelSimple();
+		panelFileHex = new HexEditDisplayPanel();
 		GridBagConstraints gbc_panelFileHex = new GridBagConstraints();
-		gbc_panelFileHex.fill = GridBagConstraints.BOTH;
+		gbc_panelFileHex.fill = GridBagConstraints.VERTICAL;
 		gbc_panelFileHex.gridx = 1;
 		gbc_panelFileHex.gridy = 0;
 		panelFileDislay.add(panelFileHex, gbc_panelFileHex);
@@ -1645,7 +1653,7 @@ public class DiskUtility extends JDialog {
 		GridBagLayout gbl_panelPhysicalDisplay = new GridBagLayout();
 		gbl_panelPhysicalDisplay.columnWidths = new int[] { 0, 0, 0 };
 		gbl_panelPhysicalDisplay.rowHeights = new int[] { 0, 0, 0 };
-		gbl_panelPhysicalDisplay.columnWeights = new double[] { 0.0, 1.0, Double.MIN_VALUE };
+		gbl_panelPhysicalDisplay.columnWeights = new double[] { 0.0, 0.0, Double.MIN_VALUE };
 		gbl_panelPhysicalDisplay.rowWeights = new double[] { 1.0, 0.0, Double.MIN_VALUE };
 		panelPhysicalDisplay.setLayout(gbl_panelPhysicalDisplay);
 
@@ -1656,7 +1664,7 @@ public class DiskUtility extends JDialog {
 		gbc_horizontalStrut_3.gridy = 0;
 		panelPhysicalDisplay.add(horizontalStrut_3, gbc_horizontalStrut_3);
 
-		panelSectorDisplay = new HexEditPanelSimple();
+		panelSectorDisplay = new HexEditDisplayPanel();
 		GridBagConstraints gbc_panelSectorDisplay = new GridBagConstraints();
 		gbc_panelSectorDisplay.insets = new Insets(0, 0, 5, 0);
 		gbc_panelSectorDisplay.fill = GridBagConstraints.BOTH;
@@ -2157,10 +2165,10 @@ public class DiskUtility extends JDialog {
 		lblCatalogHeader.setFont(new Font("Tahoma", Font.BOLD, 16));
 		lblCatalogHeader.setHorizontalAlignment(SwingConstants.CENTER);
 		scrollPaneCatalog.setColumnHeaderView(lblCatalogHeader);
-		
+
 		txtCatalog = new JTextPane();
 		txtCatalog.setFont(new Font("Courier New", Font.PLAIN, 15));
-//		scrollPaneCatalog.setViewportView(txtCatalog);
+		// scrollPaneCatalog.setViewportView(txtCatalog);
 
 		JPanel panelStatus = new JPanel();
 		panelStatus.setBorder(new BevelBorder(BevelBorder.LOWERED, null, null, null, null));
@@ -2331,14 +2339,16 @@ public class DiskUtility extends JDialog {
 	private JTextField txtHostFileInOut;
 	private JButton btnExport;
 	private JButton btnImport;
-	private HexEditPanelSimple panelSectorDisplay;
 	private JScrollPane scrollDirectoryTable;
 	private JLabel lblRawAllocation;
 	private JLabel lblRawEX;
 	private JComboBox<String> cbFileNames;
 	private JComboBox<String> cbCPMFileInOut;
 	private JLabel lblRecordCount;
-	private HexEditPanelSimple panelFileHex;
+	// private HexEditPanelSimple panelFileHex;
+	// private HexEditPanelSimple panelSectorDisplay;
+	private HexEditDisplayPanel panelFileHex;
+	private HexEditDisplayPanel panelSectorDisplay;
 	private JLabel lblReadOnly;
 	private JLabel lblSystemFile;
 	private JTable directoryTable;
