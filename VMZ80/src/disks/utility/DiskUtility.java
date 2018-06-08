@@ -513,7 +513,7 @@ public class DiskUtility extends JDialog {
 
 	private void doDiskExit() {
 		appClose();
-		System.exit(0);
+//		System.exit(0);
 	}// doFileExit
 
 	private void doDisplaySelectedFile() {
@@ -968,6 +968,7 @@ public class DiskUtility extends JDialog {
 		myPrefs.putInt("Tab", tabbedPane.getSelectedIndex());
 
 		myPrefs = null;
+		this.dispose();
 	}// appClose
 
 	private void appInit() {
