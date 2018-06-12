@@ -3,13 +3,13 @@ package disks.utility;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
-import java.awt.EventQueue;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.GridLayout;
 import java.awt.Insets;
 import java.awt.Point;
+import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
@@ -18,8 +18,10 @@ import java.awt.print.PrinterException;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.text.MessageFormat;
@@ -85,6 +87,13 @@ public class DiskUtility extends JDialog {
 
 	AppLogger log = AppLogger.getInstance();
 
+	private String activeDiskName;
+	private String activeDiskPath;
+	private String activeDiskAbsolutePath;
+
+	private File workingDisk;
+	private boolean dataChanged;
+
 	private RawDiskDrive diskDrive;
 	private DiskMetrics diskMetrics;
 
@@ -124,18 +133,18 @@ public class DiskUtility extends JDialog {
 	AdapterForDiskUtility adapterForDiskUtility = new AdapterForDiskUtility();
 	private ArrayList<HDNumberBox> hdNumberBoxes = new ArrayList<HDNumberBox>();;
 
-	public static void main(String[] args) {
-		EventQueue.invokeLater(new Runnable() {
-			public void run() {
-				try {
-					DiskUtility window = getInstance();
-					window.setVisible(true);
-				} catch (Exception e) {
-					e.printStackTrace();
-				} // try
-			}// run
-		});
-	}// main
+//	public static void main(String[] args) {
+//		EventQueue.invokeLater(new Runnable() {
+//			public void run() {
+//				try {
+//					DiskUtility window = getInstance();
+//					window.setVisible(true);
+//				} catch (Exception e) {
+//					e.printStackTrace();
+//				} // try
+//			}// run
+//		});
+//	}// main
 
 	private void doDisplayBase(AbstractButton button) {
 		// selected = display Decimal
@@ -148,10 +157,106 @@ public class DiskUtility extends JDialog {
 	}// doDisplayBase
 
 	// ---------------------------------------------------------
+
+//	public void closeFile() {
+//		workingDisk = null;
+//		// hexEditDisplay.clear();
+//	}// closeFile
+
+	private void setActiveFileInfo(File currentActiveFile) {
+		activeDiskAbsolutePath = currentActiveFile.getAbsolutePath();
+		activeDiskPath = currentActiveFile.getParent();
+		activeDiskName = currentActiveFile.getName();
+		// displayFileName(activeFileName, activeFilePath);
+
+	}// setActiveFileInfo
+
+	private void loadDisk(File subjectDisk) {
+		workingDisk = null;
+//		closeFile();
+
+		long fileLength = subjectDisk.length();
+		if (fileLength >= Integer.MAX_VALUE) {
+			Toolkit.getDefaultToolkit().beep();
+			log.warnf("[DiskUtility.loadData] Disk too large %,d%n", fileLength);
+			return;
+		} // if
+
+		if (fileLength <= 0) {
+			Toolkit.getDefaultToolkit().beep();
+			log.warnf("[DiskUtility.loadData] Disk is empty %,d%n", fileLength);
+			return;
+		} // if
+
+		workingDisk = makeWorkingDisk();
+		setActiveFileInfo(subjectDisk);
+
+		log.info("Loading Disk:");
+		log.infof("       Path : %s%n", activeDiskAbsolutePath);
+		log.infof("       Size : %1$,d bytes  [%1$#X]%n%n", fileLength);
+
+		try {
+			Path source = Paths.get(activeDiskAbsolutePath);
+			Path target = Paths.get(workingDisk.getAbsolutePath());
+			Files.copy(source, target, StandardCopyOption.REPLACE_EXISTING);
+		} catch (IOException e) {
+			log.errorf("Failed to copy %s to %s", activeDiskAbsolutePath, workingDisk.getAbsolutePath());
+			e.printStackTrace();
+		} // try
+
+		diskSetup(workingDisk.getAbsolutePath(),activeDiskAbsolutePath);
+		manageFileMenus(MNU_DISK_LOAD);
+	}// loadDisk
+
+	private File makeWorkingDisk() {
+		File result = null;
+		try {
+			result = File.createTempFile(TEMP_PREFIX, TEMP_SUFFIX);
+			// log.addInfo("[HexEditor.makeWorkingFile] Working file = " + result.getAbsolutePath());
+		} catch (IOException e) {
+			log.errorf("Failed to make WorkingDisk: %s", e.getMessage());
+			e.printStackTrace();
+		} // try
+		return result;
+	}// makeWorkingFile
+
+	private void removeAllWorkingDisks() {
+		File tempDir = new File(System.getProperty("java.io.tmpdir"));
+		File[] tempFiles = tempDir.listFiles(new TempFilter());
+
+		if (tempFiles == null) {
+			return;
+		} // if
+		for (File file : tempFiles) {
+			String filePath = file.getAbsolutePath();
+			System.out.println(filePath);
+			log.infof("Deleting file: %s%n", filePath);
+			try {
+				file.delete();
+			} catch (Exception e) {
+				log.errorf("Bad Delete %s%n", filePath);
+				// TODO: handle exception
+			} // try
+		} // if not null
+	}// removeAllTempFiles
+
+	static class TempFilter implements FilenameFilter {
+
+		@Override
+		public boolean accept(File dir, String name) {
+			if (name.startsWith(TEMP_PREFIX) && name.endsWith(TEMP_SUFFIX)) {
+				return true;
+			} else {
+				return false;
+			} // if
+		}// accept
+
+	}// class TempFilter
+
 	// ---------------------------------------------------------
 
-	private void diskSetup(String fileAbsolutePath) {
-		diskDrive = new RawDiskDrive(fileAbsolutePath);
+	private void diskSetup(String fileAbsolutePath,String activeFileAbsolutePath) {
+		diskDrive = new RawDiskDrive(fileAbsolutePath,activeFileAbsolutePath);
 		haveDisk(true);
 
 		// need the two display... methods run on different threads
@@ -170,9 +275,9 @@ public class DiskUtility extends JDialog {
 	}// displayDirectoryView
 
 	private void dirAdjustTableLook(JTable table) {
-		Font realColumnFont = table.getFont();
-//		int charWidth = table.getFontMetrics(realColumnFont).getWidths()[0X57];
-		
+//		Font realColumnFont = table.getFont();
+		// int charWidth = table.getFontMetrics(realColumnFont).getWidths()[0X57];
+
 		int charWidth = table.getFontMetrics(table.getFont()).charWidth('W');
 
 		TableColumnModel tableColumn = table.getColumnModel();
@@ -264,6 +369,7 @@ public class DiskUtility extends JDialog {
 
 	private void haveDisk(boolean state) {
 		lblActiveDisk.setForeground(Color.black);
+		dataChanged = false;
 
 		refreshMetrics(state);
 		btnHostFile.setEnabled(state);
@@ -343,8 +449,8 @@ public class DiskUtility extends JDialog {
 		maxDirectoryEntry = state ? diskMetrics.getDRM() : 0;
 		maxBlockNumber = state ? diskMetrics.getDSM() : 0;
 
-		lblActiveDisk.setText(state ? diskDrive.getFileLocalName() : NO_ACTIVE_DISK);
-		lblActiveDisk.setToolTipText(state ? diskDrive.getFileAbsoluteName() : NO_ACTIVE_DISK);
+		lblActiveDisk.setText(state ? activeDiskName : NO_ACTIVE_DISK);
+		lblActiveDisk.setToolTipText(state ? activeDiskAbsolutePath : NO_ACTIVE_DISK);
 
 		setDisplayRadix();
 	}// refreshMetrics
@@ -450,14 +556,38 @@ public class DiskUtility extends JDialog {
 		} // if - cancelled
 		String absoluteFilePath = fc.getSelectedFile().getAbsolutePath();
 		if (!fc.getSelectedFile().exists()) {
-			log.error(absoluteFilePath + " Does Not Exist");
+			log.errorf("%s Does Not Exist", absoluteFilePath);
 			return;
 		} // if - is it there
 
-		diskSetup(absoluteFilePath);
-		manageFileMenus(MNU_DISK_LOAD);
+		loadDisk(fc.getSelectedFile());
+
+		// diskSetup(absoluteFilePath);
+		// manageFileMenus(MNU_DISK_LOAD);
 
 	}// doFileNew
+	
+	private int checkForDataChange() {
+		int result = JOptionPane.NO_OPTION;
+
+//		if (hexEditDisplay.isDataChanged()) {
+//			String message = String.format("File: %s has outstanding changes.%nDo you want to save it before exiting?",
+//					activeFileName);
+//			result = JOptionPane.showConfirmDialog(frameBase.getContentPane(), message, "Exit Hex Editor",
+//					JOptionPane.YES_NO_CANCEL_OPTION);
+//			if (result == JOptionPane.CANCEL_OPTION) {
+//				// return cancel result
+//			} else if (result == JOptionPane.YES_OPTION) {
+//				doFileSave();
+//			} else if (result == JOptionPane.NO_OPTION) {
+//				/* do nothing special */
+//			} // if answer
+//		} // DataChanged
+
+		return result;
+	}// checkForDataChange
+
+
 
 	private void doDiskClose() {
 		if (diskDrive != null) {
@@ -499,7 +629,7 @@ public class DiskUtility extends JDialog {
 		} catch (IOException e) {
 			log.error("Failed to copy from " + sourceFileName + " to " + targetFileName);
 		} // try
-		diskSetup(targetFileName);
+		diskSetup(targetFileName,activeDiskAbsolutePath);
 		manageFileMenus(MNU_DISK_LOAD);
 
 	}// doFileSaveAs
@@ -525,9 +655,9 @@ public class DiskUtility extends JDialog {
 
 	private void doDisplaySelectedFile() {
 		if (panelFileHex.isDataChanged()) {
-			 byte[] changedData = panelFileHex.getData();
-			 cpmFile.write(changedData);
-			 lblActiveDisk.setForeground(Color.RED);
+			byte[] changedData = panelFileHex.getData();
+			cpmFile.write(changedData);
+			lblActiveDisk.setForeground(Color.RED);
 		} // if dirty file
 
 		if (cbFileNames.getItemCount() == 0) {
@@ -554,7 +684,7 @@ public class DiskUtility extends JDialog {
 			return;
 		} // if no new disk
 
-		diskSetup(newFile.getAbsolutePath());
+		diskSetup(newFile.getAbsolutePath(),activeDiskAbsolutePath);
 		manageFileMenus(MNU_TOOLS_NEW);
 	}// doToolsNew
 
@@ -565,7 +695,7 @@ public class DiskUtility extends JDialog {
 			String absoluteFilePath = diskDrive.getFileAbsoluteName();
 			doDiskClose();
 			UpdateSystemDisk.updateDisk(absoluteFilePath);
-			diskSetup(absoluteFilePath);
+			diskSetup(absoluteFilePath,activeDiskAbsolutePath);
 			manageFileMenus(MNU_DISK_LOAD);
 		} // if
 	}// doToolsUpdate
@@ -989,6 +1119,8 @@ public class DiskUtility extends JDialog {
 		txtFindFileName.setText(myPrefs.get("FindFileName", "*.*"));
 		tabbedPane.setSelectedIndex(myPrefs.getInt("Tab", 0));
 		myPrefs = null;
+
+		removeAllWorkingDisks();
 
 		hdNumberBoxes.add(hdnHead);
 		hdNumberBoxes.add(hdnTrack);
@@ -2266,6 +2398,9 @@ public class DiskUtility extends JDialog {
 
 	static final String NO_ACTIVE_DISK = "<No Active Disk>";
 	static final String NO_ACTIVE_FILE = "<No Active File>";
+
+	private static final String TEMP_PREFIX = "DiskUtility";
+	private static final String TEMP_SUFFIX = ".tmp";
 
 	//////////////////////////////////////////////////////////////////////////
 	private static final String MNU_DISK_LOAD = "mnuDiskLoad";

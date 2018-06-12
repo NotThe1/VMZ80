@@ -12,6 +12,10 @@ public class RawDiskDrive extends DiskDrive {
 		super(strPathName);
 	}//Constructor
 	
+	public RawDiskDrive(String strPathName, String sourceDiskPathName) {
+		super(strPathName,sourceDiskPathName);
+	}//Constructor  
+	
 	public int getHeads() {
 		return heads;
 	}//getHeads
