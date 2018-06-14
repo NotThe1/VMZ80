@@ -26,6 +26,10 @@ public class CPMFile extends CPMFileHeader {
 		return new CPMFile( diskDrive,  directory,  fileName);
 	}//getCPMFile
 	
+	public String getFileName() {
+		return this.fileName;
+	}//getFileName
+	
 
 	public byte[] readRaw() {
 		return read(actualByteCount);
