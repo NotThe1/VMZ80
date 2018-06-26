@@ -21,6 +21,7 @@ import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JPanel;
 import javax.swing.JSeparator;
+import javax.swing.JToolBar;
 import javax.swing.border.BevelBorder;
 
 import codeSupport.AppLogger;
@@ -29,7 +30,7 @@ import disks.utility.UpdateSystemDisk;
 public class Z80Machine {
 
 	ApplicationAdapter applicationAdapter = new ApplicationAdapter();
-AppLogger log = AppLogger.getInstance();
+	AppLogger log = AppLogger.getInstance();
 
 	/**
 	 * Launch the application.
@@ -42,14 +43,14 @@ AppLogger log = AppLogger.getInstance();
 					window.frameBase.setVisible(true);
 				} catch (Exception e) {
 					e.printStackTrace();
-				}//try
-			}//run
+				} // try
+			}// run
 		});
 	}// main
-	
-	//---------------------------------------------------------
-	
-	private void doFileNew(){
+
+	// ---------------------------------------------------------
+
+	private void doFileNew() {
 		System.out.println("** [doFileNew] **");
 		String diskPath = "C:\\Users\\admin\\VMdata\\Disks\\ZZZ.F3HD";
 		File file = new File(diskPath);
@@ -58,34 +59,38 @@ AppLogger log = AppLogger.getInstance();
 			file.createNewFile();
 			UpdateSystemDisk.updateDisk(diskPath);
 		} catch (IOException e) {
-//			log.addError(" Did not create file :" + diskPath);
+			// log.addError(" Did not create file :" + diskPath);
 		} // try
-	}//doFileNew
-	private void doFileOpen(){
+	}// doFileNew
+
+	private void doFileOpen() {
 		System.out.println("** [doFileOpen] **");
 
-	}//doFileOpen
-	private void doFileSave(){
+	}// doFileOpen
+
+	private void doFileSave() {
 		System.out.println("** [doFileSave] **");
 
-	}//doFileSave
-	private void doFileSaveAs(){
+	}// doFileSave
+
+	private void doFileSaveAs() {
 		System.out.println("** [doFileSaveAs] **");
 
-	}//doFileSaveAs
-	private void doFilePrint(){
+	}// doFileSaveAs
+
+	private void doFilePrint() {
 		System.out.println("** [doFilePrint] **");
 
-	}//doFilePrint
-	
-	private void doFileExit(){
+	}// doFilePrint
+
+	private void doFileExit() {
 		appClose();
 		System.exit(0);
-	}//doFileExit
+	}// doFileExit
 
-////////////////////////////////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////////////////
 	private void appClose() {
-		Preferences myPrefs =  Preferences.userNodeForPackage(Z80Machine.class).node(this.getClass().getSimpleName());
+		Preferences myPrefs = Preferences.userNodeForPackage(Z80Machine.class).node(this.getClass().getSimpleName());
 		Dimension dim = frameBase.getSize();
 		myPrefs.putInt("Height", dim.height);
 		myPrefs.putInt("Width", dim.width);
@@ -93,10 +98,10 @@ AppLogger log = AppLogger.getInstance();
 		myPrefs.putInt("LocX", point.x);
 		myPrefs.putInt("LocY", point.y);
 		myPrefs = null;
-	}//appClose
+	}// appClose
 
 	private void appInit() {
-		Preferences myPrefs =  Preferences.userNodeForPackage(Z80Machine.class).node(this.getClass().getSimpleName());
+		Preferences myPrefs = Preferences.userNodeForPackage(Z80Machine.class).node(this.getClass().getSimpleName());
 		frameBase.setSize(myPrefs.getInt("Width", 761), myPrefs.getInt("Height", 693));
 		frameBase.setLocation(myPrefs.getInt("LocX", 100), myPrefs.getInt("LocY", 100));
 		myPrefs = null;
@@ -106,7 +111,7 @@ AppLogger log = AppLogger.getInstance();
 		initialize();
 		appInit();
 	}// Constructor
-	
+
 	/**
 	 * Initialize the contents of the frame.
 	 */
@@ -123,92 +128,97 @@ AppLogger log = AppLogger.getInstance();
 		});
 		GridBagLayout gridBagLayout = new GridBagLayout();
 		gridBagLayout.columnWidths = new int[] { 0, 0 };
-		gridBagLayout.rowHeights = new int[] { 0, 0, 25, 0 };
+		gridBagLayout.rowHeights = new int[] { 0, 0, 0, 25, 0 };
 		gridBagLayout.columnWeights = new double[] { 1.0, Double.MIN_VALUE };
-		gridBagLayout.rowWeights = new double[] { 1.0, 1.0, 0.0, Double.MIN_VALUE };
+		gridBagLayout.rowWeights = new double[] { 0.0, 1.0, 1.0, 0.0, Double.MIN_VALUE };
 		frameBase.getContentPane().setLayout(gridBagLayout);
-		
+
+		JToolBar toolBar = new JToolBar();
+		GridBagConstraints gbc_toolBar = new GridBagConstraints();
+		gbc_toolBar.insets = new Insets(0, 0, 5, 0);
+		gbc_toolBar.gridx = 0;
+		gbc_toolBar.gridy = 0;
+		frameBase.getContentPane().add(toolBar, gbc_toolBar);
+
 		JPanel topPanel = new JPanel();
 		GridBagConstraints gbc_topPanel = new GridBagConstraints();
 		gbc_topPanel.insets = new Insets(0, 0, 5, 0);
 		gbc_topPanel.fill = GridBagConstraints.BOTH;
 		gbc_topPanel.gridx = 0;
-		gbc_topPanel.gridy = 0;
+		gbc_topPanel.gridy = 1;
 		frameBase.getContentPane().add(topPanel, gbc_topPanel);
 		GridBagLayout gbl_topPanel = new GridBagLayout();
-		gbl_topPanel.columnWidths = new int[]{0};
-		gbl_topPanel.rowHeights = new int[]{0};
-		gbl_topPanel.columnWeights = new double[]{Double.MIN_VALUE};
-		gbl_topPanel.rowWeights = new double[]{Double.MIN_VALUE};
+		gbl_topPanel.columnWidths = new int[] { 0 };
+		gbl_topPanel.rowHeights = new int[] { 0 };
+		gbl_topPanel.columnWeights = new double[] { Double.MIN_VALUE };
+		gbl_topPanel.rowWeights = new double[] { Double.MIN_VALUE };
 		topPanel.setLayout(gbl_topPanel);
-		
+
 		mainPanel = new JPanel();
 		GridBagConstraints gbc_mainPanel = new GridBagConstraints();
 		gbc_mainPanel.insets = new Insets(0, 0, 5, 0);
 		gbc_mainPanel.fill = GridBagConstraints.BOTH;
 		gbc_mainPanel.gridx = 0;
-		gbc_mainPanel.gridy = 1;
+		gbc_mainPanel.gridy = 2;
 		frameBase.getContentPane().add(mainPanel, gbc_mainPanel);
-		
+
 		JPanel panelStatus = new JPanel();
 		panelStatus.setBorder(new BevelBorder(BevelBorder.LOWERED, null, null, null, null));
 		GridBagConstraints gbc_panelStatus = new GridBagConstraints();
 		gbc_panelStatus.fill = GridBagConstraints.BOTH;
 		gbc_panelStatus.gridx = 0;
-		gbc_panelStatus.gridy = 2;
+		gbc_panelStatus.gridy = 3;
 		frameBase.getContentPane().add(panelStatus, gbc_panelStatus);
 
 		JMenuBar menuBar = new JMenuBar();
 		frameBase.setJMenuBar(menuBar);
-		
+
 		JMenu mnuFile = new JMenu("File");
 		menuBar.add(mnuFile);
-		
+
 		JMenuItem mnuFileNew = new JMenuItem("New");
 		mnuFileNew.setName(MNU_FILE_NEW);
 		mnuFileNew.addActionListener(applicationAdapter);
 		mnuFile.add(mnuFileNew);
-		
+
 		JMenuItem mnuFileOpen = new JMenuItem("Open...");
 		mnuFileOpen.setName(MNU_FILE_OPEN);
 		mnuFileOpen.addActionListener(applicationAdapter);
 		mnuFile.add(mnuFileOpen);
-		
+
 		JSeparator separator99 = new JSeparator();
 		mnuFile.add(separator99);
-		
+
 		JMenuItem mnuFileSave = new JMenuItem("Save...");
 		mnuFileSave.setName(MNU_FILE_SAVE);
 		mnuFileSave.addActionListener(applicationAdapter);
 		mnuFile.add(mnuFileSave);
-		
+
 		JMenuItem mnuFileSaveAs = new JMenuItem("Save As...");
 		mnuFileSaveAs.setName(MNU_FILE_SAVE_AS);
 		mnuFileSaveAs.addActionListener(applicationAdapter);
 		mnuFile.add(mnuFileSaveAs);
-		
+
 		JSeparator separator_2 = new JSeparator();
 		mnuFile.add(separator_2);
-		
+
 		JMenuItem mnuFilePrint = new JMenuItem("Print...");
 		mnuFilePrint.setName(MNU_FILE_PRINT);
 		mnuFilePrint.addActionListener(applicationAdapter);
 		mnuFile.add(mnuFilePrint);
-		
-		
+
 		JSeparator separator_1 = new JSeparator();
 		mnuFile.add(separator_1);
-		
+
 		JMenuItem mnuFileExit = new JMenuItem("Exit");
 		mnuFileExit.setName(MNU_FILE_EXIT);
 		mnuFileExit.addActionListener(applicationAdapter);
 		mnuFile.add(mnuFileExit);
 
-		
-
 	}// initialize
+
 	static final String EMPTY_STRING = "";
-	
+
 	//////////////////////////////////////////////////////////////////////////
 	private JFrame frameBase;
 	private JPanel mainPanel;
