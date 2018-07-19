@@ -1,13 +1,23 @@
 package hardware;
 
+import codeSupport.AppLogger;
+import memory.Core;
 import memory.CpuBuss;
 import memory.IoBuss;
 
 public class Backplane {
-CpuBuss cpuBuss = CpuBuss.getInstance();
-IoBuss ioBuss = IoBuss.getInstance();
-	public Backplane() {
-		
-	}//Constructor
+	AppLogger log = AppLogger.getInstance();
+	
+	Core core = Core.getInstance();
+	CpuBuss cpuBuss = CpuBuss.getInstance();
+	IoBuss ioBuss = IoBuss.getInstance();
+	
+	ConditionCodeRegister ccr = ConditionCodeRegister.getInstance();
+	WorkingRegisterSet wrs = WorkingRegisterSet.getInstance();
+	ArithmeticUnit au = ArithmeticUnit.getInstance();
 
-}//class Backplane
+	public Backplane() {
+
+	}// Constructor
+
+}// class Backplane

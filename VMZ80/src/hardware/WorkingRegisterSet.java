@@ -22,10 +22,10 @@ public class WorkingRegisterSet {
 
 	private static WorkingRegisterSet instance = new WorkingRegisterSet();
 
-	private int programCounter = 0X0000;
-	private int stackPointer = 0X0100;
-	private int IX = 0X0000;
-	private int IY = 0X0000;
+	private int programCounter;
+	private int stackPointer;
+	private int IX;
+	private int IY;
 
 	private boolean iff1 = false;
 	private boolean iff2 = false;
@@ -56,6 +56,8 @@ public class WorkingRegisterSet {
 		} // for
 		programCounter = 0X0000;
 		stackPointer = 0X0100; // set to non zero
+		IX = 0X0000;
+		IY = 0X0000;
 		iff1 = false;
 		iff2 = false;
 	}// initialize

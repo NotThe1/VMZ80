@@ -2,6 +2,8 @@ package memory;
 
 import java.util.Observable;
 
+import codeSupport.AppLogger;
+
 //import memory.Core.Trap;
 
 /**
@@ -34,6 +36,7 @@ import java.util.Observable;
 
 public class Core extends Observable implements ICore {
 	private static Core instance = new Core();
+	private AppLogger log = AppLogger.getInstance();
 	private  byte[] storage;
 	private  int maxAddress;
 
@@ -98,13 +101,22 @@ public class Core extends Observable implements ICore {
 
 	@Override
 	public byte read(int location) {
-		return isValidAddress(location) ? storage[location] : (byte) 0X00;
+		byte result;
+		if (isValidAddress(location)) {
+			result= storage[location];
+		}else {
+			result = (byte) 0X00;
+			log.errorf("[Core.read] attempted to read from an invalid location: [%04X],(byte) 0X00 returned%n" , location);
+		}//
+		return   result; 
 	}// read
 
 	@Override
 	public void write(int location, byte value) {
 		if (isValidAddress(location)) {
 			storage[location] = value;
+		}else {
+			log.errorf("[Core.write] attempted to write to an invalid location: [%04X],%n" , location);
 		}// if
 		return; // bad address;
 	}// write
@@ -124,10 +136,10 @@ public class Core extends Observable implements ICore {
 		boolean checkAddress = true;
 		if ((location < PROTECTED_MEMORY) | (location > maxAddress)) {
 			checkAddress = false;
-			MemoryTrapEvent mte = new MemoryTrapEvent(this, location, Trap.INVALID);
-			setChanged();
-			notifyObservers(mte);
-			clearChanged();
+//			MemoryTrapEvent mte = new MemoryTrapEvent(this, location, Trap.INVALID);
+//			setChanged();
+//			notifyObservers(mte);
+//			clearChanged();
 		}// if
 		return checkAddress;
 	}// isValidAddress
