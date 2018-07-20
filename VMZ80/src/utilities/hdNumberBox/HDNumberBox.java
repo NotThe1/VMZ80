@@ -12,9 +12,6 @@ import javax.swing.JPanel;
 import javax.swing.SwingConstants;
 import javax.swing.UIManager;
 import javax.swing.event.EventListenerList;
-import javax.swing.text.AttributeSet;
-import javax.swing.text.BadLocationException;
-import javax.swing.text.PlainDocument;
 
 /* @formatter:off */
 
@@ -149,7 +146,7 @@ public class HDNumberBox extends JPanel {
 		this.rangeModel.setValue(initValue);
 		// this.rangeModel.setExtent(maxValue - initValue);
 
-		displayDoc = new SeekDocument(true);
+		displayDoc = new SeekDocument(this, true);
 
 		Initialize();
 		appInit();
@@ -225,42 +222,5 @@ public class HDNumberBox extends JPanel {
 		} // for
 
 	}// fireSeekValueChanged
-
-	// ---------------------------
-	class SeekDocument extends PlainDocument {
-		private static final long serialVersionUID = 1L;
-
-		private String inputPattern;
-
-		SeekDocument(boolean decimalDisplay) {
-			if (decimalDisplay == true) {
-				displayDecimal();
-			} else {
-				displayHex();
-			} // if
-		}// Constructor
-
-		public void displayDecimal() {
-			inputPattern = "-??[0-9]*";
-
-		}// displayDecimal
-
-		public void displayHex() {
-			inputPattern = "[A-F|a-f|0-9]+";
-		}// displayHex
-
-		public void insertString(int offSet, String string, AttributeSet attributeSet) throws BadLocationException {
-			if (string == null) {
-				return;
-			} // if
-
-			if (!string.matches(inputPattern)) {
-				return;
-			} // for
-
-			super.insertString(offSet, string, attributeSet);
-		}// insertString
-	}// class SeekDocument
-		// ______________________________
 
 }// class HDNumberBox

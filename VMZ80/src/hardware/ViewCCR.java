@@ -15,6 +15,7 @@ import javax.swing.UIManager;
 import javax.swing.border.LineBorder;
 import javax.swing.border.TitledBorder;
 
+import codeSupport.Z80;
 import utilities.hdNumberBox.HDNumberBox;
 import utilities.hdNumberBox.HDNumberValueChangeEvent;
 import utilities.hdNumberBox.HDNumberValueChangeListener;
@@ -29,9 +30,16 @@ public class ViewCCR extends JPanel implements Runnable {
 		setColorsForAllIndicators();
 	}//run	
 	
-//	private void setHexValue() {
-//		ccHexValue.setValue(ccr.getConditionCode());
-//	}//setHexValue
+	private void setHexValue(int rawValue) {
+		byte value = (byte)rawValue;
+		ccr.setSignFlag((value & Z80.BIT_SIGN)==Z80.BIT_SIGN);
+		ccr.setZeroFlag((value & Z80.BIT_ZERO)==Z80.BIT_ZERO);
+		ccr.setHFlag((value & Z80.BIT_AUX)==Z80.BIT_AUX);
+		ccr.setPvFlag((value & Z80.BIT_PV)==Z80.BIT_PV);
+		ccr.setNFlag((value & Z80.BIT_N)==Z80.BIT_N);
+		ccr.setCarryFlag((value & Z80.BIT_CARRY)==Z80.BIT_CARRY);
+		setColorsForAllIndicators();
+	}//setHexValue
 	
 	private void setColorsForAllIndicators() {
 		ccSign.setForeground(ccr.isSignFlagSet()?ON:OFF);
@@ -40,7 +48,6 @@ public class ViewCCR extends JPanel implements Runnable {
 		ccParity.setForeground(ccr.isPvFlagSet()?ON:OFF);
 		ccAddSubtract.setForeground(ccr.isNFlagSet()?ON:OFF);
 		ccCarry.setForeground(ccr.isCarryFlagSet()?ON:OFF);
-//		ccHexValue.setValue(ccr.getConditionCode());
 		ccHexValue.setValueQuiet(0x00 << 24 | ccr.getConditionCode() & 0xff);
 		
 	}//setColorsForAllIndicators
@@ -197,7 +204,8 @@ public class ViewCCR extends JPanel implements Runnable {
 		/*          HDNumberValueChangeListener         */
 		@Override
 		public void valueChanged(HDNumberValueChangeEvent hDNumberValueChangeEvent) {
-			System.out.printf("Old value: %02X, New value %02X%n", hDNumberValueChangeEvent.getOldValue(),hDNumberValueChangeEvent.getNewValue());		
+			System.out.printf("Old value: %02X, New value %02X%n", hDNumberValueChangeEvent.getOldValue(),hDNumberValueChangeEvent.getNewValue());
+			setHexValue(hDNumberValueChangeEvent.getNewValue());
 		}//valueChanged
 
 	}//
