@@ -53,6 +53,7 @@ public class ViewCCR extends JPanel implements Runnable {
 	}//setColorsForAllIndicators
 
 	private void appInit() {
+		ccHexValue.setHexDisplay("%02X");
 		setColorsForAllIndicators();
 	}// appInit
 
@@ -74,6 +75,7 @@ public class ViewCCR extends JPanel implements Runnable {
 		setLayout(flowLayout);
 
 		ccSign = new JLabel("S");
+		ccSign.setToolTipText("Sign");
 		ccSign.setForeground(OFF);
 		ccSign.setName(CC_SIGN);
 		ccSign.addMouseListener(adapterViewCCR);
@@ -84,6 +86,7 @@ public class ViewCCR extends JPanel implements Runnable {
 		ccSign.setAlignmentX(0.5f);
 
 		ccZero = new JLabel("Z");
+		ccZero.setToolTipText("Zero");
 		ccZero.setName(CC_ZERO);
 		ccZero.addMouseListener(adapterViewCCR);
 		add(ccZero);
@@ -93,6 +96,7 @@ public class ViewCCR extends JPanel implements Runnable {
 		ccZero.setAlignmentX(0.5f);
 
 		JLabel ccNU5 = new JLabel("X");
+		ccNU5.setToolTipText("Not Used");
 		add(ccNU5);
 		ccNU5.setForeground(Color.LIGHT_GRAY);
 		ccNU5.setHorizontalAlignment(SwingConstants.CENTER);
@@ -101,6 +105,7 @@ public class ViewCCR extends JPanel implements Runnable {
 		ccNU5.setAlignmentX(0.5f);
 
 		ccHalfCarry = new JLabel("H");
+		ccHalfCarry.setToolTipText("Half Carry");
 		ccHalfCarry.setName(CC_HALF_CARRY);
 		ccHalfCarry.addMouseListener(adapterViewCCR);
 		add(ccHalfCarry);
@@ -110,6 +115,7 @@ public class ViewCCR extends JPanel implements Runnable {
 		ccHalfCarry.setAlignmentX(0.5f);
 
 		JLabel ccNU3 = new JLabel("X");
+		ccNU3.setToolTipText("Not Used");
 		add(ccNU3);
 		ccNU3.setForeground(Color.LIGHT_GRAY);
 		ccNU3.setHorizontalAlignment(SwingConstants.CENTER);
@@ -118,6 +124,7 @@ public class ViewCCR extends JPanel implements Runnable {
 		ccNU3.setAlignmentX(0.5f);
 
 		ccParity = new JLabel("P");
+		ccParity.setToolTipText("Parity/Overflow");
 		ccParity.setName(CC_PARITY);
 		ccParity.addMouseListener(adapterViewCCR);
 		add(ccParity);
@@ -127,6 +134,7 @@ public class ViewCCR extends JPanel implements Runnable {
 		ccParity.setAlignmentX(0.5f);
 
 		ccAddSubtract = new JLabel("N");
+		ccAddSubtract.setToolTipText("Add/Subtract");
 		ccAddSubtract.setName(CC_ADD_SUBTRACT);
 		ccAddSubtract.addMouseListener(adapterViewCCR);
 		add(ccAddSubtract);
@@ -136,6 +144,7 @@ public class ViewCCR extends JPanel implements Runnable {
 		ccAddSubtract.setAlignmentX(0.5f);
 
 		ccCarry = new JLabel("C");
+		ccCarry.setToolTipText("Carry");
 		ccCarry.setName(CC_CARRY);
 		ccCarry.addMouseListener(adapterViewCCR);
 		add(ccCarry);
@@ -204,7 +213,6 @@ public class ViewCCR extends JPanel implements Runnable {
 		/*          HDNumberValueChangeListener         */
 		@Override
 		public void valueChanged(HDNumberValueChangeEvent hDNumberValueChangeEvent) {
-			System.out.printf("Old value: %02X, New value %02X%n", hDNumberValueChangeEvent.getOldValue(),hDNumberValueChangeEvent.getNewValue());
 			setHexValue(hDNumberValueChangeEvent.getNewValue());
 		}//valueChanged
 

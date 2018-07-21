@@ -9,14 +9,12 @@ class SeekDocument extends PlainDocument {
 	/**
 	 * 
 	 */
-	private final HDNumberBox doc;
 
 	private static final long serialVersionUID = 1L;
 
 	private String inputPattern;
 
-	SeekDocument(HDNumberBox hdNumberBox, boolean decimalDisplay) {
-		doc = hdNumberBox;
+	SeekDocument( boolean decimalDisplay) {
 		if (decimalDisplay == true) {
 			displayDecimal();
 		} else {
