@@ -3,18 +3,18 @@ package utilities.hexEditPanel;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.GridLayout;
-import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
+import java.awt.event.FocusListener;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.swing.DefaultBoundedRangeModel;
+import javax.swing.JComponent;
 import javax.swing.JFormattedTextField;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
 import javax.swing.UIManager;
 import javax.swing.event.EventListenerList;
-import javax.swing.text.AttributeSet;
-import javax.swing.text.BadLocationException;
-import javax.swing.text.PlainDocument;
 
 /* @formatter:off */
 
@@ -35,6 +35,9 @@ import javax.swing.text.PlainDocument;
  *         so values can be changed without triggering events
  *         
  *			2018-03-01 - added setValueQuiet(int value);
+ *			2018-07-21 - Factored out SeekDocument
+ *                     - Added capacity to set/reset display formats
+ *          2018-07-30 - added Apater_HDNumberBox. & selectAll on focus gained
  */
 /* @formatter:on  */
 
@@ -42,12 +45,13 @@ public class HDNumberBox extends JPanel {
 	private static final long serialVersionUID = 1L;
 
 	DefaultBoundedRangeModel rangeModel = new DefaultBoundedRangeModel();
+	Adapter_HDNumberBox adapterHDNB = new Adapter_HDNumberBox();
 
 	int currentValue, priorValue;
 	JFormattedTextField txtValueDisplay;
 	EventListenerList hdNumberValueChangeListenerList;
-	String decimalDisplayFormat = "%d";
-	String hexDisplayFormat = "%X";
+	String decimalDisplayFormat;
+	String hexDisplayFormat;
 	boolean showDecimal = true;
 	SeekDocument displayDoc;
 	boolean muteNumberChangeEvent;
@@ -79,9 +83,45 @@ public class HDNumberBox extends JPanel {
 		setDecimalDisplay(true);
 	}// setDecimalDisplay
 
+	public void setDecimalDisplay(String format) {
+		String trimmedFormat = format.trim();
+		Pattern decimalPattern = Pattern.compile("\\%[0-9]*d");
+		Matcher decimalMatcher = decimalPattern.matcher(trimmedFormat);
+		if (decimalMatcher.matches()) {
+			decimalDisplayFormat = trimmedFormat;
+		} else {
+			System.err.printf("[HDNumberBox.setDecimalDisplay] Invalid argument \"%s\"%n", format);
+			resetDecimalDisplay();
+		} // if good
+		setDecimalDisplay(true);
+	}// setDecimalDisplay
+
+	public void resetDecimalDisplay() {
+		decimalDisplayFormat = "%d";
+	}// resetHexDisplay
+
 	public void setHexDisplay() {
 		setDecimalDisplay(false);
 	}// setHexDisplay
+
+	public void setHexDisplay(String format) {
+		String trimmedFormat = format.toUpperCase().trim();
+		Pattern hexPattern = Pattern.compile("\\%[0-9]*X");
+
+		Matcher hexMatcher = hexPattern.matcher(trimmedFormat);
+		if (hexMatcher.matches()) {
+			hexDisplayFormat = trimmedFormat;
+		} else {
+			System.err.printf("[HDNumberBox.setHexDisplay] Invalid argument \"%s\"%n", format);
+			resetHexDisplay();
+		} // if good
+
+		setDecimalDisplay(false);
+	}// setHexDisplay
+
+	public void resetHexDisplay() {
+		hexDisplayFormat = "%X";
+	}// resetHexDisplay
 
 	public void setDecimalDisplay(boolean displayDecimal) {
 		String tipText = "";
@@ -97,6 +137,11 @@ public class HDNumberBox extends JPanel {
 		txtValueDisplay.setToolTipText(tipText);
 	}// setHexDisplay
 
+	public void restDisplayFormat() {
+		resetHexDisplay();
+		resetDecimalDisplay();
+	}// restDisplayFormat
+
 	public boolean isDecimalDisplay() {
 		return showDecimal;
 	}// isDecimalDisplay
@@ -109,7 +154,7 @@ public class HDNumberBox extends JPanel {
 
 		String stringValue = String.format(displayFormat, currentValue);
 		txtValueDisplay.setText(stringValue);
-		txtValueDisplay.repaint();
+		// txtValueDisplay.repaint();
 	}// showValue
 
 	void setNewValue(int newValue) {
@@ -128,16 +173,13 @@ public class HDNumberBox extends JPanel {
 		} // if
 	}// newValue
 
-
 	// -------------------------------------------------------
-
 
 	/* <><><><> */
 
 	public HDNumberBox() {
 		this(Integer.MIN_VALUE, Integer.MAX_VALUE, 0, false);
 	}// Constructor
-
 
 	public HDNumberBox(boolean decimalDisplay) {
 		this(Integer.MIN_VALUE, Integer.MAX_VALUE, 0, decimalDisplay);
@@ -165,6 +207,8 @@ public class HDNumberBox extends JPanel {
 	/* <><><><> */
 
 	private void appInit() {
+		restDisplayFormat();
+
 		currentValue = (int) rangeModel.getValue();
 		txtValueDisplay.setDocument(displayDoc);
 		txtValueDisplay.setPreferredSize(new Dimension(100, 23));
@@ -182,20 +226,8 @@ public class HDNumberBox extends JPanel {
 		txtValueDisplay.setMinimumSize(new Dimension(75, 20));
 		txtValueDisplay.setBackground(UIManager.getColor("TextArea.background"));
 		txtValueDisplay.setFont(new Font("Courier New", Font.PLAIN, 13));
-		txtValueDisplay.addFocusListener(new FocusAdapter() {
-			@Override
-			public void focusLost(FocusEvent arg0) {
-				if (txtValueDisplay.getText().equals("")) {
-					return;
-				} // if null
-				int radix = showDecimal ? 10 : 16;
-				try {
-					setNewValue(Integer.valueOf(txtValueDisplay.getText(), radix));
-				} catch (Exception e) {
-					setNewValue(rangeModel.getValue());
-				} // try
-			}// focusLost
-		});
+		txtValueDisplay.addFocusListener(adapterHDNB);
+
 		setLayout(new GridLayout(0, 1, 0, 0));
 
 		txtValueDisplay.setHorizontalAlignment(SwingConstants.RIGHT);
@@ -226,41 +258,35 @@ public class HDNumberBox extends JPanel {
 
 	}// fireSeekValueChanged
 
-	// ---------------------------
-	static class SeekDocument extends PlainDocument {
-		private static final long serialVersionUID = 1L;
+	// --------------------------------------------------------
 
-		private String inputPattern;
+	private class Adapter_HDNumberBox implements FocusListener {
 
-		SeekDocument(boolean decimalDisplay) {
-			if (decimalDisplay == true) {
-				displayDecimal();
-			} else {
-				displayHex();
+		@Override
+		public void focusGained(FocusEvent focusEvent) {
+			Object source = (JComponent) focusEvent.getSource();
+			if (source instanceof JFormattedTextField) {
+				JFormattedTextField textBox = (JFormattedTextField) source;
+				textBox.selectAll();
 			} // if
-		}// Constructor
+		}// focusGained
 
-		public void displayDecimal() {
-			inputPattern = "-??[0-9]*";
-
-		}// displayDecimal
-
-		public void displayHex() {
-			inputPattern = "[A-F|a-f|0-9]+";
-		}// displayHex
-
-		public void insertString(int offSet, String string, AttributeSet attributeSet) throws BadLocationException {
-			if (string == null) {
-				return;
+		@Override
+		public void focusLost(FocusEvent focusEvent) {
+			Object source = (JComponent) focusEvent.getSource();
+			if (source instanceof JFormattedTextField) {
+				JFormattedTextField textBox = (JFormattedTextField) source;
+				if (textBox.getText().equals("")) {
+					return;
+				} // if null
+				int radix = showDecimal ? 10 : 16;
+				try {
+					setNewValue(Integer.valueOf(textBox.getText(), radix));
+				} catch (Exception e) {
+					setNewValue(rangeModel.getValue());
+				} // try
 			} // if
+		}// focusLost
 
-			if (!string.matches(inputPattern)) {
-				return;
-			} // for
-
-			super.insertString(offSet, string, attributeSet);
-		}// insertString
-	}// class SeekDocument
-		// ______________________________
-
+	}// class Adapter_HDNumberBox
 }// class HDNumberBox

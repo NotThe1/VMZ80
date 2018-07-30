@@ -3,12 +3,13 @@ package utilities.hdNumberBox;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.GridLayout;
-import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
+import java.awt.event.FocusListener;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import javax.swing.DefaultBoundedRangeModel;
+import javax.swing.JComponent;
 import javax.swing.JFormattedTextField;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
@@ -36,6 +37,7 @@ import javax.swing.event.EventListenerList;
  *			2018-03-01 - added setValueQuiet(int value);
  *			2018-07-21 - Factored out SeekDocument
  *                     - Added capacity to set/reset display formats
+ *          2018-07-30 - added Apater_HDNumberBox. & selectAll on focus gained
  */
 /* @formatter:on  */
 
@@ -43,6 +45,7 @@ public class HDNumberBox extends JPanel {
 	private static final long serialVersionUID = 1L;
 
 	DefaultBoundedRangeModel rangeModel = new DefaultBoundedRangeModel();
+	Adapter_HDNumberBox adapterHDNB = new Adapter_HDNumberBox();
 
 	int currentValue, priorValue;
 	JFormattedTextField txtValueDisplay;
@@ -135,7 +138,7 @@ public class HDNumberBox extends JPanel {
 	}// setHexDisplay
 
 	public void restDisplayFormat() {
-		resetHexDisplay() ;
+		resetHexDisplay();
 		resetDecimalDisplay();
 	}// restDisplayFormat
 
@@ -151,7 +154,7 @@ public class HDNumberBox extends JPanel {
 
 		String stringValue = String.format(displayFormat, currentValue);
 		txtValueDisplay.setText(stringValue);
-//		txtValueDisplay.repaint();
+		// txtValueDisplay.repaint();
 	}// showValue
 
 	void setNewValue(int newValue) {
@@ -223,20 +226,8 @@ public class HDNumberBox extends JPanel {
 		txtValueDisplay.setMinimumSize(new Dimension(75, 20));
 		txtValueDisplay.setBackground(UIManager.getColor("TextArea.background"));
 		txtValueDisplay.setFont(new Font("Courier New", Font.PLAIN, 13));
-		txtValueDisplay.addFocusListener(new FocusAdapter() {
-			@Override
-			public void focusLost(FocusEvent arg0) {
-				if (txtValueDisplay.getText().equals("")) {
-					return;
-				} // if null
-				int radix = showDecimal ? 10 : 16;
-				try {
-					setNewValue(Integer.valueOf(txtValueDisplay.getText(), radix));
-				} catch (Exception e) {
-					setNewValue(rangeModel.getValue());
-				} // try
-			}// focusLost
-		});
+		txtValueDisplay.addFocusListener(adapterHDNB);
+
 		setLayout(new GridLayout(0, 1, 0, 0));
 
 		txtValueDisplay.setHorizontalAlignment(SwingConstants.RIGHT);
@@ -267,4 +258,35 @@ public class HDNumberBox extends JPanel {
 
 	}// fireSeekValueChanged
 
+	// --------------------------------------------------------
+
+	private class Adapter_HDNumberBox implements FocusListener {
+
+		@Override
+		public void focusGained(FocusEvent focusEvent) {
+			Object source = (JComponent) focusEvent.getSource();
+			if (source instanceof JFormattedTextField) {
+				JFormattedTextField textBox = (JFormattedTextField) source;
+				textBox.selectAll();
+			} // if
+		}// focusGained
+
+		@Override
+		public void focusLost(FocusEvent focusEvent) {
+			Object source = (JComponent) focusEvent.getSource();
+			if (source instanceof JFormattedTextField) {
+				JFormattedTextField textBox = (JFormattedTextField) source;
+				if (textBox.getText().equals("")) {
+					return;
+				} // if null
+				int radix = showDecimal ? 10 : 16;
+				try {
+					setNewValue(Integer.valueOf(textBox.getText(), radix));
+				} catch (Exception e) {
+					setNewValue(rangeModel.getValue());
+				} // try
+			} // if
+		}// focusLost
+
+	}// class Adapter_HDNumberBox
 }// class HDNumberBox

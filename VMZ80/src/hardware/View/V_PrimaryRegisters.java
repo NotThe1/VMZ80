@@ -3,10 +3,6 @@ package hardware.View;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
-import java.awt.GridLayout;
-import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.HashMap;
@@ -31,11 +27,10 @@ public class V_PrimaryRegisters extends JPanel implements Runnable {
 
 	HashMap<HDNumberBox, DisplayRegisterAttributes> displayRegisters = new HashMap<>();
 
-	private String title = "?";
+	private String title = "Primary Registers";
 
 	@Override
 	public void run() {
-		// TODO Auto-generated method stub
 		setAllRegisterDisplays(tbMainAux.isSelected());
 	}// run
 
@@ -51,11 +46,11 @@ public class V_PrimaryRegisters extends JPanel implements Runnable {
 
 	private void doValueChanged(byte newValue, HDNumberBox numberBox) {
 		byte value = newValue;
-		if(numberBox.equals(regF)) {
-		 value = (byte) (numberBox.equals(regF)?(newValue & FLAG_MASK):newValue);
-		 numberBox.setValueQuiet(value);
-		}// if Condition Code Register
-			
+		if (numberBox.equals(regF)) {
+			value = (byte) (numberBox.equals(regF) ? (newValue & FLAG_MASK) : newValue);
+			numberBox.setValueQuiet(value);
+		} // if Condition Code Register
+
 		DisplayRegisterAttributes dra = displayRegisters.get(numberBox);
 		if (tbMainAux.isSelected()) {
 			wrs.setReg(dra.getRegAlt(), value);
@@ -93,6 +88,7 @@ public class V_PrimaryRegisters extends JPanel implements Runnable {
 	}// Constructor
 
 	public V_PrimaryRegisters() {
+		setPreferredSize(new Dimension(467, 88));
 		setBorder(new TitledBorder(UIManager.getBorder("TitledBorder.border"), "Primary Registers", TitledBorder.CENTER,
 				TitledBorder.TOP, null, new Color(0, 0, 0)));
 		initialize();
@@ -114,18 +110,9 @@ public class V_PrimaryRegisters extends JPanel implements Runnable {
 	}// appInit
 
 	private void initialize() {
-		setLayout(new GridLayout(1, 10, 1, 0));
-
-		JPanel panel = new JPanel();
-		add(panel);
-		GridBagLayout gbl_panel = new GridBagLayout();
-		gbl_panel.columnWidths = new int[] { 90, 40, 40, 40, 40, 40, 40, 40, 40, 40 };
-		gbl_panel.rowHeights = new int[] { 0 };// 70
-		gbl_panel.columnWeights = new double[] { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
-		gbl_panel.rowWeights = new double[] { 0.0 };
-		panel.setLayout(gbl_panel);
 
 		tbMainAux = new JToggleButton(MAIN);
+		tbMainAux.setBounds(26, 23, 90, 50);
 		tbMainAux.setSelected(false);
 		tbMainAux.setMinimumSize(new Dimension(90, 23));
 		tbMainAux.setPreferredSize(new Dimension(90, 23));
@@ -135,15 +122,11 @@ public class V_PrimaryRegisters extends JPanel implements Runnable {
 				setAllRegisterDisplays(tbMainAux.isSelected());
 			}// actionPerformed
 		});
+		setLayout(null);
+		add(tbMainAux);
 
-		GridBagConstraints gbc_tbMainAux = new GridBagConstraints();
-		gbc_tbMainAux.fill = GridBagConstraints.VERTICAL;
-		gbc_tbMainAux.insets = new Insets(0, 0, 0, 5);
-		gbc_tbMainAux.gridx = 0;
-		gbc_tbMainAux.gridy = 0;
-		panel.add(tbMainAux, gbc_tbMainAux);
-
-		regA = new HDNumberBox();
+		regA = new HDNumberBox(0,0xFF,0,false);
+		regA.setBounds(121, 23, 30, 40);
 		regA.setName("A");
 		regA.addHDNumberValueChangedListener(adapterVPR);
 		regA.setFont(new Font("Courier New", Font.BOLD, 15));
@@ -151,14 +134,10 @@ public class V_PrimaryRegisters extends JPanel implements Runnable {
 		regA.setHexDisplay("%02X");
 		regA.setBorder(new TitledBorder(UIManager.getBorder("TitledBorder.border"), "A", TitledBorder.CENTER,
 				TitledBorder.TOP, null, new Color(0, 0, 0)));
-		GridBagConstraints gbc_regA = new GridBagConstraints();
-		gbc_regA.anchor = GridBagConstraints.NORTHWEST;
-		gbc_regA.insets = new Insets(0, 0, 0, 5);
-		gbc_regA.gridx = 1;
-		gbc_regA.gridy = 0;
-		panel.add(regA, gbc_regA);
+		add(regA);
 
-		regB = new HDNumberBox();
+		regB = new HDNumberBox(0,0xFF,0,false);
+		regB.setBounds(161, 23, 30, 40);
 		regB.setName("B");
 		regB.addHDNumberValueChangedListener(adapterVPR);
 		regB.setFont(new Font("Courier New", Font.BOLD, 15));
@@ -166,14 +145,10 @@ public class V_PrimaryRegisters extends JPanel implements Runnable {
 		regB.setHexDisplay("%02X");
 		regB.setBorder(new TitledBorder(UIManager.getBorder("TitledBorder.border"), "B", TitledBorder.CENTER,
 				TitledBorder.TOP, null, new Color(0, 0, 0)));
-		GridBagConstraints gbc_regB = new GridBagConstraints();
-		gbc_regB.anchor = GridBagConstraints.NORTHWEST;
-		gbc_regB.insets = new Insets(0, 0, 0, 5);
-		gbc_regB.gridx = 2;
-		gbc_regB.gridy = 0;
-		panel.add(regB, gbc_regB);
+		add(regB);
 
-		regC = new HDNumberBox();
+		regC = new HDNumberBox(0,0xFF,0,false);
+		regC.setBounds(201, 23, 30, 40);
 		regC.setName("C");
 		regC.addHDNumberValueChangedListener(adapterVPR);
 		regC.setFont(new Font("Courier New", Font.BOLD, 15));
@@ -181,14 +156,10 @@ public class V_PrimaryRegisters extends JPanel implements Runnable {
 		regC.setHexDisplay("%02X");
 		regC.setBorder(new TitledBorder(UIManager.getBorder("TitledBorder.border"), "C", TitledBorder.CENTER,
 				TitledBorder.TOP, null, new Color(0, 0, 0)));
-		GridBagConstraints gbc_regC = new GridBagConstraints();
-		gbc_regC.anchor = GridBagConstraints.NORTHWEST;
-		gbc_regC.insets = new Insets(0, 0, 0, 5);
-		gbc_regC.gridx = 3;
-		gbc_regC.gridy = 0;
-		panel.add(regC, gbc_regC);
+		add(regC);
 
-		regD = new HDNumberBox();
+		regD = new HDNumberBox(0,0xFF,0,false);
+		regD.setBounds(241, 23, 30, 40);
 		regD.setName("D");
 		regD.addHDNumberValueChangedListener(adapterVPR);
 		regD.setFont(new Font("Courier New", Font.BOLD, 15));
@@ -196,14 +167,10 @@ public class V_PrimaryRegisters extends JPanel implements Runnable {
 		regD.setHexDisplay("%02X");
 		regD.setBorder(new TitledBorder(UIManager.getBorder("TitledBorder.border"), "D", TitledBorder.CENTER,
 				TitledBorder.TOP, null, new Color(0, 0, 0)));
-		GridBagConstraints gbc_regD = new GridBagConstraints();
-		gbc_regD.anchor = GridBagConstraints.NORTHWEST;
-		gbc_regD.insets = new Insets(0, 0, 0, 5);
-		gbc_regD.gridx = 4;
-		gbc_regD.gridy = 0;
-		panel.add(regD, gbc_regD);
+		add(regD);
 
-		regE = new HDNumberBox();
+		regE =  new HDNumberBox(0,0xFF,0,false);
+		regE.setBounds(281, 23, 30, 40);
 		regE.setName("E");
 		regE.addHDNumberValueChangedListener(adapterVPR);
 		regE.setFont(new Font("Courier New", Font.BOLD, 15));
@@ -211,14 +178,10 @@ public class V_PrimaryRegisters extends JPanel implements Runnable {
 		regE.setHexDisplay("%02X");
 		regE.setBorder(new TitledBorder(UIManager.getBorder("TitledBorder.border"), "E", TitledBorder.CENTER,
 				TitledBorder.TOP, null, new Color(0, 0, 0)));
-		GridBagConstraints gbc_regE = new GridBagConstraints();
-		gbc_regE.anchor = GridBagConstraints.NORTHWEST;
-		gbc_regE.insets = new Insets(0, 0, 0, 5);
-		gbc_regE.gridx = 5;
-		gbc_regE.gridy = 0;
-		panel.add(regE, gbc_regE);
+		add(regE);
 
-		regH = new HDNumberBox();
+		regH = new HDNumberBox(0,0xFF,0,false);
+		regH.setBounds(321, 23, 30, 40);
 		regH.setName("H");
 		regH.addHDNumberValueChangedListener(adapterVPR);
 		regH.setFont(new Font("Courier New", Font.BOLD, 15));
@@ -226,14 +189,10 @@ public class V_PrimaryRegisters extends JPanel implements Runnable {
 		regH.setHexDisplay("%02X");
 		regH.setBorder(new TitledBorder(UIManager.getBorder("TitledBorder.border"), "H", TitledBorder.CENTER,
 				TitledBorder.TOP, null, new Color(0, 0, 0)));
-		GridBagConstraints gbc_regH = new GridBagConstraints();
-		gbc_regH.anchor = GridBagConstraints.NORTHWEST;
-		gbc_regH.insets = new Insets(0, 0, 0, 5);
-		gbc_regH.gridx = 6;
-		gbc_regH.gridy = 0;
-		panel.add(regH, gbc_regH);
+		add(regH);
 
-		regL = new HDNumberBox();
+		regL = new HDNumberBox(0,0xFF,0,false);
+		regL.setBounds(361, 23, 30, 40);
 		regL.setName("L");
 		regL.addHDNumberValueChangedListener(adapterVPR);
 		regL.setFont(new Font("Courier New", Font.BOLD, 15));
@@ -241,16 +200,10 @@ public class V_PrimaryRegisters extends JPanel implements Runnable {
 		regL.setHexDisplay("%02X");
 		regL.setBorder(new TitledBorder(UIManager.getBorder("TitledBorder.border"), "L", TitledBorder.CENTER,
 				TitledBorder.TOP, null, new Color(0, 0, 0)));
-		GridBagConstraints gbc_regL = new GridBagConstraints();
-		gbc_regL.anchor = GridBagConstraints.NORTHWEST;
-		gbc_regL.insets = new Insets(0, 0, 0, 5);
-		gbc_regL.gridx = 7;
-		gbc_regL.gridy = 0;
-		panel.add(regL, gbc_regL);
-		regL.setMinimumSize(new Dimension(38, 54));
-		regL.setMaximumSize(new Dimension(38, 54));
+		add(regL);
 
-		regF = new HDNumberBox();
+		regF = new HDNumberBox(0,0xFF,0,false);
+		regF.setBounds(401, 23, 30, 40);
 		regF.setName("F");
 		regF.addHDNumberValueChangedListener(adapterVPR);
 		regF.setFont(new Font("Courier New", Font.BOLD, 15));
@@ -258,18 +211,13 @@ public class V_PrimaryRegisters extends JPanel implements Runnable {
 		regF.setHexDisplay("%02X");
 		regF.setBorder(new TitledBorder(UIManager.getBorder("TitledBorder.border"), "F", TitledBorder.CENTER,
 				TitledBorder.TOP, null, new Color(0, 0, 0)));
-		GridBagConstraints gbc_regF = new GridBagConstraints();
-		gbc_regF.insets = new Insets(0, 0, 0, 5);
-		gbc_regF.anchor = GridBagConstraints.NORTHWEST;
-		gbc_regF.gridx = 8;
-		gbc_regF.gridy = 0;
-		panel.add(regF, gbc_regF);
+		add(regF);
 
 	}// initialize
 
 	private static final String MAIN = "Main";
 	private static final String AUXILARY = "Auxilary";
-	
+
 	private static final byte FLAG_MASK = (byte) 0b11010111;
 	private HDNumberBox regA;
 	private HDNumberBox regB;

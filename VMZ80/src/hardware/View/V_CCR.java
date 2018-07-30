@@ -2,7 +2,6 @@ package hardware.View;
 
 import java.awt.Color;
 import java.awt.Dimension;
-import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
@@ -21,7 +20,7 @@ import utilities.hdNumberBox.HDNumberBox;
 import utilities.hdNumberBox.HDNumberValueChangeEvent;
 import utilities.hdNumberBox.HDNumberValueChangeListener;
 
-public class ViewCCR extends JPanel implements Runnable {
+public class V_CCR extends JPanel implements Runnable {
 	AdapterViewCCR adapterViewCCR = new AdapterViewCCR();
 	ConditionCodeRegister ccr = ConditionCodeRegister.getInstance();
 	
@@ -58,7 +57,7 @@ public class ViewCCR extends JPanel implements Runnable {
 		setColorsForAllIndicators();
 	}// appInit
 
-	public ViewCCR() {
+	public V_CCR() {
 		initialize();
 		appInit();
 	}// Constructor
@@ -70,91 +69,98 @@ public class ViewCCR extends JPanel implements Runnable {
 		setBorder(new TitledBorder(UIManager.getBorder("TitledBorder.border"), "Condition Codes", TitledBorder.CENTER,
 				TitledBorder.TOP, null, new Color(0, 0, 0)));
 
-		this.setSize(500, 70);
-		FlowLayout flowLayout = new FlowLayout(FlowLayout.LEFT, 5, 5);
-		flowLayout.setAlignOnBaseline(true);
-		setLayout(flowLayout);
+		this.setSize(186, 55);
 
 		ccSign = new JLabel("S");
+		ccSign.setBounds(11, 21, 12, 21);
 		ccSign.setToolTipText("Sign");
 		ccSign.setForeground(OFF);
 		ccSign.setName(CC_SIGN);
 		ccSign.addMouseListener(adapterViewCCR);
+		setLayout(null);
 		add(ccSign);
 		ccSign.setHorizontalAlignment(SwingConstants.CENTER);
-		ccSign.setBorder(new LineBorder(new Color(0, 0, 0)));
+		ccSign.setBorder(new LineBorder(Color.GRAY));
 		ccSign.setFont(new Font("Tahoma", Font.BOLD, 15));
 		ccSign.setAlignmentX(0.5f);
 
 		ccZero = new JLabel("Z");
+		ccZero.setBounds(28, 21, 11, 21);
 		ccZero.setToolTipText("Zero");
 		ccZero.setName(CC_ZERO);
 		ccZero.addMouseListener(adapterViewCCR);
 		add(ccZero);
 		ccZero.setHorizontalAlignment(SwingConstants.CENTER);
 		ccZero.setFont(new Font("Tahoma", Font.BOLD, 15));
-		ccZero.setBorder(new LineBorder(new Color(0, 0, 0)));
+		ccZero.setBorder(new LineBorder(Color.GRAY));
 		ccZero.setAlignmentX(0.5f);
 
 		JLabel ccNU5 = new JLabel("X");
+		ccNU5.setBounds(44, 21, 12, 21);
 		ccNU5.setToolTipText("Not Used");
 		add(ccNU5);
 		ccNU5.setForeground(Color.LIGHT_GRAY);
 		ccNU5.setHorizontalAlignment(SwingConstants.CENTER);
 		ccNU5.setFont(new Font("Tahoma", Font.BOLD, 15));
-		ccNU5.setBorder(new LineBorder(new Color(0, 0, 0)));
+		ccNU5.setBorder(new LineBorder(Color.GRAY));
 		ccNU5.setAlignmentX(0.5f);
 
 		ccHalfCarry = new JLabel("H");
+		ccHalfCarry.setBounds(61, 21, 13, 21);
 		ccHalfCarry.setToolTipText("Half Carry");
 		ccHalfCarry.setName(CC_HALF_CARRY);
 		ccHalfCarry.addMouseListener(adapterViewCCR);
 		add(ccHalfCarry);
 		ccHalfCarry.setHorizontalAlignment(SwingConstants.CENTER);
 		ccHalfCarry.setFont(new Font("Tahoma", Font.BOLD, 15));
-		ccHalfCarry.setBorder(new LineBorder(new Color(0, 0, 0)));
+		ccHalfCarry.setBorder(new LineBorder(Color.GRAY));
 		ccHalfCarry.setAlignmentX(0.5f);
 
 		JLabel ccNU3 = new JLabel("X");
+		ccNU3.setBounds(79, 21, 12, 21);
 		ccNU3.setToolTipText("Not Used");
 		add(ccNU3);
 		ccNU3.setForeground(Color.LIGHT_GRAY);
 		ccNU3.setHorizontalAlignment(SwingConstants.CENTER);
 		ccNU3.setFont(new Font("Tahoma", Font.BOLD, 15));
-		ccNU3.setBorder(new LineBorder(new Color(0, 0, 0)));
+		ccNU3.setBorder(new LineBorder(Color.GRAY));
 		ccNU3.setAlignmentX(0.5f);
 
 		ccParity = new JLabel("P");
+		ccParity.setBounds(96, 21, 12, 21);
 		ccParity.setToolTipText("Parity/Overflow");
 		ccParity.setName(CC_PARITY);
 		ccParity.addMouseListener(adapterViewCCR);
 		add(ccParity);
 		ccParity.setHorizontalAlignment(SwingConstants.CENTER);
 		ccParity.setFont(new Font("Tahoma", Font.BOLD, 15));
-		ccParity.setBorder(new LineBorder(new Color(0, 0, 0)));
+		ccParity.setBorder(new LineBorder(Color.GRAY));
 		ccParity.setAlignmentX(0.5f);
 
 		ccAddSubtract = new JLabel("N");
+		ccAddSubtract.setBounds(113, 21, 14, 21);
 		ccAddSubtract.setToolTipText("Add/Subtract");
 		ccAddSubtract.setName(CC_ADD_SUBTRACT);
 		ccAddSubtract.addMouseListener(adapterViewCCR);
 		add(ccAddSubtract);
 		ccAddSubtract.setHorizontalAlignment(SwingConstants.CENTER);
 		ccAddSubtract.setFont(new Font("Tahoma", Font.BOLD, 15));
-		ccAddSubtract.setBorder(new LineBorder(new Color(0, 0, 0)));
+		ccAddSubtract.setBorder(new LineBorder(Color.GRAY));
 		ccAddSubtract.setAlignmentX(0.5f);
 
 		ccCarry = new JLabel("C");
+		ccCarry.setBounds(132, 21, 12, 21);
 		ccCarry.setToolTipText("Carry");
 		ccCarry.setName(CC_CARRY);
 		ccCarry.addMouseListener(adapterViewCCR);
 		add(ccCarry);
 		ccCarry.setHorizontalAlignment(SwingConstants.CENTER);
 		ccCarry.setFont(new Font("Tahoma", Font.BOLD, 15));
-		ccCarry.setBorder(new LineBorder(new Color(0, 0, 0)));
+		ccCarry.setBorder(new LineBorder(Color.GRAY));
 		ccCarry.setAlignmentX(0.5f);
 
 		ccHexValue = new HDNumberBox(0, 128, 0, false);
+		ccHexValue.setBounds(152, 21, 25, 20);
 		ccHexValue.setValueQuiet(0xF0);
 		ccHexValue.addHDNumberValueChangedListener(adapterViewCCR);
 		ccHexValue.setMinimumSize(new Dimension(40, 20));
