@@ -14,12 +14,12 @@ import utilities.hdNumberBox.HDNumberBox;
 import utilities.hdNumberBox.HDNumberValueChangeEvent;
 import utilities.hdNumberBox.HDNumberValueChangeListener;
 
-public class V_ProgramRegisters extends JPanel implements Runnable {
+public class V_IndexRegisters extends JPanel implements Runnable {
 	private static final long serialVersionUID = 1L;
-	private AdapterV_ProgramRegisters adapterVPR = new AdapterV_ProgramRegisters();
+	private AdapterV_IndexRegisters adapterIndexRegs = new AdapterV_IndexRegisters();
 	WorkingRegisterSet wrs = WorkingRegisterSet.getInstance();
-	private HDNumberBox regPC;
-	private HDNumberBox regSP;
+	private HDNumberBox regIX;
+	private HDNumberBox regIY;
 
 	@Override
 	public void run() {
@@ -29,23 +29,23 @@ public class V_ProgramRegisters extends JPanel implements Runnable {
 	private void doValueChanged(int newValue, HDNumberBox reg) {
 		String name = reg.getName();
 		switch (name) {
-		case REG_PC:
-			wrs.setProgramCounter(newValue);
+		case REG_IX:
+			wrs.setIX(newValue);
 			break;
-		case REG_SP:
-			wrs.setStackPointer(newValue);
+		case REG_IY:
+			wrs.setIY(newValue);
 			break;
 		default:
-			System.err.printf("[V_ProgramRegisters.doValueChanged] bad reg argument %s%n", reg.toString());
+			System.err.printf("[V_IndexRegisters.doValueChanged] bad reg argument %s%n", reg.toString());
 		}// switch
 	}// doValueChanged
 
 	private void setRegisterDisplay() {
-		regPC.setValueQuiet(wrs.getProgramCounter());
-		regSP.setValueQuiet(wrs.getStackPointer());
+		regIX.setValueQuiet(wrs.getIX());
+		regIY.setValueQuiet(wrs.getIY());
 	}// setRegisterDisplay
 
-	public V_ProgramRegisters() {
+	public V_IndexRegisters() {
 		initialize();
 		appInit();
 	}// Constructor
@@ -56,56 +56,56 @@ public class V_ProgramRegisters extends JPanel implements Runnable {
 
 	private void initialize() {
 		setPreferredSize(new Dimension(240, 75));
-		setBorder(new TitledBorder(null, "Program Registers", TitledBorder.CENTER, TitledBorder.TOP, null, null));
+		setBorder(new TitledBorder(null, "Index Registers", TitledBorder.CENTER, TitledBorder.TOP, null, null));
 		setLayout(null);
 
-		JLabel lblPc = new JLabel("PC");
-		lblPc.setFont(new Font("Tahoma", Font.BOLD, 15));
-		lblPc.setHorizontalAlignment(SwingConstants.TRAILING);
-		lblPc.setToolTipText("Program Counter");
-		lblPc.setBounds(10, 32, 46, 14);
-		add(lblPc);
+		JLabel lblIX = new JLabel("IX");
+		lblIX.setFont(new Font("Tahoma", Font.BOLD, 15));
+		lblIX.setHorizontalAlignment(SwingConstants.TRAILING);
+		lblIX.setToolTipText("Program Counter");
+		lblIX.setBounds(10, 32, 46, 14);
+		add(lblIX);
 
-		regPC = new HDNumberBox(0, 0xFFFF, 00, false);
-		regPC.setToolTipText("Program Counter");
-		regPC.addHDNumberValueChangedListener(adapterVPR);
-		regPC.setName(REG_PC);
+		regIX = new HDNumberBox(0, 0xFFFF, 00, false);
+		regIX.setToolTipText("Program Counter");
+		regIX.addHDNumberValueChangedListener(adapterIndexRegs);
+		regIX.setName(REG_IX);
 		// regPC.addHDNumberValueChangedListener(adapterVPR);
-		regPC.setFont(new Font("Courier New", Font.BOLD, 15));
-		regPC.setHexDisplay("%04X");
-		regPC.setBounds(66, 22, 40, 35);
-		add(regPC);
+		regIX.setFont(new Font("Courier New", Font.BOLD, 15));
+		regIX.setHexDisplay("%04X");
+		regIX.setBounds(66, 22, 40, 35);
+		add(regIX);
 		GridBagLayout gbl_regPC = new GridBagLayout();
 		gbl_regPC.columnWidths = new int[] { 0 };
 		gbl_regPC.rowHeights = new int[] { 0 };
 		gbl_regPC.columnWeights = new double[] { Double.MIN_VALUE };
 		gbl_regPC.rowWeights = new double[] { Double.MIN_VALUE };
-		regPC.setLayout(gbl_regPC);
+		regIX.setLayout(gbl_regPC);
 
-		JLabel lblSp = new JLabel("SP");
-		lblSp.setFont(new Font("Tahoma", Font.BOLD, 15));
-		lblSp.setToolTipText("StackPointer");
-		lblSp.setHorizontalAlignment(SwingConstants.TRAILING);
-		lblSp.setBounds(116, 32, 46, 14);
-		add(lblSp);
+		JLabel lblIY = new JLabel("IY");
+		lblIY.setFont(new Font("Tahoma", Font.BOLD, 15));
+		lblIY.setToolTipText("StackPointer");
+		lblIY.setHorizontalAlignment(SwingConstants.TRAILING);
+		lblIY.setBounds(116, 32, 46, 14);
+		add(lblIY);
 
-		regSP = new HDNumberBox(0, 65535, 0, false);
-		regSP.setToolTipText("StackPointer");
-		regSP.addHDNumberValueChangedListener(adapterVPR);
-		regSP.setName(REG_SP);
-		regSP.setHexDisplay("%04X");
-		regSP.setFont(new Font("Courier New", Font.BOLD, 15));
-		regSP.setBounds(172, 22, 40, 35);
-		add(regSP);
+		regIY = new HDNumberBox(0, 65535, 0, false);
+		regIY.setToolTipText("StackPointer");
+		regIY.addHDNumberValueChangedListener(adapterIndexRegs);
+		regIY.setName(REG_IY);
+		regIY.setHexDisplay("%04X");
+		regIY.setFont(new Font("Courier New", Font.BOLD, 15));
+		regIY.setBounds(172, 22, 40, 35);
+		add(regIY);
 		GridBagLayout gbl_regSP = new GridBagLayout();
 		gbl_regSP.columnWidths = new int[] { 0 };
 		gbl_regSP.rowHeights = new int[] { 0 };
 		gbl_regSP.columnWeights = new double[] { Double.MIN_VALUE };
 		gbl_regSP.rowWeights = new double[] { Double.MIN_VALUE };
-		regSP.setLayout(gbl_regSP);
+		regIY.setLayout(gbl_regSP);
 	}// initialize
 
-	public class AdapterV_ProgramRegisters implements HDNumberValueChangeListener {
+	private class AdapterV_IndexRegisters implements HDNumberValueChangeListener {
 
 		@Override
 		public void valueChanged(HDNumberValueChangeEvent hDNumberValueChangeEvent) {
@@ -115,7 +115,7 @@ public class V_ProgramRegisters extends JPanel implements Runnable {
 
 	}// class AdapterV_PrimaryRegisters
 
-	private static final String REG_PC = "regPC";
-	private static final String REG_SP = "regSP";
+	private static final String REG_IX = "regIX";
+	private static final String REG_IY = "regIY";
 
 }// class V_ProgramRegisters
