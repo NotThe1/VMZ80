@@ -16,7 +16,7 @@ import utilities.hdNumberBox.HDNumberValueChangeListener;
 
 public class V_ProgramRegisters extends JPanel implements Runnable {
 	private static final long serialVersionUID = 1L;
-	private AdapterV_ProgramRegisters adapterVPR = new AdapterV_ProgramRegisters();
+	 AdapterV_ProgramRegisters adapterVPR = new AdapterV_ProgramRegisters();
 	WorkingRegisterSet wrs = WorkingRegisterSet.getInstance();
 	private HDNumberBox regPC;
 	private HDNumberBox regSP;
@@ -113,7 +113,7 @@ public class V_ProgramRegisters extends JPanel implements Runnable {
 			doValueChanged(newValue, (HDNumberBox) hDNumberValueChangeEvent.getSource());
 		}// valueChanged
 
-	}// class AdapterV_PrimaryRegisters
+	}// class AdapterV_ProgramRegisters
 
 	private static final String REG_PC = "regPC";
 	private static final String REG_SP = "regSP";

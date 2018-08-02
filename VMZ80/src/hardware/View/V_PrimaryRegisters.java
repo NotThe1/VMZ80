@@ -126,6 +126,7 @@ public class V_PrimaryRegisters extends JPanel implements Runnable {
 		add(tbMainAux);
 
 		regA = new HDNumberBox(0,0xFF,0,false);
+		regA.setToolTipText("Register A");
 		regA.setBounds(121, 23, 30, 40);
 		regA.setName("A");
 		regA.addHDNumberValueChangedListener(adapterVPR);
@@ -137,6 +138,7 @@ public class V_PrimaryRegisters extends JPanel implements Runnable {
 		add(regA);
 
 		regB = new HDNumberBox(0,0xFF,0,false);
+		regB.setToolTipText("Register B");
 		regB.setBounds(161, 23, 30, 40);
 		regB.setName("B");
 		regB.addHDNumberValueChangedListener(adapterVPR);
@@ -148,6 +150,7 @@ public class V_PrimaryRegisters extends JPanel implements Runnable {
 		add(regB);
 
 		regC = new HDNumberBox(0,0xFF,0,false);
+		regC.setToolTipText("Register C");
 		regC.setBounds(201, 23, 30, 40);
 		regC.setName("C");
 		regC.addHDNumberValueChangedListener(adapterVPR);
@@ -159,6 +162,7 @@ public class V_PrimaryRegisters extends JPanel implements Runnable {
 		add(regC);
 
 		regD = new HDNumberBox(0,0xFF,0,false);
+		regD.setToolTipText("Register D");
 		regD.setBounds(241, 23, 30, 40);
 		regD.setName("D");
 		regD.addHDNumberValueChangedListener(adapterVPR);
@@ -170,6 +174,7 @@ public class V_PrimaryRegisters extends JPanel implements Runnable {
 		add(regD);
 
 		regE =  new HDNumberBox(0,0xFF,0,false);
+		regE.setToolTipText("Register E");
 		regE.setBounds(281, 23, 30, 40);
 		regE.setName("E");
 		regE.addHDNumberValueChangedListener(adapterVPR);
@@ -181,6 +186,7 @@ public class V_PrimaryRegisters extends JPanel implements Runnable {
 		add(regE);
 
 		regH = new HDNumberBox(0,0xFF,0,false);
+		regH.setToolTipText("Register H");
 		regH.setBounds(321, 23, 30, 40);
 		regH.setName("H");
 		regH.addHDNumberValueChangedListener(adapterVPR);
@@ -192,6 +198,7 @@ public class V_PrimaryRegisters extends JPanel implements Runnable {
 		add(regH);
 
 		regL = new HDNumberBox(0,0xFF,0,false);
+		regL.setToolTipText("Register L");
 		regL.setBounds(361, 23, 30, 40);
 		regL.setName("L");
 		regL.addHDNumberValueChangedListener(adapterVPR);
@@ -203,6 +210,7 @@ public class V_PrimaryRegisters extends JPanel implements Runnable {
 		add(regL);
 
 		regF = new HDNumberBox(0,0xFF,0,false);
+		regF.setToolTipText("Register F (Flags)");
 		regF.setBounds(401, 23, 30, 40);
 		regF.setName("F");
 		regF.addHDNumberValueChangedListener(adapterVPR);

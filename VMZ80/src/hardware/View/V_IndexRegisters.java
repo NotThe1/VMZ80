@@ -62,12 +62,12 @@ public class V_IndexRegisters extends JPanel implements Runnable {
 		JLabel lblIX = new JLabel("IX");
 		lblIX.setFont(new Font("Tahoma", Font.BOLD, 15));
 		lblIX.setHorizontalAlignment(SwingConstants.TRAILING);
-		lblIX.setToolTipText("Program Counter");
+		lblIX.setToolTipText("Index Register X");
 		lblIX.setBounds(10, 32, 46, 14);
 		add(lblIX);
 
 		regIX = new HDNumberBox(0, 0xFFFF, 00, false);
-		regIX.setToolTipText("Program Counter");
+		regIX.setToolTipText("Index Register X");
 		regIX.addHDNumberValueChangedListener(adapterIndexRegs);
 		regIX.setName(REG_IX);
 		// regPC.addHDNumberValueChangedListener(adapterVPR);
@@ -84,13 +84,13 @@ public class V_IndexRegisters extends JPanel implements Runnable {
 
 		JLabel lblIY = new JLabel("IY");
 		lblIY.setFont(new Font("Tahoma", Font.BOLD, 15));
-		lblIY.setToolTipText("StackPointer");
+		lblIY.setToolTipText("Index Register Y");
 		lblIY.setHorizontalAlignment(SwingConstants.TRAILING);
 		lblIY.setBounds(116, 32, 46, 14);
 		add(lblIY);
 
 		regIY = new HDNumberBox(0, 65535, 0, false);
-		regIY.setToolTipText("StackPointer");
+		regIY.setToolTipText("Index Register Y");
 		regIY.addHDNumberValueChangedListener(adapterIndexRegs);
 		regIY.setName(REG_IY);
 		regIY.setHexDisplay("%04X");
