@@ -88,7 +88,7 @@ public class V_PrimaryRegisters extends JPanel implements Runnable {
 	}// Constructor
 
 	public V_PrimaryRegisters() {
-		setPreferredSize(new Dimension(467, 88));
+		setPreferredSize(new Dimension(450, 90));
 		setBorder(new TitledBorder(UIManager.getBorder("TitledBorder.border"), "Primary Registers", TitledBorder.CENTER,
 				TitledBorder.TOP, null, new Color(0, 0, 0)));
 		initialize();
@@ -126,6 +126,8 @@ public class V_PrimaryRegisters extends JPanel implements Runnable {
 		add(tbMainAux);
 
 		regA = new HDNumberBox(0,0xFF,0,false);
+		regA.setMinValue(0);
+		regA.setMaxValue(255);
 		regA.setToolTipText("Register A");
 		regA.setBounds(121, 23, 30, 40);
 		regA.setName("A");
