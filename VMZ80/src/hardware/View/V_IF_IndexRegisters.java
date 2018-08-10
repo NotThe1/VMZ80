@@ -60,7 +60,7 @@ public class V_IF_IndexRegisters extends JInternalFrame  implements Runnable{
 	
 	private void initialize() {
 		setTitle("Index Registers");
-		setBounds(0, 200, 230, 90);
+		setBounds(0, 200, 230, 100);
 		setIconifiable(true);
 		getContentPane().setLayout(null);
 		

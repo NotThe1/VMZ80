@@ -60,7 +60,7 @@ public class V_IF_ProgramRegisters extends JInternalFrame  implements Runnable{
 	private void initialize() {
 		setTitle("Program Registers");
 		setIconifiable(true);
-		setBounds(0, 105, 230, 90);
+		setBounds(0, 105, 230, 100);
 		getContentPane().setLayout(null);
 		
 		JLabel lblNewLabel = new JLabel("PC");
