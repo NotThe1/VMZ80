@@ -4,7 +4,6 @@ import java.awt.Color;
 import java.awt.Font;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.io.File;
 import java.util.HashMap;
 import java.util.Vector;
 
@@ -16,6 +15,8 @@ import javax.swing.SwingConstants;
 import javax.swing.border.LineBorder;
 
 import codeSupport.AppLogger;
+import disks.Disk;
+import disks.DiskDrive;
 
 public class V_IF_DiskPanel extends JInternalFrame implements Runnable {
 	private static final long serialVersionUID = 1L;
@@ -23,9 +24,8 @@ public class V_IF_DiskPanel extends JInternalFrame implements Runnable {
 	private Adapter_V_IF_DiskPanel adapterDiskPanel = new Adapter_V_IF_DiskPanel();
 	private AppLogger log = AppLogger.getInstance();
 
-	private static final int NUMBER_OF_DISKS = 4;
-	File[] disks = new File[NUMBER_OF_DISKS];
-	JToggleButton[] buttons = new JToggleButton[NUMBER_OF_DISKS];
+	DiskDrive[] disks = new DiskDrive[Disk.NUMBER_OF_DISKS];
+	JToggleButton[] buttons = new JToggleButton[Disk.NUMBER_OF_DISKS];
 	HashMap<JToggleButton,Integer> buttonMap;
 
 	@Override
@@ -33,17 +33,17 @@ public class V_IF_DiskPanel extends JInternalFrame implements Runnable {
 		updateDisplay(this.disks);
 	}// run
 	
-	public void updateDisks(File[] disks) {
+	public void updateDisks(DiskDrive[] disks) {
 		this.disks = disks;
 	}//updateDisks
 
-	public void updateDisplay(File[] disks) {
+	public void updateDisplay(DiskDrive[] disks) {
 		String name, toolTip;
 		boolean haveDisk;
-		for (int i = 0; i < NUMBER_OF_DISKS; i++) {
-			haveDisk = disks[i] == null ? false : true;
-			buttons[i].setText(haveDisk ? disks[i].getName() : NO_DISK);
-			buttons[i].setToolTipText(haveDisk ? disks[i].getAbsolutePath() : NO_DISK_HELP);
+		for (int i = 0; i < Disk.NUMBER_OF_DISKS; i++) {
+			haveDisk = disks[i]==null?false:true;
+			buttons[i].setText(haveDisk ? disks[i].getFileName() : NO_DISK);
+			buttons[i].setToolTipText(haveDisk ? disks[i].getFilePath() : NO_DISK_HELP);
 			buttons[i].setSelected(haveDisk ? true : false);
 			buttons[i].setForeground(haveDisk ? FORE_SELECTED : FORE_DESELECTED);
 			buttons[i].setBackground(haveDisk ? BACK_SELECTED : BACK_DESELECTED);

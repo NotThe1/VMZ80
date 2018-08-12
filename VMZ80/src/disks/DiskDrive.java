@@ -172,6 +172,10 @@ public class DiskDrive {
 	public String getFileAbsoluteName() {
 		return this.fileAbsoluteName;
 	}// getFileAbsoluteName
+	
+	public String getFilePath() {
+		return this.fileAbsoluteName;
+	}// getFilePath
 
 	public int getBytesPerSector() {
 		return this.bytesPerSector;
@@ -180,6 +184,10 @@ public class DiskDrive {
 	public String getFileLocalName() {
 		return this.fileLocalName;
 	}// getFileLocalName
+
+	public String getFileName() {
+		return this.fileLocalName;
+	}// getFileName
 
 	private void homeHeads() {
 		this.currentHead = 0;

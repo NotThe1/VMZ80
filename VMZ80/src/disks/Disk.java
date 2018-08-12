@@ -8,6 +8,10 @@ public class Disk {
 	}
 
 	// Constants
+	// for actual number of drives
+	
+	public static final int NUMBER_OF_DISKS = 4;
+	
 	// for disk Metrics
 	public static final String TYPE_3DD = "F3DD";
 	public static final String TYPE_3HD = "F3HD";
