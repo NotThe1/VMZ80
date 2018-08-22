@@ -41,6 +41,9 @@ import javax.swing.text.StyleConstants;
 import javax.swing.text.StyledDocument;
 
 import codeSupport.AppLogger;
+/*
+ *     2018-08-18  - added limit for address box
+ */
 
 
 public class HexEditDisplayPanel extends JPanel implements Runnable {
@@ -322,6 +325,7 @@ public class HexEditDisplayPanel extends JPanel implements Runnable {
 		source = data.duplicate();
 		source.rewind();
 		dataChanged= false;
+		setAddressLimits();
 	}// setData
 
 	public void setData(byte[] data) {
@@ -334,7 +338,13 @@ public class HexEditDisplayPanel extends JPanel implements Runnable {
 		source.put(data);
 		source.rewind();
 		dataChanged= false;
+		setAddressLimits();
 	}// setData
+	
+	public void setAddressLimits() {
+		hdAddress.setMinValue(0);
+		hdAddress.setMaxValue(source.capacity());
+	}//setAddressLimits
 	
 	public byte[] getData() {
 		byte[] ans = new byte[dataSize];
@@ -428,7 +438,7 @@ public class HexEditDisplayPanel extends JPanel implements Runnable {
 	public HexEditDisplayPanel() {
 		setPreferredSize(new Dimension(790, 500));
 		setMaximumSize(new Dimension(790, 32767));
-		setMinimumSize(new Dimension(790, 0));
+		setMinimumSize(new Dimension(790, 500));
 		setBorder(new BevelBorder(BevelBorder.LOWERED, null, null, null, null));
 		initialize();
 		appInit();
@@ -488,7 +498,7 @@ public class HexEditDisplayPanel extends JPanel implements Runnable {
 
 		textIndex = new JTextPane();
 		textIndex.setEditable(false);
-		textIndex.setText("00 01 02 03 04 05 06 07 08 09 0a 0B 0c 0D 0e 0F  01234567 ABCDEF00");
+		textIndex.setText("00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F  01234567 ABCDEF00");
 		textIndex.setMaximumSize(new Dimension(0, 0));
 		textIndex.setMinimumSize(new Dimension(0, 0));
 		textIndex.setPreferredSize(new Dimension(750, 0));

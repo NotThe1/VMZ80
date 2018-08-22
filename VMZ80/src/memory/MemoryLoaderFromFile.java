@@ -25,7 +25,7 @@ public class MemoryLoaderFromFile {
 		loadMemoryImage(sourceFile);
 		return result;
 
-	}
+	}//
 
 	/**
 	 * this method will take the string representation of memory found in the file sent to it and load memory with its

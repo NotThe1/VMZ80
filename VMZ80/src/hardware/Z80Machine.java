@@ -1,10 +1,8 @@
 package hardware;
 
-import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.EventQueue;
-import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
@@ -13,16 +11,14 @@ import java.awt.Rectangle;
 import java.awt.SystemColor;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.awt.print.PrinterException;
 import java.beans.PropertyVetoException;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
-import java.text.MessageFormat;
-import java.util.Date;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.prefs.Preferences;
 
 import javax.swing.Box;
@@ -37,39 +33,36 @@ import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JPanel;
-import javax.swing.JPopupMenu;
-import javax.swing.JScrollPane;
 import javax.swing.JSeparator;
 import javax.swing.JSpinner;
-import javax.swing.JSplitPane;
-import javax.swing.JTabbedPane;
-import javax.swing.JTextPane;
 import javax.swing.JToggleButton;
 import javax.swing.JToolBar;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingConstants;
 import javax.swing.UIManager;
 import javax.swing.border.BevelBorder;
+import javax.swing.border.EtchedBorder;
+import javax.swing.border.SoftBevelBorder;
 
 import codeSupport.AppLogger;
 import disks.DiskControlUnit;
 import disks.diskPanel.V_IF_DiskPanel;
 import disks.utility.UpdateSystemDisk;
+import hardware.View.TabDialog;
 import hardware.View.V_IF_CCR;
 import hardware.View.V_IF_IndexRegisters;
 import hardware.View.V_IF_PrimaryRegisters;
 import hardware.View.V_IF_ProgramRegisters;
 import hardware.View.V_IF_SpecialRegisters;
+import memory.MemoryLoaderFromFile;
 
 public class Z80Machine {
 
 	ApplicationAdapter applicationAdapter = new ApplicationAdapter();
 
 	DiskControlUnit dcu = DiskControlUnit.getInstance();
-
 	private AppLogger log = AppLogger.getInstance();
-	private JPopupMenu popupLog;
-	private AdapterLog logAdaper = new AdapterLog();
+	private TabDialog tabDialog;
 
 	/**
 	 * Launch the application.
@@ -88,6 +81,17 @@ public class Z80Machine {
 	}// main
 
 	// ---------------------------------------------------------
+	
+	private void loadROM() {
+		InputStream in = this.getClass().getResourceAsStream("/Z80code/ROM.mem");
+		BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+		MemoryLoaderFromFile.loadMemoryImage(reader);
+
+	}// loadROM
+
+	
+	
+	//----------------------------------------------------------
 
 	private void doFileNew() {
 		System.out.println("** [doFileNew] **");
@@ -130,6 +134,9 @@ public class Z80Machine {
 	private void doWindowToggle(String name) {
 		Component target = null;
 		switch (name) {
+		case MNU_WINDOW_Z80_SUPPORT:
+			target = tabDialog;
+			break;
 		case MNU_WINDOW_PRIMARY_REGISTERS:
 			target = ifPrimaryRegisters;
 			break;
@@ -150,7 +157,13 @@ public class Z80Machine {
 	}// doWindowToggle
 
 	private void doResetAllRegisterDisplays() {
-		ifPrimaryRegisters.setLocation(INSET_X, INSET_Y);
+		int dpWidth = desktopPane.getWidth();
+		int prWidth = ifPrimaryRegisters.getWidth();
+		int leftPosition = INSET_X;
+		if (dpWidth>prWidth) {
+			leftPosition = (int)((dpWidth - prWidth)/2);
+		}//if
+		ifPrimaryRegisters.setLocation(leftPosition, INSET_Y);
 		ifPrimaryRegisters.setVisible(true);
 
 		ifProgramRegisters.setLocation(getNextLocationY(ifPrimaryRegisters.getBounds()));
@@ -160,13 +173,23 @@ public class Z80Machine {
 		ifCCR.setVisible(true);
 
 		Point p = getNextLocationY(ifCCR.getBounds());
-		p.x = INSET_X;
+		p.x = leftPosition;
 		ifIndexRegisters.setLocation(p);
-//		ifIndexRegisters.setLocation(getNextLocationY(ifCCR.getBounds()));
 		ifIndexRegisters.setVisible(true);
 
 		ifSpecialRegisters.setLocation(getNextLocationX(ifIndexRegisters.getBounds()));
 		ifSpecialRegisters.setVisible(true);
+		
+		try {
+			ifPrimaryRegisters.setIcon(false);
+			ifProgramRegisters.setIcon(false);
+			ifCCR.setIcon(false);
+			ifIndexRegisters.setIcon(false);
+			ifSpecialRegisters.setIcon(false);
+		} catch (PropertyVetoException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}// resetAllRegisterDisplays
 
 	private Point getNextLocationY(Rectangle bounds) {
@@ -192,8 +215,27 @@ public class Z80Machine {
 		result.y = y + height + INSET_Y;
 		return result;
 	}// getNextLocationY
+	
+	private void restoreTabDialogState(Preferences myPrefs) {
+		Rectangle tabDialogBounds = new Rectangle();
+		tabDialogBounds.x = myPrefs.getInt("tabDialog.x", 0);
+		tabDialogBounds.y = myPrefs.getInt("tabDialog.y", 100);
+		tabDialogBounds.height = myPrefs.getInt("tabDialog.height", 650);
+		tabDialogBounds.width = myPrefs.getInt("tabDialog.width", 725);
+		tabDialog.setBounds(tabDialogBounds);
+		tabDialog.setVisible(myPrefs.getBoolean("Visible", true));
+	}//getTabDialogState
 
-	private void getInternalFrameLocations(Preferences myPrefs) {
+	private void saveTabDialogState(Preferences myPrefs) {
+		Rectangle tabDialogBounds = tabDialog.getBounds();
+		myPrefs.putInt("tabDialog.x", tabDialogBounds.x);
+		myPrefs.putInt("tabDialog.y", tabDialogBounds.y);
+		myPrefs.putInt("tabDialog.height", tabDialogBounds.height);
+		myPrefs.putInt("tabDialog.width", tabDialogBounds.width);
+		myPrefs.putBoolean("Visible", tabDialog.isVisible());
+	}//getTabDialogState
+
+	private void restoreInternalFrameLocations(Preferences myPrefs) {
 		Point location = new Point();
 		JInternalFrame[] internalFrames = desktopPane.getAllFrames();
 		for (JInternalFrame internalFrame : internalFrames) {
@@ -208,8 +250,6 @@ public class Z80Machine {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			} // try
-			// log.infof("x = %d, y = %d for frame %s%n",
-			// location.x,location.y,internalFrame.getClass().getSimpleName());
 		} // for
 	}// getInternalFrameLocations
 
@@ -223,31 +263,8 @@ public class Z80Machine {
 			myPrefs.putInt(key + ".y", location.y);
 			myPrefs.putBoolean(key + ".isIcon", internalFrame.isIcon());
 			myPrefs.putBoolean(key + ".isVisible", internalFrame.isVisible());
-			// log.infof("x = %d, y = %d for frame %s%n",
-			// location.x,location.y,internalFrame.getClass().getSimpleName());
 		} // for
 	}// saveInternalFrameLocations
-
-	private void doLogClear() {
-		log.clear();
-	}// doLogClear
-
-	private void doLogPrint() {
-
-		Font originalFont = txtLog.getFont();
-		try {
-			// textPane.setFont(new Font("Courier New", Font.PLAIN, 8));
-			txtLog.setFont(originalFont.deriveFont(8.0f));
-			MessageFormat header = new MessageFormat("Identic Log");
-			MessageFormat footer = new MessageFormat(new Date().toString() + "           Page - {0}");
-			txtLog.print(header, footer);
-			// textPane.setFont(new Font("Courier New", Font.PLAIN, 14));
-			txtLog.setFont(originalFont);
-		} catch (PrinterException e) {
-			e.printStackTrace();
-		} // try
-
-	}// doLogPrint
 
 	////////////////////////////////////////////////////////////////////////////////////////
 	private void appClose() {
@@ -259,21 +276,28 @@ public class Z80Machine {
 		myPrefs.putInt("LocX", point.x);
 		myPrefs.putInt("LocY", point.y);
 		saveInternalFrameLocations(myPrefs);
+		saveTabDialogState(myPrefs);
 
 		myPrefs = null;
 	}// appClose
 
 	private void appInit() {
+		loadROM();
+		tabDialog = new TabDialog();
+		tabDialog.setVisible(true);
+		
 		Preferences myPrefs = Preferences.userNodeForPackage(Z80Machine.class).node(this.getClass().getSimpleName());
-		frameBase.setSize(myPrefs.getInt("Width", 761), myPrefs.getInt("Height", 693));
-		frameBase.setLocation(myPrefs.getInt("LocX", 100), myPrefs.getInt("LocY", 100));
-		getInternalFrameLocations(myPrefs);
-
+		Rectangle frameBounds = new Rectangle();
+		frameBounds.x = myPrefs.getInt("LocX", 100);
+		frameBounds.y = myPrefs.getInt("LocY", 100);
+		frameBounds.height = myPrefs.getInt("Height", 848);
+		frameBounds.width = myPrefs.getInt("Width", 848);
+		frameBase.setBounds(frameBounds);
+		restoreInternalFrameLocations(myPrefs);
+		restoreTabDialogState(myPrefs);	
 		myPrefs = null;
-
-		txtLog.setText(EMPTY_STRING);
-
-		log.setDoc(txtLog.getStyledDocument());
+		
+		
 		log.info("Starting....");
 
 		dcu.setDisplay(ifDiskPanel);
@@ -291,7 +315,6 @@ public class Z80Machine {
 	private void initialize() {
 		frameBase = new JFrame();
 		frameBase.setTitle("Z80 Machine    0.0");
-		frameBase.setBounds(100, 100, 450, 300);
 		frameBase.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frameBase.addWindowListener(new WindowAdapter() {
 			@Override
@@ -301,8 +324,8 @@ public class Z80Machine {
 		});
 		GridBagLayout gridBagLayout = new GridBagLayout();
 		gridBagLayout.columnWidths = new int[] { 0, 0 };
-		gridBagLayout.rowHeights = new int[] { 0, 0, 25, 0 };
-		gridBagLayout.columnWeights = new double[] { 1.0, Double.MIN_VALUE };
+		gridBagLayout.rowHeights = new int[] { 0, 0, 0, 0 };
+		gridBagLayout.columnWeights = new double[] { 0.0, Double.MIN_VALUE };
 		gridBagLayout.rowWeights = new double[] { 0.0, 1.0, 0.0, Double.MIN_VALUE };
 		frameBase.getContentPane().setLayout(gridBagLayout);
 
@@ -329,44 +352,45 @@ public class Z80Machine {
 
 		Icon iconC = UIManager.getIcon("FileView.fileIcon");
 		JButton c = new JButton("");
-		c.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				if (rightPanel.isVisible()){
-					
-				}else {
-					
-				}//if visible
-			}
-		});
 		c.setBorder(null);
 		c.setToolTipText("Step");
-
 		c.setIcon(new ImageIcon(Z80Machine.class.getResource("/javax/swing/plaf/metal/icons/ocean/collapsed.gif")));
 		c.setHorizontalAlignment(SwingConstants.LEADING);
 		toolBar.add(c);
 
-		mainPanel = new JSplitPane();
-		mainPanel.setDividerLocation(480);
-		GridBagConstraints gbc_mainPanel = new GridBagConstraints();
-		gbc_mainPanel.insets = new Insets(0, 0, 5, 0);
-		gbc_mainPanel.fill = GridBagConstraints.BOTH;
-		gbc_mainPanel.gridx = 0;
-		gbc_mainPanel.gridy = 1;
-		frameBase.getContentPane().add(mainPanel, gbc_mainPanel);
+		JPanel panelMain = new JPanel();
+		GridBagConstraints gbc_panelMain = new GridBagConstraints();
+		gbc_panelMain.insets = new Insets(0, 0, 5, 0);
+		gbc_panelMain.fill = GridBagConstraints.BOTH;
+		gbc_panelMain.gridx = 0;
+		gbc_panelMain.gridy = 1;
+		frameBase.getContentPane().add(panelMain, gbc_panelMain);
+		GridBagLayout gbl_panelMain = new GridBagLayout();
+		gbl_panelMain.columnWidths = new int[] { 400, 0 };
+		gbl_panelMain.rowHeights = new int[] { 0, 0 };
+		gbl_panelMain.columnWeights = new double[] { 0.0, Double.MIN_VALUE };
+		gbl_panelMain.rowWeights = new double[] { 1.0, Double.MIN_VALUE };
+		panelMain.setLayout(gbl_panelMain);
 
 		JPanel leftPanel = new JPanel();
-		mainPanel.setLeftComponent(leftPanel);
+		leftPanel.setBorder(null);
+		GridBagConstraints gbc_leftPanel = new GridBagConstraints();
+		gbc_leftPanel.fill = GridBagConstraints.VERTICAL;
+		gbc_leftPanel.anchor = GridBagConstraints.WEST;
+		gbc_leftPanel.gridx = 0;
+		gbc_leftPanel.gridy = 0;
+		panelMain.add(leftPanel, gbc_leftPanel);
 		GridBagLayout gbl_leftPanel = new GridBagLayout();
-		gbl_leftPanel.columnWidths = new int[] { 0, 0 };
-		gbl_leftPanel.rowHeights = new int[] { 0, 0, 0 };
-		gbl_leftPanel.columnWeights = new double[] { 1.0, Double.MIN_VALUE };
+		gbl_leftPanel.columnWidths = new int[] { 480, 0 };
+		gbl_leftPanel.rowHeights = new int[] { 280, 400, 0 };
+		gbl_leftPanel.columnWeights = new double[] { 0.0, Double.MIN_VALUE };
 		gbl_leftPanel.rowWeights = new double[] { 0.0, 1.0, Double.MIN_VALUE };
 		leftPanel.setLayout(gbl_leftPanel);
 
-		JPanel leftTopPanel = new JPanel();
-		leftTopPanel.setPreferredSize(new Dimension(550, 280));
-		leftTopPanel.setMinimumSize(new Dimension(550, 280));
-		leftTopPanel.setMaximumSize(new Dimension(550, 280));
+		leftTopPanel = new JPanel();
+		leftTopPanel.setPreferredSize(new Dimension(480, 280));
+		leftTopPanel.setMinimumSize(new Dimension(480, 280));
+		leftTopPanel.setMaximumSize(new Dimension(500, 280));
 		leftTopPanel.setBounds(new Rectangle(0, 0, 550, 280));
 		leftTopPanel.setLayout(null);
 		GridBagConstraints gbc_leftTopPanel = new GridBagConstraints();
@@ -377,13 +401,13 @@ public class Z80Machine {
 		leftPanel.add(leftTopPanel, gbc_leftTopPanel);
 
 		JPanel runStopPanel = new JPanel();
-		runStopPanel.setBounds(0, 0, 140, 280);
-		runStopPanel.setBorder(null);
+		runStopPanel.setBounds(0, 0, 100, 280);
+		runStopPanel.setBorder(new SoftBevelBorder(BevelBorder.LOWERED, null, null, null, null));
 		runStopPanel.setLayout(null);
 		leftTopPanel.add(runStopPanel);
 
 		JToggleButton tbRunStop = new JToggleButton("");
-		tbRunStop.setBounds(37, 52, 65, 65);
+		tbRunStop.setBounds(17, 52, 65, 65);
 		tbRunStop.setBackground(SystemColor.control);
 		tbRunStop.setBorder(null);
 		tbRunStop.setSelectedIcon(
@@ -397,7 +421,7 @@ public class Z80Machine {
 		runStopPanel.add(horizontalStrut);
 
 		JButton btnStep = new JButton("");
-		btnStep.setBounds(45, 160, 50, 50);
+		btnStep.setBounds(25, 160, 50, 50);
 		btnStep.setBackground(SystemColor.control);
 		btnStep.setBorder(null);
 		btnStep.setIcon(new ImageIcon("C:\\Users\\admin\\git\\VM\\VM\\resources\\Button-Next-icon-48.png"));
@@ -405,11 +429,11 @@ public class Z80Machine {
 
 		JSpinner spinnerStepCount = new JSpinner();
 		spinnerStepCount.setModel(new SpinnerNumberModel(1, 1, 65535, 1));
-		spinnerStepCount.setBounds(51, 227, 37, 20);
+		spinnerStepCount.setBounds(31, 227, 37, 20);
 		runStopPanel.add(spinnerStepCount);
 
 		JPanel disksPanel = new JPanel();
-		disksPanel.setBounds(150, 0, 330, 280);
+		disksPanel.setBounds(125, 0, 330, 280);
 		leftTopPanel.add(disksPanel);
 		disksPanel.setLayout(null);
 
@@ -420,6 +444,8 @@ public class Z80Machine {
 		ifDiskPanel.setVisible(true);
 
 		desktopPane = new JDesktopPane();
+		desktopPane.setBorder(new EtchedBorder(EtchedBorder.LOWERED, null, null));
+		desktopPane.setPreferredSize(new Dimension(280, 400));
 		desktopPane.setLayout(null);
 		GridBagConstraints gbc_desktopPane = new GridBagConstraints();
 		gbc_desktopPane.fill = GridBagConstraints.BOTH;
@@ -436,82 +462,38 @@ public class Z80Machine {
 		ifProgramRegisters.setVisible(true);
 
 		ifIndexRegisters = new V_IF_IndexRegisters();
+		ifIndexRegisters.setLocation(241, 105);
 		desktopPane.add(ifIndexRegisters);
 		ifIndexRegisters.setVisible(true);
 
 		ifSpecialRegisters = new V_IF_SpecialRegisters();
+		ifSpecialRegisters.setLocation(0, 216);
 		desktopPane.add(ifSpecialRegisters);
 		ifSpecialRegisters.setVisible(true);
 
 		ifCCR = new V_IF_CCR();
+		ifCCR.setLocation(230, 216);
 		desktopPane.add(ifCCR);
 		ifCCR.setVisible(true);
 
-		rightPanel = new JPanel();
-		mainPanel.setRightComponent(rightPanel);
-		GridBagLayout gbl_rightPanel = new GridBagLayout();
-		gbl_rightPanel.columnWidths = new int[] { 0, 0 };
-		gbl_rightPanel.rowHeights = new int[] { 0, 0 };
-		gbl_rightPanel.columnWeights = new double[] { 1.0, Double.MIN_VALUE };
-		gbl_rightPanel.rowWeights = new double[] { 1.0, Double.MIN_VALUE };
-		rightPanel.setLayout(gbl_rightPanel);
-
-		JTabbedPane tabbedPane = new JTabbedPane(JTabbedPane.TOP);
-		GridBagConstraints gbc_tabbedPane = new GridBagConstraints();
-		gbc_tabbedPane.fill = GridBagConstraints.BOTH;
-		gbc_tabbedPane.gridx = 0;
-		gbc_tabbedPane.gridy = 0;
-		rightPanel.add(tabbedPane, gbc_tabbedPane);
-
-		JPanel tabAppLog = new JPanel();
-		tabbedPane.addTab("Application Log", null, tabAppLog, null);
-		GridBagLayout gbl_tabAppLog = new GridBagLayout();
-		gbl_tabAppLog.columnWidths = new int[] { 0, 0 };
-		gbl_tabAppLog.rowHeights = new int[] { 0, 0 };
-		gbl_tabAppLog.columnWeights = new double[] { 1.0, Double.MIN_VALUE };
-		gbl_tabAppLog.rowWeights = new double[] { 1.0, Double.MIN_VALUE };
-		tabAppLog.setLayout(gbl_tabAppLog);
-
-		JScrollPane scrollPane = new JScrollPane();
-		GridBagConstraints gbc_scrollPane = new GridBagConstraints();
-		gbc_scrollPane.fill = GridBagConstraints.BOTH;
-		gbc_scrollPane.gridx = 0;
-		gbc_scrollPane.gridy = 0;
-		tabAppLog.add(scrollPane, gbc_scrollPane);
-
-		txtLog = new JTextPane();
-		scrollPane.setViewportView(txtLog);
-
-		popupLog = new JPopupMenu();
-		addPopup(txtLog, popupLog);
-
-		JMenuItem popupLogClear = new JMenuItem("Clear Log");
-		popupLogClear.setName(PUM_LOG_CLEAR);
-		popupLogClear.addActionListener(logAdaper);
-		popupLog.add(popupLogClear);
-
-		JSeparator separator = new JSeparator();
-		popupLog.add(separator);
-
-		JMenuItem popupLogPrint = new JMenuItem("Print Log");
-		popupLogPrint.setName(PUM_LOG_PRINT);
-		popupLogPrint.addActionListener(logAdaper);
-		popupLog.add(popupLogPrint);
-
-		JLabel lblNewLabel = new JLabel("Application Log");
-		lblNewLabel.setHorizontalAlignment(SwingConstants.CENTER);
-		lblNewLabel.setForeground(new Color(30, 144, 255));
-		lblNewLabel.setFont(new Font("Times New Roman", Font.BOLD | Font.ITALIC, 14));
-		scrollPane.setColumnHeaderView(lblNewLabel);
-
-		JPanel panelStatus = new JPanel();
-		panelStatus.setBorder(new BevelBorder(BevelBorder.LOWERED, null, null, null, null));
-		GridBagConstraints gbc_panelStatus = new GridBagConstraints();
-		gbc_panelStatus.anchor = GridBagConstraints.WEST;
-		gbc_panelStatus.fill = GridBagConstraints.VERTICAL;
-		gbc_panelStatus.gridx = 0;
-		gbc_panelStatus.gridy = 2;
-		frameBase.getContentPane().add(panelStatus, gbc_panelStatus);
+		JPanel statusBar = new JPanel();
+		GridBagConstraints gbc_statusBar = new GridBagConstraints();
+		gbc_statusBar.fill = GridBagConstraints.BOTH;
+		gbc_statusBar.gridx = 0;
+		gbc_statusBar.gridy = 2;
+		frameBase.getContentPane().add(statusBar, gbc_statusBar);
+		GridBagLayout gbl_statusBar = new GridBagLayout();
+		gbl_statusBar.columnWidths = new int[]{0, 0};
+		gbl_statusBar.rowHeights = new int[]{0, 0};
+		gbl_statusBar.columnWeights = new double[]{0.0, Double.MIN_VALUE};
+		gbl_statusBar.rowWeights = new double[]{0.0, Double.MIN_VALUE};
+		statusBar.setLayout(gbl_statusBar);
+		
+		JLabel lblNewLabel_1 = new JLabel("Status Bar");
+		GridBagConstraints gbc_lblNewLabel_1 = new GridBagConstraints();
+		gbc_lblNewLabel_1.gridx = 0;
+		gbc_lblNewLabel_1.gridy = 0;
+		statusBar.add(lblNewLabel_1, gbc_lblNewLabel_1);
 
 		JMenuBar menuBar = new JMenuBar();
 		frameBase.setJMenuBar(menuBar);
@@ -561,27 +543,35 @@ public class Z80Machine {
 		JMenu mnuWindow = new JMenu("Windows");
 		menuBar.add(mnuWindow);
 
-		mnuWindowPrimaryRegisters = new JMenuItem("Primary Registers");
+		JMenuItem mnuWindowPrimaryRegisters = new JMenuItem("Primary Registers");
 		mnuWindowPrimaryRegisters.addActionListener(applicationAdapter);
+		
+		JMenuItem mnuWindowZ80Support = new JMenuItem("Z80 Support");
+		mnuWindowZ80Support.setName(MNU_WINDOW_Z80_SUPPORT);
+		mnuWindowZ80Support.addActionListener(applicationAdapter);
+		mnuWindow.add(mnuWindowZ80Support);
+		
+		JSeparator separator = new JSeparator();
+		mnuWindow.add(separator);
 		mnuWindowPrimaryRegisters.setName(MNU_WINDOW_PRIMARY_REGISTERS);
 		mnuWindow.add(mnuWindowPrimaryRegisters);
 
-		mnuWindowProgramControl = new JMenuItem("Program Control");
+		JMenuItem mnuWindowProgramControl = new JMenuItem("Program Control");
 		mnuWindowProgramControl.addActionListener(applicationAdapter);
 		mnuWindowProgramControl.setName(MNU_WINDOW_PROGRAM_CONTROL);
 		mnuWindow.add(mnuWindowProgramControl);
 
-		mnuWindowConditionCodes = new JMenuItem("Condition Codes");
+		JMenuItem mnuWindowConditionCodes = new JMenuItem("Condition Codes");
 		mnuWindowConditionCodes.addActionListener(applicationAdapter);
 		mnuWindowConditionCodes.setName(MNU_WINDOW_CONDITION_CODES);
 		mnuWindow.add(mnuWindowConditionCodes);
 
-		mnuWindowIndexRegisters = new JMenuItem("Index Registers");
+		JMenuItem mnuWindowIndexRegisters = new JMenuItem("Index Registers");
 		mnuWindowIndexRegisters.addActionListener(applicationAdapter);
 		mnuWindowIndexRegisters.setName(MNU_WINDOW_INDEX_REGISTERS);
 		mnuWindow.add(mnuWindowIndexRegisters);
 
-		mnuWindowSpecialRegisters = new JMenuItem("Special Registers");
+		JMenuItem mnuWindowSpecialRegisters = new JMenuItem("Special Registers");
 		mnuWindowSpecialRegisters.setName(MNU_WINDOW_SPECIAL_REGISTERS);
 		mnuWindowSpecialRegisters.addActionListener(applicationAdapter);
 		mnuWindow.add(mnuWindowSpecialRegisters);
@@ -589,20 +579,16 @@ public class Z80Machine {
 		JSeparator separator_3 = new JSeparator();
 		mnuWindow.add(separator_3);
 
-		mnuWindowsReset = new JMenuItem("Reset All Register Displays");
+		JMenuItem mnuWindowsReset = new JMenuItem("Reset All Register Displays");
 		mnuWindowsReset.setName(MNU_WINDOW_RESET);
 		mnuWindowsReset.addActionListener(applicationAdapter);
 		mnuWindow.add(mnuWindowsReset);
 
 	}// initialize
 
-	static final String EMPTY_STRING = "";
-	private static final String PUM_LOG_PRINT = "popupLogPrint";
-	private static final String PUM_LOG_CLEAR = "popupLogClear";
-
 	//////////////////////////////////////////////////////////////////////////
-	private JFrame frameBase;
-	private JSplitPane mainPanel;
+	
+	static final String EMPTY_STRING = "";
 
 	//////////////////////////////////////////////////////////////////////////
 	private static final String MNU_FILE_NEW = "mnuFileNew";
@@ -612,31 +598,27 @@ public class Z80Machine {
 	private static final String MNU_FILE_PRINT = "mnuFilePrint";
 	private static final String MNU_FILE_EXIT = "mnuFileExit";
 
+	private static final String MNU_WINDOW_Z80_SUPPORT = "mnuWindowsZ80Support";
 	private static final String MNU_WINDOW_PRIMARY_REGISTERS = "mnuWindowsPrimaryRegisters";
 	private static final String MNU_WINDOW_PROGRAM_CONTROL = "mnuWindowsProgramControl";
 	private static final String MNU_WINDOW_INDEX_REGISTERS = "mnuWindowsIndexRegisters";
 	private static final String MNU_WINDOW_SPECIAL_REGISTERS = "mnuWindowsSpecialRegisters";
 	private static final String MNU_WINDOW_CONDITION_CODES = "mnuWindowsConditionCodes";
 	private static final String MNU_WINDOW_RESET = "mnuWindowsReset";
-	
+
 	private static final int INSET_X = 1;
 	private static final int INSET_Y = 1;
 
-	private JPanel rightPanel;
+	private JFrame frameBase;
 	private JDesktopPane desktopPane;
 	private V_IF_DiskPanel ifDiskPanel;
-	private JTextPane txtLog;
-	private JMenuItem mnuWindowPrimaryRegisters;
-	private JMenuItem mnuWindowProgramControl;
-	private JMenuItem mnuWindowConditionCodes;
-	private JMenuItem mnuWindowIndexRegisters;
-	private JMenuItem mnuWindowSpecialRegisters;
+//	private JTextPane txtLog;
 	private V_IF_PrimaryRegisters ifPrimaryRegisters;
 	private V_IF_ProgramRegisters ifProgramRegisters;
 	private V_IF_IndexRegisters ifIndexRegisters;
 	private V_IF_SpecialRegisters ifSpecialRegisters;
 	private V_IF_CCR ifCCR;
-	private JMenuItem mnuWindowsReset;
+	private JPanel leftTopPanel;
 	//////////////////////////////////////////////////////////////////////////
 
 	class ApplicationAdapter implements ActionListener {// , ListSelectionListener
@@ -668,6 +650,7 @@ public class Z80Machine {
 			case MNU_WINDOW_INDEX_REGISTERS:
 			case MNU_WINDOW_SPECIAL_REGISTERS:
 			case MNU_WINDOW_CONDITION_CODES:
+			case MNU_WINDOW_Z80_SUPPORT:
 				doWindowToggle(name);
 				break;
 			case MNU_WINDOW_RESET:
@@ -677,42 +660,5 @@ public class Z80Machine {
 		}// actionPerformed
 	}// class AdapterAction
 
-	//////////////////////////////////////////////////////////////////////////
 
-	class AdapterLog implements ActionListener {// , ListSelectionListener
-		/* ActionListener */
-		@Override
-		public void actionPerformed(ActionEvent actionEvent) {
-			String name = ((Component) actionEvent.getSource()).getName();
-			switch (name) {
-			case PUM_LOG_PRINT:
-				doLogPrint();
-				break;
-			case PUM_LOG_CLEAR:
-				doLogClear();
-				break;
-			}// switch
-		}// actionPerformed
-
-	}// class AdapterAction
-
-	private static void addPopup(Component component, final JPopupMenu popup) {
-		component.addMouseListener(new MouseAdapter() {
-			public void mousePressed(MouseEvent e) {
-				if (e.isPopupTrigger()) {
-					showMenu(e);
-				} // if popup Trigger
-			}
-
-			public void mouseReleased(MouseEvent e) {
-				if (e.isPopupTrigger()) {
-					showMenu(e);
-				}
-			}
-
-			private void showMenu(MouseEvent e) {
-				popup.show(e.getComponent(), e.getX(), e.getY());
-			}
-		});
-	}// addPopup
 }// class GUItemplate

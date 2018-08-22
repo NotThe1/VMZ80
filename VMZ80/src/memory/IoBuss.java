@@ -2,7 +2,7 @@ package memory;
 
 public class IoBuss  implements ICore, IioBuss {
 	static IoBuss instance = new IoBuss();
-	static Core core;
+	static Core core = Core.getInstance();
 
 	
 	public static IoBuss getInstance() {
@@ -10,7 +10,6 @@ public class IoBuss  implements ICore, IioBuss {
 	}// getInstance
 	
 	private IoBuss() {
-		core = Core.getInstance();
 	}// Constructor
 
 	// +++++++++++++++++++++++++++++++++++++++++++++++++++++++++
