@@ -21,6 +21,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.prefs.Preferences;
 
+import javax.swing.AbstractButton;
 import javax.swing.Box;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
@@ -86,11 +87,17 @@ public class Z80Machine {
 		InputStream in = this.getClass().getResourceAsStream("/Z80code/ROM.mem");
 		BufferedReader reader = new BufferedReader(new InputStreamReader(in));
 		MemoryLoaderFromFile.loadMemoryImage(reader);
-
 	}// loadROM
 
 	
-	
+	private void doStep() {
+		updateDisplaysMaster();	
+	}//doStep
+
+	private void doRunStop(boolean isRunning) {
+		log.infof("[doRunStop] button is Selected: %s%n",isRunning);
+	}//doRunStop
+
 	//----------------------------------------------------------
 
 	private void doFileNew() {
@@ -130,6 +137,15 @@ public class Z80Machine {
 		appClose();
 		System.exit(0);
 	}// doFileExit
+	
+	private void updateDisplaysMaster() {
+		tabDialog.updateDisplay();
+		ifPrimaryRegisters.updateDisplay();
+		ifProgramRegisters.updateDisplay();
+		ifIndexRegisters.updateDisplay();
+		ifSpecialRegisters.updateDisplay();
+		ifCCR.updateDisplay();
+	}//updateDisplaysMaster
 
 	private void doWindowToggle(String name) {
 		Component target = null;
@@ -301,7 +317,7 @@ public class Z80Machine {
 		log.info("Starting....");
 
 		dcu.setDisplay(ifDiskPanel);
-
+		updateDisplaysMaster();
 	}// appInit
 
 	public Z80Machine() {
@@ -407,6 +423,8 @@ public class Z80Machine {
 		leftTopPanel.add(runStopPanel);
 
 		JToggleButton tbRunStop = new JToggleButton("");
+		tbRunStop.addActionListener(applicationAdapter);
+		tbRunStop.setName(BUTTON_RUN_STOP);
 		tbRunStop.setBounds(17, 52, 65, 65);
 		tbRunStop.setBackground(SystemColor.control);
 		tbRunStop.setBorder(null);
@@ -421,9 +439,12 @@ public class Z80Machine {
 		runStopPanel.add(horizontalStrut);
 
 		JButton btnStep = new JButton("");
+		btnStep.addActionListener(applicationAdapter);
+		btnStep.setName(BUTTON_STEP);
 		btnStep.setBounds(25, 160, 50, 50);
 		btnStep.setBackground(SystemColor.control);
 		btnStep.setBorder(null);
+		btnStep.setToolTipText("Step thru the instructions");
 		btnStep.setIcon(new ImageIcon("C:\\Users\\admin\\git\\VM\\VM\\resources\\Button-Next-icon-48.png"));
 		runStopPanel.add(btnStep);
 
@@ -605,6 +626,9 @@ public class Z80Machine {
 	private static final String MNU_WINDOW_SPECIAL_REGISTERS = "mnuWindowsSpecialRegisters";
 	private static final String MNU_WINDOW_CONDITION_CODES = "mnuWindowsConditionCodes";
 	private static final String MNU_WINDOW_RESET = "mnuWindowsReset";
+	
+	private static final String BUTTON_RUN_STOP = "tbRunStop";
+	private static final String BUTTON_STEP = "btnStop";
 
 	private static final int INSET_X = 1;
 	private static final int INSET_Y = 1;
@@ -627,6 +651,13 @@ public class Z80Machine {
 			Component source = (Component) actionEvent.getSource();
 			String name = source.getName();
 			switch (name) {
+			
+			case BUTTON_RUN_STOP:
+				doRunStop(((AbstractButton) source).isSelected());
+				break;
+			case BUTTON_STEP:
+				doStep();
+				break;
 			case MNU_FILE_NEW:
 				doFileNew();
 				break;

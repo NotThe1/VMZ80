@@ -28,7 +28,7 @@ public class V_IF_PrimaryRegisters extends JInternalFrame implements Runnable {
 	
 	@Override
 	public void run() {
-		setAllRegisterDisplays(tbMainAux.isSelected());
+		updateDisplay();
 	}// run
 
 	private void doValueChanged(byte newValue, HDNumberBox numberBox) {
@@ -46,7 +46,8 @@ public class V_IF_PrimaryRegisters extends JInternalFrame implements Runnable {
 		} // if
 	}// doValueChanged
 
-	private void setAllRegisterDisplays(boolean auxRegisters) {
+	public void updateDisplay() {
+		boolean auxRegisters = tbMainAux.isSelected();
 		Set<HDNumberBox> ks = displayRegisters.keySet();
 		for (HDNumberBox numberBox : ks) {
 			DisplayRegisterAttributes dra = displayRegisters.get(numberBox);
@@ -90,7 +91,7 @@ public class V_IF_PrimaryRegisters extends JInternalFrame implements Runnable {
 		displayRegisters.put(regL, new DisplayRegisterAttributes("L", Z80.Register.L, "L'", Z80.Register.Lp));
 		displayRegisters.put(regF, new DisplayRegisterAttributes("F", Z80.Register.F, "F'", Z80.Register.Fp));
 
-		setAllRegisterDisplays(tbMainAux.isSelected());
+		updateDisplay();
 
 
 	}// appInit
@@ -217,7 +218,7 @@ public class V_IF_PrimaryRegisters extends JInternalFrame implements Runnable {
 		@Override
 		public void actionPerformed(ActionEvent actionEvent) {
 			tbMainAux.setText(tbMainAux.isSelected() ? AUXILARY : MAIN);
-			setAllRegisterDisplays(tbMainAux.isSelected());
+			updateDisplay();
 		}// actionPerformed
 
 	}// class AdapterV_PrimaryRegisters

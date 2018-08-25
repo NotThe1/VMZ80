@@ -22,7 +22,7 @@ public class V_IF_IndexRegisters extends JInternalFrame  implements Runnable{
 
 	@Override
 	public void run() {
-		setRegisterDisplay();		
+		updateDisplay();		
 	}//run
 	
 	private void doValueChanged(int newValue, HDNumberBox reg) {
@@ -39,7 +39,7 @@ public class V_IF_IndexRegisters extends JInternalFrame  implements Runnable{
 		}// switch
 	}// doValueChanged
 
-	private void setRegisterDisplay() {
+	public void updateDisplay() {
 		regIX.setValueQuiet(wrs.getIX());
 		regIY.setValueQuiet(wrs.getIY());
 	}// setRegisterDisplay

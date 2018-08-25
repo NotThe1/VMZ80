@@ -34,10 +34,10 @@ public class V_IF_CCR extends JInternalFrame implements Runnable {
 
 	@Override
 	public void run() {
-		showCurrentState();
+		updateDisplay();
 	}// run
 
-	private void showCurrentState() {
+	public void updateDisplay() {
 		// byte currentValue= ccr.getConditionCode();
 
 		rbSign.setSelected(ccr.isSignFlagSet() ? true : false);
@@ -70,7 +70,7 @@ public class V_IF_CCR extends JInternalFrame implements Runnable {
 		ccr.setPvFlag((value & Z80.BIT_PV) == Z80.BIT_PV);
 		ccr.setNFlag((value & Z80.BIT_N) == Z80.BIT_N);
 		ccr.setCarryFlag((value & Z80.BIT_CARRY) == Z80.BIT_CARRY);
-		showCurrentState();
+		updateDisplay();
 	}// setHexValue
 
 	private void doFlagChange(String name) {

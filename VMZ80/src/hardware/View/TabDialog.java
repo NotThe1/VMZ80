@@ -54,12 +54,12 @@ public class TabDialog extends JDialog implements Runnable {
 
 	}// run
 
-	public void refreshMemory() {
+	private void refreshMemory() {
 		hexDisplayMemory.setData(Core.getInstance().getStorage());
-
+		disassembler.updateDisplay();
 	}// refreshMemory
 	
-	public void refreshViews() {
+	public void updateDisplay() {
 		refreshMemory();
 	}//refreshViews
 

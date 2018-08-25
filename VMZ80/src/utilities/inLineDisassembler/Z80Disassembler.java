@@ -60,8 +60,6 @@ public class Z80Disassembler extends JPanel implements Runnable {
 	}// refreshDisplay
 
 	public void updateDisplay() {
-		System.out.printf("[Z80.disassembler.updateDisplay] core.hashCode() = %d%n",core.hashCode());
-
 		int programCounter = wrs.getProgramCounter();
 		if (programCounter == priorProgramCounter) {
 			return;
@@ -302,13 +300,8 @@ public class Z80Disassembler extends JPanel implements Runnable {
 	private void appInit() {
 		newDisplay = true;
 		doc = txtInstructions.getStyledDocument();
-		// priorProgramCounter = Integer.MAX_VALUE;
-		// nextProgramCounter = Integer.MIN_VALUE;
-		//
-		// priorProgramCounter = 0;
 		makeStyles();
-		System.out.printf("[Z80.disassembler.appInit] core.hashCode() = %d%n",core.hashCode());
-		updateDisplay();
+//		updateDisplay();
 	}// appInit
 
 	private void initialize() {

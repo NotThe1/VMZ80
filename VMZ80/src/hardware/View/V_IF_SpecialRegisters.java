@@ -31,7 +31,7 @@ public class V_IF_SpecialRegisters extends JInternalFrame  implements Runnable {
 
 	@Override
 	public void run() {
-		setRegisterDisplay();
+		updateDisplay();
 	}// run
 
 	private void doValueChanged(byte newValue, HDNumberBox reg) {
@@ -65,7 +65,7 @@ public class V_IF_SpecialRegisters extends JInternalFrame  implements Runnable {
 		
 	}//doFlagChange
 
-	private void setRegisterDisplay() {
+	public void updateDisplay() {
 		regI.setValueQuiet(wrs.getReg(Z80.Register.I) & 0xFF);
 		regR.setValueQuiet(wrs.getReg(Z80.Register.R) & 0xFF);
 		cbIFF1.setSelected(wrs.isIFF1Set());

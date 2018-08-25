@@ -21,7 +21,7 @@ public class V_IF_ProgramRegisters extends JInternalFrame  implements Runnable{
 
 	@Override
 	public void run() {
-		setRegisterDisplay();		
+		updateDisplay();		
 	}//run
 	
 	private void doValueChanged(int newValue, HDNumberBox reg) {
@@ -38,7 +38,7 @@ public class V_IF_ProgramRegisters extends JInternalFrame  implements Runnable{
 		}// switch
 	}// doValueChanged
 
-	private void setRegisterDisplay() {
+	public void updateDisplay() {
 		regPC.setValueQuiet(wrs.getProgramCounter());
 		regSP.setValueQuiet(wrs.getStackPointer());
 	}// setRegisterDisplay
