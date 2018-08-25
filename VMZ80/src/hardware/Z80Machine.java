@@ -27,6 +27,7 @@ import javax.swing.Icon;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JDesktopPane;
+import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JInternalFrame;
 import javax.swing.JLabel;
@@ -56,6 +57,7 @@ import hardware.View.V_IF_PrimaryRegisters;
 import hardware.View.V_IF_ProgramRegisters;
 import hardware.View.V_IF_SpecialRegisters;
 import memory.MemoryLoaderFromFile;
+import utilities.filePicker.FilePicker;
 
 public class Z80Machine {
 
@@ -82,23 +84,22 @@ public class Z80Machine {
 	}// main
 
 	// ---------------------------------------------------------
-	
+
 	private void loadROM() {
 		InputStream in = this.getClass().getResourceAsStream("/Z80code/ROM.mem");
 		BufferedReader reader = new BufferedReader(new InputStreamReader(in));
 		MemoryLoaderFromFile.loadMemoryImage(reader);
 	}// loadROM
 
-	
 	private void doStep() {
-		updateDisplaysMaster();	
-	}//doStep
+		updateDisplaysMaster();
+	}// doStep
 
 	private void doRunStop(boolean isRunning) {
-		log.infof("[doRunStop] button is Selected: %s%n",isRunning);
-	}//doRunStop
+		log.infof("[doRunStop] button is Selected: %s%n", isRunning);
+	}// doRunStop
 
-	//----------------------------------------------------------
+	// ----------------------------------------------------------
 
 	private void doFileNew() {
 		System.out.println("** [doFileNew] **");
@@ -114,7 +115,16 @@ public class Z80Machine {
 	}// doFileNew
 
 	private void doFileOpen() {
-		System.out.println("** [doFileOpen] **");
+		JFileChooser filePicker = FilePicker.getMemoryPicker();
+		if (filePicker.showOpenDialog(frameBase) != JFileChooser.OPEN_DIALOG) {
+			log.info("Closed foFileOpen");
+			return;
+		}
+		log.infof("File chosen is %s%n", filePicker.getSelectedFile().getAbsolutePath());
+//		System.out.println("** [doFileOpen] **");
+
+		// InputStream in = this.getClass().getResourceAsStream("/Z80code/ROM.mem");
+			MemoryLoaderFromFile.loadMemoryImage(new File(filePicker.getSelectedFile().getAbsolutePath()));
 
 	}// doFileOpen
 
@@ -137,7 +147,7 @@ public class Z80Machine {
 		appClose();
 		System.exit(0);
 	}// doFileExit
-	
+
 	private void updateDisplaysMaster() {
 		tabDialog.updateDisplay();
 		ifPrimaryRegisters.updateDisplay();
@@ -145,7 +155,7 @@ public class Z80Machine {
 		ifIndexRegisters.updateDisplay();
 		ifSpecialRegisters.updateDisplay();
 		ifCCR.updateDisplay();
-	}//updateDisplaysMaster
+	}// updateDisplaysMaster
 
 	private void doWindowToggle(String name) {
 		Component target = null;
@@ -176,9 +186,9 @@ public class Z80Machine {
 		int dpWidth = desktopPane.getWidth();
 		int prWidth = ifPrimaryRegisters.getWidth();
 		int leftPosition = INSET_X;
-		if (dpWidth>prWidth) {
-			leftPosition = (int)((dpWidth - prWidth)/2);
-		}//if
+		if (dpWidth > prWidth) {
+			leftPosition = (int) ((dpWidth - prWidth) / 2);
+		} // if
 		ifPrimaryRegisters.setLocation(leftPosition, INSET_Y);
 		ifPrimaryRegisters.setVisible(true);
 
@@ -195,7 +205,7 @@ public class Z80Machine {
 
 		ifSpecialRegisters.setLocation(getNextLocationX(ifIndexRegisters.getBounds()));
 		ifSpecialRegisters.setVisible(true);
-		
+
 		try {
 			ifPrimaryRegisters.setIcon(false);
 			ifProgramRegisters.setIcon(false);
@@ -231,7 +241,7 @@ public class Z80Machine {
 		result.y = y + height + INSET_Y;
 		return result;
 	}// getNextLocationY
-	
+
 	private void restoreTabDialogState(Preferences myPrefs) {
 		Rectangle tabDialogBounds = new Rectangle();
 		tabDialogBounds.x = myPrefs.getInt("tabDialog.x", 0);
@@ -240,7 +250,7 @@ public class Z80Machine {
 		tabDialogBounds.width = myPrefs.getInt("tabDialog.width", 725);
 		tabDialog.setBounds(tabDialogBounds);
 		tabDialog.setVisible(myPrefs.getBoolean("Visible", true));
-	}//getTabDialogState
+	}// getTabDialogState
 
 	private void saveTabDialogState(Preferences myPrefs) {
 		Rectangle tabDialogBounds = tabDialog.getBounds();
@@ -249,7 +259,7 @@ public class Z80Machine {
 		myPrefs.putInt("tabDialog.height", tabDialogBounds.height);
 		myPrefs.putInt("tabDialog.width", tabDialogBounds.width);
 		myPrefs.putBoolean("Visible", tabDialog.isVisible());
-	}//getTabDialogState
+	}// getTabDialogState
 
 	private void restoreInternalFrameLocations(Preferences myPrefs) {
 		Point location = new Point();
@@ -301,7 +311,7 @@ public class Z80Machine {
 		loadROM();
 		tabDialog = new TabDialog();
 		tabDialog.setVisible(true);
-		
+
 		Preferences myPrefs = Preferences.userNodeForPackage(Z80Machine.class).node(this.getClass().getSimpleName());
 		Rectangle frameBounds = new Rectangle();
 		frameBounds.x = myPrefs.getInt("LocX", 100);
@@ -310,10 +320,9 @@ public class Z80Machine {
 		frameBounds.width = myPrefs.getInt("Width", 848);
 		frameBase.setBounds(frameBounds);
 		restoreInternalFrameLocations(myPrefs);
-		restoreTabDialogState(myPrefs);	
+		restoreTabDialogState(myPrefs);
 		myPrefs = null;
-		
-		
+
 		log.info("Starting....");
 
 		dcu.setDisplay(ifDiskPanel);
@@ -504,12 +513,12 @@ public class Z80Machine {
 		gbc_statusBar.gridy = 2;
 		frameBase.getContentPane().add(statusBar, gbc_statusBar);
 		GridBagLayout gbl_statusBar = new GridBagLayout();
-		gbl_statusBar.columnWidths = new int[]{0, 0};
-		gbl_statusBar.rowHeights = new int[]{0, 0};
-		gbl_statusBar.columnWeights = new double[]{0.0, Double.MIN_VALUE};
-		gbl_statusBar.rowWeights = new double[]{0.0, Double.MIN_VALUE};
+		gbl_statusBar.columnWidths = new int[] { 0, 0 };
+		gbl_statusBar.rowHeights = new int[] { 0, 0 };
+		gbl_statusBar.columnWeights = new double[] { 0.0, Double.MIN_VALUE };
+		gbl_statusBar.rowWeights = new double[] { 0.0, Double.MIN_VALUE };
 		statusBar.setLayout(gbl_statusBar);
-		
+
 		JLabel lblNewLabel_1 = new JLabel("Status Bar");
 		GridBagConstraints gbc_lblNewLabel_1 = new GridBagConstraints();
 		gbc_lblNewLabel_1.gridx = 0;
@@ -566,12 +575,12 @@ public class Z80Machine {
 
 		JMenuItem mnuWindowPrimaryRegisters = new JMenuItem("Primary Registers");
 		mnuWindowPrimaryRegisters.addActionListener(applicationAdapter);
-		
+
 		JMenuItem mnuWindowZ80Support = new JMenuItem("Z80 Support");
 		mnuWindowZ80Support.setName(MNU_WINDOW_Z80_SUPPORT);
 		mnuWindowZ80Support.addActionListener(applicationAdapter);
 		mnuWindow.add(mnuWindowZ80Support);
-		
+
 		JSeparator separator = new JSeparator();
 		mnuWindow.add(separator);
 		mnuWindowPrimaryRegisters.setName(MNU_WINDOW_PRIMARY_REGISTERS);
@@ -605,10 +614,13 @@ public class Z80Machine {
 		mnuWindowsReset.addActionListener(applicationAdapter);
 		mnuWindow.add(mnuWindowsReset);
 
+		JMenu mnuTools = new JMenu("Tools");
+		menuBar.add(mnuTools);
+
 	}// initialize
 
 	//////////////////////////////////////////////////////////////////////////
-	
+
 	static final String EMPTY_STRING = "";
 
 	//////////////////////////////////////////////////////////////////////////
@@ -626,7 +638,7 @@ public class Z80Machine {
 	private static final String MNU_WINDOW_SPECIAL_REGISTERS = "mnuWindowsSpecialRegisters";
 	private static final String MNU_WINDOW_CONDITION_CODES = "mnuWindowsConditionCodes";
 	private static final String MNU_WINDOW_RESET = "mnuWindowsReset";
-	
+
 	private static final String BUTTON_RUN_STOP = "tbRunStop";
 	private static final String BUTTON_STEP = "btnStop";
 
@@ -636,7 +648,7 @@ public class Z80Machine {
 	private JFrame frameBase;
 	private JDesktopPane desktopPane;
 	private V_IF_DiskPanel ifDiskPanel;
-//	private JTextPane txtLog;
+	// private JTextPane txtLog;
 	private V_IF_PrimaryRegisters ifPrimaryRegisters;
 	private V_IF_ProgramRegisters ifProgramRegisters;
 	private V_IF_IndexRegisters ifIndexRegisters;
@@ -651,7 +663,7 @@ public class Z80Machine {
 			Component source = (Component) actionEvent.getSource();
 			String name = source.getName();
 			switch (name) {
-			
+
 			case BUTTON_RUN_STOP:
 				doRunStop(((AbstractButton) source).isSelected());
 				break;
@@ -690,6 +702,4 @@ public class Z80Machine {
 			}// switch
 		}// actionPerformed
 	}// class AdapterAction
-
-
 }// class GUItemplate

@@ -102,6 +102,16 @@ public class TabDialog extends JDialog implements Runnable {
 		gbc_tabbedPane.gridx = 0;
 		gbc_tabbedPane.gridy = 0;
 		contentPanel.add(tabbedPane, gbc_tabbedPane);
+		//////////////////////////////////////////////////////////////
+		JPanel tabDisasssembler = new JPanel();
+		tabDisasssembler.setName(TAB_DISASSEMBLER);
+		tabbedPane.addTab("Disassembler", null, tabDisasssembler, null);
+		GridBagConstraints gbc_disAl = new GridBagConstraints();
+		gbc_disAl.fill = GridBagConstraints.BOTH;
+		gbc_disAl.gridx = 0;
+		gbc_disAl.gridy = 0;
+		tabDisasssembler.setLayout(new GridLayout(0, 1, 0, 0));
+		tabDisasssembler.add(disassembler, gbc_disAl);// gbc_disAl);
 
 		JPanel tabApplicationLog = new JPanel();
 		tabApplicationLog.setName(TAB_APP_LOG);
@@ -153,16 +163,6 @@ public class TabDialog extends JDialog implements Runnable {
 		gbc_hexPanel.gridy = 0;
 		tabMemoryDisplay.setLayout(new GridLayout(0, 1, 0, 0));
 		tabMemoryDisplay.add(hexDisplayMemory, gbc_hexPanel);
-		//////////////////////////////////////////////////////////////
-		JPanel tabDisasssembler = new JPanel();
-		tabDisasssembler.setName(TAB_DISASSEMBLER);
-		tabbedPane.addTab("Disassembler", null, tabDisasssembler, null);
-		GridBagConstraints gbc_disAl = new GridBagConstraints();
-		gbc_disAl.fill = GridBagConstraints.BOTH;
-		gbc_disAl.gridx = 0;
-		gbc_disAl.gridy = 0;
-		tabDisasssembler.setLayout(new GridLayout(0, 1, 0, 0));
-		tabDisasssembler.add(disassembler, gbc_disAl);// gbc_disAl);
 
 		////////////////////////////////////////////////////////////////
 		JPanel buttonPane = new JPanel();

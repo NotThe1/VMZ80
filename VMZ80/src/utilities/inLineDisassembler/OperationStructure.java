@@ -49,7 +49,14 @@ package utilities.inLineDisassembler;
 	// }// getFunction
 
 	public String getAssemblerCode() {
-		return String.format("%-4s %s%s", getInstruction(), getDestination(), getSource());
+		String ans ="";
+		if(getSource().equals("")) {
+			ans = String.format("%-4s %s", getInstruction(), getDestination());
+		}else {
+			ans =String.format("%-4s %s,%s", getInstruction(), getDestination(), getSource());;
+		}//if	 
+		return ans;
+		
 	}// getAssemblerCode
 
 	public String getAssemblerCode(byte plusOne) {
@@ -65,7 +72,9 @@ package utilities.inLineDisassembler;
 	public String getAssemblerCode(byte plusOne, byte plusTwo) {
 		String ans;
 		if (getDestination().equals("addr")) {
-			ans = String.format("%-4s %02X%02X", getInstruction(), plusTwo, plusOne);
+			ans = String.format("%-4s (%02X%02X),%s", getInstruction(), plusTwo, plusOne,getSource());
+		}else if(getSource().equals("addr")){
+			ans = String.format("%-4s %s,(%02X%02X)",  getInstruction(),getDestination(), plusTwo, plusOne);
 		} else {
 			ans = String.format("%-4s %s,%02X%02X", getInstruction(), getDestination(), plusTwo, plusOne);
 		}// if

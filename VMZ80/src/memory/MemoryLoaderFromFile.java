@@ -204,9 +204,10 @@ public class MemoryLoaderFromFile {
 						return;
 					} // if - checksum test
 
-					if (result == null) {
-						ioBuss.writeDMA(address, values); // avoid setting off memory traps
-					} // if Memory
+//					if (result == null) {
+//						ioBuss.writeDMA(address, values); // avoid setting off memory traps
+//					} // if Memory
+					ioBuss.writeDMA(address, values); // avoid setting off memory traps
 
 					break;
 				case END_OF_FILE_RECORD:

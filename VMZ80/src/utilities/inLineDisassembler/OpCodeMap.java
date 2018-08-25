@@ -33,197 +33,258 @@ public class OpCodeMap {
 	static public String getAssemblerCode(String opCode, byte plusOne, byte plusTwo) {
 		return codeMap.get(opCode).getAssemblerCode(plusOne, plusTwo);
 	}// getAssemblerCode - two arguments
-	
+
 	static public int getMapCount() {
 		return codeMap.size();
-	}//getMapCount
+	}// getMapCount
 
 	// +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 	public OpCodeMap() {
 		makeMainTypes();
-		makeBitTypes();	// CBxx
-		makeExtendedTypes();	//EDxx
-		makeIndexTypes();	//DDxx & FDxx
+		makeBitTypes(); // CBxx
+		makeExtendedTypes(); // EDxx
+		makeIndexTypes(); // DDxx & FDxx
 	}// Constructor
-	
+
 	private void makeIndexTypes() {
-//		codeMap.put(key , new OperationStructure(key, Z80Type.BIT, 2, instruction, register, "", function));
-/*      IX   DDXX     */
-		codeMap.put("DD09" , new OperationStructure("DD09", Z80Type.INDEX_IX, 2, "ADD", "IX", "BC", "IX<-IX + BC"));
-		codeMap.put("DD19" , new OperationStructure("DD19", Z80Type.INDEX_IX, 2, "ADD", "IX", "DE", "IX<-IX + DE"));
-		codeMap.put("DD29" , new OperationStructure("DD29", Z80Type.INDEX_IX, 2, "ADD", "IX", "IX", "IX<-IX + IX"));
-		codeMap.put("DD39" , new OperationStructure("DD39", Z80Type.INDEX_IX, 2, "ADD", "IX", "SP", "IX<-IX + SP"));
-		
-		codeMap.put("DD21" , new OperationStructure("DD21", Z80Type.INDEX_IX, 4, "LD", "IX", "D16", "IX<- D16"));
-		codeMap.put("DD22" , new OperationStructure("DD22", Z80Type.INDEX_IX, 4, "LD", "addr", "D16", "(D16)<-IX"));
-		codeMap.put("DD23" , new OperationStructure("DD23", Z80Type.INDEX_IX, 2, "INC", "IX", "", "IX<-IX +1"));
-		codeMap.put("DD2A" , new OperationStructure("DD2A", Z80Type.INDEX_IX, 4, "LD", "IX", "addr", "IX<-(D16)"));
-		codeMap.put("DD2B" , new OperationStructure("DD2B", Z80Type.INDEX_IX, 2, "DEC", "IX", "", "IX<-IX -1"));
+		// codeMap.put(key , new OperationStructure(key, Z80Type.BIT, 2, instruction, register, "", function));
+		/* IX DDXX */
+		codeMap.put("DD09", new OperationStructure("DD09", Z80Type.INDEX_IX, 2, "ADD", "IX", "BC", "IX<-IX + BC"));
+		codeMap.put("DD19", new OperationStructure("DD19", Z80Type.INDEX_IX, 2, "ADD", "IX", "DE", "IX<-IX + DE"));
+		codeMap.put("DD29", new OperationStructure("DD29", Z80Type.INDEX_IX, 2, "ADD", "IX", "IX", "IX<-IX + IX"));
+		codeMap.put("DD39", new OperationStructure("DD39", Z80Type.INDEX_IX, 2, "ADD", "IX", "SP", "IX<-IX + SP"));
 
-		codeMap.put("DD34" , new OperationStructure("DD34", Z80Type.INDEX_IX, 3, "INC", "IX", "D8", "(IX+d)<-(IX+d)+1"));
-		codeMap.put("DD35" , new OperationStructure("DD35", Z80Type.INDEX_IX, 3, "DEC", "IX", "D8", "(IX+d)<-(IX+d)-1"));
-		codeMap.put("DD36" , new OperationStructure("DD36", Z80Type.INDEX_IX, 4, "LD", "IX", "D8", "(IX+d)<-D8"));
+		codeMap.put("DD21", new OperationStructure("DD21", Z80Type.INDEX_IX, 4, "LD", "IX", "D16", "IX<- D16"));
+		codeMap.put("DD22", new OperationStructure("DD22", Z80Type.INDEX_IX, 4, "LD", "addr", "D16", "(D16)<-IX"));
+		codeMap.put("DD23", new OperationStructure("DD23", Z80Type.INDEX_IX, 2, "INC", "IX", "", "IX<-IX +1"));
+		codeMap.put("DD2A", new OperationStructure("DD2A", Z80Type.INDEX_IX, 4, "LD", "IX", "addr", "IX<-(D16)"));
+		codeMap.put("DD2B", new OperationStructure("DD2B", Z80Type.INDEX_IX, 2, "DEC", "IX", "", "IX<-IX -1"));
 
-		codeMap.put("DD46" , new OperationStructure("DD46", Z80Type.INDEX_IX, 3, "LD", "B", "D8", "B<-(IX+d)"));
-		codeMap.put("DD4E" , new OperationStructure("DD4E", Z80Type.INDEX_IX, 3, "LD", "C", "D8", "C<-(IX+d)"));
-		codeMap.put("DD56" , new OperationStructure("DD56", Z80Type.INDEX_IX, 3, "LD", "D", "D8", "D<-(IX+d)"));
-		codeMap.put("DD5E" , new OperationStructure("DD5E", Z80Type.INDEX_IX, 3, "LD", "E", "D8", "E<-(IX+d)"));
-		codeMap.put("DD66" , new OperationStructure("DD66", Z80Type.INDEX_IX, 3, "LD", "H", "D8", "H<-(IX+d)"));
-		codeMap.put("DD6E" , new OperationStructure("DD6E", Z80Type.INDEX_IX, 3, "LD", "L", "D8", "L<-(IX+d)"));
-		codeMap.put("DD7E" , new OperationStructure("DD7E", Z80Type.INDEX_IX, 3, "LD", "A", "D8", "A<-(IX+d)"));
+		codeMap.put("DD34", new OperationStructure("DD34", Z80Type.INDEX_IX, 3, "INC", "IX", "D8", "(IX+d)<-(IX+d)+1"));
+		codeMap.put("DD35", new OperationStructure("DD35", Z80Type.INDEX_IX, 3, "DEC", "IX", "D8", "(IX+d)<-(IX+d)-1"));
+		codeMap.put("DD36", new OperationStructure("DD36", Z80Type.INDEX_IX, 4, "LD", "IX", "D8", "(IX+d)<-D8"));
 
-		codeMap.put("DD70" , new OperationStructure("DD70", Z80Type.INDEX_IX, 3, "LD", "B", "D8", "(IX+d)<-B"));
-		codeMap.put("DD71" , new OperationStructure("DD71", Z80Type.INDEX_IX, 3, "LD", "C", "D8", "(IX+d)<-C"));
-		codeMap.put("DD72" , new OperationStructure("DD72", Z80Type.INDEX_IX, 3, "LD", "D", "D8", "(IX+d)<-D"));
-		codeMap.put("DD73" , new OperationStructure("DD73", Z80Type.INDEX_IX, 3, "LD", "E", "D8", "(IX+d)<-E"));
-		codeMap.put("DD74" , new OperationStructure("DD74", Z80Type.INDEX_IX, 3, "LD", "H", "D8", "(IX+d)<-H"));
-		codeMap.put("DD75" , new OperationStructure("DD75", Z80Type.INDEX_IX, 3, "LD", "L", "D8", "(IX+d)<-L"));
-		codeMap.put("DD77" , new OperationStructure("DD77", Z80Type.INDEX_IX, 3, "LD", "A", "D8", "(IX+d)<A"));
-		
-		codeMap.put("DD86" , new OperationStructure("DD86", Z80Type.INDEX_IX, 3, "ADD", "D", "D8", "A<-A+(IX+d)"));
-		codeMap.put("DD8E" , new OperationStructure("DD8E", Z80Type.INDEX_IX, 3, "ADC", "D", "D8", "A<-A+(IX+d)+cy"));
-		codeMap.put("DD96" , new OperationStructure("DD96", Z80Type.INDEX_IX, 3, "SUB", "D", "D8", "A<-A-(IX+d)"));
-		codeMap.put("DD9E" , new OperationStructure("DD9E", Z80Type.INDEX_IX, 3, "SBC", "D", "D8", "A<-A-(IX+d)-cy"));
-		codeMap.put("DDA6" , new OperationStructure("DDA6", Z80Type.INDEX_IX, 3, "AND", "D", "D8", "A<-A and (IX+d)"));
-		codeMap.put("DDAE" , new OperationStructure("DDAE", Z80Type.INDEX_IX, 3, "XOR", "D", "D8", "A<-A xor (IX+d)"));
-		codeMap.put("DDB6" , new OperationStructure("DDB6", Z80Type.INDEX_IX, 3, "OR", "D", "D8", "A<-A or(IX+d)"));
-		codeMap.put("DDBE" , new OperationStructure("DDBE", Z80Type.INDEX_IX, 3, "CP", "D", "D8", "A<-A -(IX+d)"));
+		codeMap.put("DD46", new OperationStructure("DD46", Z80Type.INDEX_IX, 3, "LD", "B", "D8", "B<-(IX+d)"));
+		codeMap.put("DD4E", new OperationStructure("DD4E", Z80Type.INDEX_IX, 3, "LD", "C", "D8", "C<-(IX+d)"));
+		codeMap.put("DD56", new OperationStructure("DD56", Z80Type.INDEX_IX, 3, "LD", "D", "D8", "D<-(IX+d)"));
+		codeMap.put("DD5E", new OperationStructure("DD5E", Z80Type.INDEX_IX, 3, "LD", "E", "D8", "E<-(IX+d)"));
+		codeMap.put("DD66", new OperationStructure("DD66", Z80Type.INDEX_IX, 3, "LD", "H", "D8", "H<-(IX+d)"));
+		codeMap.put("DD6E", new OperationStructure("DD6E", Z80Type.INDEX_IX, 3, "LD", "L", "D8", "L<-(IX+d)"));
+		codeMap.put("DD7E", new OperationStructure("DD7E", Z80Type.INDEX_IX, 3, "LD", "A", "D8", "A<-(IX+d)"));
 
-		codeMap.put("DDE1" , new OperationStructure("DDE1", Z80Type.INDEX_IX, 2, "POP", "IX", "", "IX<-(SP)"));
-		codeMap.put("DDE3" , new OperationStructure("DDE3", Z80Type.INDEX_IX, 2, "EX", "IX", "", "IX<->(SP)"));
-		codeMap.put("DDE5" , new OperationStructure("DDE5", Z80Type.INDEX_IX, 2, "PUSH", "IX", "", "(SP)<-IX"));
-		codeMap.put("DDE9" , new OperationStructure("DDE9", Z80Type.INDEX_IX, 2, "JP", "IX", "", "PC<-IX"));
-		codeMap.put("DDF9" , new OperationStructure("DDF9", Z80Type.INDEX_IX, 2, "JP", "SP", "IX", "SP<-IX"));
-		
-/*   INDEXED BIT INSTRUCTIONS IX   DDXXYY  */
-		
-		codeMap.put("DDCB06" , new OperationStructure("DDCB06", Z80Type.INDEX_IX, 4, "RLC", "IX", "D8", "IX+d:cy<-[b7<-b0]<-b7"));
-		codeMap.put("DDCB0E" , new OperationStructure("DDCB0E", Z80Type.INDEX_IX, 4, "RLC", "IX", "D8", "IX+d:b0->[b7->b0]->cy"));
-		codeMap.put("DDCB16" , new OperationStructure("DDCB16", Z80Type.INDEX_IX, 4, "RL", "IX", "D8", "IX+d:cy<-[b7<-b0]<-cy"));
-		codeMap.put("DDCB1E" , new OperationStructure("DDCB1E", Z80Type.INDEX_IX, 4, "RR", "IX", "D8", "IX+d:cy->[b7->b0]->cy"));
-		codeMap.put("DDCB26" , new OperationStructure("DDCB26", Z80Type.INDEX_IX, 4, "SLA", "IX", "D8", "IX+d:cy<-[b7<-b0]<-0"));
-		codeMap.put("DDCB2E" , new OperationStructure("DDCB2E", Z80Type.INDEX_IX, 4, "SRA", "IX", "D8", "IX+d:b7->[b7->b0]->cy"));
-		codeMap.put("DDCB3E" , new OperationStructure("DDCB3E", Z80Type.INDEX_IX, 4, "SRL", "IX", "D8", "IX+d:0->[b7->b0]->cy"));
+		codeMap.put("DD70", new OperationStructure("DD70", Z80Type.INDEX_IX, 3, "LD", "B", "D8", "(IX+d)<-B"));
+		codeMap.put("DD71", new OperationStructure("DD71", Z80Type.INDEX_IX, 3, "LD", "C", "D8", "(IX+d)<-C"));
+		codeMap.put("DD72", new OperationStructure("DD72", Z80Type.INDEX_IX, 3, "LD", "D", "D8", "(IX+d)<-D"));
+		codeMap.put("DD73", new OperationStructure("DD73", Z80Type.INDEX_IX, 3, "LD", "E", "D8", "(IX+d)<-E"));
+		codeMap.put("DD74", new OperationStructure("DD74", Z80Type.INDEX_IX, 3, "LD", "H", "D8", "(IX+d)<-H"));
+		codeMap.put("DD75", new OperationStructure("DD75", Z80Type.INDEX_IX, 3, "LD", "L", "D8", "(IX+d)<-L"));
+		codeMap.put("DD77", new OperationStructure("DD77", Z80Type.INDEX_IX, 3, "LD", "A", "D8", "(IX+d)<A"));
 
-		codeMap.put("DDCB46" , new OperationStructure("DDCB46", Z80Type.INDEX_BIT_IX, 4, "BIT", "IX", "0", " b0 & IX+d"));
-		codeMap.put("DDCB4E" , new OperationStructure("DDCB4E", Z80Type.INDEX_BIT_IX, 4, "BIT", "IX", "1", " b1 & IX+d"));
-		codeMap.put("DDCB56" , new OperationStructure("DDCB56", Z80Type.INDEX_BIT_IX, 4, "BIT", "IX", "2", " b2 & IX+d"));
-		codeMap.put("DDCB5E" , new OperationStructure("DDCB5E", Z80Type.INDEX_BIT_IX, 4, "BIT", "IX", "3", " b3 & IX+d"));
-		codeMap.put("DDCB66" , new OperationStructure("DDCB66", Z80Type.INDEX_BIT_IX, 4, "BIT", "IX", "4", " b4 & IX+d"));
-		codeMap.put("DDCB6E" , new OperationStructure("DDCB6E", Z80Type.INDEX_BIT_IX, 4, "BIT", "IX", "5", " b5 & IX+d"));
-		codeMap.put("DDCB76" , new OperationStructure("DDCB76", Z80Type.INDEX_BIT_IX, 4, "BIT", "IX", "6", " b6 & IX+d"));
-		codeMap.put("DDCB7E" , new OperationStructure("DDCB7E", Z80Type.INDEX_BIT_IX, 4, "BIT", "IX", "7", " b7 & IX+d"));
+		codeMap.put("DD86", new OperationStructure("DD86", Z80Type.INDEX_IX, 3, "ADD", "D", "D8", "A<-A+(IX+d)"));
+		codeMap.put("DD8E", new OperationStructure("DD8E", Z80Type.INDEX_IX, 3, "ADC", "D", "D8", "A<-A+(IX+d)+cy"));
+		codeMap.put("DD96", new OperationStructure("DD96", Z80Type.INDEX_IX, 3, "SUB", "D", "D8", "A<-A-(IX+d)"));
+		codeMap.put("DD9E", new OperationStructure("DD9E", Z80Type.INDEX_IX, 3, "SBC", "D", "D8", "A<-A-(IX+d)-cy"));
+		codeMap.put("DDA6", new OperationStructure("DDA6", Z80Type.INDEX_IX, 3, "AND", "D", "D8", "A<-A and (IX+d)"));
+		codeMap.put("DDAE", new OperationStructure("DDAE", Z80Type.INDEX_IX, 3, "XOR", "D", "D8", "A<-A xor (IX+d)"));
+		codeMap.put("DDB6", new OperationStructure("DDB6", Z80Type.INDEX_IX, 3, "OR", "D", "D8", "A<-A or(IX+d)"));
+		codeMap.put("DDBE", new OperationStructure("DDBE", Z80Type.INDEX_IX, 3, "CP", "D", "D8", "A<-A -(IX+d)"));
 
-		codeMap.put("DDCB86" , new OperationStructure("DDCB86", Z80Type.INDEX_BIT_IX, 4, "RES", "IX", "0", "0-> b0 in IX+d"));
-		codeMap.put("DDCB8E" , new OperationStructure("DDCB8E", Z80Type.INDEX_BIT_IX, 4, "RES", "IX", "1", "0-> b1 in IX+d"));
-		codeMap.put("DDCB96" , new OperationStructure("DDCB96", Z80Type.INDEX_BIT_IX, 4, "RES", "IX", "2", "0-> b2 in IX+d"));
-		codeMap.put("DDCB9E" , new OperationStructure("DDCB9E", Z80Type.INDEX_BIT_IX, 4, "RES", "IX", "3", "0-> b3 in IX+d"));
-		codeMap.put("DDCBA6" , new OperationStructure("DDCBA6", Z80Type.INDEX_BIT_IX, 4, "RES", "IX", "4", "0-> b4 in IX+d"));
-		codeMap.put("DDCBAE" , new OperationStructure("DDCBAE", Z80Type.INDEX_BIT_IX, 4, "RES", "IX", "5", "0-> b5 in IX+d"));
-		codeMap.put("DDCBB6" , new OperationStructure("DDCBB6", Z80Type.INDEX_BIT_IX, 4, "RES", "IX", "6", "0-> b6 in IX+d"));
-		codeMap.put("DDCBBE" , new OperationStructure("DDCBBE", Z80Type.INDEX_BIT_IX, 4, "RES", "IX", "7", "0-> b7 in IX+d"));
+		codeMap.put("DDE1", new OperationStructure("DDE1", Z80Type.INDEX_IX, 2, "POP", "IX", "", "IX<-(SP)"));
+		codeMap.put("DDE3", new OperationStructure("DDE3", Z80Type.INDEX_IX, 2, "EX", "IX", "", "IX<->(SP)"));
+		codeMap.put("DDE5", new OperationStructure("DDE5", Z80Type.INDEX_IX, 2, "PUSH", "IX", "", "(SP)<-IX"));
+		codeMap.put("DDE9", new OperationStructure("DDE9", Z80Type.INDEX_IX, 2, "JP", "IX", "", "PC<-IX"));
+		codeMap.put("DDF9", new OperationStructure("DDF9", Z80Type.INDEX_IX, 2, "JP", "SP", "IX", "SP<-IX"));
 
-		codeMap.put("DDCBC6" , new OperationStructure("DDCBC6", Z80Type.INDEX_BIT_IX, 4, "SET", "IX", "0", "1-> b0 in IX+d"));
-		codeMap.put("DDCBCE" , new OperationStructure("DDCBCE", Z80Type.INDEX_BIT_IX, 4, "SET", "IX", "1", "1-> b1 in IX+d"));
-		codeMap.put("DDCBD6" , new OperationStructure("DDCBD6", Z80Type.INDEX_BIT_IX, 4, "SET", "IX", "2", "1-> b2 in IX+d"));
-		codeMap.put("DDCBDE" , new OperationStructure("DDCBDE", Z80Type.INDEX_BIT_IX, 4, "SET", "IX", "3", "1-> b3 in IX+d"));
-		codeMap.put("DDCBE6" , new OperationStructure("DDCBE6", Z80Type.INDEX_BIT_IX, 4, "SET", "IX", "4", "1-> b4 in IX+d"));
-		codeMap.put("DDCBEE" , new OperationStructure("DDCBEE", Z80Type.INDEX_BIT_IX, 4, "SET", "IX", "5", "1-> b5 in IX+d"));
-		codeMap.put("DDCBF6" , new OperationStructure("DDCBF6", Z80Type.INDEX_BIT_IX, 4, "SET", "IX", "6", "1-> b6 in IX+d"));
-		codeMap.put("DDCBFE" , new OperationStructure("DDCBFE", Z80Type.INDEX_BIT_IX, 4, "SET", "IX", "7", "1-> b7 in IX+d"));
+		/* INDEXED BIT INSTRUCTIONS IX DDXXYY */
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		
-		/*      IY   FDXX     */
-		codeMap.put("FD09" , new OperationStructure("FD09", Z80Type.INDEX_IY, 2, "ADD", "IY", "BC", "IY<-IY + BC"));
-		codeMap.put("FD19" , new OperationStructure("FD19", Z80Type.INDEX_IY, 2, "ADD", "IY", "DE", "IY<-IY + DE"));
-		codeMap.put("FD29" , new OperationStructure("FD29", Z80Type.INDEX_IY, 2, "ADD", "IY", "IY", "IY<-IY + IY"));
-		codeMap.put("FD39" , new OperationStructure("FD39", Z80Type.INDEX_IY, 2, "ADD", "IY", "SP", "IY<-IY + SP"));
-		
-		codeMap.put("FD21" , new OperationStructure("FD21", Z80Type.INDEX_IY, 4, "LD", "IY", "D16", "IY<- D16"));
-		codeMap.put("FD22" , new OperationStructure("FD22", Z80Type.INDEX_IY, 4, "LD", "addr", "D16", "(D16)<-IY"));
-		codeMap.put("FD23" , new OperationStructure("FD23", Z80Type.INDEX_IY, 2, "INC", "IY", "", "IY<-IY +1"));
-		codeMap.put("FD2A" , new OperationStructure("FD2A", Z80Type.INDEX_IY, 4, "LD", "IY", "addr", "IY<-(D16)"));
-		codeMap.put("FD2B" , new OperationStructure("FD2B", Z80Type.INDEX_IY, 2, "DEC", "IY", "", "IY<-IY -1"));
+		codeMap.put("DDCB06",
+				new OperationStructure("DDCB06", Z80Type.INDEX_IX, 4, "RLC", "IX", "D8", "IX+d:cy<-[b7<-b0]<-b7"));
+		codeMap.put("DDCB0E",
+				new OperationStructure("DDCB0E", Z80Type.INDEX_IX, 4, "RLC", "IX", "D8", "IX+d:b0->[b7->b0]->cy"));
+		codeMap.put("DDCB16",
+				new OperationStructure("DDCB16", Z80Type.INDEX_IX, 4, "RL", "IX", "D8", "IX+d:cy<-[b7<-b0]<-cy"));
+		codeMap.put("DDCB1E",
+				new OperationStructure("DDCB1E", Z80Type.INDEX_IX, 4, "RR", "IX", "D8", "IX+d:cy->[b7->b0]->cy"));
+		codeMap.put("DDCB26",
+				new OperationStructure("DDCB26", Z80Type.INDEX_IX, 4, "SLA", "IX", "D8", "IX+d:cy<-[b7<-b0]<-0"));
+		codeMap.put("DDCB2E",
+				new OperationStructure("DDCB2E", Z80Type.INDEX_IX, 4, "SRA", "IX", "D8", "IX+d:b7->[b7->b0]->cy"));
+		codeMap.put("DDCB3E",
+				new OperationStructure("DDCB3E", Z80Type.INDEX_IX, 4, "SRL", "IX", "D8", "IX+d:0->[b7->b0]->cy"));
 
-		codeMap.put("FD34" , new OperationStructure("FD34", Z80Type.INDEX_IY, 3, "INC", "IY", "D8", "(IY+d)<-(IY+d)+1"));
-		codeMap.put("FD35" , new OperationStructure("FD35", Z80Type.INDEX_IY, 3, "DEC", "IY", "D8", "(IY+d)<-(IY+d)-1"));
-		codeMap.put("FD36" , new OperationStructure("FD36", Z80Type.INDEX_IY, 4, "LD", "IY", "D8", "(IY+d)<-D8"));
+		codeMap.put("DDCB46",
+				new OperationStructure("DDCB46", Z80Type.INDEX_BIT_IX, 4, "BIT", "IX", "0", " b0 & IX+d"));
+		codeMap.put("DDCB4E",
+				new OperationStructure("DDCB4E", Z80Type.INDEX_BIT_IX, 4, "BIT", "IX", "1", " b1 & IX+d"));
+		codeMap.put("DDCB56",
+				new OperationStructure("DDCB56", Z80Type.INDEX_BIT_IX, 4, "BIT", "IX", "2", " b2 & IX+d"));
+		codeMap.put("DDCB5E",
+				new OperationStructure("DDCB5E", Z80Type.INDEX_BIT_IX, 4, "BIT", "IX", "3", " b3 & IX+d"));
+		codeMap.put("DDCB66",
+				new OperationStructure("DDCB66", Z80Type.INDEX_BIT_IX, 4, "BIT", "IX", "4", " b4 & IX+d"));
+		codeMap.put("DDCB6E",
+				new OperationStructure("DDCB6E", Z80Type.INDEX_BIT_IX, 4, "BIT", "IX", "5", " b5 & IX+d"));
+		codeMap.put("DDCB76",
+				new OperationStructure("DDCB76", Z80Type.INDEX_BIT_IX, 4, "BIT", "IX", "6", " b6 & IX+d"));
+		codeMap.put("DDCB7E",
+				new OperationStructure("DDCB7E", Z80Type.INDEX_BIT_IX, 4, "BIT", "IX", "7", " b7 & IX+d"));
 
-		codeMap.put("FD46" , new OperationStructure("FD46", Z80Type.INDEX_IY, 3, "LD", "B", "D8", "B<-(IY+d)"));
-		codeMap.put("FD4E" , new OperationStructure("FD4E", Z80Type.INDEX_IY, 3, "LD", "C", "D8", "C<-(IY+d)"));
-		codeMap.put("FD56" , new OperationStructure("FD56", Z80Type.INDEX_IY, 3, "LD", "D", "D8", "D<-(IY+d)"));
-		codeMap.put("FD5E" , new OperationStructure("FD5E", Z80Type.INDEX_IY, 3, "LD", "E", "D8", "E<-(IY+d)"));
-		codeMap.put("FD66" , new OperationStructure("FD66", Z80Type.INDEX_IY, 3, "LD", "H", "D8", "H<-(IY+d)"));
-		codeMap.put("FD6E" , new OperationStructure("FD6E", Z80Type.INDEX_IY, 3, "LD", "L", "D8", "L<-(IY+d)"));
-		codeMap.put("FD7E" , new OperationStructure("FD7E", Z80Type.INDEX_IY, 3, "LD", "A", "D8", "A<-(IY+d)"));
+		codeMap.put("DDCB86",
+				new OperationStructure("DDCB86", Z80Type.INDEX_BIT_IX, 4, "RES", "IX", "0", "0-> b0 in IX+d"));
+		codeMap.put("DDCB8E",
+				new OperationStructure("DDCB8E", Z80Type.INDEX_BIT_IX, 4, "RES", "IX", "1", "0-> b1 in IX+d"));
+		codeMap.put("DDCB96",
+				new OperationStructure("DDCB96", Z80Type.INDEX_BIT_IX, 4, "RES", "IX", "2", "0-> b2 in IX+d"));
+		codeMap.put("DDCB9E",
+				new OperationStructure("DDCB9E", Z80Type.INDEX_BIT_IX, 4, "RES", "IX", "3", "0-> b3 in IX+d"));
+		codeMap.put("DDCBA6",
+				new OperationStructure("DDCBA6", Z80Type.INDEX_BIT_IX, 4, "RES", "IX", "4", "0-> b4 in IX+d"));
+		codeMap.put("DDCBAE",
+				new OperationStructure("DDCBAE", Z80Type.INDEX_BIT_IX, 4, "RES", "IX", "5", "0-> b5 in IX+d"));
+		codeMap.put("DDCBB6",
+				new OperationStructure("DDCBB6", Z80Type.INDEX_BIT_IX, 4, "RES", "IX", "6", "0-> b6 in IX+d"));
+		codeMap.put("DDCBBE",
+				new OperationStructure("DDCBBE", Z80Type.INDEX_BIT_IX, 4, "RES", "IX", "7", "0-> b7 in IX+d"));
 
-		codeMap.put("FD70" , new OperationStructure("FD70", Z80Type.INDEX_IY, 3, "LD", "B", "D8", "(IY+d)<-B"));
-		codeMap.put("FD71" , new OperationStructure("FD71", Z80Type.INDEX_IY, 3, "LD", "C", "D8", "(IY+d)<-C"));
-		codeMap.put("FD72" , new OperationStructure("FD72", Z80Type.INDEX_IY, 3, "LD", "D", "D8", "(IY+d)<-D"));
-		codeMap.put("FD73" , new OperationStructure("FD73", Z80Type.INDEX_IY, 3, "LD", "E", "D8", "(IY+d)<-E"));
-		codeMap.put("FD74" , new OperationStructure("FD74", Z80Type.INDEX_IY, 3, "LD", "H", "D8", "(IY+d)<-H"));
-		codeMap.put("FD75" , new OperationStructure("FD75", Z80Type.INDEX_IY, 3, "LD", "L", "D8", "(IY+d)<-L"));
-		codeMap.put("FD77" , new OperationStructure("FD77", Z80Type.INDEX_IY, 3, "LD", "A", "D8", "(IY+d)<A"));
-		
-		codeMap.put("FD86" , new OperationStructure("FD86", Z80Type.INDEX_IY, 3, "ADD", "D", "D8", "A<-A+(IY+d)"));
-		codeMap.put("FD8E" , new OperationStructure("FD8E", Z80Type.INDEX_IY, 3, "ADC", "D", "D8", "A<-A+(IY+d)+cy"));
-		codeMap.put("FD96" , new OperationStructure("FD96", Z80Type.INDEX_IY, 3, "SUB", "D", "D8", "A<-A-(IY+d)"));
-		codeMap.put("FD9E" , new OperationStructure("FD9E", Z80Type.INDEX_IY, 3, "SBC", "D", "D8", "A<-A-(IY+d)-cy"));
-		codeMap.put("FDA6" , new OperationStructure("FDA6", Z80Type.INDEX_IY, 3, "AND", "D", "D8", "A<-A and (IY+d)"));
-		codeMap.put("FDAE" , new OperationStructure("FDAE", Z80Type.INDEX_IY, 3, "XOR", "D", "D8", "A<-A xor (IY+d)"));
-		codeMap.put("FDB6" , new OperationStructure("FDB6", Z80Type.INDEX_IY, 3, "OR", "D", "D8", "A<-A or(IY+d)"));
-		codeMap.put("FDBE" , new OperationStructure("FDBE", Z80Type.INDEX_IY, 3, "CP", "D", "D8", "A<-A -(IY+d)"));
+		codeMap.put("DDCBC6",
+				new OperationStructure("DDCBC6", Z80Type.INDEX_BIT_IX, 4, "SET", "IX", "0", "1-> b0 in IX+d"));
+		codeMap.put("DDCBCE",
+				new OperationStructure("DDCBCE", Z80Type.INDEX_BIT_IX, 4, "SET", "IX", "1", "1-> b1 in IX+d"));
+		codeMap.put("DDCBD6",
+				new OperationStructure("DDCBD6", Z80Type.INDEX_BIT_IX, 4, "SET", "IX", "2", "1-> b2 in IX+d"));
+		codeMap.put("DDCBDE",
+				new OperationStructure("DDCBDE", Z80Type.INDEX_BIT_IX, 4, "SET", "IX", "3", "1-> b3 in IX+d"));
+		codeMap.put("DDCBE6",
+				new OperationStructure("DDCBE6", Z80Type.INDEX_BIT_IX, 4, "SET", "IX", "4", "1-> b4 in IX+d"));
+		codeMap.put("DDCBEE",
+				new OperationStructure("DDCBEE", Z80Type.INDEX_BIT_IX, 4, "SET", "IX", "5", "1-> b5 in IX+d"));
+		codeMap.put("DDCBF6",
+				new OperationStructure("DDCBF6", Z80Type.INDEX_BIT_IX, 4, "SET", "IX", "6", "1-> b6 in IX+d"));
+		codeMap.put("DDCBFE",
+				new OperationStructure("DDCBFE", Z80Type.INDEX_BIT_IX, 4, "SET", "IX", "7", "1-> b7 in IX+d"));
 
-		codeMap.put("FDE1" , new OperationStructure("FDE1", Z80Type.INDEX_IY, 2, "POP", "IY", "", "IY<-(SP)"));
-		codeMap.put("FDE3" , new OperationStructure("FDE3", Z80Type.INDEX_IY, 2, "EX", "IY", "", "IY<->(SP)"));
-		codeMap.put("FDE5" , new OperationStructure("FDE5", Z80Type.INDEX_IY, 2, "PUSH", "IY", "", "(SP)<-IY"));
-		codeMap.put("FDE9" , new OperationStructure("FDE9", Z80Type.INDEX_IY, 2, "JP", "IY", "", "PC<-IY"));
-		codeMap.put("FDF9" , new OperationStructure("FDF9", Z80Type.INDEX_IY, 2, "JP", "SP", "IY", "SP<-IY"));
-		
-/*   INDEXED BIT INSTRUCTIONS IY   FDXXYY  */
-		
-		codeMap.put("FDCB06" , new OperationStructure("FDCB06", Z80Type.INDEX_IY, 4, "RLC", "IY", "D8", "IY+d:cy<-[b7<-b0]<-b7"));
-		codeMap.put("FDCB0E" , new OperationStructure("FDCB0E", Z80Type.INDEX_IY, 4, "RLC", "IY", "D8", "IY+d:b0->[b7->b0]->cy"));
-		codeMap.put("FDCB16" , new OperationStructure("FDCB16", Z80Type.INDEX_IY, 4, "RL", "IY", "D8", "IY+d:cy<-[b7<-b0]<-cy"));
-		codeMap.put("FDCB1E" , new OperationStructure("FDCB1E", Z80Type.INDEX_IY, 4, "RR", "IY", "D8", "IY+d:cy->[b7->b0]->cy"));
-		codeMap.put("FDCB26" , new OperationStructure("FDCB26", Z80Type.INDEX_IY, 4, "SLA", "IY", "D8", "IY+d:cy<-[b7<-b0]<-0"));
-		codeMap.put("FDCB2E" , new OperationStructure("FDCB2E", Z80Type.INDEX_IY, 4, "SRA", "IY", "D8", "IY+d:b7->[b7->b0]->cy"));
-		codeMap.put("FDCB3E" , new OperationStructure("FDCB3E", Z80Type.INDEX_IY, 4, "SRL", "IY", "D8", "IY+d:0->[b7->b0]->cy"));
+		////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-		codeMap.put("FDCB46" , new OperationStructure("FDCB46", Z80Type.INDEX_BIT_IY, 4, "BIT", "IY", "0", " b0 & IY+d"));
-		codeMap.put("FDCB4E" , new OperationStructure("FDCB4E", Z80Type.INDEX_BIT_IY, 4, "BIT", "IY", "1", " b1 & IY+d"));
-		codeMap.put("FDCB56" , new OperationStructure("FDCB56", Z80Type.INDEX_BIT_IY, 4, "BIT", "IY", "2", " b2 & IY+d"));
-		codeMap.put("FDCB5E" , new OperationStructure("FDCB5E", Z80Type.INDEX_BIT_IY, 4, "BIT", "IY", "3", " b3 & IY+d"));
-		codeMap.put("FDCB66" , new OperationStructure("FDCB66", Z80Type.INDEX_BIT_IY, 4, "BIT", "IY", "4", " b4 & IY+d"));
-		codeMap.put("FDCB6E" , new OperationStructure("FDCB6E", Z80Type.INDEX_BIT_IY, 4, "BIT", "IY", "5", " b5 & IY+d"));
-		codeMap.put("FDCB76" , new OperationStructure("FDCB76", Z80Type.INDEX_BIT_IY, 4, "BIT", "IY", "6", " b6 & IY+d"));
-		codeMap.put("FDCB7E" , new OperationStructure("FDCB7E", Z80Type.INDEX_BIT_IY, 4, "BIT", "IY", "7", " b7 & IY+d"));
+		/* IY FDXX */
+		codeMap.put("FD09", new OperationStructure("FD09", Z80Type.INDEX_IY, 2, "ADD", "IY", "BC", "IY<-IY + BC"));
+		codeMap.put("FD19", new OperationStructure("FD19", Z80Type.INDEX_IY, 2, "ADD", "IY", "DE", "IY<-IY + DE"));
+		codeMap.put("FD29", new OperationStructure("FD29", Z80Type.INDEX_IY, 2, "ADD", "IY", "IY", "IY<-IY + IY"));
+		codeMap.put("FD39", new OperationStructure("FD39", Z80Type.INDEX_IY, 2, "ADD", "IY", "SP", "IY<-IY + SP"));
 
-		codeMap.put("FDCB86" , new OperationStructure("FDCB86", Z80Type.INDEX_BIT_IY, 4, "RES", "IY", "0", "0-> b0 in IY+d"));
-		codeMap.put("FDCB8E" , new OperationStructure("FDCB8E", Z80Type.INDEX_BIT_IY, 4, "RES", "IY", "1", "0-> b1 in IY+d"));
-		codeMap.put("FDCB96" , new OperationStructure("FDCB96", Z80Type.INDEX_BIT_IY, 4, "RES", "IY", "2", "0-> b2 in IY+d"));
-		codeMap.put("FDCB9E" , new OperationStructure("FDCB9E", Z80Type.INDEX_BIT_IY, 4, "RES", "IY", "3", "0-> b3 in IY+d"));
-		codeMap.put("FDCBA6" , new OperationStructure("FDCBA6", Z80Type.INDEX_BIT_IY, 4, "RES", "IY", "4", "0-> b4 in IY+d"));
-		codeMap.put("FDCBAE" , new OperationStructure("FDCBAE", Z80Type.INDEX_BIT_IY, 4, "RES", "IY", "5", "0-> b5 in IY+d"));
-		codeMap.put("FDCBB6" , new OperationStructure("FDCBB6", Z80Type.INDEX_BIT_IY, 4, "RES", "IY", "6", "0-> b6 in IY+d"));
-		codeMap.put("FDCBBE" , new OperationStructure("FDCBBE", Z80Type.INDEX_BIT_IY, 4, "RES", "IY", "7", "0-> b7 in IY+d"));
+		codeMap.put("FD21", new OperationStructure("FD21", Z80Type.INDEX_IY, 4, "LD", "IY", "D16", "IY<- D16"));
+		codeMap.put("FD22", new OperationStructure("FD22", Z80Type.INDEX_IY, 4, "LD", "addr", "D16", "(D16)<-IY"));
+		codeMap.put("FD23", new OperationStructure("FD23", Z80Type.INDEX_IY, 2, "INC", "IY", "", "IY<-IY +1"));
+		codeMap.put("FD2A", new OperationStructure("FD2A", Z80Type.INDEX_IY, 4, "LD", "IY", "addr", "IY<-(D16)"));
+		codeMap.put("FD2B", new OperationStructure("FD2B", Z80Type.INDEX_IY, 2, "DEC", "IY", "", "IY<-IY -1"));
 
-		codeMap.put("FDCBC6" , new OperationStructure("FDCBC6", Z80Type.INDEX_BIT_IY, 4, "SET", "IY", "0", "1-> b0 in IY+d"));
-		codeMap.put("FDCBCE" , new OperationStructure("FDCBCE", Z80Type.INDEX_BIT_IY, 4, "SET", "IY", "1", "1-> b1 in IY+d"));
-		codeMap.put("FDCBD6" , new OperationStructure("FDCBD6", Z80Type.INDEX_BIT_IY, 4, "SET", "IY", "2", "1-> b2 in IY+d"));
-		codeMap.put("FDCBDE" , new OperationStructure("FDCBDE", Z80Type.INDEX_BIT_IY, 4, "SET", "IY", "3", "1-> b3 in IY+d"));
-		codeMap.put("FDCBE6" , new OperationStructure("FDCBE6", Z80Type.INDEX_BIT_IY, 4, "SET", "IY", "4", "1-> b4 in IY+d"));
-		codeMap.put("FDCBEE" , new OperationStructure("FDCBEE", Z80Type.INDEX_BIT_IY, 4, "SET", "IY", "5", "1-> b5 in IY+d"));
-		codeMap.put("FDCBF6" , new OperationStructure("FDCBF6", Z80Type.INDEX_BIT_IY, 4, "SET", "IY", "6", "1-> b6 in IY+d"));
-		codeMap.put("FDCBFE" , new OperationStructure("FDCBFE", Z80Type.INDEX_BIT_IY, 4, "SET", "IY", "7", "1-> b7 in IY+d"));
+		codeMap.put("FD34", new OperationStructure("FD34", Z80Type.INDEX_IY, 3, "INC", "IY", "D8", "(IY+d)<-(IY+d)+1"));
+		codeMap.put("FD35", new OperationStructure("FD35", Z80Type.INDEX_IY, 3, "DEC", "IY", "D8", "(IY+d)<-(IY+d)-1"));
+		codeMap.put("FD36", new OperationStructure("FD36", Z80Type.INDEX_IY, 4, "LD", "IY", "D8", "(IY+d)<-D8"));
 
-		
-	}//makeIndexTypes
-	
+		codeMap.put("FD46", new OperationStructure("FD46", Z80Type.INDEX_IY, 3, "LD", "B", "D8", "B<-(IY+d)"));
+		codeMap.put("FD4E", new OperationStructure("FD4E", Z80Type.INDEX_IY, 3, "LD", "C", "D8", "C<-(IY+d)"));
+		codeMap.put("FD56", new OperationStructure("FD56", Z80Type.INDEX_IY, 3, "LD", "D", "D8", "D<-(IY+d)"));
+		codeMap.put("FD5E", new OperationStructure("FD5E", Z80Type.INDEX_IY, 3, "LD", "E", "D8", "E<-(IY+d)"));
+		codeMap.put("FD66", new OperationStructure("FD66", Z80Type.INDEX_IY, 3, "LD", "H", "D8", "H<-(IY+d)"));
+		codeMap.put("FD6E", new OperationStructure("FD6E", Z80Type.INDEX_IY, 3, "LD", "L", "D8", "L<-(IY+d)"));
+		codeMap.put("FD7E", new OperationStructure("FD7E", Z80Type.INDEX_IY, 3, "LD", "A", "D8", "A<-(IY+d)"));
+
+		codeMap.put("FD70", new OperationStructure("FD70", Z80Type.INDEX_IY, 3, "LD", "B", "D8", "(IY+d)<-B"));
+		codeMap.put("FD71", new OperationStructure("FD71", Z80Type.INDEX_IY, 3, "LD", "C", "D8", "(IY+d)<-C"));
+		codeMap.put("FD72", new OperationStructure("FD72", Z80Type.INDEX_IY, 3, "LD", "D", "D8", "(IY+d)<-D"));
+		codeMap.put("FD73", new OperationStructure("FD73", Z80Type.INDEX_IY, 3, "LD", "E", "D8", "(IY+d)<-E"));
+		codeMap.put("FD74", new OperationStructure("FD74", Z80Type.INDEX_IY, 3, "LD", "H", "D8", "(IY+d)<-H"));
+		codeMap.put("FD75", new OperationStructure("FD75", Z80Type.INDEX_IY, 3, "LD", "L", "D8", "(IY+d)<-L"));
+		codeMap.put("FD77", new OperationStructure("FD77", Z80Type.INDEX_IY, 3, "LD", "A", "D8", "(IY+d)<A"));
+
+		codeMap.put("FD86", new OperationStructure("FD86", Z80Type.INDEX_IY, 3, "ADD", "D", "D8", "A<-A+(IY+d)"));
+		codeMap.put("FD8E", new OperationStructure("FD8E", Z80Type.INDEX_IY, 3, "ADC", "D", "D8", "A<-A+(IY+d)+cy"));
+		codeMap.put("FD96", new OperationStructure("FD96", Z80Type.INDEX_IY, 3, "SUB", "D", "D8", "A<-A-(IY+d)"));
+		codeMap.put("FD9E", new OperationStructure("FD9E", Z80Type.INDEX_IY, 3, "SBC", "D", "D8", "A<-A-(IY+d)-cy"));
+		codeMap.put("FDA6", new OperationStructure("FDA6", Z80Type.INDEX_IY, 3, "AND", "D", "D8", "A<-A and (IY+d)"));
+		codeMap.put("FDAE", new OperationStructure("FDAE", Z80Type.INDEX_IY, 3, "XOR", "D", "D8", "A<-A xor (IY+d)"));
+		codeMap.put("FDB6", new OperationStructure("FDB6", Z80Type.INDEX_IY, 3, "OR", "D", "D8", "A<-A or(IY+d)"));
+		codeMap.put("FDBE", new OperationStructure("FDBE", Z80Type.INDEX_IY, 3, "CP", "D", "D8", "A<-A -(IY+d)"));
+
+		codeMap.put("FDE1", new OperationStructure("FDE1", Z80Type.INDEX_IY, 2, "POP", "IY", "", "IY<-(SP)"));
+		codeMap.put("FDE3", new OperationStructure("FDE3", Z80Type.INDEX_IY, 2, "EX", "IY", "", "IY<->(SP)"));
+		codeMap.put("FDE5", new OperationStructure("FDE5", Z80Type.INDEX_IY, 2, "PUSH", "IY", "", "(SP)<-IY"));
+		codeMap.put("FDE9", new OperationStructure("FDE9", Z80Type.INDEX_IY, 2, "JP", "IY", "", "PC<-IY"));
+		codeMap.put("FDF9", new OperationStructure("FDF9", Z80Type.INDEX_IY, 2, "JP", "SP", "IY", "SP<-IY"));
+
+		/* INDEXED BIT INSTRUCTIONS IY FDXXYY */
+
+		codeMap.put("FDCB06",
+				new OperationStructure("FDCB06", Z80Type.INDEX_IY, 4, "RLC", "IY", "D8", "IY+d:cy<-[b7<-b0]<-b7"));
+		codeMap.put("FDCB0E",
+				new OperationStructure("FDCB0E", Z80Type.INDEX_IY, 4, "RLC", "IY", "D8", "IY+d:b0->[b7->b0]->cy"));
+		codeMap.put("FDCB16",
+				new OperationStructure("FDCB16", Z80Type.INDEX_IY, 4, "RL", "IY", "D8", "IY+d:cy<-[b7<-b0]<-cy"));
+		codeMap.put("FDCB1E",
+				new OperationStructure("FDCB1E", Z80Type.INDEX_IY, 4, "RR", "IY", "D8", "IY+d:cy->[b7->b0]->cy"));
+		codeMap.put("FDCB26",
+				new OperationStructure("FDCB26", Z80Type.INDEX_IY, 4, "SLA", "IY", "D8", "IY+d:cy<-[b7<-b0]<-0"));
+		codeMap.put("FDCB2E",
+				new OperationStructure("FDCB2E", Z80Type.INDEX_IY, 4, "SRA", "IY", "D8", "IY+d:b7->[b7->b0]->cy"));
+		codeMap.put("FDCB3E",
+				new OperationStructure("FDCB3E", Z80Type.INDEX_IY, 4, "SRL", "IY", "D8", "IY+d:0->[b7->b0]->cy"));
+
+		codeMap.put("FDCB46",
+				new OperationStructure("FDCB46", Z80Type.INDEX_BIT_IY, 4, "BIT", "IY", "0", " b0 & IY+d"));
+		codeMap.put("FDCB4E",
+				new OperationStructure("FDCB4E", Z80Type.INDEX_BIT_IY, 4, "BIT", "IY", "1", " b1 & IY+d"));
+		codeMap.put("FDCB56",
+				new OperationStructure("FDCB56", Z80Type.INDEX_BIT_IY, 4, "BIT", "IY", "2", " b2 & IY+d"));
+		codeMap.put("FDCB5E",
+				new OperationStructure("FDCB5E", Z80Type.INDEX_BIT_IY, 4, "BIT", "IY", "3", " b3 & IY+d"));
+		codeMap.put("FDCB66",
+				new OperationStructure("FDCB66", Z80Type.INDEX_BIT_IY, 4, "BIT", "IY", "4", " b4 & IY+d"));
+		codeMap.put("FDCB6E",
+				new OperationStructure("FDCB6E", Z80Type.INDEX_BIT_IY, 4, "BIT", "IY", "5", " b5 & IY+d"));
+		codeMap.put("FDCB76",
+				new OperationStructure("FDCB76", Z80Type.INDEX_BIT_IY, 4, "BIT", "IY", "6", " b6 & IY+d"));
+		codeMap.put("FDCB7E",
+				new OperationStructure("FDCB7E", Z80Type.INDEX_BIT_IY, 4, "BIT", "IY", "7", " b7 & IY+d"));
+
+		codeMap.put("FDCB86",
+				new OperationStructure("FDCB86", Z80Type.INDEX_BIT_IY, 4, "RES", "IY", "0", "0-> b0 in IY+d"));
+		codeMap.put("FDCB8E",
+				new OperationStructure("FDCB8E", Z80Type.INDEX_BIT_IY, 4, "RES", "IY", "1", "0-> b1 in IY+d"));
+		codeMap.put("FDCB96",
+				new OperationStructure("FDCB96", Z80Type.INDEX_BIT_IY, 4, "RES", "IY", "2", "0-> b2 in IY+d"));
+		codeMap.put("FDCB9E",
+				new OperationStructure("FDCB9E", Z80Type.INDEX_BIT_IY, 4, "RES", "IY", "3", "0-> b3 in IY+d"));
+		codeMap.put("FDCBA6",
+				new OperationStructure("FDCBA6", Z80Type.INDEX_BIT_IY, 4, "RES", "IY", "4", "0-> b4 in IY+d"));
+		codeMap.put("FDCBAE",
+				new OperationStructure("FDCBAE", Z80Type.INDEX_BIT_IY, 4, "RES", "IY", "5", "0-> b5 in IY+d"));
+		codeMap.put("FDCBB6",
+				new OperationStructure("FDCBB6", Z80Type.INDEX_BIT_IY, 4, "RES", "IY", "6", "0-> b6 in IY+d"));
+		codeMap.put("FDCBBE",
+				new OperationStructure("FDCBBE", Z80Type.INDEX_BIT_IY, 4, "RES", "IY", "7", "0-> b7 in IY+d"));
+
+		codeMap.put("FDCBC6",
+				new OperationStructure("FDCBC6", Z80Type.INDEX_BIT_IY, 4, "SET", "IY", "0", "1-> b0 in IY+d"));
+		codeMap.put("FDCBCE",
+				new OperationStructure("FDCBCE", Z80Type.INDEX_BIT_IY, 4, "SET", "IY", "1", "1-> b1 in IY+d"));
+		codeMap.put("FDCBD6",
+				new OperationStructure("FDCBD6", Z80Type.INDEX_BIT_IY, 4, "SET", "IY", "2", "1-> b2 in IY+d"));
+		codeMap.put("FDCBDE",
+				new OperationStructure("FDCBDE", Z80Type.INDEX_BIT_IY, 4, "SET", "IY", "3", "1-> b3 in IY+d"));
+		codeMap.put("FDCBE6",
+				new OperationStructure("FDCBE6", Z80Type.INDEX_BIT_IY, 4, "SET", "IY", "4", "1-> b4 in IY+d"));
+		codeMap.put("FDCBEE",
+				new OperationStructure("FDCBEE", Z80Type.INDEX_BIT_IY, 4, "SET", "IY", "5", "1-> b5 in IY+d"));
+		codeMap.put("FDCBF6",
+				new OperationStructure("FDCBF6", Z80Type.INDEX_BIT_IY, 4, "SET", "IY", "6", "1-> b6 in IY+d"));
+		codeMap.put("FDCBFE",
+				new OperationStructure("FDCBFE", Z80Type.INDEX_BIT_IY, 4, "SET", "IY", "7", "1-> b7 in IY+d"));
+
+	}// makeIndexTypes
+
 	private void makeExtendedTypes() {
-//		codeMap.put(key , new OperationStructure(key, Z80Type.BIT, 2, instruction, register, "", function));
+		// codeMap.put(key , new OperationStructure(key, Z80Type.BIT, 2, instruction, register, "", function));
 
 		codeMap.put("ED40", new OperationStructure("ED40", Z80Type.EXTENDED, 2, "IN", "B", "(C)", "B<-(C)"));
 		codeMap.put("ED41", new OperationStructure("ED41", Z80Type.EXTENDED, 2, "OUT", "B", "(C)", "B->(C)"));
@@ -285,7 +346,7 @@ public class OpCodeMap {
 		codeMap.put("ED7C", new OperationStructure("ED7C", Z80Type.EXTENDED, 2, "NEG", "", "", "A<- 0-A *UD"));
 		codeMap.put("ED7D", new OperationStructure("ED7D", Z80Type.EXTENDED, 2, "RETN", "", "", "PC <- (SP)"));
 		codeMap.put("ED7E", new OperationStructure("ED7E", Z80Type.EXTENDED, 2, "IM 2", "", "", "Set mode 2"));
-		
+
 		codeMap.put("EDA0", new OperationStructure("EDA0", Z80Type.EXTENDED, 2, "LDI", "", "", ""));
 		codeMap.put("EDA1", new OperationStructure("EDA1", Z80Type.EXTENDED, 2, "CPI", "", "", ""));
 		codeMap.put("EDA2", new OperationStructure("EDA2", Z80Type.EXTENDED, 2, "INI", "", "", ""));
@@ -304,13 +365,13 @@ public class OpCodeMap {
 		codeMap.put("EDBA", new OperationStructure("EDBA", Z80Type.EXTENDED, 2, "INDR", "", "", ""));
 		codeMap.put("EDBB", new OperationStructure("EDBA", Z80Type.EXTENDED, 2, "OTDR", "", "", ""));
 
-	}//makeExtendedTypes
+	}// makeExtendedTypes
 
 	private void makeBitTypes() {
 		String key;
 		String[] registers = new String[] { "B", "C", "D", "E", "H", "L", "M", "A" };
 		String register;
-		 String bitString = "";
+		String bitString = "";
 		String instruction = "";
 		String function = "";
 		for (int code = 0; code < 0x40; code++) {
@@ -350,17 +411,16 @@ public class OpCodeMap {
 				break;
 			}// switch
 			register = registers[code % 8];
-			
+
 			key = String.format("CB%02X", code);
-			codeMap.put(key , new OperationStructure(key, Z80Type.BIT, 2, instruction, register, "", function));
+			codeMap.put(key, new OperationStructure(key, Z80Type.BIT, 2, instruction, register, "", function));
 
-//			System.out.printf("%s,Z80Type.BIT,2,%s,%s,MT,%s%n", key,instruction,register,function);
-			
+			// System.out.printf("%s,Z80Type.BIT,2,%s,%s,MT,%s%n", key,instruction,register,function);
 
-		} // for  lower instructions
-		String operation="";
+		} // for lower instructions
+		String operation = "";
 		for (int code = 0x40; code < 0x100; code++) {
-			int hiByte = (int) (code /0x40);
+			int hiByte = (int) (code / 0x40);
 			switch (hiByte) {
 			case 0:
 				instruction = "BAD";
@@ -377,11 +437,11 @@ public class OpCodeMap {
 				instruction = "SET";
 				operation = "Set";
 				break;
-			}//switch instruction
-			
-			int bitBase = code -(hiByte * 0x40);
-			
-			switch(bitBase / 8) {
+			}// switch instruction
+
+			int bitBase = code - (hiByte * 0x40);
+
+			switch (bitBase / 8) {
 			case 0:
 				bitString = "0";
 				break;
@@ -406,12 +466,12 @@ public class OpCodeMap {
 			case 7:
 				bitString = "7";
 				break;
-			}//switch bits
+			}// switch bits
 			key = String.format("CB%02X", code);
 			register = registers[code % 8];
-			function = String.format("%s bit %s in register %s", operation,bitString,register);
-			codeMap.put(key , new OperationStructure(key, Z80Type.BIT, 2, instruction, register, bitString, function));
-//			System.out.printf("%s,Z80Type.BIT,2,%s,%s,%s,%s%n", key,instruction,register,bitString,function);
+			function = String.format("%s bit %s in register %s", operation, bitString, register);
+			codeMap.put(key, new OperationStructure(key, Z80Type.BIT, 2, instruction, register, bitString, function));
+			// System.out.printf("%s,Z80Type.BIT,2,%s,%s,%s,%s%n", key,instruction,register,bitString,function);
 
 		} // for bits and registers
 	}// makeBitTypes
@@ -419,162 +479,166 @@ public class OpCodeMap {
 	private void makeMainTypes() {
 		// codeMap = new HashMap<Byte, OperationStructure>();
 		codeMap.put("00", new OperationStructure("00", Z80Type.MAIN, 1, "NOP", "", "", ""));
-		codeMap.put("01", new OperationStructure("01", Z80Type.MAIN, 3, "LD", "B", "D16", "B<- byte3,C<- byte2"));
-		codeMap.put("02", new OperationStructure("02", Z80Type.MAIN, 1, "LD", "B", "", "(BC)<-A"));
-		codeMap.put("03", new OperationStructure("03", Z80Type.MAIN, 1, "INC", "B", "", "BC<-BC+1"));
+		codeMap.put("01", new OperationStructure("01", Z80Type.MAIN, 3, "LD", "BC", "D16", "B<- byte3,C<- byte2"));
+		codeMap.put("02", new OperationStructure("02", Z80Type.MAIN, 1, "LD", "(BC)", "A", "(BC)<-A"));
+		codeMap.put("03", new OperationStructure("03", Z80Type.MAIN, 1, "INC", "BC", "", "BC<-BC+1"));
 		codeMap.put("04", new OperationStructure("04", Z80Type.MAIN, 1, "INC", "B", "", "B<-B+1"));
 		codeMap.put("05", new OperationStructure("05", Z80Type.MAIN, 1, "DEC", "B", "", "B<-B-1"));
 		codeMap.put("06", new OperationStructure("06", Z80Type.MAIN, 2, "LD", "B", "D8", "B<-byte2"));
 		codeMap.put("07", new OperationStructure("07", Z80Type.MAIN, 1, "RLCA", "", "", "A=A << not thru carry"));
 		codeMap.put("08", new OperationStructure("08", Z80Type.MAIN, 1, "EX", "AF", "AF'", "AF<->AF'"));
-		codeMap.put("09", new OperationStructure("09", Z80Type.MAIN, 1, "ADD", "B", "", "HL = HL + BC"));
-		codeMap.put("0A", new OperationStructure("0A", Z80Type.MAIN, 1, "LD", "B", "", "A<-(BC)"));
-		codeMap.put("0B", new OperationStructure("0B", Z80Type.MAIN, 1, "DEC", "B", "", "BC = BC-1"));
+		codeMap.put("09", new OperationStructure("09", Z80Type.MAIN, 1, "ADD", "HL", "BC", "HL = HL + BC"));
+		codeMap.put("0A", new OperationStructure("0A", Z80Type.MAIN, 1, "LD", "A", "(BC)", "A<-(BC)"));
+		codeMap.put("0B", new OperationStructure("0B", Z80Type.MAIN, 1, "DEC", "BC", "", "BC = BC-1"));
 		codeMap.put("0C", new OperationStructure("0C", Z80Type.MAIN, 1, "INC", "C", "", "C <-C+1"));
 		codeMap.put("0D", new OperationStructure("0D", Z80Type.MAIN, 1, "DEC", "C", "", "C <-C-1"));
 		codeMap.put("0E", new OperationStructure("0E", Z80Type.MAIN, 2, "LD", "C", "D8", "C,-byte2"));
 		codeMap.put("0F", new OperationStructure("0F", Z80Type.MAIN, 1, "RRCA", "", "", "A = A>> not thru carry"));
 		//
-		codeMap.put("10", new OperationStructure("10", Z80Type.MAIN, 1, "DJNZ", "D8", "", "(PC)<-(PC)-immediate"));
-		codeMap.put("11", new OperationStructure("11", Z80Type.MAIN, 3, "LD", "D", "D16", "D<-byte3,E<-byte2"));
-		codeMap.put("12", new OperationStructure("12", Z80Type.MAIN, 1, "LD", "D", "", "(DE)<-A"));
-		codeMap.put("13", new OperationStructure("13", Z80Type.MAIN, 1, "INC", "D", "", "DE<-DE + 1"));
+		codeMap.put("10", new OperationStructure("10", Z80Type.MAIN, 2, "DJNZ", "D8", "",
+				"B<-B-1; if not Zero,(PC)<-(PC)+immediate"));
+		codeMap.put("11", new OperationStructure("11", Z80Type.MAIN, 3, "LD", "DE", "D16", "D<-byte3,E<-byte2"));
+		codeMap.put("12", new OperationStructure("12", Z80Type.MAIN, 1, "LD", "(DE)", "A", "(DE)<-A"));
+		codeMap.put("13", new OperationStructure("13", Z80Type.MAIN, 1, "INC", "DE", "", "DE<-DE + 1"));
 		codeMap.put("14", new OperationStructure("14", Z80Type.MAIN, 1, "INC", "D", "", "D<-D+1"));
 		codeMap.put("15", new OperationStructure("15", Z80Type.MAIN, 1, "DEC", "D", "", "D<-D-1"));
 		codeMap.put("16", new OperationStructure("16", Z80Type.MAIN, 2, "LD", "D", "D8", "D<-byte2"));
-		codeMap.put("17", new OperationStructure("17", Z80Type.MAIN, 1, "RLA", "D", "", "A=A << thru carry"));
-		codeMap.put("18", new OperationStructure("18", Z80Type.MAIN, 1, "JR", "D", "", "(PC)<-(PC)-immediate\")"));
-		codeMap.put("19", new OperationStructure("19", Z80Type.MAIN, 1, "ADD", "D", "", "HL = HL + DE"));
-		codeMap.put("1A", new OperationStructure("1A", Z80Type.MAIN, 1, "LD", "D", "", "A<-(DE)"));
-		codeMap.put("1B", new OperationStructure("1B", Z80Type.MAIN, 1, "DEC", "D", "", "DE = DE-1"));
+		codeMap.put("17", new OperationStructure("17", Z80Type.MAIN, 1, "RLA", "", "", "A=A << thru carry"));
+		codeMap.put("18", new OperationStructure("18", Z80Type.MAIN, 2, "JR", "D8", "", "(PC)<-(PC)+immediate"));
+		codeMap.put("19", new OperationStructure("19", Z80Type.MAIN, 1, "ADD", "HL", "DE", "HL = HL + DE"));
+		codeMap.put("1A", new OperationStructure("1A", Z80Type.MAIN, 1, "LD", "A", "(DE)", "A<-(DE)"));
+		codeMap.put("1B", new OperationStructure("1B", Z80Type.MAIN, 1, "DEC", "DE", "", "DE = DE-1"));
 		codeMap.put("1C", new OperationStructure("1C", Z80Type.MAIN, 1, "INC", "E", "", "E <-E+1"));
 		codeMap.put("1D", new OperationStructure("1D", Z80Type.MAIN, 1, "DEC", "E", "", "E <-E-1"));
 		codeMap.put("1E", new OperationStructure("1E", Z80Type.MAIN, 2, "LD", "E", "D8", "E,-byte2"));
 		codeMap.put("1F", new OperationStructure("1f", Z80Type.MAIN, 1, "RRA", "", "", "A = A>>  thru carry"));
 		//
-		codeMap.put("20", new OperationStructure("20", Z80Type.MAIN, 1, "NOP*", "", "", "Alt NOP (RIM)"));// special
-		codeMap.put("21", new OperationStructure("21", Z80Type.MAIN, 3, "LXI", "H", "D16", "H<-byte3,L<-byte2"));
-		codeMap.put("22", new OperationStructure("22", Z80Type.MAIN, 3, "SHLD", "addr", "", "(addr)<-L;(addr+1)<-H"));
-		codeMap.put("23", new OperationStructure("23", Z80Type.MAIN, 1, "INX", "H", "", "HL<-HL + 1"));
-		codeMap.put("24", new OperationStructure("24", Z80Type.MAIN, 1, "INR", "H", "", "H<-H+1"));
-		codeMap.put("25", new OperationStructure("25", Z80Type.MAIN, 1, "DCR", "H", "", "H<-H-1"));
-		codeMap.put("26", new OperationStructure("26", Z80Type.MAIN, 2, "MVI", "H", "D8", "H<-byte2"));
-		codeMap.put("27", new OperationStructure("27", Z80Type.MAIN, 1, "DAA", "", "", "")); // special
-		codeMap.put("28", new OperationStructure("28", Z80Type.MAIN, 1, "Alt", "", "", "Alt NOP"));
-		codeMap.put("29", new OperationStructure("29", Z80Type.MAIN, 1, "DAD", "H", "", "HL = HL + HL"));
-		codeMap.put("2A", new OperationStructure("2A", Z80Type.MAIN, 3, "LHLD", "addr", "", "L<-(addr);H<-(addr+1)"));
-		codeMap.put("2B", new OperationStructure("2B", Z80Type.MAIN, 1, "DCX", "H", "", "HL = HL-1"));
-		codeMap.put("2C", new OperationStructure("2C", Z80Type.MAIN, 1, "INR", "L", "", "L <-L+1"));
-		codeMap.put("2D", new OperationStructure("2D", Z80Type.MAIN, 1, "DCR", "L", "", "L <-L-1"));
-		codeMap.put("2E", new OperationStructure("2E", Z80Type.MAIN, 2, "MVI", "L", "D8", "L,-byte2"));
-		codeMap.put("2F", new OperationStructure("2F", Z80Type.MAIN, 1, "CMA", "", "", "A = !A"));
+		codeMap.put("20",
+				new OperationStructure("20", Z80Type.MAIN, 2, "JR", "NZ", "D8", "if Z not set,(PC)<-(PC)+immediate"));
+		codeMap.put("21", new OperationStructure("21", Z80Type.MAIN, 3, "LD", "HL", "D16", "H<-byte3,L<-byte2"));
+		codeMap.put("22", new OperationStructure("22", Z80Type.MAIN, 3, "LD", "addr", "HL", "(addr)<-L;(addr+1)<-H"));
+		codeMap.put("23", new OperationStructure("23", Z80Type.MAIN, 1, "INC", "HL", "", "HL<-HL + 1"));
+		codeMap.put("24", new OperationStructure("24", Z80Type.MAIN, 1, "INC", "H", "", "H<-H+1"));
+		codeMap.put("25", new OperationStructure("25", Z80Type.MAIN, 1, "DEC", "H", "", "H<-H-1"));
+		codeMap.put("26", new OperationStructure("26", Z80Type.MAIN, 2, "LD", "H", "D8", "H<-byte2"));
+		codeMap.put("27", new OperationStructure("27", Z80Type.MAIN, 1, "DAA", "", "", "Decimal Adjust Acc."));
+		codeMap.put("28", new OperationStructure("28", Z80Type.MAIN, 2, "JR", "Z", "", "if Z is set,(PC)<- (PC)+d8"));
+		codeMap.put("29", new OperationStructure("29", Z80Type.MAIN, 1, "ADD", "HL", "HL", "HL = HL + HL"));
+		codeMap.put("2A", new OperationStructure("2A", Z80Type.MAIN, 3, "LD", "HL", "addr", "L<-(addr);H<-(addr+1)"));
+		codeMap.put("2B", new OperationStructure("2B", Z80Type.MAIN, 1, "DEC", "HL", "", "HL = HL-1"));
+		codeMap.put("2C", new OperationStructure("2C", Z80Type.MAIN, 1, "INC", "L", "", "L <-L+1"));
+		codeMap.put("2D", new OperationStructure("2D", Z80Type.MAIN, 1, "DEC", "L", "", "L <-L-1"));
+		codeMap.put("2E", new OperationStructure("2E", Z80Type.MAIN, 2, "LD", "L", "D8", "L,-byte2"));
+		codeMap.put("2F", new OperationStructure("2F", Z80Type.MAIN, 1, "CPL", "", "", "A = !A"));
 		//
-		codeMap.put("30", new OperationStructure("30", Z80Type.MAIN, 1, "Alt", "", "", "Alt NOP(SIM)")); // special
+		codeMap.put("30", new OperationStructure("30", Z80Type.MAIN, 2, "JR", "NC", "D8",
+				"if Carry not set,(PC)<-(PC)+immediate"));
 		codeMap.put("31", new OperationStructure("31", Z80Type.MAIN, 3, "LXI", "SP", "D16", "SP-data"));
-		codeMap.put("32", new OperationStructure("32", Z80Type.MAIN, 3, "STA", "addr", "", "(addr)<-A"));
-		codeMap.put("33", new OperationStructure("33", Z80Type.MAIN, 1, "INX", "SP", "", "SP<-SP + 1"));
-		codeMap.put("34", new OperationStructure("34", Z80Type.MAIN, 1, "INR", "M", "", "(HL)<-(HL)+1"));
-		codeMap.put("35", new OperationStructure("35", Z80Type.MAIN, 1, "DCR", "M", "", "(HL)<-(HL)-1"));
-		codeMap.put("36", new OperationStructure("36", Z80Type.MAIN, 2, "MVI", "M", "D8", "(HL)<-byte2"));
-		codeMap.put("37", new OperationStructure("37", Z80Type.MAIN, 1, "STC", "", "", "CY=1"));
-		codeMap.put("38", new OperationStructure("38", Z80Type.MAIN, 1, "Alt", "", "", "Alt NOP"));
-		codeMap.put("39", new OperationStructure("39", Z80Type.MAIN, 1, "DAD", "SP", "", "HL = HL + SP"));
-		codeMap.put("3A", new OperationStructure("3A", Z80Type.MAIN, 3, "LDA", "addr", "", "A<-(addr)"));
-		codeMap.put("3B", new OperationStructure("3B", Z80Type.MAIN, 1, "DCX", "SP", "", "SP = SP-1"));
-		codeMap.put("3C", new OperationStructure("3C", Z80Type.MAIN, 1, "INR", "A", "", "A <-A+1"));
-		codeMap.put("3D", new OperationStructure("3D", Z80Type.MAIN, 1, "DCR", "A", "", "A <-A-1"));
-		codeMap.put("3E", new OperationStructure("3E", Z80Type.MAIN, 2, "MVI", "A", "D8", "A,-byte2"));
-		codeMap.put("3F", new OperationStructure("3F", Z80Type.MAIN, 1, "CMC", "", "", "CY=!CY"));
+		codeMap.put("32", new OperationStructure("32", Z80Type.MAIN, 3, "LD", "addr", "A", "(addr)<-A"));
+		codeMap.put("33", new OperationStructure("33", Z80Type.MAIN, 1, "INC", "SP", "", "SP<-SP + 1"));
+		codeMap.put("34", new OperationStructure("34", Z80Type.MAIN, 1, "INC", "M", "", "(HL)<-(HL)+1"));
+		codeMap.put("35", new OperationStructure("35", Z80Type.MAIN, 1, "DEC", "M", "", "(HL)<-(HL)-1"));
+		codeMap.put("36", new OperationStructure("36", Z80Type.MAIN, 2, "LD", "M", "D8", "(HL)<-byte2"));
+		codeMap.put("37", new OperationStructure("37", Z80Type.MAIN, 1, "SCF", "", "", "CY=1"));
+		codeMap.put("38",
+				new OperationStructure("38", Z80Type.MAIN, 2, "JR", "C", "D8", "If CY set,(PC)<-(PC)-immediate"));
+		codeMap.put("39", new OperationStructure("39", Z80Type.MAIN, 1, "ADD", "HL", "SP", "HL = HL + SP"));
+		codeMap.put("3A", new OperationStructure("3A", Z80Type.MAIN, 3, "LD", "A", "addr", "A<-(addr)"));
+		codeMap.put("3B", new OperationStructure("3B", Z80Type.MAIN, 1, "DEC", "SP", "", "SP = SP-1"));
+		codeMap.put("3C", new OperationStructure("3C", Z80Type.MAIN, 1, "INC", "A", "", "A <-A+1"));
+		codeMap.put("3D", new OperationStructure("3D", Z80Type.MAIN, 1, "DEC", "A", "", "A <-A-1"));
+		codeMap.put("3E", new OperationStructure("3E", Z80Type.MAIN, 2, "LD", "A", "D8", "A,-byte2"));
+		codeMap.put("3F", new OperationStructure("3F", Z80Type.MAIN, 1, "CCF", "", "", "CY=!CY"));
 		//
-		codeMap.put("40", new OperationStructure("40", Z80Type.MAIN, 1, "MOV", "B", ",B", "B <- B"));
-		codeMap.put("41", new OperationStructure("41", Z80Type.MAIN, 1, "MOV", "B", ",C", "B <- C"));
-		codeMap.put("42", new OperationStructure("42", Z80Type.MAIN, 1, "MOV", "B", ",D", "B <- D"));
-		codeMap.put("43", new OperationStructure("43", Z80Type.MAIN, 1, "MOV", "B", ",E", "B <- E"));
-		codeMap.put("44", new OperationStructure("44", Z80Type.MAIN, 1, "MOV", "B", ",H", "B <- H"));
-		codeMap.put("45", new OperationStructure("45", Z80Type.MAIN, 1, "MOV", "B", ",L", "B <- L"));
-		codeMap.put("46", new OperationStructure("46", Z80Type.MAIN, 1, "MOV", "B", ",M", "B <- (HL)"));
-		codeMap.put("47", new OperationStructure("47", Z80Type.MAIN, 1, "MOV", "B", ",A", "B <- A"));
+		codeMap.put("40", new OperationStructure("40", Z80Type.MAIN, 1, "LD", "B", "B", "B <- B"));
+		codeMap.put("41", new OperationStructure("41", Z80Type.MAIN, 1, "LD", "B", "C", "B <- C"));
+		codeMap.put("42", new OperationStructure("42", Z80Type.MAIN, 1, "LD", "B", "D", "B <- D"));
+		codeMap.put("43", new OperationStructure("43", Z80Type.MAIN, 1, "LD", "B", "E", "B <- E"));
+		codeMap.put("44", new OperationStructure("44", Z80Type.MAIN, 1, "LD", "B", "H", "B <- H"));
+		codeMap.put("45", new OperationStructure("45", Z80Type.MAIN, 1, "LD", "B", "L", "B <- L"));
+		codeMap.put("46", new OperationStructure("46", Z80Type.MAIN, 1, "LD", "B", "M", "B <- (HL)"));
+		codeMap.put("47", new OperationStructure("47", Z80Type.MAIN, 1, "LD", "B", "A", "B <- A"));
 		// Z80Type.MAIN,
-		codeMap.put("48", new OperationStructure("48", Z80Type.MAIN, 1, "MOV", "C", ",B", "C <- B"));
-		codeMap.put("49", new OperationStructure("49", Z80Type.MAIN, 1, "MOV", "C", ",C", "C <- C"));
-		codeMap.put("4A", new OperationStructure("4A", Z80Type.MAIN, 1, "MOV", "C", ",D", "C <- D"));
-		codeMap.put("4B", new OperationStructure("4B", Z80Type.MAIN, 1, "MOV", "C", ",E", "C <- E"));
-		codeMap.put("4C", new OperationStructure("4C", Z80Type.MAIN, 1, "MOV", "C", ",H", "C <- H"));
-		codeMap.put("4D", new OperationStructure("4D", Z80Type.MAIN, 1, "MOV", "C", ",L", "C <- L"));
-		codeMap.put("4E", new OperationStructure("4E", Z80Type.MAIN, 1, "MOV", "C", ",M", "C <- (HL)"));
-		codeMap.put("4F", new OperationStructure("4F", Z80Type.MAIN, 1, "MOV", "C", ",A", "C <- A"));
+		codeMap.put("48", new OperationStructure("48", Z80Type.MAIN, 1, "LD", "C", "B", "C <- B"));
+		codeMap.put("49", new OperationStructure("49", Z80Type.MAIN, 1, "LD", "C", "C", "C <- C"));
+		codeMap.put("4A", new OperationStructure("4A", Z80Type.MAIN, 1, "LD", "C", "D", "C <- D"));
+		codeMap.put("4B", new OperationStructure("4B", Z80Type.MAIN, 1, "LD", "C", "E", "C <- E"));
+		codeMap.put("4C", new OperationStructure("4C", Z80Type.MAIN, 1, "LD", "C", "H", "C <- H"));
+		codeMap.put("4D", new OperationStructure("4D", Z80Type.MAIN, 1, "LD", "C", "L", "C <- L"));
+		codeMap.put("4E", new OperationStructure("4E", Z80Type.MAIN, 1, "LD", "C", "M", "C <- (HL)"));
+		codeMap.put("4F", new OperationStructure("4F", Z80Type.MAIN, 1, "LD", "C", "A", "C <- A"));
 		//
-		codeMap.put("50", new OperationStructure("50", Z80Type.MAIN, 1, "MOV", "D", ",B", "D <- B"));
-		codeMap.put("51", new OperationStructure("51", Z80Type.MAIN, 1, "MOV", "D", ",C", "D <- C"));
-		codeMap.put("52", new OperationStructure("52", Z80Type.MAIN, 1, "MOV", "D", ",D", "D <- D"));
-		codeMap.put("53", new OperationStructure("53", Z80Type.MAIN, 1, "MOV", "D", ",E", "D <- E"));
-		codeMap.put("54", new OperationStructure("54", Z80Type.MAIN, 1, "MOV", "D", ",H", "D <- H"));
-		codeMap.put("55", new OperationStructure("55", Z80Type.MAIN, 1, "MOV", "D", ",L", "D <- L"));
-		codeMap.put("56", new OperationStructure("56", Z80Type.MAIN, 1, "MOV", "D", ",M", "D <- (HL)"));
-		codeMap.put("57", new OperationStructure("57", Z80Type.MAIN, 1, "MOV", "D", ",A", "D <- A"));
+		codeMap.put("50", new OperationStructure("50", Z80Type.MAIN, 1, "LD", "D", "B", "D <- B"));
+		codeMap.put("51", new OperationStructure("51", Z80Type.MAIN, 1, "LD", "D", "C", "D <- C"));
+		codeMap.put("52", new OperationStructure("52", Z80Type.MAIN, 1, "LD", "D", "D", "D <- D"));
+		codeMap.put("53", new OperationStructure("53", Z80Type.MAIN, 1, "LD", "D", "E", "D <- E"));
+		codeMap.put("54", new OperationStructure("54", Z80Type.MAIN, 1, "LD", "D", "H", "D <- H"));
+		codeMap.put("55", new OperationStructure("55", Z80Type.MAIN, 1, "LD", "D", "L", "D <- L"));
+		codeMap.put("56", new OperationStructure("56", Z80Type.MAIN, 1, "LD", "D", "M", "D <- (HL)"));
+		codeMap.put("57", new OperationStructure("57", Z80Type.MAIN, 1, "LD", "D", "A", "D <- A"));
 		//
-		codeMap.put("58", new OperationStructure("58", Z80Type.MAIN, 1, "MOV", "E", ",B", "E <- B"));
-		codeMap.put("59", new OperationStructure("59", Z80Type.MAIN, 1, "MOV", "E", ",C", "E <- C"));
-		codeMap.put("5A", new OperationStructure("5A", Z80Type.MAIN, 1, "MOV", "E", ",D", "E <- D"));
-		codeMap.put("5B", new OperationStructure("5B", Z80Type.MAIN, 1, "MOV", "E", ",E", "E <- E"));
-		codeMap.put("5C", new OperationStructure("5C", Z80Type.MAIN, 1, "MOV", "E", ",H", "E <- H"));
-		codeMap.put("5D", new OperationStructure("5D", Z80Type.MAIN, 1, "MOV", "E", ",L", "E <- L"));
-		codeMap.put("5E", new OperationStructure("5E", Z80Type.MAIN, 1, "MOV", "E", ",M", "E <- (HL)"));
-		codeMap.put("5F", new OperationStructure("5F", Z80Type.MAIN, 1, "MOV", "E", ",A", "E <- A"));
+		codeMap.put("58", new OperationStructure("58", Z80Type.MAIN, 1, "LD", "E", "B", "E <- B"));
+		codeMap.put("59", new OperationStructure("59", Z80Type.MAIN, 1, "LD", "E", "C", "E <- C"));
+		codeMap.put("5A", new OperationStructure("5A", Z80Type.MAIN, 1, "LD", "E", "D", "E <- D"));
+		codeMap.put("5B", new OperationStructure("5B", Z80Type.MAIN, 1, "LD", "E", "E", "E <- E"));
+		codeMap.put("5C", new OperationStructure("5C", Z80Type.MAIN, 1, "LD", "E", "H", "E <- H"));
+		codeMap.put("5D", new OperationStructure("5D", Z80Type.MAIN, 1, "LD", "E", "L", "E <- L"));
+		codeMap.put("5E", new OperationStructure("5E", Z80Type.MAIN, 1, "LD", "E", "M", "E <- (HL)"));
+		codeMap.put("5F", new OperationStructure("5F", Z80Type.MAIN, 1, "LD", "E", "A", "E <- A"));
 		//
-		codeMap.put("60", new OperationStructure("60", Z80Type.MAIN, 1, "MOV", "H", ",B", "H <- B"));
-		codeMap.put("61", new OperationStructure("61", Z80Type.MAIN, 1, "MOV", "H", ",C", "H <- C"));
-		codeMap.put("62", new OperationStructure("62", Z80Type.MAIN, 1, "MOV", "H", ",D", "H <- D"));
-		codeMap.put("63", new OperationStructure("63", Z80Type.MAIN, 1, "MOV", "H", ",E", "H <- E"));
-		codeMap.put("64", new OperationStructure("64", Z80Type.MAIN, 1, "MOV", "H", ",H", "H <- H"));
-		codeMap.put("65", new OperationStructure("65", Z80Type.MAIN, 1, "MOV", "H", ",L", "H <- L"));
-		codeMap.put("66", new OperationStructure("66", Z80Type.MAIN, 1, "MOV", "H", ",M", "H <- (HL)"));
-		codeMap.put("67", new OperationStructure("67", Z80Type.MAIN, 1, "MOV", "H", ",A", "H <- A"));
+		codeMap.put("60", new OperationStructure("60", Z80Type.MAIN, 1, "LD", "H", "B", "H <- B"));
+		codeMap.put("61", new OperationStructure("61", Z80Type.MAIN, 1, "LD", "H", "C", "H <- C"));
+		codeMap.put("62", new OperationStructure("62", Z80Type.MAIN, 1, "LD", "H", "D", "H <- D"));
+		codeMap.put("63", new OperationStructure("63", Z80Type.MAIN, 1, "LD", "H", "E", "H <- E"));
+		codeMap.put("64", new OperationStructure("64", Z80Type.MAIN, 1, "LD", "H", "H", "H <- H"));
+		codeMap.put("65", new OperationStructure("65", Z80Type.MAIN, 1, "LD", "H", "L", "H <- L"));
+		codeMap.put("66", new OperationStructure("66", Z80Type.MAIN, 1, "LD", "H", "M", "H <- (HL)"));
+		codeMap.put("67", new OperationStructure("67", Z80Type.MAIN, 1, "LD", "H", "A", "H <- A"));
 		//
-		codeMap.put("68", new OperationStructure("68", Z80Type.MAIN, 1, "MOV", "L", ",B", "L <- B"));
-		codeMap.put("69", new OperationStructure("69", Z80Type.MAIN, 1, "MOV", "L", ",C", "L <- C"));
-		codeMap.put("6A", new OperationStructure("6A", Z80Type.MAIN, 1, "MOV", "L", ",D", "L <- D"));
-		codeMap.put("6B", new OperationStructure("6B", Z80Type.MAIN, 1, "MOV", "L", ",E", "L <- E"));
-		codeMap.put("6C", new OperationStructure("6C", Z80Type.MAIN, 1, "MOV", "L", ",H", "L <- H"));
-		codeMap.put("6D", new OperationStructure("6D", Z80Type.MAIN, 1, "MOV", "L", ",L", "L <- L"));
-		codeMap.put("6E", new OperationStructure("6E", Z80Type.MAIN, 1, "MOV", "L", ",M", "L <- (HL)"));
-		codeMap.put("6F", new OperationStructure("6F", Z80Type.MAIN, 1, "MOV", "L", ",A", "L <- A"));
+		codeMap.put("68", new OperationStructure("68", Z80Type.MAIN, 1, "LD", "L", "B", "L <- B"));
+		codeMap.put("69", new OperationStructure("69", Z80Type.MAIN, 1, "LD", "L", "C", "L <- C"));
+		codeMap.put("6A", new OperationStructure("6A", Z80Type.MAIN, 1, "LD", "L", "D", "L <- D"));
+		codeMap.put("6B", new OperationStructure("6B", Z80Type.MAIN, 1, "LD", "L", "E", "L <- E"));
+		codeMap.put("6C", new OperationStructure("6C", Z80Type.MAIN, 1, "LD", "L", "H", "L <- H"));
+		codeMap.put("6D", new OperationStructure("6D", Z80Type.MAIN, 1, "LD", "L", "L", "L <- L"));
+		codeMap.put("6E", new OperationStructure("6E", Z80Type.MAIN, 1, "LD", "L", "M", "L <- (HL)"));
+		codeMap.put("6F", new OperationStructure("6F", Z80Type.MAIN, 1, "LD", "L", "A", "L <- A"));
 		//
-		codeMap.put("70", new OperationStructure("70", Z80Type.MAIN, 1, "MOV", "M", ",B", "(HL) <- B"));
-		codeMap.put("71", new OperationStructure("71", Z80Type.MAIN, 1, "MOV", "M", ",C", "(HL) <- C"));
-		codeMap.put("72", new OperationStructure("72", Z80Type.MAIN, 1, "MOV", "M", ",D", "(HL) <- D"));
-		codeMap.put("73", new OperationStructure("73", Z80Type.MAIN, 1, "MOV", "M", ",E", "(HL) <- E"));
-		codeMap.put("74", new OperationStructure("74", Z80Type.MAIN, 1, "MOV", "M", ",H", "(HL) <- H"));
-		codeMap.put("75", new OperationStructure("75", Z80Type.MAIN, 1, "MOV", "M", ",L", "(HL) <- L"));
+		codeMap.put("70", new OperationStructure("70", Z80Type.MAIN, 1, "LD", "M", "B", "(HL) <- B"));
+		codeMap.put("71", new OperationStructure("71", Z80Type.MAIN, 1, "LD", "M", "C", "(HL) <- C"));
+		codeMap.put("72", new OperationStructure("72", Z80Type.MAIN, 1, "LD", "M", "D", "(HL) <- D"));
+		codeMap.put("73", new OperationStructure("73", Z80Type.MAIN, 1, "LD", "M", "E", "(HL) <- E"));
+		codeMap.put("74", new OperationStructure("74", Z80Type.MAIN, 1, "LD", "M", "H", "(HL) <- H"));
+		codeMap.put("75", new OperationStructure("75", Z80Type.MAIN, 1, "LD", "M", "L", "(HL) <- L"));
 		codeMap.put("76", new OperationStructure("76", Z80Type.MAIN, 1, "HLT", "", "", "Halt")); // Special
-		codeMap.put("77", new OperationStructure("77", Z80Type.MAIN, 1, "MOV", "M", ",A", "(HL) <- A"));
+		codeMap.put("77", new OperationStructure("77", Z80Type.MAIN, 1, "LD", "M", "A", "(HL) <- A"));
 		//
-		codeMap.put("78", new OperationStructure("78", Z80Type.MAIN, 1, "MOV", "A", ",B", "A <- B"));
-		codeMap.put("79", new OperationStructure("79", Z80Type.MAIN, 1, "MOV", "A", ",C", "A <- C"));
-		codeMap.put("7A", new OperationStructure("7A", Z80Type.MAIN, 1, "MOV", "A", ",D", "A <- D"));
-		codeMap.put("7B", new OperationStructure("7B", Z80Type.MAIN, 1, "MOV", "A", ",E", "A <- E"));
-		codeMap.put("7C", new OperationStructure("7C", Z80Type.MAIN, 1, "MOV", "A", ",H", "A <- H"));
-		codeMap.put("7D", new OperationStructure("7D", Z80Type.MAIN, 1, "MOV", "A", ",L", "A <- L"));
-		codeMap.put("7E", new OperationStructure("7E", Z80Type.MAIN, 1, "MOV", "A", ",M", "A <- (HL)"));
-		codeMap.put("7F", new OperationStructure("7F", Z80Type.MAIN, 1, "MOV", "A", ",A", "A <- A"));
+		codeMap.put("78", new OperationStructure("78", Z80Type.MAIN, 1, "LD", "A", "B", "A <- B"));
+		codeMap.put("79", new OperationStructure("79", Z80Type.MAIN, 1, "LD", "A", "C", "A <- C"));
+		codeMap.put("7A", new OperationStructure("7A", Z80Type.MAIN, 1, "LD", "A", "D", "A <- D"));
+		codeMap.put("7B", new OperationStructure("7B", Z80Type.MAIN, 1, "LD", "A", "E", "A <- E"));
+		codeMap.put("7C", new OperationStructure("7C", Z80Type.MAIN, 1, "LD", "A", "H", "A <- H"));
+		codeMap.put("7D", new OperationStructure("7D", Z80Type.MAIN, 1, "LD", "A", "L", "A <- L"));
+		codeMap.put("7E", new OperationStructure("7E", Z80Type.MAIN, 1, "LD", "A", "M", "A <- (HL)"));
+		codeMap.put("7F", new OperationStructure("7F", Z80Type.MAIN, 1, "LD", "A", "A", "A <- A"));
 		//
-		codeMap.put("80", new OperationStructure("80", Z80Type.MAIN, 1, "ADD", "B", "", "A <- A+B"));
-		codeMap.put("81", new OperationStructure("81", Z80Type.MAIN, 1, "ADD", "C", "", "A <- A+C"));
-		codeMap.put("82", new OperationStructure("82", Z80Type.MAIN, 1, "ADD", "D", "", "A <- A+D"));
-		codeMap.put("83", new OperationStructure("83", Z80Type.MAIN, 1, "ADD", "E", "", "A <- A+E"));
-		codeMap.put("84", new OperationStructure("84", Z80Type.MAIN, 1, "ADD", "H", "", "A <- A+H"));
-		codeMap.put("85", new OperationStructure("85", Z80Type.MAIN, 1, "ADD", "L", "", "A <- A+L"));
-		codeMap.put("86", new OperationStructure("86", Z80Type.MAIN, 1, "ADD", "M", "", "A <- A+(HL)"));
-		codeMap.put("87", new OperationStructure("87", Z80Type.MAIN, 1, "ADD", "A", "", "A <- A+A"));
+		codeMap.put("80", new OperationStructure("80", Z80Type.MAIN, 1, "ADD", "A", "B", "A <- A+B"));
+		codeMap.put("81", new OperationStructure("81", Z80Type.MAIN, 1, "ADD", "A", "C", "A <- A+C"));
+		codeMap.put("82", new OperationStructure("82", Z80Type.MAIN, 1, "ADD", "A", "D", "A <- A+D"));
+		codeMap.put("83", new OperationStructure("83", Z80Type.MAIN, 1, "ADD", "A", "E", "A <- A+E"));
+		codeMap.put("84", new OperationStructure("84", Z80Type.MAIN, 1, "ADD", "A", "H", "A <- A+H"));
+		codeMap.put("85", new OperationStructure("85", Z80Type.MAIN, 1, "ADD", "A", "L", "A <- A+L"));
+		codeMap.put("86", new OperationStructure("86", Z80Type.MAIN, 1, "ADD", "A", "M", "A <- A+(HL)"));
+		codeMap.put("87", new OperationStructure("87", Z80Type.MAIN, 1, "ADD", "A", "A", "A <- A+A"));
 		//
-		codeMap.put("88", new OperationStructure("88", Z80Type.MAIN, 1, "ADC", "B", "", "A <- A+B + CY"));
-		codeMap.put("89", new OperationStructure("89", Z80Type.MAIN, 1, "ADC", "C", "", "A <- A+C + CY"));
-		codeMap.put("8A", new OperationStructure("8A", Z80Type.MAIN, 1, "ADC", "D", "", "A <- A+D + CY"));
-		codeMap.put("8B", new OperationStructure("8B", Z80Type.MAIN, 1, "ADC", "E", "", "A <- A+E + CY"));
-		codeMap.put("8C", new OperationStructure("8C", Z80Type.MAIN, 1, "ADC", "H", "", "A <- A+H + CY"));
-		codeMap.put("8D", new OperationStructure("8D", Z80Type.MAIN, 1, "ADC", "L", "", "A <- A+L + CY"));
-		codeMap.put("8E", new OperationStructure("8E", Z80Type.MAIN, 1, "ADC", "M", "", "A <- A+(HL) + CY"));
-		codeMap.put("8F", new OperationStructure("8F", Z80Type.MAIN, 1, "ADC", "A", "", "A <- A+A + CY"));
+		codeMap.put("88", new OperationStructure("88", Z80Type.MAIN, 1, "ADC", "A", "B", "A <- A+B + CY"));
+		codeMap.put("89", new OperationStructure("89", Z80Type.MAIN, 1, "ADC", "A", "C", "A <- A+C + CY"));
+		codeMap.put("8A", new OperationStructure("8A", Z80Type.MAIN, 1, "ADC", "A", "D", "A <- A+D + CY"));
+		codeMap.put("8B", new OperationStructure("8B", Z80Type.MAIN, 1, "ADC", "A", "E", "A <- A+E + CY"));
+		codeMap.put("8C", new OperationStructure("8C", Z80Type.MAIN, 1, "ADC", "A", "H", "A <- A+H + CY"));
+		codeMap.put("8D", new OperationStructure("8D", Z80Type.MAIN, 1, "ADC", "A", "L", "A <- A+L + CY"));
+		codeMap.put("8E", new OperationStructure("8E", Z80Type.MAIN, 1, "ADC", "A", "M", "A <- A+(HL) + CY"));
+		codeMap.put("8F", new OperationStructure("8F", Z80Type.MAIN, 1, "ADC", "A", "A", "A <- A+A + CY"));
 		//
 		codeMap.put("90", new OperationStructure("90", Z80Type.MAIN, 1, "SUB", "B", "", "A <- A-B"));
 		codeMap.put("91", new OperationStructure("91", Z80Type.MAIN, 1, "SUB", "C", "", "A <- A-C"));
@@ -585,119 +649,121 @@ public class OpCodeMap {
 		codeMap.put("96", new OperationStructure("96", Z80Type.MAIN, 1, "SUB", "M", "", "A <- A-(HL)"));
 		codeMap.put("97", new OperationStructure("97", Z80Type.MAIN, 1, "SUB", "A", "", "A <- A-A"));
 		//
-		codeMap.put("98", new OperationStructure("98", Z80Type.MAIN, 1, "SBB", "B", "", "A <- A-B - CY"));
-		codeMap.put("99", new OperationStructure("99", Z80Type.MAIN, 1, "SBB", "C", "", "A <- A-C - CY"));
-		codeMap.put("9A", new OperationStructure("9A", Z80Type.MAIN, 1, "SBB", "D", "", "A <- A-D - CY"));
-		codeMap.put("9B", new OperationStructure("9B", Z80Type.MAIN, 1, "SBB", "E", "", "A <- A-E - CY"));
-		codeMap.put("9C", new OperationStructure("9C", Z80Type.MAIN, 1, "SBB", "H", "", "A <- A-H - CY"));
-		codeMap.put("9D", new OperationStructure("9D", Z80Type.MAIN, 1, "SBB", "L", "", "A <- A-L - CY"));
-		codeMap.put("9E", new OperationStructure("9E", Z80Type.MAIN, 1, "SBB", "M", "", "A <- A-(HL) - CY"));
-		codeMap.put("9F", new OperationStructure("9F", Z80Type.MAIN, 1, "SBB", "A", "", "A <- A-A - CY"));
+		codeMap.put("98", new OperationStructure("98", Z80Type.MAIN, 1, "SBC", "A", "B", "A <- A-B - CY"));
+		codeMap.put("99", new OperationStructure("99", Z80Type.MAIN, 1, "SBC", "A", "C", "A <- A-C - CY"));
+		codeMap.put("9A", new OperationStructure("9A", Z80Type.MAIN, 1, "SBC", "A", "D", "A <- A-D - CY"));
+		codeMap.put("9B", new OperationStructure("9B", Z80Type.MAIN, 1, "SBC", "A", "E", "A <- A-E - CY"));
+		codeMap.put("9C", new OperationStructure("9C", Z80Type.MAIN, 1, "SBC", "A", "H", "A <- A-H - CY"));
+		codeMap.put("9D", new OperationStructure("9D", Z80Type.MAIN, 1, "SBC", "A", "L", "A <- A-L - CY"));
+		codeMap.put("9E", new OperationStructure("9E", Z80Type.MAIN, 1, "SBC", "A", "M", "A <- A-(HL) - CY"));
+		codeMap.put("9F", new OperationStructure("9F", Z80Type.MAIN, 1, "SBC", "A", "A", "A <- A-A - CY"));
 		//
-		codeMap.put("A0", new OperationStructure("A0", Z80Type.MAIN, 1, "ANA", "B", "", "A <- A&B"));
-		codeMap.put("A1", new OperationStructure("A1", Z80Type.MAIN, 1, "ANA", "C", "", "A <- A&C"));
-		codeMap.put("A2", new OperationStructure("A2", Z80Type.MAIN, 1, "ANA", "D", "", "A <- A&D"));
-		codeMap.put("A3", new OperationStructure("A3", Z80Type.MAIN, 1, "ANA", "E", "", "A <- A&E"));
-		codeMap.put("A4", new OperationStructure("A4", Z80Type.MAIN, 1, "ANA", "H", "", "A <- A&H"));
-		codeMap.put("A5", new OperationStructure("A5", Z80Type.MAIN, 1, "ANA", "L", "", "A <- A&L"));
-		codeMap.put("A6", new OperationStructure("A6", Z80Type.MAIN, 1, "ANA", "M", "", "A <- A&(HL)"));
-		codeMap.put("A7", new OperationStructure("A7", Z80Type.MAIN, 1, "ANA", "A", "", "A <- A&A"));
+		codeMap.put("A0", new OperationStructure("A0", Z80Type.MAIN, 1, "AND", "B", "", "A <- A&B"));
+		codeMap.put("A1", new OperationStructure("A1", Z80Type.MAIN, 1, "AND", "C", "", "A <- A&C"));
+		codeMap.put("A2", new OperationStructure("A2", Z80Type.MAIN, 1, "AND", "D", "", "A <- A&D"));
+		codeMap.put("A3", new OperationStructure("A3", Z80Type.MAIN, 1, "AND", "E", "", "A <- A&E"));
+		codeMap.put("A4", new OperationStructure("A4", Z80Type.MAIN, 1, "AND", "H", "", "A <- A&H"));
+		codeMap.put("A5", new OperationStructure("A5", Z80Type.MAIN, 1, "AND", "L", "", "A <- A&L"));
+		codeMap.put("A6", new OperationStructure("A6", Z80Type.MAIN, 1, "AND", "M", "", "A <- A&(HL)"));
+		codeMap.put("A7", new OperationStructure("A7", Z80Type.MAIN, 1, "AND", "A", "", "A <- A&A"));
 		// ,
-		codeMap.put("A8", new OperationStructure("A8", Z80Type.MAIN, 1, "XRA", "B", "", "A <- A^B"));
-		codeMap.put("A9", new OperationStructure("A9", Z80Type.MAIN, 1, "XRA", "C", "", "A <- A^C"));
-		codeMap.put("AA", new OperationStructure("AA", Z80Type.MAIN, 1, "XRA", "D", "", "A <- A^D"));
-		codeMap.put("AB", new OperationStructure("AB", Z80Type.MAIN, 1, "XRA", "E", "", "A <- A^E"));
-		codeMap.put("AC", new OperationStructure("AC", Z80Type.MAIN, 1, "XRA", "H", "", "A <- A^H"));
-		codeMap.put("AD", new OperationStructure("AD", Z80Type.MAIN, 1, "XRA", "L", "", "A <- A^L"));
-		codeMap.put("AE", new OperationStructure("AE", Z80Type.MAIN, 1, "XRA", "M", "", "A <- A^(HL)"));
-		codeMap.put("AF", new OperationStructure("AF", Z80Type.MAIN, 1, "XRA", "A", "", "A <- A^A"));
+		codeMap.put("A8", new OperationStructure("A8", Z80Type.MAIN, 1, "XOR", "B", "", "A <- A^B"));
+		codeMap.put("A9", new OperationStructure("A9", Z80Type.MAIN, 1, "XOR", "C", "", "A <- A^C"));
+		codeMap.put("AA", new OperationStructure("AA", Z80Type.MAIN, 1, "XOR", "D", "", "A <- A^D"));
+		codeMap.put("AB", new OperationStructure("AB", Z80Type.MAIN, 1, "XOR", "E", "", "A <- A^E"));
+		codeMap.put("AC", new OperationStructure("AC", Z80Type.MAIN, 1, "XOR", "H", "", "A <- A^H"));
+		codeMap.put("AD", new OperationStructure("AD", Z80Type.MAIN, 1, "XOR", "L", "", "A <- A^L"));
+		codeMap.put("AE", new OperationStructure("AE", Z80Type.MAIN, 1, "XOR", "M", "", "A <- A^(HL)"));
+		codeMap.put("AF", new OperationStructure("AF", Z80Type.MAIN, 1, "XOR", "A", "", "A <- A^A"));
 		//
-		codeMap.put("B0", new OperationStructure("B0", Z80Type.MAIN, 1, "ORA", "B", "", "A <- A|B"));
-		codeMap.put("B1", new OperationStructure("B1", Z80Type.MAIN, 1, "ORA", "C", "", "A <- A|C"));
-		codeMap.put("B2", new OperationStructure("B2", Z80Type.MAIN, 1, "ORA", "D", "", "A <- A|D"));
-		codeMap.put("B3", new OperationStructure("B3", Z80Type.MAIN, 1, "ORA", "E", "", "A <- A|E"));
-		codeMap.put("B4", new OperationStructure("B4", Z80Type.MAIN, 1, "ORA", "H", "", "A <- A|H"));
-		codeMap.put("B5", new OperationStructure("B5", Z80Type.MAIN, 1, "ORA", "L", "", "A <- A|L"));
-		codeMap.put("B6", new OperationStructure("B6", Z80Type.MAIN, 1, "ORA", "M", "", "A <- A|(HL)"));
-		codeMap.put("B7", new OperationStructure("B7", Z80Type.MAIN, 1, "ORA", "A", "", "A <- A|A"));
+		codeMap.put("B0", new OperationStructure("B0", Z80Type.MAIN, 1, "OR", "B", "", "A <- A|B"));
+		codeMap.put("B1", new OperationStructure("B1", Z80Type.MAIN, 1, "OR", "C", "", "A <- A|C"));
+		codeMap.put("B2", new OperationStructure("B2", Z80Type.MAIN, 1, "OR", "D", "", "A <- A|D"));
+		codeMap.put("B3", new OperationStructure("B3", Z80Type.MAIN, 1, "OR", "E", "", "A <- A|E"));
+		codeMap.put("B4", new OperationStructure("B4", Z80Type.MAIN, 1, "OR", "H", "", "A <- A|H"));
+		codeMap.put("B5", new OperationStructure("B5", Z80Type.MAIN, 1, "OR", "L", "", "A <- A|L"));
+		codeMap.put("B6", new OperationStructure("B6", Z80Type.MAIN, 1, "OR", "M", "", "A <- A|(HL)"));
+		codeMap.put("B7", new OperationStructure("B7", Z80Type.MAIN, 1, "OR", "A", "", "A <- A|A"));
 		//
-		codeMap.put("B8", new OperationStructure("B8", Z80Type.MAIN, 1, "CMP", "B", "", "A - B"));
-		codeMap.put("B9", new OperationStructure("B9", Z80Type.MAIN, 1, "CMP", "C", "", "A - C"));
-		codeMap.put("BA", new OperationStructure("BA", Z80Type.MAIN, 1, "CMP", "D", "", "A - D"));
-		codeMap.put("BB", new OperationStructure("BB", Z80Type.MAIN, 1, "CMP", "E", "", "A - E"));
-		codeMap.put("BC", new OperationStructure("BC", Z80Type.MAIN, 1, "CMP", "H", "", "A - H"));
-		codeMap.put("BD", new OperationStructure("BD", Z80Type.MAIN, 1, "CMP", "L", "", "A - L"));
-		codeMap.put("BE", new OperationStructure("BE", Z80Type.MAIN, 1, "CMP", "M", "", "A - (HL)"));
-		codeMap.put("BF", new OperationStructure("BF", Z80Type.MAIN, 1, "CMP", "A", "", "A - A"));
+		codeMap.put("B8", new OperationStructure("B8", Z80Type.MAIN, 1, "CP", "B", "", "A - B"));
+		codeMap.put("B9", new OperationStructure("B9", Z80Type.MAIN, 1, "CP", "C", "", "A - C"));
+		codeMap.put("BA", new OperationStructure("BA", Z80Type.MAIN, 1, "CP", "D", "", "A - D"));
+		codeMap.put("BB", new OperationStructure("BB", Z80Type.MAIN, 1, "CP", "E", "", "A - E"));
+		codeMap.put("BC", new OperationStructure("BC", Z80Type.MAIN, 1, "CP", "H", "", "A - H"));
+		codeMap.put("BD", new OperationStructure("BD", Z80Type.MAIN, 1, "CP", "L", "", "A - L"));
+		codeMap.put("BE", new OperationStructure("BE", Z80Type.MAIN, 1, "CP", "M", "", "A - (HL)"));
+		codeMap.put("BF", new OperationStructure("BF", Z80Type.MAIN, 1, "CP", "A", "", "A - A"));
 		//
-		codeMap.put("C0", new OperationStructure("C0", Z80Type.MAIN, 1, "RNZ", "", "", "if NZ, ret"));
-		codeMap.put("C1", new OperationStructure("C1", Z80Type.MAIN, 1, "POP", "B", "", ""));
-		codeMap.put("C2", new OperationStructure("C2", Z80Type.MAIN, 3, "JNZ", "addr", "", "if NZ,PC<-addr"));
-		codeMap.put("C3", new OperationStructure("C3", Z80Type.MAIN, 3, "JMP", "addr", "", "PC<-addr"));
-		codeMap.put("C4", new OperationStructure("C4", Z80Type.MAIN, 3, "CNZ", "addr", "", "if NZ,CALL addr"));
-		codeMap.put("C5", new OperationStructure("C5", Z80Type.MAIN, 1, "PUSH", "B", "", ""));
-		codeMap.put("C6", new OperationStructure("C6", Z80Type.MAIN, 2, "ADI", "D8", "", "A<-A + byte2"));
-		codeMap.put("C7", new OperationStructure("C7", Z80Type.MAIN, 1, "RST", "0", "", "CALL $0"));
-		codeMap.put("C8", new OperationStructure("C8", Z80Type.MAIN, 1, "RZ", "", "", "if Z, ret"));
+		codeMap.put("C0", new OperationStructure("C0", Z80Type.MAIN, 1, "RET", "NZ", "", "if NZ, (PC)<-(SP)"));
+		codeMap.put("C1", new OperationStructure("C1", Z80Type.MAIN, 1, "POP", "BC", "", "(BC<-(SP)"));
+		codeMap.put("C2", new OperationStructure("C2", Z80Type.MAIN, 3, "JP", "NZ", "D16", "if NZ,PC<-addr"));
+		codeMap.put("C3", new OperationStructure("C3", Z80Type.MAIN, 3, "JP", "", "", "PC<-addr"));
+		codeMap.put("C4", new OperationStructure("C4", Z80Type.MAIN, 3, "CALL", "NZ", "D16", "if NZ,(SP)<-PC,(PC),- address"));
+		codeMap.put("C5", new OperationStructure("C5", Z80Type.MAIN, 1, "PUSH", "BC", "", "(SP)<-(BC)"));
+		codeMap.put("C6", new OperationStructure("C6", Z80Type.MAIN, 2, "ADD", "A", "D8", "A<-A + byte2"));
+		codeMap.put("C7", new OperationStructure("C7", Z80Type.MAIN, 1, "RST", "00H", "", "CALL $0"));
+		codeMap.put("C8", new OperationStructure("C8", Z80Type.MAIN, 1, "RET", "Z", "", "if Z set, PC<-(SP); SP<-SP+2"));
 		codeMap.put("C9", new OperationStructure("C9", Z80Type.MAIN, 1, "RET", "", "", "PC<-(SP); SP<-SP+2"));
-		codeMap.put("CA", new OperationStructure("CA", Z80Type.MAIN, 3, "JZ", "addr", "", "if Z,PC<-addr"));
-//		/* CB */  Bit instructions makeBitTypes
-		codeMap.put("CC", new OperationStructure("CC", Z80Type.MAIN, 3, "CZ", "addr", "", "if Z,CALL addr"));
-		codeMap.put("CD", new OperationStructure("CD", Z80Type.MAIN, 3, "CALL", "addr", "", "CALL addr"));
-		codeMap.put("CE", new OperationStructure("CE", Z80Type.MAIN, 2, "ACI", "D8", "", "A<- A + data + cy"));
-		codeMap.put("CF", new OperationStructure("CF", Z80Type.MAIN, 1, "RST", "1", "", "CALL $8"));
+		codeMap.put("CA", new OperationStructure("CA", Z80Type.MAIN, 3, "JP", "Z", "D16", "if Z set,PC<-addr"));
+		// /* CB */ Bit instructions makeBitTypes
+		codeMap.put("CC", new OperationStructure("CC", Z80Type.MAIN, 3, "CALL", "Z", "D16", "if Z,CALL addr"));
+		codeMap.put("CD", new OperationStructure("CD", Z80Type.MAIN, 3, "CALL", "", "", "CALL addr"));
+		codeMap.put("CE", new OperationStructure("CE", Z80Type.MAIN, 2, "ADC", "A", "D8", "A<- A + data + cy"));
+		codeMap.put("CF", new OperationStructure("CF", Z80Type.MAIN, 1, "RST", "08H", "", "CALL $8"));
 		//
-		codeMap.put("D0", new OperationStructure("D0", Z80Type.MAIN, 1, "RNC", "", "", "if NCY, ret"));
-		codeMap.put("D1", new OperationStructure("D1", Z80Type.MAIN, 1, "POP", "D", "", ""));
-		codeMap.put("D2", new OperationStructure("D2", Z80Type.MAIN, 3, "JNC", "addr", "", "if NCY,PC<-addr"));
-		codeMap.put("D3", new OperationStructure("D3", Z80Type.MAIN, 2, "OUT", "D8", "", "i/O")); // Special
-		codeMap.put("D4", new OperationStructure("D4", Z80Type.MAIN, 3, "CNC", "addr", "", "if NC,CALL addr"));
-		codeMap.put("D5", new OperationStructure("D5", Z80Type.MAIN, 1, "PUSH", "D", "", ""));
-		codeMap.put("D6", new OperationStructure("D6", Z80Type.MAIN, 2, "SUI", "D8", "", "A<-A - byte2"));
-		codeMap.put("D7", new OperationStructure("D7", Z80Type.MAIN, 1, "RST", "2", "", "CALL $10"));
-		codeMap.put("D8", new OperationStructure("D8", Z80Type.MAIN, 1, "RC", "", "", "if CY, ret"));
-		codeMap.put("D9", new OperationStructure("D9", Z80Type.MAIN, 1, "RET*", "", "", "Alt RET"));
-		codeMap.put("DA", new OperationStructure("DA", Z80Type.MAIN, 3, "JC", "addr", "", "if CY,PC<-addr"));
-		codeMap.put("DB", new OperationStructure("DB", Z80Type.MAIN, 2, "IN", "D8", "", "i/O")); // Special
-		codeMap.put("DC", new OperationStructure("DC", Z80Type.MAIN, 3, "CC", "addr", "", "if CY,CALL addr"));
-		/* DD */codeMap.put("DD", new OperationStructure("DD", Z80Type.MAIN, 3, "Alt", "addr", "", "Alt CALL addr"));
-		codeMap.put("DE", new OperationStructure("DE", Z80Type.MAIN, 2, "SBI", "D8", "", "A<- A - data - cy"));
-		codeMap.put("DF", new OperationStructure("DF", Z80Type.MAIN, 1, "RST", "3", "", "CALL $18"));
+		codeMap.put("D0", new OperationStructure("D0", Z80Type.MAIN, 1, "RET", "NC", "", "if CY not set, (PC)<-(SP)"));
+		codeMap.put("D1", new OperationStructure("D1", Z80Type.MAIN, 1, "POP", "DE", "", ""));
+		codeMap.put("D2", new OperationStructure("D2", Z80Type.MAIN, 3, "JP", "NC", "", "if CY not set,PC<-addr"));
+		codeMap.put("D3", new OperationStructure("D3", Z80Type.MAIN, 2, "OUT", "D8", "A", "OUT  (D8),A   I/O")); // Special
+		codeMap.put("D4", new OperationStructure("D4", Z80Type.MAIN, 3, "CALL", "NC", "", "if CY not set,CALL addr"));
+		codeMap.put("D5", new OperationStructure("D5", Z80Type.MAIN, 1, "PUSH", "DE", "", ""));
+		codeMap.put("D6", new OperationStructure("D6", Z80Type.MAIN, 2, "SUB", "D8", "", "A<-A - byte2"));
+		codeMap.put("D7", new OperationStructure("D7", Z80Type.MAIN, 1, "RST", "10", "", "CALL $10"));
+		codeMap.put("D8", new OperationStructure("D8", Z80Type.MAIN, 1, "RET", "C", "", "if CY  set,PC<-(SP)"));
+		codeMap.put("D9", new OperationStructure("D9", Z80Type.MAIN, 1, "EXX", "", "", "Main regs <-> Alt regs"));
+		codeMap.put("DA", new OperationStructure("DA", Z80Type.MAIN, 3, "JP", "C", "", "if CY  set,PC<-addr"));
+		codeMap.put("DB", new OperationStructure("DB", Z80Type.MAIN, 2, "IN", "A", "D8", "i/O")); // Special
+		codeMap.put("DC", new OperationStructure("DC", Z80Type.MAIN, 3, "CALL", "C", "", "if CY set ,(SP)<-PC,PC<- address"));
+		/* DD 
+		codeMap.put("DD", new OperationStructure("DD", Z80Type.MAIN, 3, "Alt", "addr", "", "Alt CALL addr"));
+		*/
+		codeMap.put("DE", new OperationStructure("DE", Z80Type.MAIN, 2, "SBC", "A", "D8", "A<- A - data - cy"));
+		codeMap.put("DF", new OperationStructure("DF", Z80Type.MAIN, 1, "RST", "18H", "", "CALL $18"));
 		//
-		codeMap.put("E0", new OperationStructure("E0", Z80Type.MAIN, 1, "RPO", "", "", "if PO, ret"));
-		codeMap.put("E1", new OperationStructure("E1", Z80Type.MAIN, 1, "POP", "H", "", ""));
-		codeMap.put("E2", new OperationStructure("E2", Z80Type.MAIN, 3, "JPO", "addr", "", "if PO,PC<-addr"));
-		codeMap.put("E3", new OperationStructure("E3", Z80Type.MAIN, 1, "XTHL", "", "", "L<->(SP);H<->(SP+1)"));
-		codeMap.put("E4", new OperationStructure("E4", Z80Type.MAIN, 3, "CPO", "addr", "", "if PO,CALL addr"));
-		codeMap.put("E5", new OperationStructure("E5", Z80Type.MAIN, 1, "PUSH", "H", "", ""));
-		codeMap.put("E6", new OperationStructure("E6", Z80Type.MAIN, 2, "ANI", "D8", "", "A<-A & byte2"));
-		codeMap.put("E7", new OperationStructure("E7", Z80Type.MAIN, 1, "RST", "4", "", "CALL $20"));
-		codeMap.put("E8", new OperationStructure("E8", Z80Type.MAIN, 1, "RPE", "", "", "if PE, ret"));
-		codeMap.put("E9", new OperationStructure("E9", Z80Type.MAIN, 1, "PCHL", "", "", "PC.hi<-H;PC.lo<-L"));
-		codeMap.put("EA", new OperationStructure("EA", Z80Type.MAIN, 3, "JPE", "addr", "", "if PE,PC<-addr"));
-		codeMap.put("EB", new OperationStructure("EB", Z80Type.MAIN, 1, "XCHG", "", "", "H<->D;L<->E")); // Special
-		codeMap.put("EC", new OperationStructure("EC", Z80Type.MAIN, 3, "CPE", "addr", "", "if PE,CALL addr"));
-//		/* ED */  Extended instructions makeExtendedTypes
-		codeMap.put("EE", new OperationStructure("EE", Z80Type.MAIN, 2, "XRI", "D8", "", "A<- A ^ data"));
-		codeMap.put("EF", new OperationStructure("EF", Z80Type.MAIN, 1, "RST", "5", "", "CALL $28"));
+		codeMap.put("E0", new OperationStructure("E0", Z80Type.MAIN, 1, "RET", "PO", "", "if P is reset, set,PC<-(SP)"));
+		codeMap.put("E1", new OperationStructure("E1", Z80Type.MAIN, 1, "POP", "HL", "", ""));
+		codeMap.put("E2", new OperationStructure("E2", Z80Type.MAIN, 3, "JP", "PO", "", "if P is reset,PC<-addr"));
+		codeMap.put("E3", new OperationStructure("E3", Z80Type.MAIN, 1, "EX", "(SP)", "HL", "L<->(SP);H<->(SP+1)"));
+		codeMap.put("E4", new OperationStructure("E4", Z80Type.MAIN, 3, "CALL", "PO", "", "if P is reset,(SP)<-PC,PC<- address"));
+		codeMap.put("E5", new OperationStructure("E5", Z80Type.MAIN, 1, "PUSH", "HL", "", ""));
+		codeMap.put("E6", new OperationStructure("E6", Z80Type.MAIN, 2, "AND", "D8", "", "A<-A & byte2"));
+		codeMap.put("E7", new OperationStructure("E7", Z80Type.MAIN, 1, "RST", "20H", "", "CALL $20"));
+		codeMap.put("E8", new OperationStructure("E8", Z80Type.MAIN, 1, "RET", "PE", "", "if P is set, set,PC<-(SP)"));
+		codeMap.put("E9", new OperationStructure("E9", Z80Type.MAIN, 1, "JP", "(HL)", "", "PC.hi<-H;PC.lo<-L"));
+		codeMap.put("EA", new OperationStructure("EA", Z80Type.MAIN, 3, "JP", "PE", "", "if P is set,PC<-addr"));
+		codeMap.put("EB", new OperationStructure("EB", Z80Type.MAIN, 1, "EX", "DE", "HL", "H<->D;L<->E")); // Special
+		codeMap.put("EC", new OperationStructure("EC", Z80Type.MAIN, 3, "CALL", "PE", "", "if P is set,(SP)<-PC,PC<- address"));
+		// /* ED */ Extended instructions makeExtendedTypes
+		codeMap.put("EE", new OperationStructure("EE", Z80Type.MAIN, 2, "XOR", "D8", "", "A<- A ^ data"));
+		codeMap.put("EF", new OperationStructure("EF", Z80Type.MAIN, 1, "RST", "28H", "", "CALL $28"));
 		//
-		codeMap.put("F0", new OperationStructure("F0", Z80Type.MAIN, 1, "RP", "", "", "if P, ret"));
+		codeMap.put("F0", new OperationStructure("F0", Z80Type.MAIN, 1, "RET", "P", "", "if S rest, set,PC<-(SP)"));
 		codeMap.put("F1",
-				new OperationStructure("F1", Z80Type.MAIN, 1, "PSW", "", "", "flags<-(SP);A<-(SP+1); SP<-SP+2"));
-		codeMap.put("F2", new OperationStructure("F2", Z80Type.MAIN, 3, "JP", "addr", "", "if P,PC<-addr"));
-		codeMap.put("F3", new OperationStructure("F3", Z80Type.MAIN, 1, "DI", "", "", "")); // Special
-		codeMap.put("F4", new OperationStructure("F4", Z80Type.MAIN, 3, "CP", "addr", "", "if P,CALL addr"));
-		codeMap.put("F5", new OperationStructure("F5", Z80Type.MAIN, 1, "PUSH", "PSW", "", ""));
-		codeMap.put("F6", new OperationStructure("F6", Z80Type.MAIN, 2, "ORI", "D8", "", "A<-A | byte2"));
-		codeMap.put("F7", new OperationStructure("F7", Z80Type.MAIN, 1, "RST", "6", "", "CALL $30"));
-		codeMap.put("F8", new OperationStructure("F8", Z80Type.MAIN, 1, "RM", "", "", "if M, ret"));
-		codeMap.put("F9", new OperationStructure("F9", Z80Type.MAIN, 1, "SPHL", "", "", "SP=HL"));
-		codeMap.put("FA", new OperationStructure("FA", Z80Type.MAIN, 3, "JM", "addr", "", "if M,PC<-addr"));
-		codeMap.put("FB", new OperationStructure("FB", Z80Type.MAIN, 1, "EI", "", "", "")); // Special
-		codeMap.put("FC", new OperationStructure("FC", Z80Type.MAIN, 3, "CM", "addr", "", "if M,CALL addr"));
+				new OperationStructure("F1", Z80Type.MAIN, 1, "POP", "AF", "", "flags<-(SP);A<-(SP+1); SP<-SP+2"));
+		codeMap.put("F2", new OperationStructure("F2", Z80Type.MAIN, 3, "JP", "P", "", "if S reset,PC<-addr"));
+		codeMap.put("F3", new OperationStructure("F3", Z80Type.MAIN, 1, "DI", "", "", "Disable interrups"));
+		codeMap.put("F4", new OperationStructure("F4", Z80Type.MAIN, 3, "CALL", "P", "", "if S reset,(SP)<-PC,PC<- address"));
+		codeMap.put("F5", new OperationStructure("F5", Z80Type.MAIN, 1, "PUSH", "AF", "", "(SP)<-A & cc"));
+		codeMap.put("F6", new OperationStructure("F6", Z80Type.MAIN, 2, "OR", "D8", "", "A<-A | byte2"));
+		codeMap.put("F7", new OperationStructure("F7", Z80Type.MAIN, 1, "RST", "30H", "", "CALL $30"));
+		codeMap.put("F8", new OperationStructure("F8", Z80Type.MAIN, 1, "RET", "M", "", "if S set, set,PC<-(SP)"));
+		codeMap.put("F9", new OperationStructure("F9", Z80Type.MAIN, 1, "LD", "SP", "HL", "SP<-HL"));
+		codeMap.put("FA", new OperationStructure("FA", Z80Type.MAIN, 3, "JP", "M", "", "if S set,PC<-addr"));
+		codeMap.put("FB", new OperationStructure("FB", Z80Type.MAIN, 1, "EI", "", "", "Enable interrupts"));
+		codeMap.put("FC", new OperationStructure("FC", Z80Type.MAIN, 3, "CALL", "M", "", "if S set,(SP)<-PC,PC<- address"));
 		/* FD */codeMap.put("FD", new OperationStructure("FD", Z80Type.MAIN, 3, "Alt", "addr", "", "Alt CALL addr"));
-		codeMap.put("FE", new OperationStructure("FE", Z80Type.MAIN, 2, "CPI", "D8", "", "A - data"));
-		codeMap.put("FF", new OperationStructure("FF", Z80Type.MAIN, 1, "RST", "7", "", "CALL $38"));
+		codeMap.put("FE", new OperationStructure("FE", Z80Type.MAIN, 2, "CP", "D8", "", "A - data"));
+		codeMap.put("FF", new OperationStructure("FF", Z80Type.MAIN, 1, "RST", "38H", "", "CALL $38"));
 
 	}// makeMainTypes
 }// class OpCodeMap
