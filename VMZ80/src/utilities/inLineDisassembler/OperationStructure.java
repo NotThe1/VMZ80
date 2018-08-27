@@ -58,9 +58,12 @@ package utilities.inLineDisassembler;
 		return ans;
 		
 	}// getAssemblerCode
+	
+
 
 	public String getAssemblerCode(byte plusOne) {
 		String ans;
+
 		if (getDestination().equals("D8")) {
 			ans = String.format("%-4s %02X", getInstruction(), plusOne);
 		} else {

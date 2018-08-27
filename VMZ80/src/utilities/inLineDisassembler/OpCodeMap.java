@@ -287,39 +287,39 @@ public class OpCodeMap {
 		// codeMap.put(key , new OperationStructure(key, Z80Type.BIT, 2, instruction, register, "", function));
 
 		codeMap.put("ED40", new OperationStructure("ED40", Z80Type.EXTENDED, 2, "IN", "B", "(C)", "B<-(C)"));
-		codeMap.put("ED41", new OperationStructure("ED41", Z80Type.EXTENDED, 2, "OUT", "B", "(C)", "B->(C)"));
+		codeMap.put("ED41", new OperationStructure("ED41", Z80Type.EXTENDED, 2, "OUT", "(C)", "B", "(C)<-B"));
 		codeMap.put("ED42", new OperationStructure("ED42", Z80Type.EXTENDED, 2, "SBC", "HL", "BC", "HL<-HL-BC-cy"));
-		codeMap.put("ED43", new OperationStructure("ED43", Z80Type.EXTENDED, 4, "LD", "BC", "D16", "(mm)<-BC"));
+		codeMap.put("ED43", new OperationStructure("ED43", Z80Type.EXTENDED, 4, "LD", "addr", "BC", "(mm)<-BC"));
 		codeMap.put("ED44", new OperationStructure("ED44", Z80Type.EXTENDED, 2, "NEG", "", "", "A<- 0-A"));
 		codeMap.put("ED45", new OperationStructure("ED45", Z80Type.EXTENDED, 2, "RETN", "", "", "PC <- (SP)"));
 		codeMap.put("ED46", new OperationStructure("ED46", Z80Type.EXTENDED, 2, "IM 0", "", "", "Set mode 0"));
 		codeMap.put("ED47", new OperationStructure("ED47", Z80Type.EXTENDED, 2, "LD", "I", "A", "I <- A"));
 		codeMap.put("ED48", new OperationStructure("ED48", Z80Type.EXTENDED, 2, "IN", "C", "(C)", "C<-(C)"));
-		codeMap.put("ED49", new OperationStructure("ED49", Z80Type.EXTENDED, 2, "OUT", "C", "(C)", "C->(C)"));
+		codeMap.put("ED49", new OperationStructure("ED49", Z80Type.EXTENDED, 2, "OUT", "(C)", "C", "(C)<-C"));
 		codeMap.put("ED4A", new OperationStructure("ED4A", Z80Type.EXTENDED, 2, "ADC", "HL", "BC", "HL<-HL+BC+cy"));
-		codeMap.put("ED4B", new OperationStructure("ED4B", Z80Type.EXTENDED, 4, "LD", "BC", "D16", "BC<-(HL)"));
+		codeMap.put("ED4B", new OperationStructure("ED4B", Z80Type.EXTENDED, 4, "LD", "BC", "addr", "BC<-(HL)"));
 		codeMap.put("ED4C", new OperationStructure("ED4C", Z80Type.EXTENDED, 2, "NEG", "", "", "A<- 0-A *UD"));
 		codeMap.put("ED4D", new OperationStructure("ED4D", Z80Type.EXTENDED, 2, "RETI", "", "", "PC <- (SP)"));
 		codeMap.put("ED4E", new OperationStructure("ED4E", Z80Type.EXTENDED, 2, "IM 0/1", "", "", "Set mode 0/1 *UD"));
 		codeMap.put("ED4F", new OperationStructure("ED4F", Z80Type.EXTENDED, 2, "LD", "R", "A", "R <- A"));
 		codeMap.put("ED50", new OperationStructure("ED50", Z80Type.EXTENDED, 2, "IN", "D", "(C)", "D<-(C)"));
-		codeMap.put("ED51", new OperationStructure("ED51", Z80Type.EXTENDED, 2, "OUT", "D", "(C)", "D->(C)"));
+		codeMap.put("ED51", new OperationStructure("ED51", Z80Type.EXTENDED, 2, "OUT", "(C)", "D", "(c)<-D)"));
 		codeMap.put("ED52", new OperationStructure("ED52", Z80Type.EXTENDED, 2, "SBC", "HL", "DE", "HL<-HL-DE-cy"));
-		codeMap.put("ED53", new OperationStructure("ED53", Z80Type.EXTENDED, 4, "LD", "DE", "D16", "(mm)<-DE"));
+		codeMap.put("ED53", new OperationStructure("ED53", Z80Type.EXTENDED, 4, "LD", "addr", "DE", "(mm)<-DE"));
 		codeMap.put("ED54", new OperationStructure("ED54", Z80Type.EXTENDED, 2, "NEG", "", "", "A<- 0-A"));
 		codeMap.put("ED55", new OperationStructure("ED55", Z80Type.EXTENDED, 2, "RETN", "", "", "PC <- (SP)"));
 		codeMap.put("ED56", new OperationStructure("ED56", Z80Type.EXTENDED, 2, "IM 1", "", "", "Set mode 1"));
 		codeMap.put("ED57", new OperationStructure("ED57", Z80Type.EXTENDED, 2, "LD", "A", "I", "A <- I"));
 		codeMap.put("ED58", new OperationStructure("ED58", Z80Type.EXTENDED, 2, "IN", "E", "(C)", "E<-(C)"));
-		codeMap.put("ED59", new OperationStructure("ED59", Z80Type.EXTENDED, 2, "OUT", "E", "(C)", "E->(C)"));
+		codeMap.put("ED59", new OperationStructure("ED59", Z80Type.EXTENDED, 2, "OUT", "(C)", "E", "(C)<-E"));
 		codeMap.put("ED5A", new OperationStructure("ED5A", Z80Type.EXTENDED, 2, "ADC", "HL", "DE", "HL,-HL+DE+cy"));
-		codeMap.put("ED5B", new OperationStructure("ED5B", Z80Type.EXTENDED, 4, "LD", "DE", "D16", "DE<-(HL)"));
-		codeMap.put("ED5C", new OperationStructure("ED5C", Z80Type.EXTENDED, 2, "NEG", "", "", "A<- 0-A *UD"));
+		codeMap.put("ED5B", new OperationStructure("ED5B", Z80Type.EXTENDED, 4, "LD", "DE", "addr", "DE<-(HL)"));
+		codeMap.put("ED5C", new OperationStructure("ED5C", Z80Type.EXTENDED, 2, "NEG", "", "", "A<- 0-A "));
 		codeMap.put("ED5D", new OperationStructure("ED5D", Z80Type.EXTENDED, 2, "RETN", "", "", "PC <- (SP)"));
 		codeMap.put("ED5E", new OperationStructure("ED5E", Z80Type.EXTENDED, 2, "IM 2", "", "", "Set mode 2"));
 		codeMap.put("ED5F", new OperationStructure("ED5F", Z80Type.EXTENDED, 2, "LD", "A", "R", "A <- R"));
 		codeMap.put("ED60", new OperationStructure("ED60", Z80Type.EXTENDED, 2, "IN", "H", "(C)", "H<-(C)"));
-		codeMap.put("ED61", new OperationStructure("ED61", Z80Type.EXTENDED, 2, "OUT", "H", "(C)", "H->(C)"));
+		codeMap.put("ED61", new OperationStructure("ED61", Z80Type.EXTENDED, 2, "OUT", "(C)", "H", "(C)<-H"));
 		codeMap.put("ED62", new OperationStructure("ED62", Z80Type.EXTENDED, 2, "SBC", "HL", "HL", "HL<-HL-HL-cy"));
 		codeMap.put("ED63", new OperationStructure("ED63", Z80Type.EXTENDED, 4, "LD", "HL", "D16", "(mm)<-HL"));
 		codeMap.put("ED64", new OperationStructure("ED64", Z80Type.EXTENDED, 2, "NEG", "", "", "A<- 0-A"));
@@ -327,49 +327,50 @@ public class OpCodeMap {
 		codeMap.put("ED66", new OperationStructure("ED66", Z80Type.EXTENDED, 2, "IM 0", "", "", "Set mode 0"));
 		codeMap.put("ED67", new OperationStructure("ED57", Z80Type.EXTENDED, 2, "RRD", "", "", ""));
 		codeMap.put("ED68", new OperationStructure("ED68", Z80Type.EXTENDED, 2, "IN", "L", "(C)", "L<-(C)"));
-		codeMap.put("ED69", new OperationStructure("ED69", Z80Type.EXTENDED, 2, "OUT", "L", "(C)", "L->(C)"));
+		codeMap.put("ED69", new OperationStructure("ED69", Z80Type.EXTENDED, 2, "OUT", "(C)", "L", "(C)<-L"));
 		codeMap.put("ED6A", new OperationStructure("ED6A", Z80Type.EXTENDED, 2, "ADC", "HL", "HL", "HL,-HL+HL+cy"));
 		codeMap.put("ED6B", new OperationStructure("ED6B", Z80Type.EXTENDED, 4, "LD", "HL", "D16", "HL<-(HL)"));
 		codeMap.put("ED6C", new OperationStructure("ED6C", Z80Type.EXTENDED, 2, "NEG", "", "", "A<- 0-A *UD"));
 		codeMap.put("ED6D", new OperationStructure("ED6D", Z80Type.EXTENDED, 2, "RETN", "", "", "PC <- (SP)"));
 		codeMap.put("ED6E", new OperationStructure("ED6E", Z80Type.EXTENDED, 2, "IM 0/1", "", "", "Set mode 0/1 *UD"));
-		codeMap.put("ED6F", new OperationStructure("EDF7", Z80Type.EXTENDED, 2, "RLD", "", "", ""));
+		codeMap.put("ED6F", new OperationStructure("ED6F", Z80Type.EXTENDED, 2, "RLD", "", "", ""));
+		codeMap.put("ED71", new OperationStructure("ED71", Z80Type.EXTENDED, 2, "OUT", "(C)", "0", "undocumented/unsupported"));
 		codeMap.put("ED72", new OperationStructure("ED72", Z80Type.EXTENDED, 2, "SBC", "HL", "SP", "HL<-HL-SP-cy"));
-		codeMap.put("ED73", new OperationStructure("ED73", Z80Type.EXTENDED, 4, "LD", "SP", "D16", "(mm)<-SP"));
+		codeMap.put("ED73", new OperationStructure("ED73", Z80Type.EXTENDED, 4, "LD", "addr", "SP", "(mm)<-SP"));
 		codeMap.put("ED74", new OperationStructure("ED74", Z80Type.EXTENDED, 2, "NEG", "", "", "A<- 0-A"));
 		codeMap.put("ED75", new OperationStructure("ED75", Z80Type.EXTENDED, 2, "RETN", "", "", "PC <- (SP)"));
 		codeMap.put("ED76", new OperationStructure("ED76", Z80Type.EXTENDED, 2, "IM 1", "", "", "Set mode 1"));
 		codeMap.put("ED78", new OperationStructure("ED78", Z80Type.EXTENDED, 2, "IN", "A", "(C)", "A<-(C)"));
-		codeMap.put("ED79", new OperationStructure("ED79", Z80Type.EXTENDED, 2, "OUT", "A", "(C)", "A->(C)"));
+		codeMap.put("ED79", new OperationStructure("ED79", Z80Type.EXTENDED, 2, "OUT", "A", "(C)", "(C)<-A"));
 		codeMap.put("ED7A", new OperationStructure("ED7A", Z80Type.EXTENDED, 2, "ADC", "HL", "SP", "HL,-HL+SP+cy"));
 		codeMap.put("ED7B", new OperationStructure("ED7B", Z80Type.EXTENDED, 4, "LD", "SP", "D16", "SP<-(HL)"));
 		codeMap.put("ED7C", new OperationStructure("ED7C", Z80Type.EXTENDED, 2, "NEG", "", "", "A<- 0-A *UD"));
 		codeMap.put("ED7D", new OperationStructure("ED7D", Z80Type.EXTENDED, 2, "RETN", "", "", "PC <- (SP)"));
 		codeMap.put("ED7E", new OperationStructure("ED7E", Z80Type.EXTENDED, 2, "IM 2", "", "", "Set mode 2"));
 
-		codeMap.put("EDA0", new OperationStructure("EDA0", Z80Type.EXTENDED, 2, "LDI", "", "", ""));
-		codeMap.put("EDA1", new OperationStructure("EDA1", Z80Type.EXTENDED, 2, "CPI", "", "", ""));
-		codeMap.put("EDA2", new OperationStructure("EDA2", Z80Type.EXTENDED, 2, "INI", "", "", ""));
-		codeMap.put("EDA3", new OperationStructure("EDA3", Z80Type.EXTENDED, 2, "OUTI", "", "", ""));
-		codeMap.put("EDA8", new OperationStructure("EDA8", Z80Type.EXTENDED, 2, "LDD", "", "", ""));
-		codeMap.put("EDA9", new OperationStructure("EDA9", Z80Type.EXTENDED, 2, "CPD", "", "", ""));
-		codeMap.put("EDAA", new OperationStructure("EDAA", Z80Type.EXTENDED, 2, "IND", "", "", ""));
-		codeMap.put("EDAB", new OperationStructure("EDAA", Z80Type.EXTENDED, 2, "OUTD", "", "", ""));
+		codeMap.put("EDA0", new OperationStructure("EDA0", Z80Type.EXTENDED, 2, "LDI", "", "", "(DE)<-(HL), DE<-DE + 1, HL<-HL + 1, BC<-BC -1"));
+		codeMap.put("EDA1", new OperationStructure("EDA1", Z80Type.EXTENDED, 2, "CPI", "", "", "A- (HL), HL ← HL +1, BC ← BC -1"));
+		codeMap.put("EDA2", new OperationStructure("EDA2", Z80Type.EXTENDED, 2, "INI", "", "", "(HL) ← (C), B ← B -1, HL ← HL + 1"));
+		codeMap.put("EDA3", new OperationStructure("EDA3", Z80Type.EXTENDED, 2, "OUTI", "", "", "(C) ← (HL), B ← B -1, HL ← HL + 1"));
+		codeMap.put("EDA8", new OperationStructure("EDA8", Z80Type.EXTENDED, 2, "LDD", "", "", "(DE) ← (HL), DE ← DE -1, HL ← HL-1, BC ← BC-1"));
+		codeMap.put("EDA9", new OperationStructure("EDA9", Z80Type.EXTENDED, 2, "CPD", "", "", "A -(HL), HL ← HL -1, BC ← BC -1"));
+		codeMap.put("EDAA", new OperationStructure("EDAA", Z80Type.EXTENDED, 2, "IND", "", "", "(HL) ← (C), B ← B -1, HL ← HL -1"));
+		codeMap.put("EDAB", new OperationStructure("EDAA", Z80Type.EXTENDED, 2, "OUTD", "", "", "(C) ← (HL), B ← B -1, HL ← HL -1"));
 
-		codeMap.put("EDB0", new OperationStructure("EDB0", Z80Type.EXTENDED, 2, "LDIR", "", "", ""));
-		codeMap.put("EDB1", new OperationStructure("EDB1", Z80Type.EXTENDED, 2, "CPIR", "", "", ""));
-		codeMap.put("EDB2", new OperationStructure("EDB2", Z80Type.EXTENDED, 2, "INIR", "", "", ""));
-		codeMap.put("EDB3", new OperationStructure("EDB3", Z80Type.EXTENDED, 2, "OTIR", "", "", ""));
-		codeMap.put("EDB8", new OperationStructure("EDB8", Z80Type.EXTENDED, 2, "LDDR", "", "", ""));
-		codeMap.put("EDB9", new OperationStructure("EDB9", Z80Type.EXTENDED, 2, "CPDR", "", "", ""));
-		codeMap.put("EDBA", new OperationStructure("EDBA", Z80Type.EXTENDED, 2, "INDR", "", "", ""));
-		codeMap.put("EDBB", new OperationStructure("EDBA", Z80Type.EXTENDED, 2, "OTDR", "", "", ""));
+		codeMap.put("EDB0", new OperationStructure("EDB0", Z80Type.EXTENDED, 2, "LDIR", "", "", "(DE) ← (HL), DE ← DE + 1, HL ← HL + 1, BC F↔ BC -1"));
+		codeMap.put("EDB1", new OperationStructure("EDB1", Z80Type.EXTENDED, 2, "CPIR", "", "", "A-(HL), HL ← HL+1, BC ← BC-1"));
+		codeMap.put("EDB2", new OperationStructure("EDB2", Z80Type.EXTENDED, 2, "INIR", "", "", "(HL) ← (C), B ← B -1, HL ← HL +1"));
+		codeMap.put("EDB3", new OperationStructure("EDB3", Z80Type.EXTENDED, 2, "OTIR", "", "", "(C) ← (HL), B ← B -1, HL ← HL + 1"));
+		codeMap.put("EDB8", new OperationStructure("EDB8", Z80Type.EXTENDED, 2, "LDDR", "", "", "(DE) ← (HL), DE ← D ← 1, HL ← HL-1, BC ← BC-1"));
+		codeMap.put("EDB9", new OperationStructure("EDB9", Z80Type.EXTENDED, 2, "CPDR", "", "", "A -(HL), HL ← HL -1, BC ← BC -1"));
+		codeMap.put("EDBA", new OperationStructure("EDBA", Z80Type.EXTENDED, 2, "INDR", "", "", "(HL) ← (C), B ← 131, HL ← HL1"));
+		codeMap.put("EDBB", new OperationStructure("EDBA", Z80Type.EXTENDED, 2, "OTDR", "", "", "(C) ← (HL), B ← B - 1, HL ← HL - 1"));
 
 	}// makeExtendedTypes
 
 	private void makeBitTypes() {
 		String key;
-		String[] registers = new String[] { "B", "C", "D", "E", "H", "L", "M", "A" };
+		String[] registers = new String[] { "B", "C", "D", "E", "H", "L", "(HL)", "A" };
 		String register;
 		String bitString = "";
 		String instruction = "";
@@ -415,7 +416,7 @@ public class OpCodeMap {
 			key = String.format("CB%02X", code);
 			codeMap.put(key, new OperationStructure(key, Z80Type.BIT, 2, instruction, register, "", function));
 
-			// System.out.printf("%s,Z80Type.BIT,2,%s,%s,MT,%s%n", key,instruction,register,function);
+//			 System.out.printf("%s,Z80Type.BIT,2,%s,%s,MT,%s%n", key,instruction,register,function);
 
 		} // for lower instructions
 		String operation = "";
@@ -470,7 +471,7 @@ public class OpCodeMap {
 			key = String.format("CB%02X", code);
 			register = registers[code % 8];
 			function = String.format("%s bit %s in register %s", operation, bitString, register);
-			codeMap.put(key, new OperationStructure(key, Z80Type.BIT, 2, instruction, register, bitString, function));
+			codeMap.put(key, new OperationStructure(key, Z80Type.BIT, 2,  instruction, bitString,register, function));
 			// System.out.printf("%s,Z80Type.BIT,2,%s,%s,%s,%s%n", key,instruction,register,bitString,function);
 
 		} // for bits and registers

@@ -167,10 +167,12 @@ public class Z80Disassembler extends JPanel implements Runnable {
 		byte value3 = core.read(opCodeLocation + 3);
 		String key = "";
 
-		if (opCode == 0xED | opCode == 0xCB) {
+		if (opCode == ED | opCode == CB) {
 			key = String.format("%02X%02X", opCode, value1);
-		} else if (opCode == 0xDD | opCode == 0xFD) {
-			if (value1 == 0xCB) {
+			// }else if (opCode == 0xED) {
+			//
+		} else if (opCode == DD | opCode == FD) {
+			if (value1 == CB) {
 				key = String.format("%02X%02X%02X", opCode, value1, value3);
 			} else {
 				key = String.format("%02X%02X", opCode, value1);
@@ -182,22 +184,22 @@ public class Z80Disassembler extends JPanel implements Runnable {
 		return key;
 	}//
 
-	private String getOpCodeMapKey(byte opCode, byte value1, byte value2, byte value3) {
-		String key = "";
-		if (opCode == 0xED | opCode == 0xCB) {
-			key = String.format("%02X%02X", opCode, value1);
-		} else if (opCode == 0xDD | opCode == 0xFD) {
-			if (value1 == 0xCB) {
-				key = String.format("%02X%02X%02X", opCode, value1, value3);
-			} else {
-				key = String.format("%02X%02X", opCode, value1);
-			} // if extended bit or not
-		} else {
-			key = String.format("%02X", opCode);
-		} // if all of it
-
-		return key;
-	}// getOpCodeMapKey
+	// private String getOpCodeMapKey(byte opCode, byte value1, byte value2, byte value3) {
+	// String key = "";
+	// if (opCode == 0xED | opCode == 0xCB) {
+	// key = String.format("%02X%02X", opCode, value1);
+	// } else if (opCode == 0xDD | opCode == 0xFD) {
+	// if (value1 == 0xCB) {
+	// key = String.format("%02X%02X%02X", opCode, value1, value3);
+	// } else {
+	// key = String.format("%02X%02X", opCode, value1);
+	// } // if extended bit or not
+	// } else {
+	// key = String.format("%02X", opCode);
+	// } // if all of it
+	//
+	// return key;
+	// }// getOpCodeMapKey
 
 	private int insertCode(int workingProgramCounter, int when) {// int
 		// thisLineNumber,
@@ -217,7 +219,6 @@ public class Z80Disassembler extends JPanel implements Runnable {
 		String locationPart = null;
 		String opCodePart = null;
 		String instructionPart = null;
-
 		try {
 			locationPart = makeLocationPart(workingProgramCounter);
 			// doc.insertString(doc.getLength(), locationPart,
@@ -233,7 +234,13 @@ public class Z80Disassembler extends JPanel implements Runnable {
 			case 2:
 				opCodePart = String.format("%02X%02X%6s", opCode, value1, "");
 				doc.insertString(doc.getLength(), opCodePart, opCodeAttributes1);
-				instructionPart = String.format("%-15s", OpCodeMap.getAssemblerCode(opCodeMapKey, value1));
+				if (opCode == DD || opCode == FD) {
+					instructionPart = String.format("%-15s", OpCodeMap.getAssemblerCode(opCodeMapKey));
+				} else if (opCode == ED || opCode == CB) {
+					instructionPart = String.format("%-15s", OpCodeMap.getAssemblerCode(opCodeMapKey));
+				} else {
+					instructionPart = String.format("%-15s", OpCodeMap.getAssemblerCode(opCodeMapKey, value1));
+				}
 				doc.insertString(doc.getLength(), instructionPart, instructionAttributes1);
 				break;
 			case 3:
@@ -242,6 +249,13 @@ public class Z80Disassembler extends JPanel implements Runnable {
 				instructionPart = String.format("%-15s", OpCodeMap.getAssemblerCode(opCodeMapKey, value1, value2));
 				doc.insertString(doc.getLength(), instructionPart, instructionAttributes1);
 				break;
+			case 4:
+				opCodePart = String.format("%02X%02X%02X%02X%2s", opCode, value1, value2, value3, "");
+				doc.insertString(doc.getLength(), opCodePart, opCodeAttributes1);
+				// instructionPart = "instructionPart";
+				instructionPart = String.format("%-15s", OpCodeMap.getAssemblerCode(opCodeMapKey, value2, value3));
+				doc.insertString(doc.getLength(), instructionPart, instructionAttributes1);
+
 			default:
 				log.warnf("Bad Opcode %02X %02X %02X %02X at Location %04X%n", opCode, value1, value2, value3,
 						workingProgramCounter);
@@ -301,7 +315,7 @@ public class Z80Disassembler extends JPanel implements Runnable {
 		newDisplay = true;
 		doc = txtInstructions.getStyledDocument();
 		makeStyles();
-//		updateDisplay();
+		// updateDisplay();
 	}// appInit
 
 	private void initialize() {
@@ -348,10 +362,15 @@ public class Z80Disassembler extends JPanel implements Runnable {
 	private int futureProgramerCounter; // instruction +1 from last displayed
 
 	/*-------------------CONSTANTS-------------------------------*/
-	private final Color COLOR_LOCATION = Color.black;
-	private final Color COLOR_OPCODE = Color.red;
-	private final Color COLOR_INSTRUCTION = Color.blue;
-	private final Color COLOR_FUNCTION = Color.green;
+	private final static Color COLOR_LOCATION = Color.black;
+	private final static Color COLOR_OPCODE = Color.red;
+	private final static Color COLOR_INSTRUCTION = Color.blue;
+	private final static Color COLOR_FUNCTION = Color.green;
+
+	private final static byte ED = (byte) 0xED;
+	private final static byte CB = (byte) 0xCB;
+	private final static byte DD = (byte) 0xDD;
+	private final static byte FD = (byte) 0xFD;
 
 	private final static String COLON = ":";
 

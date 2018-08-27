@@ -107,12 +107,14 @@ public class MemoryLoaderFromFile {
 	static private void parseAndLoadImageMem(File sourceFile) {
 		int byteIndex = 0;
 		try {
-			String strAddress;
+			String strAddress ="";
 			int address;
 			byte[] values = new byte[SIXTEEN];
 			Scanner scanner = new Scanner(sourceFile);
-			while (scanner.hasNextLine()) {
+			while (scanner.hasNext()) { //scanner.hasNextLine()
+
 				strAddress = scanner.next();
+				
 				strAddress = strAddress.replace(":", "");
 				address = Integer.valueOf(strAddress, 16);
 
@@ -151,7 +153,7 @@ public class MemoryLoaderFromFile {
 			byte recordType, value;
 			byte[] values;
 			scanner = new Scanner(sourceFile);
-			while (scanner.hasNextLine()) {
+			while (scanner.hasNext()) { //scanner.hasNextLine()
 				line = scanner.next();
 				line = line.replace(" ", ""); // remove any spaces
 				if (line.length() == 0) {
