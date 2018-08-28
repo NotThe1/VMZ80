@@ -47,6 +47,10 @@ public class Z80Disassembler extends JPanel implements Runnable {
 	// public static Z80Disassembler getInstance() {
 	// return instance;
 	// }// getInstance
+	
+	public static void tool() {
+		OpCodeMap.tool();
+	}
 
 	public void run() {
 		refreshDisplay();
@@ -165,7 +169,7 @@ public class Z80Disassembler extends JPanel implements Runnable {
 		byte value1 = core.read(opCodeLocation + 1);
 		// byte value2 = core.read(opCodeLocation + 2);
 		byte value3 = core.read(opCodeLocation + 3);
-		String key = "";
+		String key = EMPTY;
 
 		if (opCode == ED | opCode == CB) {
 			key = String.format("%02X%02X", opCode, value1);
@@ -185,7 +189,7 @@ public class Z80Disassembler extends JPanel implements Runnable {
 	}//
 
 	// private String getOpCodeMapKey(byte opCode, byte value1, byte value2, byte value3) {
-	// String key = "";
+	// String key = EMPTY;
 	// if (opCode == 0xED | opCode == 0xCB) {
 	// key = String.format("%02X%02X", opCode, value1);
 	// } else if (opCode == 0xDD | opCode == 0xFD) {
@@ -214,52 +218,86 @@ public class Z80Disassembler extends JPanel implements Runnable {
 		// String opCodeMapKey = getOpCodeMapKey( opCode, value1, value2, value3);
 		String opCodeMapKey = getOpCodeMapKey(workingProgramCounter);
 
-		int opCodeSize = OpCodeMap.getSize(opCodeMapKey);
-
 		String locationPart = null;
 		String opCodePart = null;
 		String instructionPart = null;
+
+		int opCodeSize = OpCodeMap.getSize(opCodeMapKey);
+
 		try {
-			locationPart = makeLocationPart(workingProgramCounter);
-			// doc.insertString(doc.getLength(), locationPart,
-			// locationAttributes[when]);
-			doc.insertString(doc.getLength(), locationPart, locationAttributes1);
+
 			switch (opCodeSize) {
 			case 1:
-				opCodePart = String.format("%02X%8s", opCode, "");
-				doc.insertString(doc.getLength(), opCodePart, opCodeAttributes1);
+				opCodePart = String.format("%02X%8s", opCode, EMPTY);
 				instructionPart = String.format("%-15s", OpCodeMap.getAssemblerCode(opCodeMapKey));
-				doc.insertString(doc.getLength(), instructionPart, instructionAttributes1);
 				break;
 			case 2:
-				opCodePart = String.format("%02X%02X%6s", opCode, value1, "");
-				doc.insertString(doc.getLength(), opCodePart, opCodeAttributes1);
+				opCodePart = String.format("%02X%02X%6s", opCode, value1, EMPTY);
 				if (opCode == DD || opCode == FD) {
 					instructionPart = String.format("%-15s", OpCodeMap.getAssemblerCode(opCodeMapKey));
 				} else if (opCode == ED || opCode == CB) {
 					instructionPart = String.format("%-15s", OpCodeMap.getAssemblerCode(opCodeMapKey));
 				} else {
 					instructionPart = String.format("%-15s", OpCodeMap.getAssemblerCode(opCodeMapKey, value1));
-				}
-				doc.insertString(doc.getLength(), instructionPart, instructionAttributes1);
+				} // if
 				break;
 			case 3:
-				opCodePart = String.format("%02X%02X%02X%4s", opCode, value1, value2, "");
-				doc.insertString(doc.getLength(), opCodePart, opCodeAttributes1);
+				opCodePart = String.format("%02X%02X%02X%4s", opCode, value1, value2, EMPTY);
 				instructionPart = String.format("%-15s", OpCodeMap.getAssemblerCode(opCodeMapKey, value1, value2));
-				doc.insertString(doc.getLength(), instructionPart, instructionAttributes1);
 				break;
 			case 4:
-				opCodePart = String.format("%02X%02X%02X%02X%2s", opCode, value1, value2, value3, "");
-				doc.insertString(doc.getLength(), opCodePart, opCodeAttributes1);
-				// instructionPart = "instructionPart";
+				opCodePart = String.format("%02X%02X%02X%02X%2s", opCode, value1, value2, value3, EMPTY);
 				instructionPart = String.format("%-15s", OpCodeMap.getAssemblerCode(opCodeMapKey, value2, value3));
-				doc.insertString(doc.getLength(), instructionPart, instructionAttributes1);
-
+				break;
 			default:
 				log.warnf("Bad Opcode %02X %02X %02X %02X at Location %04X%n", opCode, value1, value2, value3,
 						workingProgramCounter);
 			}// switch opCode Size
+				/////////////////////
+
+			Z80Type type = OpCodeMap.getType(opCodeMapKey);
+//			String instructionPart0;
+			switch (type) {
+			case A99:
+				instructionPart = String.format("*%-15s", OpCodeMap.getAssemblerCodeA99(opCodeMapKey));
+				break;
+			case A98:
+				instructionPart = String.format("*%-15s", OpCodeMap.getAssemblerCodeA98(opCodeMapKey,value1));
+				break;
+			case A97:
+				instructionPart = String.format("*%-15s", OpCodeMap.getAssemblerCodeA97(opCodeMapKey,value1));
+				break;
+			case A96:
+				instructionPart = String.format("*%-15s", OpCodeMap.getAssemblerCodeA96(opCodeMapKey,value2));
+				break;
+			case A95:
+				instructionPart = String.format("*%-15s", OpCodeMap.getAssemblerCodeA95(opCodeMapKey,value2,value3));
+				break;
+			case A94:
+				instructionPart = String.format("*%-15s", OpCodeMap.getAssemblerCodeA94(opCodeMapKey,value2));
+				break;
+			case A93:
+				instructionPart = String.format("*%-15s", OpCodeMap.getAssemblerCodeA93(opCodeMapKey,value2));
+				break;
+			case A00:
+				instructionPart = String.format("*%-15s", OpCodeMap.getAssemblerCodeA00(opCodeMapKey));
+				break;
+			case A01:
+				instructionPart = String.format("*%-15s", OpCodeMap.getAssemblerCodeA01(opCodeMapKey));
+				break;
+			case A10:
+			case A11:
+			case A20:
+			case A21:
+			case A22:
+			}// switch
+			locationPart = makeLocationPart(workingProgramCounter);
+
+			doc.insertString(doc.getLength(), locationPart, locationAttributes1);
+			doc.insertString(doc.getLength(), opCodePart, opCodeAttributes1);
+			doc.insertString(doc.getLength(), instructionPart, instructionAttributes1);
+			/////////////////////
+
 			String functionPart = String.format("    %s", OpCodeMap.getFunction(opCodeMapKey) + LINE_SEPARATOR);
 			doc.insertString(doc.getLength(), functionPart, functionAttributes1);
 			if (when == LINE_CURRENT) {
@@ -275,8 +313,28 @@ public class Z80Disassembler extends JPanel implements Runnable {
 		return opCodeSize;
 	}// insertCode
 
+	String getInstructionPart(String opCodeMapKey, byte value1, byte value2, byte value3) {
+		String ans = EMPTY;
+		Z80Type type = OpCodeMap.getType(opCodeMapKey);
+		switch (type) {
+		case A00:
+			ans = String.format("*%-15s", OpCodeMap.getAssemblerCode(opCodeMapKey));
+			break;
+		case A11:
+		case A01:
+		case A10:
+		case A20:
+		case A21:
+		case A22:
+			break;
+		default:
+		}// switch Z80type
+
+		return ans;
+	}// getInstructionPart
+
 	private String makeLocationPart(int location) {
-		return String.format("%04X%s%4s", location, COLON, "");
+		return String.format("%04X%s%4s", location, COLON, EMPTY);
 	}// makeLocationPart
 
 	private void makeStyles() {
@@ -373,6 +431,7 @@ public class Z80Disassembler extends JPanel implements Runnable {
 	private final static byte FD = (byte) 0xFD;
 
 	private final static String COLON = ":";
+	private final static String EMPTY = "";
 
 	private final static int LINES_TO_DISPLAY = 64; // LTD-> Lines To Display
 	private final static int LINES_OF_HISTORY = 5; // LTT-> Lines to Trail

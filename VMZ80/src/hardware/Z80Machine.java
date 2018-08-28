@@ -58,6 +58,7 @@ import hardware.View.V_IF_ProgramRegisters;
 import hardware.View.V_IF_SpecialRegisters;
 import memory.MemoryLoaderFromFile;
 import utilities.filePicker.FilePicker;
+import utilities.inLineDisassembler.Z80Disassembler;
 
 public class Z80Machine {
 
@@ -308,7 +309,8 @@ public class Z80Machine {
 	}// appClose
 
 	private void appInit() {
-		loadROM();
+//		loadROM();
+		
 		tabDialog = new TabDialog();
 		tabDialog.setVisible(true);
 
@@ -616,6 +618,14 @@ public class Z80Machine {
 
 		JMenu mnuTools = new JMenu("Tools");
 		menuBar.add(mnuTools);
+		
+		JMenuItem mntmNewMenuItem = new JMenuItem("Pick OpCodeMap");
+		mntmNewMenuItem.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent arg0) {
+				Z80Disassembler.tool();
+			}
+		});
+		mnuTools.add(mntmNewMenuItem);
 
 	}// initialize
 

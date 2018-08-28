@@ -32,11 +32,11 @@ package utilities.inLineDisassembler;
 		return this.instruction;
 	}// getInstruction
 
-	private String getSource() {
+	public String getSource() {
 		return this.source;
 	}// getSource
 
-	private String getDestination() {
+	public String getDestination() {
 		return this.destination;
 	}// getDestination
 
@@ -44,9 +44,71 @@ package utilities.inLineDisassembler;
 		return this.function;
 	}// getFunction
 
-	// public String getFunctionFormatted() {
-	// return String.format("%8s%s%n", "", this.function);
-	// }// getFunction
+	public Z80Type getType() {
+		return this.type;
+	}// getFunction
+
+	public String getAssemblerCodeA99() {
+		return  String.format("%-4s", getInstruction());			
+	}// getAssemblerCodeA99
+	
+	public String getAssemblerCodeA98(byte value1) {
+		return  String.format("%-4s %s,%02X", getInstruction(), getDestination(),value1);			
+	}// getAssemblerCodeA98
+
+	public String getAssemblerCodeA97(byte value1) {
+		return  String.format("%-4s %02X", getInstruction(),value1);			
+	}// getAssemblerCodeA97
+
+	public String getAssemblerCodeA96(byte value2) {
+		return  String.format("%-4s (%s+%02X)", getInstruction(),getDestination(),value2);			
+	}// getAssemblerCodeA96
+
+	public String getAssemblerCodeA95(byte value2,byte value3) {
+		return  String.format("%-4s (%s+%02X),%02X", getInstruction(),getDestination(),value2,value3);			
+	}// getAssemblerCodeA95
+
+	public String getAssemblerCodeA94(byte value2) {
+		return  String.format("%-4s %s,(%s+%02X)", getInstruction(),getSource(),getDestination(),value2);			
+	}// getAssemblerCodeA94
+
+	public String getAssemblerCodeA93(byte value2) {
+		return  String.format("%-4s (%s+%02X),%s", getInstruction(),getSource(),value2,getDestination());			
+	}// getAssemblerCodeA93
+
+
+	
+	
+	public String getAssemblerCodeA00() {
+		return  String.format("%-4s %s", getInstruction(), getDestination());			
+	}// getAssemblerCodeA00
+	
+	public String getAssemblerCodeA01() {
+			return String.format("%-4s %s,%s", getInstruction(), getDestination(), getSource());
+	}// getAssemblerCodeA01
+	
+	public String getAssemblerCodeA10(byte plusOne) {
+		return String.format("%-4s %02X", getInstruction(), plusOne);
+}// getAssemblerCodeA10
+	
+	public String getAssemblerCodeA11(byte plusOne) {
+		return String.format("%-4s %s,%02X", getInstruction(), getDestination(), plusOne);
+}// getAssemblerCodeA11
+	
+	public String getAssemblerCodeA20(byte plusOne,byte plusTwo) {
+		return  String.format("%-4s (%02X%02X),%s", getInstruction(), plusTwo, plusOne,getSource());
+}// getAssemblerCodeA20
+	
+	public String getAssemblerCodeA21(byte plusOne,byte plusTwo) {
+		return String.format("%-4s %s,(%02X%02X)",  getInstruction(),getDestination(), plusTwo, plusOne);
+}// getAssemblerCodeA21
+	
+	public String getAssemblerCodeA22(byte plusOne,byte plusTwo) {
+		return String.format("%-4s %s,%02X%02X", getInstruction(), getDestination(), plusTwo, plusOne);
+}// getAssemblerCodeA10
+
+	
+
 
 	public String getAssemblerCode() {
 		String ans ="";
