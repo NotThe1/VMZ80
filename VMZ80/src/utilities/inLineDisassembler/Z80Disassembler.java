@@ -279,17 +279,41 @@ public class Z80Disassembler extends JPanel implements Runnable {
 			case A93:
 				instructionPart = String.format("*%-15s", OpCodeMap.getAssemblerCodeA93(opCodeMapKey,value2));
 				break;
+			case A92:
+				instructionPart = String.format("*%-15s", OpCodeMap.getAssemblerCodeA92(opCodeMapKey));
+				break;
+			case A91:
+				instructionPart = String.format("*%-15s", OpCodeMap.getAssemblerCodeA91(opCodeMapKey,value2,value3));
+				break;
+			case A90:
+				instructionPart = String.format("*%-15s", OpCodeMap.getAssemblerCodeA90(opCodeMapKey,value2,value3));
+				break;
+			case A89:
+				instructionPart = String.format("*%-15s", OpCodeMap.getAssemblerCodeA89(opCodeMapKey,value1,value2));
+				break;
+			case A88:
+				instructionPart = String.format("*%-15s", OpCodeMap.getAssemblerCodeA88(opCodeMapKey,value1,value2));
+				break;
+			case A87:
+				instructionPart = String.format("*%-15s", OpCodeMap.getAssemblerCodeA91(opCodeMapKey,value1,value2));
+				break;
+			case A86:
+				instructionPart = String.format("*%-15s", OpCodeMap.getAssemblerCodeA90(opCodeMapKey,value1,value2));
+				break;
+			case A85:
+				instructionPart = String.format("*%-15s", OpCodeMap.getAssemblerCodeA85(opCodeMapKey,value2));
+				break;
 			case A00:
 				instructionPart = String.format("*%-15s", OpCodeMap.getAssemblerCodeA00(opCodeMapKey));
 				break;
 			case A01:
-				instructionPart = String.format("*%-15s", OpCodeMap.getAssemblerCodeA01(opCodeMapKey));
+				instructionPart = String.format("*%-15s", OpCodeMap.getAssemblerCodeA01(opCodeMapKey,value1));
 				break;
-			case A10:
-			case A11:
-			case A20:
-			case A21:
-			case A22:
+//			case A10:
+//			case A11:
+//			case A20:
+//			case A21:
+//			case A22:
 			}// switch
 			locationPart = makeLocationPart(workingProgramCounter);
 
@@ -320,13 +344,13 @@ public class Z80Disassembler extends JPanel implements Runnable {
 		case A00:
 			ans = String.format("*%-15s", OpCodeMap.getAssemblerCode(opCodeMapKey));
 			break;
-		case A11:
-		case A01:
-		case A10:
-		case A20:
-		case A21:
-		case A22:
-			break;
+//		case A11:
+//		case A01:
+//		case A10:
+//		case A20:
+//		case A21:
+//		case A22:
+//			break;
 		default:
 		}// switch Z80type
 
