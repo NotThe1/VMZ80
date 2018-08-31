@@ -13,6 +13,7 @@ public enum Z80InstrucionType {
 	I13,
 	I14,
 	I15,
+	I16,
 	
 	I20,
 	I21,
@@ -20,38 +21,21 @@ public enum Z80InstrucionType {
 	I23,
 	I24,
 	I25,
-	I26,
-	
-//	A99,
-//	A98,
-//	A97,
-//	A96,
-//	A95,
-//	A94,
-//	A93,
-//	A92,
-//	A91,
-//	A90,
-//	A89,
-//	A88,
-//	A87,
-//	A86,
-//	A85,
-//	A00,
-//	A01
-	
-
+	I26
 }// Z80InstructionType
+
+
 // I00	0 arguments		- Instruction								 [DJNZ]
 // I01	0 arguments		- Instruction source						 [DEC B]
 // I02  0 arguments     - Instruction source target					[LD(BC),A]
 
-// I10 1 argument		- Instruction value1						[DJNZ 01H]
+// I10	1 argument		- Instruction value1						[DJNZ 01H]
 // I11	1 argument		- instruction target, value1				[LD B,02H]
 // I12	1 argument		- instruction (value1H),Source				[OUT (03H),A]
 // I13	1 argument		- Instruction (Source + value2H)			[INC (IX+04H)]
 // I14	1 argument		- instruction (target+ value2H), Source		[LD (IX+05H),B]
 // I15	1 argument		- instruction target,(Source + value2H)		[BIT 0,(IX+06H)]
+// I16	1 argument		- instruction target,(value1)				[IN A,(08H)]
 
 // I20	2 arguments		- instruction value2:value1H				[JP 0789AH]
 // I21	2 arguments		- instruction target,value2:value1H			[LD BC,0BCDEH]

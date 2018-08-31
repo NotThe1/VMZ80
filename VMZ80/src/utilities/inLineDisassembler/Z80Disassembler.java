@@ -240,6 +240,10 @@ public class Z80Disassembler extends JPanel implements Runnable {
 						value2);
 				break;
 
+			case I16:
+				part0 = String.format("%s %s,(%02XH)", os.getInstruction(),  os.getDestination(),value1);
+				break;
+
 			case I20:
 				part0 = String.format("%s %02X%02XH", os.getInstruction(), value2, value1);
 				break;
@@ -386,11 +390,11 @@ public class Z80Disassembler extends JPanel implements Runnable {
 	private final static String COLON = ":";
 	private final static String EMPTY = "";
 
-	private final static int LINES_TO_DISPLAY = 64; // LTD-> Lines To Display
+	private final static int LINES_TO_DISPLAY = 330; //64 LTD-> Lines To Display
 	private final static int LINES_OF_HISTORY = 5; // LTT-> Lines to Trail
 
-	private static final int LINE_CURRENT = 1;
-	private static final int LINE_FUTURE = 2;
+//	private static final int LINE_CURRENT = 1;
+//	private static final int LINE_FUTURE = 2;
 
 	private static String LINE_SEPARATOR = System.lineSeparator();
 	private JTextPane txtInstructions;
