@@ -2,14 +2,14 @@ package utilities.inLineDisassembler;
 
  class OperationStructure {
 	private String opCode;
-	private Z80Type type;
+	private Z80InstrucionType type;
 	private int size;
 	private String instruction;
 	private String source;
 	private String destination;
 	private String function;
 
-	OperationStructure(String opCode, Z80Type type,int size,
+	OperationStructure(String opCode, Z80InstrucionType type,int size,
 			String instruction, String destination, String source, String function) {
 		this.opCode = opCode;
 		this.type = type;
@@ -28,7 +28,7 @@ package utilities.inLineDisassembler;
 		return this.size;
 	}// getSize
 
-	private String getInstruction() {
+	public String getInstruction() {
 		return this.instruction;
 	}// getInstruction
 
@@ -44,7 +44,7 @@ package utilities.inLineDisassembler;
 		return this.function;
 	}// getFunction
 
-	public Z80Type getType() {
+	public Z80InstrucionType getType() {
 		return this.type;
 	}// getFunction
 
