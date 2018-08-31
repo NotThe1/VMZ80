@@ -36,10 +36,10 @@ public class Z80Disassembler extends JPanel implements Runnable {
 	OpCodeMap opCodeMap = new OpCodeMap();
 
 	SimpleAttributeSet historyAttributes;
-	SimpleAttributeSet locationAttributes1;
-	SimpleAttributeSet opCodeAttributes1;
-	SimpleAttributeSet instructionAttributes1;
-	SimpleAttributeSet functionAttributes1;
+	SimpleAttributeSet locationAttributes;
+	SimpleAttributeSet opCodeAttributes;
+	SimpleAttributeSet instructionAttributes;
+	SimpleAttributeSet functionAttributes;
 	SimpleAttributeSet boldAttributes;
 
 	public void run() {
@@ -84,20 +84,13 @@ public class Z80Disassembler extends JPanel implements Runnable {
 		return;
 	}// updateDisplay()
 
-	private int getNextProgramCounter(int programCounter) {
-		String opCodeMapKey = getOpCodeMapKey(programCounter);
-		int opCodeSize = OpCodeMap.getSize(opCodeMapKey);
-		// byte opCode = core.read(programCounter);
-		// int opCodeSize = OpCodeMap.getSize(opCode);
-		return programCounter + opCodeSize;
-
-	}// getNextProgramCounter
-
 	private void nextInstruction(int programCounter) {
 		processHistoryLine();
 		processCurrentLine();
-		nextProgramCounter = getNextProgramCounter(programCounter);
-		// processCurrentLine(nextProgramCounter,currentLineNumber+1);
+		
+		String opCodeMapKey = getOpCodeMapKey(programCounter);
+		int opCodeSize = OpCodeMap.getOpCodeSize(opCodeMapKey);
+		nextProgramCounter = programCounter + opCodeSize;	
 	}// nextInstruction
 
 	private void notNextInstruction(int programCounter) {
@@ -131,7 +124,6 @@ public class Z80Disassembler extends JPanel implements Runnable {
 		} catch (BadLocationException e) {
 			e.printStackTrace();
 		} // try
-
 		return;
 	}// processHistoryLine
 
@@ -145,12 +137,13 @@ public class Z80Disassembler extends JPanel implements Runnable {
 
 	private int processFutureLines(int programCounter, int lineNumber) {
 		int workingProgramCounter = programCounter;
-		workingProgramCounter += insertCode(workingProgramCounter, LINE_FUTURE);
+		workingProgramCounter += insertCode(workingProgramCounter);// , LINE_FUTURE
 		nextProgramCounter = workingProgramCounter;
 
 		for (int i = 0; i < LINES_TO_DISPLAY - (lineNumber); i++) {
-			workingProgramCounter += insertCode(workingProgramCounter, LINE_FUTURE);
+			workingProgramCounter += insertCode(workingProgramCounter);// , LINE_FUTURE
 		} // for
+		
 		return workingProgramCounter; // futureProgramCounter.
 	}// processCurrentLine
 
@@ -178,26 +171,18 @@ public class Z80Disassembler extends JPanel implements Runnable {
 		return key;
 	}//
 
-
-	private int insertCode(int workingProgramCounter, int when) {// int
+	private int insertCode(int workingProgramCounter) {// int , int when
 		byte opCode = core.read(workingProgramCounter);
 		byte value1 = core.read(workingProgramCounter + 1);
 		byte value2 = core.read(workingProgramCounter + 2);
 		byte value3 = core.read(workingProgramCounter + 3);
-		
 
 		String opCodeMapKey = getOpCodeMapKey(workingProgramCounter);
 		OperationStructure os = OpCodeMap.getOperationStructure(opCodeMapKey);
 
-		String locationPart = null;
 		String opCodePart = null;
-		String part0 = null;
-		String instructionPart = null;
-		
-	int opCodeSize = OpCodeMap.getSize(opCodeMapKey);
-
+		int opCodeSize = os.getSize();
 		try {
-
 			switch (opCodeSize) {
 			case 1:
 				opCodePart = String.format("%02X%8s", opCode, EMPTY);
@@ -217,104 +202,93 @@ public class Z80Disassembler extends JPanel implements Runnable {
 			}// switch opCode Size
 				/////////////////////
 
-			Z80InstrucionType type = os.getType();//OpCodeMap.getType(opCodeMapKey);
+			String part0 = null;
+			Z80InstrucionType type = os.getType();// OpCodeMap.getType(opCodeMapKey);
 			switch (type) {
 			case I00:
 				part0 = String.format("%s", os.getInstruction());
 				break;
 			case I01:
-				part0 = String.format("%s %s", os.getInstruction(),os.getDestination());
+				part0 = String.format("%s %s", os.getInstruction(), os.getDestination());
 				break;
 			case I02:
-				part0 = String.format("%s %s,%s",os.getInstruction(),os.getDestination(),os.getSource());
+				part0 = String.format("%s %s,%s", os.getInstruction(), os.getDestination(), os.getSource());
 				break;
-				
+
 			case I10:
-				part0 = String.format("%s %02XH", os.getInstruction(),value1);
+				part0 = String.format("%s %02XH", os.getInstruction(), value1);
 				break;
 			case I11:
-				part0 = String.format("%s %s,%02XH", os.getInstruction(),os.getDestination(),value1);
+				part0 = String.format("%s %s,%02XH", os.getInstruction(), os.getDestination(), value1);
 				break;
-				
+
 			case I12:
-				part0 = String.format("%s (%02XH),%s", os.getInstruction(),value1,os.getSource());
+				part0 = String.format("%s (%02XH),%s", os.getInstruction(), value1, os.getSource());
 				break;
-				
+
 			case I13:
-				part0 = String.format("%s (%s+%02XH)", os.getInstruction(),os.getDestination(),value2);
+				part0 = String.format("%s (%s+%02XH)", os.getInstruction(), os.getDestination(), value2);
 				break;
-				
+
 			case I14:
-				part0 = String.format("%s (%s+%02XH),%s", os.getInstruction(),os.getSource()
-						,value2,os.getDestination());
+				part0 = String.format("%s (%s+%02XH),%s", os.getInstruction(), os.getSource(), value2,
+						os.getDestination());
 				break;
-				
+
 			case I15:
-				part0 = String.format("%s %s,(%s+%02XH)", os.getInstruction(),os.getSource()
-						,os.getDestination(),value2);
+				part0 = String.format("%s %s,(%s+%02XH)", os.getInstruction(), os.getSource(), os.getDestination(),
+						value2);
 				break;
-				
-				
+
 			case I20:
-				part0 = String.format("%s %02X%02XH", os.getInstruction(),value2,value1);
+				part0 = String.format("%s %02X%02XH", os.getInstruction(), value2, value1);
 				break;
-				
+
 			case I21:
-				part0 = String.format("%s %s,%02X%02XH", os.getInstruction(),os.getDestination(),value2,value1);
+				part0 = String.format("%s %s,%02X%02XH", os.getInstruction(), os.getDestination(), value2, value1);
 				break;
-				
+
 			case I22:
-				part0 = String.format("%s (%02X%02XH),%s", os.getInstruction(),value3,value2,os.getSource());
+				part0 = String.format("%s (%02X%02XH),%s", os.getInstruction(), value3, value2, os.getSource());
 				break;
-				
+
 			case I23:
-				part0 = String.format("%s (%02X%02XH),%s", os.getInstruction(),value2,value1,os.getSource());
+				part0 = String.format("%s (%02X%02XH),%s", os.getInstruction(), value2, value1, os.getSource());
 				break;
-				
+
 			case I24:
-				part0 = String.format("%s %s,(%02X%02XH)", os.getInstruction(),os.getDestination(),value3,value2);
+				part0 = String.format("%s %s,(%02X%02XH)", os.getInstruction(), os.getDestination(), value3, value2);
 				break;
-				
+
 			case I25:
-				part0 = String.format("%s %s,(%02X%02XH)", os.getInstruction(),os.getDestination(),value2,value1);
+				part0 = String.format("%s %s,(%02X%02XH)", os.getInstruction(), os.getDestination(), value2, value1);
 				break;
-				
+
 			case I26:
-				part0 = String.format("%s (%s+%02XH),%02XH", os.getInstruction(),os.getDestination(),value2,value3);
+				part0 = String.format("%s (%s+%02XH),%02XH", os.getInstruction(), os.getDestination(), value2, value3);
 				break;
-				
+
 			}// switch
-			
-			 final String instructionFormat = "%-15s"; // used for column start
 
-			instructionPart = String.format(instructionFormat,part0);
-			
-			locationPart = makeLocationPart(workingProgramCounter);
+			final String instructionFormat = "%-15s"; // used for column start
+			String instructionPart = String.format(instructionFormat, part0);
 
-			doc.insertString(doc.getLength(), locationPart, locationAttributes1);
-			doc.insertString(doc.getLength(), opCodePart, opCodeAttributes1);
-			doc.insertString(doc.getLength(), instructionPart, instructionAttributes1);
+			String locationPart = String.format("%04X%s%4s", workingProgramCounter, COLON, EMPTY);
+
+			doc.insertString(doc.getLength(), locationPart, locationAttributes);
+			doc.insertString(doc.getLength(), opCodePart, opCodeAttributes);
+			doc.insertString(doc.getLength(), instructionPart, instructionAttributes);
 			/////////////////////
 
-			String functionPart = String.format("    %s", OpCodeMap.getFunction(opCodeMapKey) + LINE_SEPARATOR);
-			doc.insertString(doc.getLength(), functionPart, functionAttributes1);
-			if (when == LINE_CURRENT) {
-				currentPosition = doc.createPosition(doc.getLength() - 1); // current
-				// line
-				// position
-			} // if
-
+			String functionPart = String.format("    %s", os.getFunction() + LINE_SEPARATOR);
+			doc.insertString(doc.getLength(), functionPart, functionAttributes);
+			
 		} catch (Exception e) {
 			e.printStackTrace();
 		} // try
-
 		return opCodeSize;
 	}// insertCode
 
-
-	private String makeLocationPart(int location) {
-		return String.format("%04X%s%4s", location, COLON, EMPTY);
-	}// makeLocationPart
 
 	private void makeStyles() {
 		SimpleAttributeSet baseAttributes = new SimpleAttributeSet();
@@ -327,17 +301,17 @@ public class Z80Disassembler extends JPanel implements Runnable {
 		boldAttributes = new SimpleAttributeSet();
 		StyleConstants.setBold(boldAttributes, true);
 
-		locationAttributes1 = new SimpleAttributeSet(baseAttributes);
-		StyleConstants.setForeground(locationAttributes1, COLOR_LOCATION);
+		locationAttributes = new SimpleAttributeSet(baseAttributes);
+		StyleConstants.setForeground(locationAttributes, COLOR_LOCATION);
 
-		opCodeAttributes1 = new SimpleAttributeSet(baseAttributes);
-		StyleConstants.setForeground(opCodeAttributes1, COLOR_OPCODE);
+		opCodeAttributes = new SimpleAttributeSet(baseAttributes);
+		StyleConstants.setForeground(opCodeAttributes, COLOR_OPCODE);
 
-		instructionAttributes1 = new SimpleAttributeSet(baseAttributes);
-		StyleConstants.setForeground(instructionAttributes1, COLOR_INSTRUCTION);
+		instructionAttributes = new SimpleAttributeSet(baseAttributes);
+		StyleConstants.setForeground(instructionAttributes, COLOR_INSTRUCTION);
 
-		functionAttributes1 = new SimpleAttributeSet(baseAttributes);
-		StyleConstants.setForeground(functionAttributes1, COLOR_FUNCTION);
+		functionAttributes = new SimpleAttributeSet(baseAttributes);
+		StyleConstants.setForeground(functionAttributes, COLOR_FUNCTION);
 
 	}// makeStyles1
 
@@ -379,8 +353,8 @@ public class Z80Disassembler extends JPanel implements Runnable {
 			public void mouseClicked(MouseEvent mouseEvent) {
 				if (mouseEvent.getClickCount() > 1) {
 					refreshDisplay();
-				}
-			}
+				}//if
+			}//mouseClicked
 		});
 		txtInstructions.setEditable(false);
 		scrollPane.setViewportView(txtInstructions);
