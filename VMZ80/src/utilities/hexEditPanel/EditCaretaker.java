@@ -79,6 +79,10 @@ public class EditCaretaker {
 			return EditAtom.invalid();
 		} // try
 	}// getAtom
+	
+	public List<EditAtom> getAllEdits() {
+		return edits;
+	}//getAllEdits
 
 	public int getLastIndex() {
 		return edits.size() - 1;

@@ -15,6 +15,7 @@ import java.awt.event.MouseEvent;
 import java.awt.print.PrinterException;
 import java.text.MessageFormat;
 import java.util.Date;
+import java.util.List;
 
 import javax.swing.JButton;
 import javax.swing.JDialog;
@@ -33,6 +34,8 @@ import javax.swing.event.ChangeListener;
 
 import codeSupport.AppLogger;
 import memory.Core;
+import utilities.hexEditPanel.EditAtom;
+import utilities.hexEditPanel.EditType;
 import utilities.hexEditPanel.HexEditDisplayPanel;
 import utilities.inLineDisassembler.Z80Disassembler;
 
@@ -44,8 +47,6 @@ public class TabDialog extends JDialog implements Runnable {
 	private AdapterTabDialog adapterTabDialog = new AdapterTabDialog();
 	private HexEditDisplayPanel hexDisplayMemory = new HexEditDisplayPanel();
 	private Z80Disassembler disassembler = new Z80Disassembler();
-	// private InLineDisassembler disassembler = InLineDisassembler.getInstance();
-
 	private final JPanel contentPanel = new JPanel();
 
 	@Override
@@ -58,16 +59,17 @@ public class TabDialog extends JDialog implements Runnable {
 		hexDisplayMemory.setData(Core.getInstance().getStorage());
 		disassembler.updateDisplay();
 	}// refreshMemory
-	
+
 	public void updateDisplay() {
 		refreshMemory();
-	}//refreshViews
+	}// refreshViews
 
 	private void appClose() {
 
 	}// appClose
 
 	private void appInit() {
+
 		txtLog.setText(EMPTY_STRING);
 		log.setDoc(txtLog.getStyledDocument());
 
@@ -198,8 +200,25 @@ public class TabDialog extends JDialog implements Runnable {
 
 	private void doTabChanged(JTabbedPane source) {
 		String name = source.getSelectedComponent().getName();
-		switch(name) {
+		if (!name.equals(TAB_MEMORY)) {
+			// System.out.printf("data changed - %s%n",hexDisplayMemory.isDataChanged());
+			if (hexDisplayMemory.isDataChanged()) {
+				List<EditAtom> allEdits = hexDisplayMemory.getAllEdits();
+				Core core = Core.getInstance();
+
+				for (EditAtom edit : allEdits) {
+					if (edit.getEditType().equals(EditType.REPLACE)) {
+						core.write(edit.getLocation(), edit.getTo());
+						// System.out.printf(" Location %04X, value 02X%n",edit.getLocation(), edit.getTo());
+					} // for each edit
+				} // if data changed
+
+			} // if data changed
+			hexDisplayMemory.clearAllEdits();
+		} // if
+		switch (name) {
 		case TAB_DISASSEMBLER:
+			disassembler.refreshDisplay();
 			break;
 		}// switch
 	}// doTabChanged

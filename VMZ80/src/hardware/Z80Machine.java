@@ -305,7 +305,7 @@ public class Z80Machine {
 	}// appClose
 
 	private void appInit() {
-//		loadROM();
+		loadROM();
 		
 		tabDialog = new TabDialog();
 		tabDialog.setVisible(true);
@@ -321,7 +321,9 @@ public class Z80Machine {
 		restoreTabDialogState(myPrefs);
 		myPrefs = null;
 
-		log.info("Starting....");
+		log.addTimeStamp("Starting....");
+
+//		log.info("Starting....");
 
 		dcu.setDisplay(ifDiskPanel);
 		updateDisplaysMaster();

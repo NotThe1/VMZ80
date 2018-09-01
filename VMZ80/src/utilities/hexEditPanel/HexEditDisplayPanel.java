@@ -19,6 +19,7 @@ import java.awt.event.ComponentListener;
 import java.awt.event.MouseWheelEvent;
 import java.awt.event.MouseWheelListener;
 import java.nio.ByteBuffer;
+import java.util.List;
 import java.util.SortedMap;
 
 import javax.swing.BoundedRangeModel;
@@ -43,7 +44,8 @@ import javax.swing.text.StyledDocument;
 import codeSupport.AppLogger;
 /*
  *     2018-08-18  - added limit for address box
- */
+ *     2018-09-01  - added access to EditCaretaker list
+*/
 
 
 public class HexEditDisplayPanel extends JPanel implements Runnable {
@@ -83,6 +85,15 @@ public class HexEditDisplayPanel extends JPanel implements Runnable {
 		setUpScrollBar();
 		fillPane();
 	}// run
+	
+	public List<EditAtom> getAllEdits(){
+		return editCaretaker.getAllEdits();
+	}//getAllEdits
+	
+	public void clearAllEdits() {
+		editCaretaker.clear();
+		setDataChanged(false);
+	}//clearAllEdits
 
 	private boolean isVisible(int address) {
 		boolean ans = false;
