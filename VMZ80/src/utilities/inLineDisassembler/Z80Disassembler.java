@@ -253,22 +253,26 @@ public class Z80Disassembler extends JPanel implements Runnable {
 				break;
 
 			case I22:
-				part0 = String.format("%s (%02X%02XH),%s", os.getInstruction(), value3, value2, os.getSource());
+				part0 = String.format("%s %s,%02X%02XH", os.getInstruction(), os.getDestination(), value3, value2);
 				break;
 
 			case I23:
-				part0 = String.format("%s (%02X%02XH),%s", os.getInstruction(), value2, value1, os.getSource());
+				part0 = String.format("%s (%02X%02XH),%s", os.getInstruction(), value3, value2, os.getSource());
 				break;
 
 			case I24:
-				part0 = String.format("%s %s,(%02X%02XH)", os.getInstruction(), os.getDestination(), value3, value2);
+				part0 = String.format("%s (%02X%02XH),%s", os.getInstruction(), value2, value1, os.getSource());
 				break;
 
 			case I25:
-				part0 = String.format("%s %s,(%02X%02XH)", os.getInstruction(), os.getDestination(), value2, value1);
+				part0 = String.format("%s %s,(%02X%02XH)", os.getInstruction(), os.getDestination(), value3, value2);
 				break;
 
 			case I26:
+				part0 = String.format("%s %s,(%02X%02XH)", os.getInstruction(), os.getDestination(), value2, value1);
+				break;
+
+			case I27:
 				part0 = String.format("%s (%s+%02XH),%02XH", os.getInstruction(), os.getDestination(), value2, value3);
 				break;
 
@@ -278,13 +282,12 @@ public class Z80Disassembler extends JPanel implements Runnable {
 			String instructionPart = String.format(instructionFormat, part0);
 
 			String locationPart = String.format("%04X%s%4s", workingProgramCounter, COLON, EMPTY);
+			String functionPart = String.format("    %s", os.getFunction() + LINE_SEPARATOR);
+			
 
 			doc.insertString(doc.getLength(), locationPart, locationAttributes);
 			doc.insertString(doc.getLength(), opCodePart, opCodeAttributes);
 			doc.insertString(doc.getLength(), instructionPart, instructionAttributes);
-			/////////////////////
-
-			String functionPart = String.format("    %s", os.getFunction() + LINE_SEPARATOR);
 			doc.insertString(doc.getLength(), functionPart, functionAttributes);
 			
 		} catch (Exception e) {

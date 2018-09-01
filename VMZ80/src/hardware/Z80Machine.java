@@ -121,9 +121,6 @@ public class Z80Machine {
 			return;
 		}
 		log.infof("File chosen is %s%n", filePicker.getSelectedFile().getAbsolutePath());
-//		System.out.println("** [doFileOpen] **");
-
-		// InputStream in = this.getClass().getResourceAsStream("/Z80code/ROM.mem");
 			MemoryLoaderFromFile.loadMemoryImage(new File(filePicker.getSelectedFile().getAbsolutePath()));
 
 	}// doFileOpen

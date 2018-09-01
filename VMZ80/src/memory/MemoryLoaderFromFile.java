@@ -178,8 +178,8 @@ public class MemoryLoaderFromFile {
 				} // if max memory test
 
 				recordType = (byte) ((int) (Integer.valueOf(line.substring(HEX_TYPE_START, HEX_TYPE_END), HEX_VALUE)));
-				System.out.printf("recordType: %02X%n", recordType);
-				// int a = 0;
+//				System.out.printf("recordType: %02X%n", recordType);
+				
 				switch (recordType) {
 				case DATA_RECORD:
 					values = new byte[byteCount];

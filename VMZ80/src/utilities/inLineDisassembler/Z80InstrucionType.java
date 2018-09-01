@@ -21,7 +21,8 @@ public enum Z80InstrucionType {
 	I23,
 	I24,
 	I25,
-	I26
+	I26,
+	I27
 }// Z80InstructionType
 
 
@@ -39,11 +40,12 @@ public enum Z80InstrucionType {
 
 // I20	2 arguments		- instruction value2:value1H				[JP 0789AH]
 // I21	2 arguments		- instruction target,value2:value1H			[LD BC,0BCDEH]
-// I22	2 arguments		- instruction (value3:value2H),source		[LD (0F012H),IX]
-// I23	2 arguments		- instruction (value2:value1H),source		[LD (03456H),HL]
-// I24	2 arguments		- instruction target,(value3:value2H)		[LD IY,(0789AH)]
-// I25	2 arguments		- instruction target,(value2:value1H)		[LD HL,(0BCDEH)]
-// I26	2 arguments		- instruction (target + value2),value3		[LD (IX+0EH),00]
+// I22	2 arguments		- instruction target,value3:value2H			[LD IX,0BCDEH]
+// I23	2 arguments		- instruction (value3:value2H),source		[LD (0F012H),IX]
+// I25	2 arguments		- instruction (value2:value1H),source		[LD (03456H),HL]
+// I25	2 arguments		- instruction target,(value3:value2H)		[LD IY,(0789AH)]
+// I26	2 arguments		- instruction target,(value2:value1H)		[LD HL,(0BCDEH)]
+// I27	2 arguments		- instruction (target + value2),value3		[LD (IX+0EH),00]
 
 
 
