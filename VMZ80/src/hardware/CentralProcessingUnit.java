@@ -1,9 +1,12 @@
 package hardware;
 
+import java.io.IOException;
+
 import codeSupport.AppLogger;
 import codeSupport.Z80;
 import codeSupport.Z80.ConditionCode;
 import codeSupport.Z80.Register;
+import ioSystem.IOController;
 //import ioSystem.IOController;
 import memory.CpuBuss;
 
@@ -21,19 +24,17 @@ public class CentralProcessingUnit implements Runnable {
 	private ConditionCodeRegister ccr = ConditionCodeRegister.getInstance();
 	private WorkingRegisterSet wrs = WorkingRegisterSet.getInstance();
 	private ArithmeticUnit au = ArithmeticUnit.getInstance();
+	private IOController ioc = IOController.getInstance();
 	private AppLogger log = AppLogger.getInstance();
 	// private IOController ioController;
 
-	
 	private static ErrorStatus errorCurrent = ErrorStatus.NONE;
 	private int instructionBase;
 	private int interruptMode = Z80.MODE_0;
-	
-	
+
 	public static CentralProcessingUnit getInstance() {
 		return instance;
 	}// getInstance
-
 
 	private CentralProcessingUnit() {
 
@@ -356,7 +357,7 @@ public class CentralProcessingUnit implements Runnable {
 		int instructionSize = 2;
 		int page = getPage(instructionBase + 1);
 		int yyy = getYYY(instructionBase + 1);
-//		int zzz = getZZZ(instructionBase + 1);
+		// int zzz = getZZZ(instructionBase + 1);
 		int targetBit = yyy;
 
 		Register subject = getSingleRegister012(instructionBase + 1);
@@ -931,7 +932,13 @@ public class CentralProcessingUnit implements Runnable {
 			break;
 		case 6: // LD r,d - 06,0E,16,1E,26,2E,36,3E
 			instructionSize = 2;
-			wrs.setReg(getSingleRegister345(instructionBase), getImmediateByte(instructionBase + 1));
+			Register destination = getSingleRegister345(instructionBase);
+			if (destination.equals(Register.M)) {
+				int indirectAddress = wrs.getDoubleReg(Register.M);
+				cpuBuss.write(indirectAddress, getImmediateByte(instructionBase + 1));
+			} else {
+				wrs.setReg(destination, getImmediateByte(instructionBase + 1));
+			}//
 			break;
 		case 7: // RLCA RRCA RLA RRA DAA CPL SCF CCF - 07,0F,17,1F,27,2F,37,3F
 			instructionSize = 1;
@@ -1157,11 +1164,19 @@ public class CentralProcessingUnit implements Runnable {
 				break;
 			case 2: // OUT (n),A - D3
 				instructionSize = 2;
-				// TODO OPCODE OUT (n),A
+				Byte IOaddress = cpuBuss.read(wrs.getProgramCounter() + 1);
+				ioc.byteToDevice(IOaddress, wrs.getReg(Register.A));
 				break;
 			case 3: // IN A,(n) - DB
 				instructionSize = 2;
-				// TODO OPCODE IN A,(n)
+				IOaddress = cpuBuss.read(wrs.getProgramCounter() + 1);
+				try {
+					wrs.setReg(Register.A, ioc.byteFromDevice(IOaddress));
+				} catch (IOException e) {
+					log.errorf("Bad IO read from %02XH%n", IOaddress);
+					System.err.print(e.toString());
+				}//try
+
 				break;
 			case 4: // EX (SP),HL - E3
 				instructionSize = 1;

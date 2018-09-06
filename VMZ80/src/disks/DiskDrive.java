@@ -143,6 +143,13 @@ public class DiskDrive {
 		disk.get(readSector);
 		return readSector;
 	}// read
+	
+	public byte[] readNext() {
+		setCurrentAbsoluteSector(currentAbsoluteSector + 1);
+		return read();
+	}// readNext
+
+
 
 	private void setSectorPosition() {
 		int offset = currentAbsoluteSector * bytesPerSector;

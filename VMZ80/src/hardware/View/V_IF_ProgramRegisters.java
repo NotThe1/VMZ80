@@ -6,6 +6,7 @@ import java.awt.GridBagLayout;
 import javax.swing.JInternalFrame;
 import javax.swing.JLabel;
 import javax.swing.SwingConstants;
+import javax.swing.event.EventListenerList;
 
 import hardware.WorkingRegisterSet;
 import utilities.hdNumberBox.HDNumberBox;
@@ -18,6 +19,9 @@ public class V_IF_ProgramRegisters extends JInternalFrame  implements Runnable{
 	WorkingRegisterSet wrs = WorkingRegisterSet.getInstance();
 	private HDNumberBox regPC;
 	private HDNumberBox regSP;
+	
+	EventListenerList hdNumberValueChangeListenerList = new EventListenerList();;
+
 
 	@Override
 	public void run() {
@@ -29,6 +33,7 @@ public class V_IF_ProgramRegisters extends JInternalFrame  implements Runnable{
 		switch (name) {
 		case REG_PC:
 			wrs.setProgramCounter(newValue);
+			fireProgramCounterValueChanged(newValue);
 			break;
 		case REG_SP:
 			wrs.setStackPointer(newValue);
@@ -104,6 +109,35 @@ public class V_IF_ProgramRegisters extends JInternalFrame  implements Runnable{
 		regSP.setLayout(gbl_regSP);
 		
 	}//initialize
+	
+	// ---------------------------
+	public void addHDNumberValueChangedListener(HDNumberValueChangeListener seekValueChangeListener) {
+		hdNumberValueChangeListenerList.add(HDNumberValueChangeListener.class, seekValueChangeListener);
+	}// addSeekValueChangedListener
+
+	public void removeHDNumberValueChangedListener(HDNumberValueChangeListener seekValueChangeListener) {
+		hdNumberValueChangeListenerList.remove(HDNumberValueChangeListener.class, seekValueChangeListener);
+	}// addSeekValueChangedListener
+
+	protected void fireProgramCounterValueChanged(int newValue) {
+		Object[] listeners = hdNumberValueChangeListenerList.getListenerList();
+		// process
+		HDNumberValueChangeEvent hdNumberValueChangeEvent = new HDNumberValueChangeEvent(this, Integer.MIN_VALUE,
+				newValue);
+
+		for (int i = listeners.length - 2; i >= 0; i -= 2) {
+			if (listeners[i] == HDNumberValueChangeListener.class) {
+				((HDNumberValueChangeListener) listeners[i + 1]).valueChanged(hdNumberValueChangeEvent);
+			} // if
+		} // for
+
+	}// fireSeekValueChanged
+
+	// --------------------------------------------------------
+
+	
+	
+	
 	private static final String REG_PC = "regPC";
 	private static final String REG_SP = "regSP";
 		

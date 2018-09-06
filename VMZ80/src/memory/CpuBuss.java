@@ -27,7 +27,7 @@ public class CpuBuss extends Observable implements ICore, IcpuBuss {
 	private boolean isDebug = false;
 	private boolean isDebugEnabled = false;
 
-	private static final byte DEBUG_CODE = (byte) 0X30; // DEBUG opCode
+	private static final byte DEBUG_CODE = (byte) 0X76; // DEBUG opCode
 
 	public static CpuBuss getInstance() {
 		return instance;
@@ -39,6 +39,10 @@ public class CpuBuss extends Observable implements ICore, IcpuBuss {
 	}// Constructor
 		// +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
+	public boolean isThisDebugHalt() {
+		return isDebug && isDebugEnabled;
+	}//isThisDebugHalt
+	
 	/**
 	 * Returns the value found at the specified location, and checks for DEBUG, if
 	 * 
@@ -154,7 +158,6 @@ public class CpuBuss extends Observable implements ICore, IcpuBuss {
 		if (isValidAddress(location)) {
 			traps.put(location, trap); // may be different trap type
 		} // if
-
 	}// addTrapLocation
 
 	/**

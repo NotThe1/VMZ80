@@ -33,9 +33,11 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
 import codeSupport.AppLogger;
+import codeSupport.DebugFrame;
 import memory.Core;
 import utilities.hexEditPanel.EditAtom;
 import utilities.hexEditPanel.EditType;
+//import utilities.hexEditPanel.HDNumberBox;
 import utilities.hexEditPanel.HexEditDisplayPanel;
 import utilities.inLineDisassembler.Z80Disassembler;
 
@@ -47,7 +49,6 @@ public class TabDialog extends JDialog implements Runnable {
 	private AdapterTabDialog adapterTabDialog = new AdapterTabDialog();
 	private HexEditDisplayPanel hexDisplayMemory = new HexEditDisplayPanel();
 	private Z80Disassembler disassembler = new Z80Disassembler();
-	private final JPanel contentPanel = new JPanel();
 
 	@Override
 	public void run() {
@@ -62,6 +63,7 @@ public class TabDialog extends JDialog implements Runnable {
 
 	public void updateDisplay() {
 		refreshMemory();
+		tabDebug.run();
 	}// refreshViews
 
 	private void appClose() {
@@ -69,6 +71,8 @@ public class TabDialog extends JDialog implements Runnable {
 	}// appClose
 
 	private void appInit() {
+		tabbedPane.addChangeListener(adapterTabDialog);
+		tabbedPane.setSelectedComponent(tabDebug);
 
 		txtLog.setText(EMPTY_STRING);
 		log.setDoc(txtLog.getStyledDocument());
@@ -97,15 +101,25 @@ public class TabDialog extends JDialog implements Runnable {
 		gbl_contentPanel.rowWeights = new double[] { 1.0, Double.MIN_VALUE };
 		contentPanel.setLayout(gbl_contentPanel);
 
-		JTabbedPane tabbedPane = new JTabbedPane(JTabbedPane.TOP);
-		tabbedPane.addChangeListener(adapterTabDialog);
+		tabbedPane = new JTabbedPane(JTabbedPane.TOP);
 		GridBagConstraints gbc_tabbedPane = new GridBagConstraints();
 		gbc_tabbedPane.fill = GridBagConstraints.BOTH;
 		gbc_tabbedPane.gridx = 0;
 		gbc_tabbedPane.gridy = 0;
 		contentPanel.add(tabbedPane, gbc_tabbedPane);
+		
+		tabDebug = new DebugFrame();		
+		tabDebug.setName(TAB_DEBUG);
+		tabbedPane.addTab("Debug", null, tabDebug, null);
+		GridBagConstraints gbc_debug = new GridBagConstraints();
+		gbc_debug.fill= GridBagConstraints.BOTH;
+		gbc_debug.gridx=0;
+		gbc_debug.gridy=0;
+		tabDebug.setLayout(new GridLayout(0,1,0,0));
 		//////////////////////////////////////////////////////////////
-		JPanel tabDisasssembler = new JPanel();
+		
+		
+		tabDisasssembler = new JPanel();
 		tabDisasssembler.setName(TAB_DISASSEMBLER);
 		tabbedPane.addTab("Disassembler", null, tabDisasssembler, null);
 		GridBagConstraints gbc_disAl = new GridBagConstraints();
@@ -220,6 +234,9 @@ public class TabDialog extends JDialog implements Runnable {
 		case TAB_DISASSEMBLER:
 			disassembler.refreshDisplay();
 			break;
+		case TAB_DEBUG:
+			tabDebug.run();
+			break;
 		}// switch
 	}// doTabChanged
 
@@ -243,6 +260,20 @@ public class TabDialog extends JDialog implements Runnable {
 		} // try
 
 	}// doLogPrint
+	//+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/ DEBUG /+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+
+	private void doDebugEnable(){
+		
+	}//doDebugEnable
+	private void doDebugReset(){
+		
+	}// doDebugReset
+	private void doDebugRemove(){
+		
+	}//doDebugRemove
+	private void doDebugClear(){
+		
+	}//doDebugClear
+	//+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/ DEBUG /+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+
 
 	//////////////////////////////////////////////////////////////////////////
 
@@ -269,7 +300,32 @@ public class TabDialog extends JDialog implements Runnable {
 		}// stateChanged
 
 	}// class AdapterAction
-
+///////////////////////////	
+//	class AdapterDebug implements ActionListener{
+//		/* ActionListener */
+//		@Override
+//		public void actionPerformed(ActionEvent actionEvent) {
+//			String name = ((Component) actionEvent.getSource()).getName();
+//			switch (name) {
+//			case RB_ENABLE:
+//				doDebugEnable();
+//				break;
+//			case BTN_RESET:
+//				doDebugReset();
+//				break;
+//			case BTN_REMOVE:
+//				doDebugRemove();
+//				break;
+//			case BTN_CLEAR:
+//				doDebugClear();
+//				break;
+//		
+//			}//switch
+//			
+//		}//actionPerformed
+//		
+//	}//class AdapterDebug
+/////////////////////////////
 	private static void addPopup(Component component, final JPopupMenu popup) {
 		component.addMouseListener(new MouseAdapter() {
 			public void mousePressed(MouseEvent e) {
@@ -290,15 +346,27 @@ public class TabDialog extends JDialog implements Runnable {
 		});
 	}// addPopup
 
-	static final String EMPTY_STRING = "";
+	private static final String EMPTY_STRING = "";
 	private static final String PUM_LOG_PRINT = "popupLogPrint";
 	private static final String PUM_LOG_CLEAR = "popupLogClear";
+
+	private static final String RB_ENABLE = "rbEnabled";
+	private static final String BTN_RESET = "btnReset";
+	private static final String BTN_REMOVE = "btnRemovet";
+	private static final String BTN_CLEAR = "btnCLEAR";
 
 	private static final String TAB_APP_LOG = "tabApplicationLog";
 	private static final String TAB_MEMORY = "tabMemoryDisplay";
 	private static final String TAB_DISASSEMBLER = "tabDisassembler";
+	private static final String TAB_DEBUG = "tabDebug";
+
 
 	private JTextPane txtLog;
 	private JPanel tabMemoryDisplay;
+	private JTabbedPane tabbedPane;
+	private JPanel tabDisasssembler;
+	private final JPanel contentPanel = new JPanel();
+	private DebugFrame tabDebug;
+
 
 }// class TabDialog

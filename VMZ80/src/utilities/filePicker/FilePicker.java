@@ -1,6 +1,7 @@
 package utilities.filePicker;
 
 import java.io.File;
+import java.nio.file.Path;
 
 import javax.swing.JFileChooser;
 import javax.swing.filechooser.FileNameExtensionFilter;
@@ -19,9 +20,22 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 
 public class FilePicker {
 
+
 	private FilePicker() {
 		
 	}// Constructor
+	public static JFileChooser getAsmPicker() {
+//		asmPath = Paths.get(CODE_PATH);
+		return customiseChooser(asmPath,  "Listing Files ", "list");
+	}// getDiskPicker customize
+	
+
+	public static JFileChooser getAsmPicker(Path newMemoryPath) {
+		asmPath = newMemoryPath.toString();
+		return customiseChooser(asmPath, "Listing Files ", "list");
+	}// getDiskPicker customize
+
+
 
 	public static JFileChooser getDiskPicker(String filterDescription, String... filterExtemsions) {
 		return customiseChooser(diskPath, filterDescription, filterExtemsions);
@@ -64,10 +78,6 @@ public class FilePicker {
 		return customiseChooser(CODE_PATH,"Z80 Source",Z80_NAME);
 	}//getAnyListPicker
 	
-	
-	
-	
-
 	public static JFileChooser customiseChooser(String target, String filterDescription, String... filterExtensions) {
 		if (!new File(target).exists()) {
 			new File(target).mkdirs();
@@ -87,10 +97,10 @@ public class FilePicker {
 	private static final String DATA_NAME = "VMdata";
 	private static final String DISK_NAME = "Disks";
 	private static final String MEMORY_NAME = "Memory";
-//	private static final String ASM_NAME = "Asm";
+	private static final String ASM_NAME = "Asm";
 	private static final String Z80_NAME = "Z80";
 	private static final String LISTS = "Lists";
-//	private static final String CPM_LISTING = "cpmListings";
+	private static final String CPM_LISTING = "cpmListings";
 	private static final String CODE_PATH = "C:\\Users\\admin\\git\\assemblerZ80\\assemblerZ80\\Code";
 
 	public static final String LIST_ASM_SUFFIX = "ListAsm";
@@ -102,11 +112,11 @@ public class FilePicker {
 	private static String fileSeparator = System.getProperty("file.separator", "\\");
 	private static String baseDirectory = userDirectory + fileSeparator + DATA_NAME + fileSeparator;
 
-//	private static String dataPath = baseDirectory + DATA_NAME;
+	private static String dataPath = baseDirectory + DATA_NAME;
 	private static String diskPath = baseDirectory + DISK_NAME;
 	private static String memoryPath = baseDirectory + MEMORY_NAME;
-//	private static String asmPath = baseDirectory + ASM_NAME;
-//	private static String z80Path = baseDirectory + Z80_NAME;
+	private static String asmPath = baseDirectory + ASM_NAME;
+	private static String z80Path = baseDirectory + Z80_NAME;
 	private static String listPath = baseDirectory + LISTS;
 
 
