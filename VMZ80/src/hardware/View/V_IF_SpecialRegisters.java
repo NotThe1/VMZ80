@@ -33,6 +33,16 @@ public class V_IF_SpecialRegisters extends JInternalFrame  implements Runnable {
 	public void run() {
 		updateDisplay();
 	}// run
+	
+	@Override
+	public void setEnabled(boolean state) {
+		super.setEnabled(state);
+		regI.setEnabled(state);
+		regR.setEnabled(state);
+		cbIFF1.setEnabled(state);
+		cbIFF2.setEnabled(state);
+	}//setEnabled
+	
 
 	private void doValueChanged(byte newValue, HDNumberBox reg) {
 		String name = reg.getName();

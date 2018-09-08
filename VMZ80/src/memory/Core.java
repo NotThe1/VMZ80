@@ -149,7 +149,7 @@ public class Core extends Observable implements ICore {
 	// +++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 	public enum Trap {
-		IO, DEBUG, INVALID
+		HALT,IO, DEBUG, INVALID
 	}// enum Trap
 
 	static int K = 1024;

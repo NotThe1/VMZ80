@@ -38,6 +38,8 @@ import javax.swing.event.EventListenerList;
  *			2018-07-21 - Factored out SeekDocument
  *                     - Added capacity to set/reset display formats
  *          2018-07-30 - added Apater_HDNumberBox. & selectAll on focus gained
+ *          2018 -9-08 - implemented an enable/disable method - setEnabled(boolean)
+ *
  */
 /* @formatter:on  */
 
@@ -172,6 +174,12 @@ public class HDNumberBox extends JPanel {
 			fireSeekValueChanged();
 		} // if
 	}// newValue
+
+	@Override
+	public void setEnabled(boolean state) {
+		super.setEnabled(state);
+		txtValueDisplay.setEnabled(state);
+	}// setEnabled
 
 	// -------------------------------------------------------
 

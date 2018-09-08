@@ -36,6 +36,18 @@ public class V_IF_CCR extends JInternalFrame implements Runnable {
 	public void run() {
 		updateDisplay();
 	}// run
+	
+	@Override
+	public void setEnabled(boolean state) {
+		super.setEnabled(state);
+		rbSign.setEnabled(state);
+		rbZero.setEnabled(state);
+		rbHalf.setEnabled(state);
+		rbParity.setEnabled(state);
+		rbNeg.setEnabled(state);
+		rbCarry.setEnabled(state);
+		ccHexValue.setEnabled(state);
+	}//setEnabled
 
 	public void updateDisplay() {
 		// byte currentValue= ccr.getConditionCode();

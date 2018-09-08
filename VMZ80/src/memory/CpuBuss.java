@@ -51,7 +51,33 @@ public class CpuBuss extends Observable implements ICore, IcpuBuss {
 	 * @return value found at the location, or a HLT command if this is the first access to a debug marked location
 	 */
 	public synchronized byte read(int location) {
-		byte ans = core.read(location);
+		return core.read(location);
+//		byte ans = core.read(location);
+//		// skip if debug flag is false
+//		if (isDebugEnabled) {
+//			// skip if not a debug location
+//			if (isDebugLocation(location)) {
+//				if (!isDebug) {// is this the first encounter ?
+//					isDebug = true; // then set the flag
+//					tellObservers(location, Trap.DEBUG);
+////					ans = DEBUG_CODE; // replace with fake halt
+//				} else {
+//					isDebug = false; // else reset set the flag and return the actual value
+//				} // inner if
+//					// may want to fire trap - fireMemoryTrap(location, Trap.DEBUG);
+//			} // inner if - debug location
+//		} // outer if - debug enabled
+
+//		return ans;
+	}// read
+	
+	public byte readOpCode(int location) {
+		byte ans = this.read(location);
+		
+		if (ans==(byte)0x76) {
+			tellObservers(location,Trap.HALT);
+		}// if
+		
 		// skip if debug flag is false
 		if (isDebugEnabled) {
 			// skip if not a debug location
@@ -59,16 +85,16 @@ public class CpuBuss extends Observable implements ICore, IcpuBuss {
 				if (!isDebug) {// is this the first encounter ?
 					isDebug = true; // then set the flag
 					tellObservers(location, Trap.DEBUG);
-					ans = DEBUG_CODE; // replace with fake halt
+//					ans = DEBUG_CODE; // replace with fake halt
 				} else {
 					isDebug = false; // else reset set the flag and return the actual value
 				} // inner if
 					// may want to fire trap - fireMemoryTrap(location, Trap.DEBUG);
-			} // inner if
-		} // outer if
+			} // inner if - debug location
+		} // outer if - debug enabled
 
 		return ans;
-	}// read
+	}//readOpCode
 
 	/**
 	 * Places value into memory and check for IO trap

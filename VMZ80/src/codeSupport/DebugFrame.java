@@ -535,23 +535,12 @@ public class DebugFrame extends JInternalFrame implements Runnable {
 		Pattern targetAddressPattern = Pattern.compile(targetAddressRegex);
 		Matcher targetAddressMatcher;
 		targetAddressMatcher = targetAddressPattern.matcher(taListing.getText());
-//		System.out.print(taListing.getText());
 		if (targetAddressMatcher.find()) {
-//			 System.out.printf("[selectTheCorrectLine] |%s|%n", targetAddressMatcher.group(0));
-//			 System.out.printf("[selectTheCorrectLine]  start |%d|%n", targetAddressMatcher.start());
-//			 System.out.printf("[selectTheCorrectLine]  end   |%d|%n", targetAddressMatcher.end());
 			
 			taListing.setSelectionStart(targetAddressMatcher.start());
 			taListing.setSelectionEnd(targetAddressMatcher.end());			
 			lblStatus.setText(String.format("Program Counter at %04X", programCounter));
-			
-//			 System.out.printf("Selected text = %s%n",
-//					 taListing.getText().substring(targetAddressMatcher.start(),
-//							 targetAddressMatcher.end()));
-//			
-//			
-//			System.out.printf("Selected color %s%n",taListing.getSelectedTextColor());
-
+			lblStatus.updateUI();
 		} else {
 			String status = String.format("Target line: %04X Not Start of Instruction%n", programCounter);
 			lblStatus.setText(status);

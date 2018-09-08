@@ -33,6 +33,16 @@ public class V_IF_DiskPanel extends JInternalFrame implements Runnable {
 		updateDisplay(this.disks);
 	}// run
 	
+	@Override
+	public void setEnabled(boolean state) {
+		super.setEnabled(state);
+		tbDiskA.setEnabled(state);
+		tbDiskB.setEnabled(state);
+		tbDiskC.setEnabled(state);
+		tbDiskD.setEnabled(state);
+	}//setEnabled
+	
+	
 	public void updateDisks(DiskDrive[] disks) {
 		this.disks = disks;
 	}//updateDisks

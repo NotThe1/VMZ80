@@ -31,6 +31,22 @@ public class V_IF_PrimaryRegisters extends JInternalFrame implements Runnable {
 		updateDisplay();
 	}// run
 
+	@Override
+	public void setEnabled(boolean state) {
+		super.setEnabled(state);
+		tbMainAux.setEnabled(state);
+		regA.setEnabled(state);
+		regB.setEnabled(state);
+		regC.setEnabled(state);
+		regD.setEnabled(state);
+		regE.setEnabled(state);
+		regH.setEnabled(state);
+		regL.setEnabled(state);
+		regF.setEnabled(state);
+	}//setEnabled
+	
+
+	
 	private void doValueChanged(byte newValue, HDNumberBox numberBox) {
 		byte value = newValue;
 		if (numberBox.equals(regF)) {

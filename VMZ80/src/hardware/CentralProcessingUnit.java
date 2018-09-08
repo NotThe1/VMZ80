@@ -50,6 +50,7 @@ public class CentralProcessingUnit implements Runnable {
 		while (!isError()) {
 			startInstruction();
 		} // while
+		System.out.printf("[]cpu.run pc = %04X%n", wrs.getProgramCounter());
 	}// run
 
 	public boolean startInstruction() {
@@ -59,11 +60,20 @@ public class CentralProcessingUnit implements Runnable {
 		return !isError();
 	}// startInstruction
 
+//	static int count = 0;
+
 	public void executeInstruction(int currentAddress) {
+//		log.infof("%05d\t%04X%n", count++, currentAddress);
+//		byte opCode = cpuBuss.read(currentAddress);
+		byte opCode = cpuBuss.readOpCode(currentAddress);
+		if (cpuBuss.isThisDebugHalt()) {
+			setError(ErrorStatus.STOP);
+			return;
+		} // if debug
+
 		this.instructionBase = currentAddress;
 		setError(ErrorStatus.NONE);
 
-		byte opCode = cpuBuss.read(currentAddress);
 		int instructionLength;
 		switch (opCode) {
 		case (byte) 0X0ED: // Extended Instructions
@@ -938,7 +948,7 @@ public class CentralProcessingUnit implements Runnable {
 				cpuBuss.write(indirectAddress, getImmediateByte(instructionBase + 1));
 			} else {
 				wrs.setReg(destination, getImmediateByte(instructionBase + 1));
-			}//
+			} //
 			break;
 		case 7: // RLCA RRCA RLA RRA DAA CPL SCF CCF - 07,0F,17,1F,27,2F,37,3F
 			instructionSize = 1;
@@ -1175,7 +1185,7 @@ public class CentralProcessingUnit implements Runnable {
 				} catch (IOException e) {
 					log.errorf("Bad IO read from %02XH%n", IOaddress);
 					System.err.print(e.toString());
-				}//try
+				} // try
 
 				break;
 			case 4: // EX (SP),HL - E3

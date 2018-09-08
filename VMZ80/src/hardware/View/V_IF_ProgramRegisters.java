@@ -28,6 +28,13 @@ public class V_IF_ProgramRegisters extends JInternalFrame  implements Runnable{
 		updateDisplay();		
 	}//run
 	
+	@Override
+	public void setEnabled(boolean state) {
+		super.setEnabled(state);
+		regPC.setEnabled(state);
+		regSP.setEnabled(state);
+	}//setEnabled
+	
 	private void doValueChanged(int newValue, HDNumberBox reg) {
 		String name = reg.getName();
 		switch (name) {

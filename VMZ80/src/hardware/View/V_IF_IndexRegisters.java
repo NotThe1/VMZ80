@@ -25,6 +25,13 @@ public class V_IF_IndexRegisters extends JInternalFrame  implements Runnable{
 		updateDisplay();		
 	}//run
 	
+	@Override
+	public void setEnabled(boolean state) {
+		super.setEnabled(state);
+		regIX.setEnabled(state);
+		regIY.setEnabled(state);
+	}//setEnabled
+	
 	private void doValueChanged(int newValue, HDNumberBox reg) {
 		String name = reg.getName();
 		switch (name) {

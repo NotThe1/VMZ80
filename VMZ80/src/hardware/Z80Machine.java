@@ -1,7 +1,6 @@
 package hardware;
 
 import java.awt.Component;
-import java.awt.Container;
 import java.awt.Dimension;
 import java.awt.EventQueue;
 import java.awt.GridBagConstraints;
@@ -20,11 +19,10 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Observable;
+import java.util.Observer;
 import java.util.prefs.Preferences;
 
-import javax.swing.AbstractButton;
 import javax.swing.Box;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
@@ -60,7 +58,10 @@ import hardware.View.V_IF_PrimaryRegisters;
 import hardware.View.V_IF_ProgramRegisters;
 import hardware.View.V_IF_SpecialRegisters;
 import ioSystem.IOController;
+import memory.Core.Trap;
+import memory.CpuBuss;
 import memory.MemoryLoaderFromFile;
+import memory.MemoryTrapEvent;
 import utilities.filePicker.FilePicker;
 import utilities.hdNumberBox.HDNumberValueChangeEvent;
 import utilities.hdNumberBox.HDNumberValueChangeListener;
@@ -72,12 +73,12 @@ public class Z80Machine {
 	CentralProcessingUnit cpu = CentralProcessingUnit.getInstance();
 	DiskControlUnit dcu = DiskControlUnit.getInstance();
 	IOController ioc = IOController.getInstance();
-	
+
 	private AppLogger log = AppLogger.getInstance();
 	private TabDialog tabDialog;
 
 	Thread t_cpu = new Thread(cpu);
-	private List<Component> frontPanels;
+//	private List<Component> frontPanels;
 
 	/**
 	 * Launch the application.
@@ -115,12 +116,11 @@ public class Z80Machine {
 				} // for step count
 				updateDisplaysMaster();
 			}// run
-		});//EventQueue.invokeLater
-		
+		});// EventQueue.invokeLater
+
 	}// doStep
 
-	private void doRunStop(boolean isRunning) {
-		log.infof("[doRunStop] button is Selected: %s%n", isRunning);
+	private void doRunStop() {
 		////////////////////////////////////////////////////////////////
 		if (tbRunStop.isSelected()) {
 			cpu.setError(ErrorStatus.NONE);
@@ -130,17 +130,17 @@ public class Z80Machine {
 		} else {
 			System.out.println("actionPerformed: doStop");
 			cpu.setError(ErrorStatus.STOP);
+			cpu.setError(ErrorStatus.NONE);
 			updateDisplaysMaster();
 		} // if
-		
-		for(Component component:frontPanels) {
-			component.setEnabled(!tbRunStop.isSelected());
-		}//for register displays enabled
-		
+
+		setDisplaysEnabled(!tbRunStop.isSelected());
+		// for (Component component : frontPanels) {
+		// component.setEnabled(!tbRunStop.isSelected());
+		// } // for register displays enabled
+
 		///////////////////////////////////////////////////////////////
 	}// doRunStop
-	
-
 
 	// ----------------------------------------------------------
 
@@ -189,7 +189,7 @@ public class Z80Machine {
 	}// doFileExit
 
 	//////////////////////////////////////////////////
-	
+
 	private void updateDisplaysMaster() {
 		tabDialog.updateDisplay();
 		ifPrimaryRegisters.updateDisplay();
@@ -223,9 +223,9 @@ public class Z80Machine {
 		}// switch
 		target.setVisible(!target.isVisible());
 	}// doWindowToggle
-	
-///////////////////////////////////////
-	
+
+	///////////////////////////////////////
+
 	private void doResetAllRegisterDisplays() {
 		int dpWidth = desktopPane.getWidth();
 		int prWidth = ifPrimaryRegisters.getWidth();
@@ -335,19 +335,26 @@ public class Z80Machine {
 			myPrefs.putBoolean(key + ".isVisible", internalFrame.isVisible());
 		} // for
 	}// saveInternalFrameLocations
-	
-	private List<Component> getAllComponents(final Container c){
-		Component[] components = c.getComponents();
-		List<Component> componentList = new ArrayList<Component>();
-		for(Component component:components) {
-			componentList.add(component);
-			if (component instanceof Container) {
-				componentList.addAll(getAllComponents((Container) component));
-			}
-		}//for
-		return componentList;
-	}//getAllComponents
 
+	private void setDisplaysEnabled(boolean state) {
+		ifDiskPanel.setEnabled(state);
+		for (JInternalFrame internalFrame : desktopPane.getAllFrames()) {
+			internalFrame.setEnabled(state);
+		} // for frames
+	}// setDisplaysEnabled
+
+	// private List<Component> getAllComponents(final Container c) {
+	// Component[] components = c.getComponents();
+	// List<Component> componentList = new ArrayList<Component>();
+	// for (Component component : components) {
+	// componentList.add(component);
+	// if (component instanceof Container) {
+	// componentList.addAll(getAllComponents((Container) component));
+	// }
+	// } // for
+	// return componentList;
+	// }// getAllComponents
+	//
 	////////////////////////////////////////////////////////////////////////////////////////
 	private void appClose() {
 		Preferences myPrefs = Preferences.userNodeForPackage(Z80Machine.class).node(this.getClass().getSimpleName());
@@ -379,19 +386,21 @@ public class Z80Machine {
 		restoreInternalFrameLocations(myPrefs);
 		restoreTabDialogState(myPrefs);
 		myPrefs = null;
-		
+
 		dcu.setDisplay(ifDiskPanel);
 		updateDisplaysMaster();
-		
-		ifProgramRegisters.addHDNumberValueChangedListener(applicationAdapter);
-		frontPanels = new ArrayList<Component>();
-		
-		frontPanels.addAll(getAllComponents(desktopPane));
-		frontPanels.addAll(getAllComponents(disksPanel));
 
-//		registerPanels = getAllComponents(desktopPane);
-//		diskPanels = getAllComponents(disksPanel);
-		
+		ifProgramRegisters.addHDNumberValueChangedListener(applicationAdapter);
+//		frontPanels = new ArrayList<Component>();
+
+		// frontPanels.addAll(getAllComponents(desktopPane));
+		// frontPanels.addAll(getAllComponents(disksPanel));
+
+		// registerPanels = getAllComponents(desktopPane);
+		// diskPanels = getAllComponents(disksPanel);
+
+		CpuBuss.getInstance().addObserver(applicationAdapter);
+
 		log.addTimeStamp("Starting....");
 	}// appInit
 
@@ -555,7 +564,7 @@ public class Z80Machine {
 		ifPrimaryRegisters.setVisible(true);
 
 		ifProgramRegisters = new V_IF_ProgramRegisters();
-//		ifProgramRegisters.addHDNumberValueChangedListener(applicationAdapter);
+		// ifProgramRegisters.addHDNumberValueChangedListener(applicationAdapter);
 		desktopPane.add(ifProgramRegisters);
 		ifProgramRegisters.setVisible(true);
 
@@ -736,7 +745,7 @@ public class Z80Machine {
 	private JPanel disksPanel;
 	//////////////////////////////////////////////////////////////////////////
 
-	class ApplicationAdapter implements ActionListener, HDNumberValueChangeListener {// , ListSelectionListener
+	class ApplicationAdapter implements ActionListener, HDNumberValueChangeListener,Observer {// , ListSelectionListener
 		/* ActionListener */
 		@Override
 		public void actionPerformed(ActionEvent actionEvent) {
@@ -745,7 +754,7 @@ public class Z80Machine {
 			switch (name) {
 
 			case BUTTON_RUN_STOP:
-				doRunStop(((AbstractButton) source).isSelected());
+				doRunStop();
 				break;
 			case BUTTON_STEP:
 				doStep();
@@ -781,11 +790,36 @@ public class Z80Machine {
 				break;
 			}// switch
 		}// actionPerformed
+		
+		////////////////////////////////
 		/* HDNumberValueChangeListener */
 
 		@Override
 		public void valueChanged(HDNumberValueChangeEvent hDNumberValueChangeEvent) {
 			tabDialog.updateDisplay();
-		}//valueChanged
+		}// valueChanged
+		
+		////////////////////////////////
+		/* Observer */
+
+		@Override
+		public void update(Observable cpuBuss, Object mte) {
+			Trap trap = ((MemoryTrapEvent) mte).getTrap();
+			if (trap.equals(Trap.DEBUG)) {
+				System.out.printf("[update - DEBUG]  Location %04X%n", ((MemoryTrapEvent) mte).getLocation());
+				tbRunStop.setSelected(false);
+				doRunStop();
+			}else if(trap.equals(Trap.HALT)) {
+				tbRunStop.setSelected(false);
+//				int newLocation = (((MemoryTrapEvent) mte).getLocation() + 1) & 0xFFFF;
+//				WorkingRegisterSet.getInstance().setProgramCounter(newLocation);
+				doRunStop();
+			} // if - debug
+//				stateDisplay.setDisplayComponentsEnabled(true);
+//				btnRun.setSelected(false);
+//				cpu.setError(ErrorType.STOP);
+//				updateView();
+
+		}// update
 	}// class AdapterAction
 }// class GUItemplate
