@@ -49,7 +49,7 @@ abstract public class DeviceZ80 {
 	abstract public void byteFromCPU(Byte value);
 
 	abstract public void byteToCPU(Byte value);
-
+	
 	abstract public void close();
 
 }// class DeviceZ80

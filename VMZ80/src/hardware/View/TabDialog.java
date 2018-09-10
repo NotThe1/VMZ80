@@ -17,7 +17,6 @@ import java.text.MessageFormat;
 import java.util.Date;
 import java.util.List;
 
-import javax.swing.JButton;
 import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.JMenuItem;
@@ -197,18 +196,6 @@ public class TabDialog extends JDialog implements Runnable {
 		gbc_lblNewLabel.gridx = 0;
 		gbc_lblNewLabel.gridy = 0;
 		buttonPane.add(lblNewLabel, gbc_lblNewLabel);
-
-		JButton btnNewButton = new JButton("New button");
-		btnNewButton.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent arg0) {
-				disassembler.updateDisplay();
-
-			}
-		});
-		GridBagConstraints gbc_btnNewButton = new GridBagConstraints();
-		gbc_btnNewButton.gridx = 1;
-		gbc_btnNewButton.gridy = 0;
-		buttonPane.add(btnNewButton, gbc_btnNewButton);
 
 	}// initialize
 

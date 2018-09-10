@@ -63,14 +63,15 @@ public class CentralProcessingUnit implements Runnable {
 //	static int count = 0;
 
 	public void executeInstruction(int currentAddress) {
-//		log.infof("%05d\t%04X%n", count++, currentAddress);
-//		byte opCode = cpuBuss.read(currentAddress);
 		byte opCode = cpuBuss.readOpCode(currentAddress);
 		if (cpuBuss.isThisDebugHalt()) {
 			setError(ErrorStatus.STOP);
 			return;
 		} // if debug
 
+//		log.infof("%05d\t%04X%n", count++, currentAddress);
+//		log.infof("%04X: %02X\t%d%n", currentAddress,opCode,count++);
+		
 		this.instructionBase = currentAddress;
 		setError(ErrorStatus.NONE);
 
@@ -894,7 +895,7 @@ public class CentralProcessingUnit implements Runnable {
 			case 5: // 2A - LD HL,(nn)
 				instructionSize = 3;
 				directAddress = cpuBuss.readWordReversed(instructionBase + 1);
-				wrs.setDoubleReg(Register.HL, cpuBuss.read(directAddress), cpuBuss.read(directAddress + 1));
+				wrs.setDoubleReg(Register.HL, cpuBuss.read(directAddress+1), cpuBuss.read(directAddress ));
 				break;
 			case 6: // 32 - LD (nn),A
 				instructionSize = 3;
@@ -909,12 +910,14 @@ public class CentralProcessingUnit implements Runnable {
 
 		case 3: // INC rr / DEC rr - 03,13,23,33/0B,1B,2B,3B
 			instructionSize = 1;
+			byte conditionCodes = ccr.getConditionCode();
 			byte[] sourceValueArray = wrs.getDoubleRegArray(getDoubleRegister1_45(instructionBase));
 			if (isBit3Set(instructionBase)) {// DEC,rr - 0B,1B,2B,3B
 				wrs.setDoubleReg(getDoubleRegister1_45(instructionBase), au.decrementWord(sourceValueArray));
 			} else { // INC rr - 03,13,23,33
 				wrs.setDoubleReg(getDoubleRegister1_45(instructionBase), au.incrementWord(sourceValueArray));
 			} // if bit 3
+			ccr.setConditionCode(conditionCodes);
 			break;
 		case 4: // INC r - 04,0C,14,1C,24,2C,34,3C
 			instructionSize = 1;

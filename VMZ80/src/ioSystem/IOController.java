@@ -16,9 +16,9 @@ public class IOController {
 
 	private Set<DeviceZ80> devicePopulation = new HashSet<>();
 
-	private HashMap<Byte, DeviceInputStatus> devicesInput = new HashMap<>();
+	private HashMap<Byte, DeviceInput> devicesInput = new HashMap<>();
 	private HashMap<Byte, DeviceOutput> devicesOutput = new HashMap<>();
-	private HashMap<Byte, DeviceInputStatus> devicesStatus = new HashMap<>();
+	private HashMap<Byte, DeviceInput> devicesStatus = new HashMap<>();
 
 	private TTYZ80 tty = new TTYZ80();;
 
@@ -36,13 +36,13 @@ public class IOController {
 		} // try
 	}// Constructor
 
-	private void addDevice(TTYZ80 device) throws IOException {
+	private void addDevice(DeviceZ80 device) throws IOException {//TTYZ80
 		PipedOutputStream os; // Sender
 		PipedInputStream is; // Receiver
 		if (device.getAddressIn() != null) {
 			os = new PipedOutputStream(); // Sender
 			is = new PipedInputStream(os); // Receiver
-			devicesInput.put(device.getAddressIn(), new DeviceInputStatus(device, is));
+			devicesInput.put(device.getAddressIn(), new DeviceInput(device, is));
 			device.setPipeIn(os);
 		} // if input
 
@@ -55,8 +55,9 @@ public class IOController {
 
 		if (device.getAddressStatus() != null) {
 			os = new PipedOutputStream();
-			is = new PipedInputStream(os);
-			devicesStatus.put(device.getAddressStatus(), new DeviceInputStatus(device, is));
+//			is = new PipedInputStream(os);
+			is = devicesInput.get(device.getAddressIn()).is;
+			devicesStatus.put(device.getAddressStatus(), new DeviceInput(device, is));
 			device.setPipeStatus(os);
 		} // if input
 		devicePopulation.add(device);
@@ -89,7 +90,16 @@ public class IOController {
 		if (devicesInput.containsKey(address)) {
 			if (devicesInput.get(address).is.available() > 0) {
 				value = (byte) devicesInput.get(address).is.read();
+				log.infof("[IOController.byteFromDevice] value = %04X%n", value);
 			} // if something to read
+		} else if (devicesStatus.containsKey(address)) {
+			try {
+				value = (byte) (devicesStatus.get(address).is.available()>0?(byte)0x03:(byte)0x01);
+			} catch (Exception e) {
+				e.printStackTrace();
+				System.exit(-1);
+			} // try
+
 		} // if input device
 
 		return value;
@@ -97,10 +107,21 @@ public class IOController {
 
 	/* this is really just a structure */
 	class DeviceInputStatus {
-		public TTYZ80 device;
+		public DeviceZ80 device;
 		public PipedInputStream is;
 
-		public DeviceInputStatus(TTYZ80 device, PipedInputStream is) {
+		public DeviceInputStatus(DeviceZ80 device, PipedInputStream is) {
+			this.device = device;
+			this.is = is;
+		}// Constructor
+	}// class DeviceInputStatus
+	
+	/* this is really just a structure */
+	class DeviceInput {
+		public DeviceZ80 device;
+		public PipedInputStream is;
+
+		public DeviceInput(DeviceZ80 device, PipedInputStream is) {
 			this.device = device;
 			this.is = is;
 		}// Constructor
@@ -108,10 +129,10 @@ public class IOController {
 
 	/* this is really just a structure */
 	class DeviceOutput {
-		public TTYZ80 device;
+		public DeviceZ80 device;
 		public PipedOutputStream os;
 
-		public DeviceOutput(TTYZ80 device, PipedOutputStream os) {
+		public DeviceOutput(DeviceZ80 device, PipedOutputStream os) {
 			this.device = device;
 			this.os = os;
 		}// Constructor

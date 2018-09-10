@@ -2,6 +2,8 @@ package utilities.inLineDisassembler;
 
 import java.util.HashMap;
 
+import hardware.WorkingRegisterSet;
+
 /**
  * 
  * @author Frank Martyn This class defines all the opcodes and the structure of each one. It is a helper class for the
@@ -16,6 +18,7 @@ public class OpCodeMap {
 		if (codeMap.containsKey(key)) {
 			return codeMap.get(key);
 		} else {
+			System.err.printf("pc = %04X%n", WorkingRegisterSet.getInstance().getProgramCounter());
 			System.err.printf("[OpCodeMap.getOperationStructure] bad argument %s%n", key);
 			return new OperationStructure("00", Z80InstrucionType.I00, 1, "NOP", "", "", ""); // NOP
 		} // if

@@ -24,7 +24,6 @@ import java.util.Observer;
 import java.util.prefs.Preferences;
 
 import javax.swing.Box;
-import javax.swing.Icon;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JDesktopPane;
@@ -42,7 +41,6 @@ import javax.swing.JToggleButton;
 import javax.swing.JToolBar;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingConstants;
-import javax.swing.UIManager;
 import javax.swing.border.BevelBorder;
 import javax.swing.border.EtchedBorder;
 import javax.swing.border.SoftBevelBorder;
@@ -58,6 +56,7 @@ import hardware.View.V_IF_PrimaryRegisters;
 import hardware.View.V_IF_ProgramRegisters;
 import hardware.View.V_IF_SpecialRegisters;
 import ioSystem.IOController;
+import memory.Core;
 import memory.Core.Trap;
 import memory.CpuBuss;
 import memory.MemoryLoaderFromFile;
@@ -343,18 +342,12 @@ public class Z80Machine {
 		} // for frames
 	}// setDisplaysEnabled
 
-	// private List<Component> getAllComponents(final Container c) {
-	// Component[] components = c.getComponents();
-	// List<Component> componentList = new ArrayList<Component>();
-	// for (Component component : components) {
-	// componentList.add(component);
-	// if (component instanceof Container) {
-	// componentList.addAll(getAllComponents((Container) component));
-	// }
-	// } // for
-	// return componentList;
-	// }// getAllComponents
-	//
+	private void doBoot() {
+		Core.getInstance().initialize();
+		loadROM();
+		tbRunStop.setSelected(true);
+		doRunStop();
+	}//boot
 	////////////////////////////////////////////////////////////////////////////////////////
 	private void appClose() {
 		Preferences myPrefs = Preferences.userNodeForPackage(Z80Machine.class).node(this.getClass().getSimpleName());
@@ -440,23 +433,16 @@ public class Z80Machine {
 		gbc_toolBar.gridy = 0;
 		frameBase.getContentPane().add(toolBar, gbc_toolBar);
 
-		JToggleButton b = new JToggleButton("");
-		b.setBorder(null);
-		b.setToolTipText("Run/Stop");
-		b.setSelectedIcon(null);
-		b.setIcon(new ImageIcon(Z80Machine.class.getResource("/com/sun/java/swing/plaf/windows/icons/Computer.gif")));
-		b.setHorizontalAlignment(SwingConstants.LEADING);
-		toolBar.add(b);
-		JToolBar.Separator s1 = new JToolBar.Separator(new Dimension(20, 20));
-		toolBar.add(s1);
+		JToggleButton btnBoot = new JToggleButton("");
+		btnBoot.setName(BUTTON_BOOT);
+		btnBoot.addActionListener(applicationAdapter);
+		btnBoot.setBorder(null);
+		btnBoot.setToolTipText("Boot");
+		btnBoot.setSelectedIcon(null);
+		btnBoot.setIcon(new ImageIcon(Z80Machine.class.getResource("/com/sun/java/swing/plaf/windows/icons/Computer.gif")));
+		btnBoot.setHorizontalAlignment(SwingConstants.LEADING);
+		toolBar.add(btnBoot);
 
-		Icon iconC = UIManager.getIcon("FileView.fileIcon");
-		JButton c = new JButton("");
-		c.setBorder(null);
-		c.setToolTipText("Step");
-		c.setIcon(new ImageIcon(Z80Machine.class.getResource("/javax/swing/plaf/metal/icons/ocean/collapsed.gif")));
-		c.setHorizontalAlignment(SwingConstants.LEADING);
-		toolBar.add(c);
 
 		JPanel panelMain = new JPanel();
 		GridBagConstraints gbc_panelMain = new GridBagConstraints();
@@ -727,6 +713,8 @@ public class Z80Machine {
 	private static final String BUTTON_RUN_STOP = "tbRunStop";
 	private static final String BUTTON_STEP = "btnStop";
 
+	private static final String BUTTON_BOOT = "btnBoot";
+
 	private static final int INSET_X = 1;
 	private static final int INSET_Y = 1;
 
@@ -758,6 +746,9 @@ public class Z80Machine {
 				break;
 			case BUTTON_STEP:
 				doStep();
+				break;
+			case BUTTON_BOOT:
+				doBoot();
 				break;
 			case MNU_FILE_NEW:
 				doFileNew();

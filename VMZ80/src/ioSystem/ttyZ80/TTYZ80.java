@@ -170,7 +170,14 @@ public class TTYZ80 extends DeviceZ80 implements Runnable {
 	}// getLastElement
 
 	private void showStatus(char keyChar) {
-		lblKeyChar.setText(String.format("Last Char = %s [0x%02X]", keyChar, (byte) keyChar));
+		try {
+			String msg = String.format("Buffer Size = %d//Last Char = %s [0x%02X]", pipeOut.available(), keyChar,
+					(byte) keyChar);
+			lblKeyChar.setText(msg);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}// showStatus
 
 	private void clearDoc() {
@@ -211,39 +218,39 @@ public class TTYZ80 extends DeviceZ80 implements Runnable {
 		} // if
 	}// doColumnBehavior
 
-	private void doSetFont() {	
-		FontChooser fontChooser = new FontChooser(frameTTY,textScreen.getFont());
-				
-		if(fontChooser.showDialog()== JOptionPane.OK_OPTION) {
+	private void doSetFont() {
+		FontChooser fontChooser = new FontChooser(frameTTY, textScreen.getFont());
+
+		if (fontChooser.showDialog() == JOptionPane.OK_OPTION) {
 			textScreen.setFont(fontChooser.selectedFont());
-		}//if
-		
+		} // if
+
 		fontChooser = null;
 		textScreen.getCaret().setVisible(true);
 	}// doSetFont
 
 	private void doSetTextColor() {
 		Color color = JColorChooser.showDialog(frameTTY, "Font Color", textScreen.getForeground());
-		if (color !=null) {
+		if (color != null) {
 			textScreen.setForeground(color);
 			textScreen.getCaret().setVisible(true);
-		}//if
+		} // if
 	}// doSetTextColor
 
 	private void doSetBackgroundColor() {
 		Color color = JColorChooser.showDialog(frameTTY, "Font Color", textScreen.getBackground());
-		if (color !=null) {
+		if (color != null) {
 			textScreen.setBackground(color);
 			textScreen.getCaret().setVisible(true);
-		}//if
+		} // if
 	}// doSetBackgroundColor
 
 	private void doSetCaretColor() {
 		Color color = JColorChooser.showDialog(frameTTY, "Font Color", textScreen.getCaretColor());
-		if (color !=null) {
+		if (color != null) {
 			textScreen.setCaretColor(color);
 			textScreen.getCaret().setVisible(true);
-		}//if	
+		} // if
 	}// doSetCaretColor
 
 	private void doColumnsChanged() {
@@ -326,7 +333,7 @@ public class TTYZ80 extends DeviceZ80 implements Runnable {
 	 * Create the application.
 	 */
 	public TTYZ80() {
-		super("tty",  IN, OUT, STATUS);
+		super("tty", IN, OUT, STATUS);
 		initialize();
 		appInit();
 	}// Constructor
@@ -617,7 +624,7 @@ public class TTYZ80 extends DeviceZ80 implements Runnable {
 	public static final Byte OUT = (byte) 0X0EC;
 	public static final Byte STATUS = (byte) 0X0ED;
 
-//	private static final String EMPTY_STRING = "";
+	// private static final String EMPTY_STRING = "";
 	private static final String SPACE = " ";
 
 	private static final String BTN_CLEAR_SCREEN = "btnClearScreen";
