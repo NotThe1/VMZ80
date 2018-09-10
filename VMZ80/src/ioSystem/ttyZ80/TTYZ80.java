@@ -58,15 +58,19 @@ public class TTYZ80 extends DeviceZ80 implements Runnable {
 	private int tabSize;
 
 	public void run() {
-		long delay = 500;
+		long delay = 5;
 		while (true) {
 			try {
-				if (pipeOut.available() == 0) {
-					Thread.sleep(delay);
-				} else {
+				while(pipeOut.available()!=0) {
 					byteFromCPU((byte) pipeOut.read());
-					// log.addError("[TTYZ80.run()] ");
-				} // if
+				}//while
+				Thread.sleep(delay);
+//				if (pipeOut.available() == 0) {
+//					Thread.sleep(delay);
+//				} else {
+//					byteFromCPU((byte) pipeOut.read());
+//					// log.addError("[TTYZ80.run()] ");
+//				} // if
 			} catch (IOException | InterruptedException e) {
 				log.error("[TTYZ80.run()]  IOException: " + e.getMessage());
 				// e.printStackTrace();
@@ -609,6 +613,8 @@ public class TTYZ80 extends DeviceZ80 implements Runnable {
 
 		@Override
 		public void keyReleased(KeyEvent keyEvent) {
+//			byteToCPU((byte) keyEvent.getKeyChar());
+//			showStatus(keyEvent.getKeyChar());
 			/* not implemented */
 		}// keyReleased
 
