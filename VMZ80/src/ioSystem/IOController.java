@@ -90,7 +90,7 @@ public class IOController {
 		if (devicesInput.containsKey(address)) {
 			if (devicesInput.get(address).is.available() > 0) {
 				value = (byte) devicesInput.get(address).is.read();
-				log.infof("[IOController.byteFromDevice] value = %04X%n", value);
+//				log.infof("[IOController.byteFromDevice] value = %04X%n", value);
 			} // if something to read
 		} else if (devicesStatus.containsKey(address)) {
 			try {

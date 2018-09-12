@@ -10,6 +10,8 @@ import java.awt.Insets;
 import java.awt.Point;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.FocusEvent;
+import java.awt.event.FocusListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.WindowAdapter;
@@ -174,14 +176,12 @@ public class TTYZ80 extends DeviceZ80 implements Runnable {
 	}// getLastElement
 
 	private void showStatus(char keyChar) {
-		try {
-			String msg = String.format("Buffer Size = %d//Last Char = %s [0x%02X]", pipeOut.available(), keyChar,
-					(byte) keyChar);
+		
+		
+			String msg = String.format("Last Char = %s     [0x%02X]", keyChar,(byte) keyChar);
+			
 			lblKeyChar.setText(msg);
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+		
 	}// showStatus
 
 	private void clearDoc() {
@@ -260,6 +260,19 @@ public class TTYZ80 extends DeviceZ80 implements Runnable {
 	private void doColumnsChanged() {
 		maxColumn = (int) spinnerColumns.getValue();
 	}// doColumnsChanged
+	
+	private void setupScreen(Preferences myPrefs,JTextArea textScreen) {
+		textScreen.setCaretColor(new Color(myPrefs.getInt("CaretColor", Color.RED.getRGB())));
+		textScreen.setBackground(new Color(myPrefs.getInt("BackgroundColor", Color.BLACK.getRGB())));
+		textScreen.setForeground(new Color(myPrefs.getInt("ForegroundColor", Color.GREEN.getRGB())));
+
+		Font screenFont = new Font(myPrefs.get("FontFamily", "Courier New"), myPrefs.getInt("FontStyle", Font.PLAIN),
+				myPrefs.getInt("FontSize", 13));
+		textScreen.setFont(screenFont);
+		textScreen.setEditable(false);
+		textScreen.getCaret().setVisible(false);
+
+	}//setupScreen
 
 	public void close() {
 		appClose();
@@ -305,14 +318,7 @@ public class TTYZ80 extends DeviceZ80 implements Runnable {
 		mnuBehaviorExtend.setSelected(myPrefs.getBoolean("Extended", true));
 		mnuBehaviorWrap.setSelected(myPrefs.getBoolean("Wrap", false));
 		mnuBehaviorTruncate.setSelected(myPrefs.getBoolean("Truncate", false));
-
-		textScreen.setCaretColor(new Color(myPrefs.getInt("CaretColor", Color.RED.getRGB())));
-		textScreen.setBackground(new Color(myPrefs.getInt("BackgroundColor", Color.BLACK.getRGB())));
-		textScreen.setForeground(new Color(myPrefs.getInt("ForegroundColor", Color.GREEN.getRGB())));
-
-		Font screenFont = new Font(myPrefs.get("FontFamily", "Courier New"), myPrefs.getInt("FontStyle", Font.PLAIN),
-				myPrefs.getInt("FontSize", 13));
-		textScreen.setFont(screenFont);
+		setupScreen( myPrefs, textScreen);
 
 		myPrefs = null;
 		tabSize = 9;
@@ -320,13 +326,6 @@ public class TTYZ80 extends DeviceZ80 implements Runnable {
 		doColumnBehavior();
 		spinnerColumns.setValue(maxColumn);
 
-		// textScreen.setCaret(new FancyCaret());
-		//
-		textScreen.setEditable(false);
-		textScreen.getCaret().setVisible(true);
-		// textScreen.addKeyListener(this);
-		// keyboardBuffer = new LinkedList<Byte>();
-		//
 		screen = textScreen.getDocument();
 		clearDoc();
 		frameTTY.setVisible(true);
@@ -449,6 +448,7 @@ public class TTYZ80 extends DeviceZ80 implements Runnable {
 
 		textScreen = new JTextArea();
 		textScreen.addKeyListener(adapterTTY);
+		textScreen.addFocusListener(adapterTTY);
 		scrollPane.setViewportView(textScreen);
 
 		JPanel panelStatus = new JPanel();
@@ -563,8 +563,9 @@ public class TTYZ80 extends DeviceZ80 implements Runnable {
 	}// initialize
 		/////////////////////////////////////////////////////////
 
-	class AdapterTTY implements ActionListener, ChangeListener, KeyListener {
-
+	class AdapterTTY implements ActionListener, ChangeListener, KeyListener,FocusListener {
+		/* ActionListener */
+		
 		@Override
 		public void actionPerformed(ActionEvent actionEvent) {
 			String name = ((Component) actionEvent.getSource()).getName();
@@ -595,6 +596,8 @@ public class TTYZ80 extends DeviceZ80 implements Runnable {
 			}// switch
 		}// actionPerformed
 
+		/* ChangeListener */
+
 		@Override
 		public void stateChanged(ChangeEvent changeEvent) {
 			String name = ((Component) changeEvent.getSource()).getName();
@@ -606,6 +609,8 @@ public class TTYZ80 extends DeviceZ80 implements Runnable {
 
 		}// stateChanged
 
+		/* KeyListener */
+
 		@Override
 		public void keyPressed(KeyEvent keyEvent) {
 			/* not implemented */
@@ -613,8 +618,6 @@ public class TTYZ80 extends DeviceZ80 implements Runnable {
 
 		@Override
 		public void keyReleased(KeyEvent keyEvent) {
-//			byteToCPU((byte) keyEvent.getKeyChar());
-//			showStatus(keyEvent.getKeyChar());
 			/* not implemented */
 		}// keyReleased
 
@@ -623,6 +626,19 @@ public class TTYZ80 extends DeviceZ80 implements Runnable {
 			byteToCPU((byte) keyEvent.getKeyChar());
 			showStatus(keyEvent.getKeyChar());
 		}// keyTyped
+		
+		
+		/* FocusListener */
+
+		@Override
+		public void focusGained(FocusEvent focusEvent) {
+			textScreen.getCaret().setVisible(true);			
+		}//focusGained
+
+		@Override
+		public void focusLost(FocusEvent focusEvent) {
+			textScreen.getCaret().setVisible(false);			
+		}//focusLost
 
 	}// class AdapterTTY
 

@@ -1,6 +1,7 @@
 
 package disks.utility;
 
+import java.awt.Container;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -16,13 +17,11 @@ import utilities.filePicker.FilePicker;
 
 public class MakeNewDisk {
 
-	public static File makeNewDisk() {
-
+	public static File makeNewDisk(Container container) {
+		
 		String fileExtension = "F3HD";
-		// JFileChooser fc = FilePicker.getDiskPicker("Disketts & Floppies", "F3ED", "F5DD", "F3DD", "F3HD", "F5HD",
-		// "F8SS", "F8DS");
-		JFileChooser fc = FilePicker.getDiskPicker();
-		if (fc.showOpenDialog(null) == JFileChooser.CANCEL_OPTION) {
+		JFileChooser fc = FilePicker.getDisk();
+		if (fc.showOpenDialog(container) == JFileChooser.CANCEL_OPTION) {
 			System.out.println("Bailed out of the open");
 			return null;
 		} // if

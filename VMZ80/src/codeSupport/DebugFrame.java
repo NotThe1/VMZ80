@@ -64,6 +64,7 @@ import utilities.menus.MenuUtility;
 
 public class DebugFrame extends JInternalFrame implements Runnable {
 
+	private static final long serialVersionUID = 1L;
 	private AppLogger log = AppLogger.getInstance();
 	private AdapterDebug adapterDebug = new AdapterDebug();
 	private DefaultListModel<String> trapModel = new DefaultListModel<String>();
@@ -111,13 +112,11 @@ public class DebugFrame extends JInternalFrame implements Runnable {
 		currentEnd = -1;
 		fileIsCurrent = false;
 	}// clearCurrentIndicaters
-	
+
 	@Override
 	public void run() {
 		setProgramCounter(wrs.getProgramCounter());
 	}// run
-
-
 
 	/////////////////////////////////////////////////////////////////////////////////
 	/**
@@ -148,7 +147,6 @@ public class DebugFrame extends JInternalFrame implements Runnable {
 		//
 		taListing.setSelectedTextColor(Color.BLUE);
 		clearCurrentIndicaters();
-		
 
 	}// appInit
 
@@ -480,8 +478,7 @@ public class DebugFrame extends JInternalFrame implements Runnable {
 	private JTextArea taListing;
 	private JLabel lblLisingName;
 	private JMenu mnuFiles;
-	
-	
+
 	public void setProgramCounter(int programCounter) {
 		this.programCounter = programCounter & 0XFFFF;
 
@@ -536,15 +533,15 @@ public class DebugFrame extends JInternalFrame implements Runnable {
 		Matcher targetAddressMatcher;
 		targetAddressMatcher = targetAddressPattern.matcher(taListing.getText());
 		if (targetAddressMatcher.find()) {
-			
+
 			taListing.setSelectionStart(targetAddressMatcher.start());
-			taListing.setSelectionEnd(targetAddressMatcher.end());			
+			taListing.setSelectionEnd(targetAddressMatcher.end());
 			lblStatus.setText(String.format("Program Counter at %04X", programCounter));
 			lblStatus.updateUI();
 		} else {
 			String status = String.format("Target line: %04X Not Start of Instruction%n", programCounter);
 			lblStatus.setText(status);
-		} //if found ?
+		} // if found ?
 
 	}// selectTheCorrectLine
 
@@ -568,14 +565,15 @@ public class DebugFrame extends JInternalFrame implements Runnable {
 
 	private void doAddFile() {
 
-		JFileChooser fc = (newListPath) == null ? utilities.filePicker.FilePicker.getAsmPicker()
-				: FilePicker.getAsmPicker(newListPath);
+		JFileChooser fc = (newListPath) == null ? FilePicker.getListings() : FilePicker.getListings(newListPath);
 		if (fc.showOpenDialog(this) == JFileChooser.CANCEL_OPTION) {
 			System.out.println("Bailed out of the open");
 			return;
 		} // if - open
-		newListPath = Paths.get(fc.getSelectedFile().getParent());
-		addFile(fc.getSelectedFile().getAbsolutePath());
+		for (File file : fc.getSelectedFiles()) {
+			newListPath = Paths.get(file.getParent());
+			addFile(file.toString());
+		} // for each file
 
 	}// doAddFile
 
@@ -633,7 +631,8 @@ public class DebugFrame extends JInternalFrame implements Runnable {
 	}// loadDisplay
 
 	private void doAddFilesFromList() {
-		JFileChooser fc = FilePicker.getAllListPicker();// FilePicker.getAnyListPicker();
+		JFileChooser fc = FilePicker.getListingCollection();
+//		JFileChooser fc = FilePicker.getAllListPicker();// FilePicker.getAnyListPicker();
 		if (fc.showOpenDialog(this) != JFileChooser.APPROVE_OPTION) {
 			System.out.println("You cancelled the Load Asm from File List...");
 		} else {
@@ -643,7 +642,7 @@ public class DebugFrame extends JInternalFrame implements Runnable {
 				fileReader = new FileReader((fc.getSelectedFile().getAbsolutePath()));
 				BufferedReader reader = new BufferedReader(fileReader);
 				while ((filePathName = reader.readLine()) != null) {
-					filePathName = filePathName.replaceFirst("(?i)\\.mem$", "\\.list");
+//					filePathName = filePathName.replaceFirst("(?i)\\.mem$", "\\.list");
 					addFile(filePathName);
 				} // while
 				reader.close();
@@ -656,14 +655,15 @@ public class DebugFrame extends JInternalFrame implements Runnable {
 	}// doAddFilesFromList
 
 	private void doSaveSelectedToList() {
-		JFileChooser fc = FilePicker.getListAsmPicker();
+		JFileChooser fc = FilePicker.getListingCollection();
+//		JFileChooser fc = FilePicker.getListAsmPicker();
 		if (fc.showSaveDialog(this) != JFileChooser.APPROVE_OPTION) {
-			System.out.println("You cancelled Save Selected as List...");
+			System.out.println("You cancelled Save Selected as Collection...");
 			return;
 		} // if
 		String listFile = fc.getSelectedFile().getAbsolutePath();
-		String completeSuffix = DOT + FilePicker.LIST_ASM_SUFFIX;
-		listFile = listFile.replaceFirst("//" + completeSuffix + "$", EMPTY_STRING);
+		String completeSuffix = DOT + FilePicker.COLLECTIONS_LISTING;
+		listFile = listFile.replaceFirst("\\" + completeSuffix + "$", EMPTY_STRING);
 		try {
 			FileWriter fileWriter = new FileWriter(listFile + completeSuffix);
 			BufferedWriter writer = new BufferedWriter(fileWriter);
@@ -779,9 +779,9 @@ public class DebugFrame extends JInternalFrame implements Runnable {
 	}// class Limits
 
 	///////////////////////////
-	class AdapterDebug implements ActionListener, HDNumberValueChangeListener,MouseListener{
+	class AdapterDebug implements ActionListener, HDNumberValueChangeListener, MouseListener {
 		/* ActionListener */
-		
+
 		@Override
 		public void actionPerformed(ActionEvent actionEvent) {
 			String name = ((Component) actionEvent.getSource()).getName();
@@ -817,7 +817,7 @@ public class DebugFrame extends JInternalFrame implements Runnable {
 			}// switch
 
 		}// actionPerformed
-		
+
 		/* HDNumberValueChangeListener */
 
 		@Override
@@ -831,30 +831,29 @@ public class DebugFrame extends JInternalFrame implements Runnable {
 
 		@Override
 		public void mouseClicked(MouseEvent mouseEvent) {
-			if(mouseEvent.getClickCount() > 1)
-			setProgramCounter(programCounter);	
-		}//mouseClicked
+			if (mouseEvent.getClickCount() > 1)
+				setProgramCounter(programCounter);
+		}// mouseClicked
 
 		@Override
 		public void mouseEntered(MouseEvent arg0) {
-			// TODO Auto-generated method stub	
+			// TODO Auto-generated method stub
 		}//
 
 		@Override
 		public void mouseExited(MouseEvent arg0) {
-			// TODO Auto-generated method stub		
+			// TODO Auto-generated method stub
 		}//
 
 		@Override
 		public void mousePressed(MouseEvent arg0) {
-			// TODO Auto-generated method stub		
+			// TODO Auto-generated method stub
 		}//
 
 		@Override
 		public void mouseReleased(MouseEvent arg0) {
-			// TODO Auto-generated method stub	
+			// TODO Auto-generated method stub
 		}//
-
 
 	}// class AdapterDebug
 }// class DebugFrame

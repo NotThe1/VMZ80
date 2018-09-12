@@ -47,16 +47,10 @@ public class DiskControlUnit {
 		return instance;
 	}// getInstance
 
-	// public static DiskControlUnit getInstance(V_IF_DiskPanel ifDisks) {
-	// ifDisks = ifDisks;
-	// ifDisks.addDiskPanelActionListener(adapterDCU);
-	// return instance;
-	// }
-
 	public void setDisplay(V_IF_DiskPanel ifDisks) {
 		this.ifDisks = ifDisks;
 		ifDisks.addDiskPanelActionListener(adapterDCU);
-	}//
+	}// setDisplay
 
 	private boolean isDiskMounted(File newFile) {
 		boolean ans = false;
@@ -88,12 +82,11 @@ public class DiskControlUnit {
 
 	}// doDiskError
 
-	private void doMemoryTrap() {
-
-	}// doMemoryTrap
+	// private void doMemoryTrap() {
+	//
+	// }// doMemoryTrap
 
 	private void doDiskPanelEvent(DiskPanelEvent diskPanelEvent) {
-
 		if (diskPanelEvent.isSelected()) {
 			mountDisk(diskPanelEvent.getDiskIndex());
 		} else {
@@ -112,8 +105,9 @@ public class DiskControlUnit {
 			return;
 		} // if mounted already
 
-		JFileChooser fc = FilePicker.getDiskPicker();
-		if (fc.showOpenDialog(null) == JFileChooser.CANCEL_OPTION) {
+		JFileChooser fc = FilePicker.getDisk();
+//		JFileChooser fc = FilePicker.getDiskPicker();
+		if (fc.showOpenDialog(ifDisks) == JFileChooser.CANCEL_OPTION) {
 			log.info("Bailed out of the open");
 			return;
 		} // if
@@ -143,7 +137,6 @@ public class DiskControlUnit {
 			log.infof("Dismounted Disk - Index %d, Path: %s%n", diskIndex, drives[diskIndex].getFilePath());
 			removeDiskDrive(diskIndex);
 		} // if
-
 	}// dismountDisk
 
 	private void removeDiskDrive(int diskIndex) {
@@ -230,7 +223,6 @@ public class DiskControlUnit {
 		currentSector = ioBuss.read(controlTableLocation + DCT_SECTOR);
 		currentByteCount = cpuBuss.readWordReversed(controlTableLocation + DCT_BYTE_COUNT);
 		currentDMAAddress = cpuBuss.readWordReversed(controlTableLocation + DCT_DMA_ADDRESS);
-		debugShowControlTable();
 		currentDrive = (currentDiskControlByte == DISK_CONTROL_BYTE_5) ? 0 : 2; // 5" => A or B
 		currentDrive += currentUnit;
 
@@ -273,8 +265,8 @@ public class DiskControlUnit {
 			} // for
 			byte[] readBuffer = readByteBuffer.array();
 			ioBuss.writeDMA(currentDMAAddress, readBuffer);
-			 System.out.printf("DCU:Value: %02X, length = %d%n", readBuffer[1], readBuffer.length);
-		} else { // its a COMMAND_WRITE
+			// System.out.printf("DCU:Value: %02X, length = %d%n", readBuffer[1], readBuffer.length);
+		} else if (currentCommand == COMMAND_WRITE) { // its a COMMAND_WRITE
 
 			byte[] writeSector = new byte[currentSectorSize];
 			byte[] readFromCore = ioBuss.readDMA(currentDMAAddress, currentByteCount);
@@ -289,10 +281,13 @@ public class DiskControlUnit {
 				drives[currentDrive].writeNext(writeSector);
 			} // for
 
-		} //if read or write
+		} else {
+			log.errorf("Bad Disk command: %02X%n", currentCommand);
+			debugShowControlTable();
+		} // if read or write
 		if (goodOperation) {
 			reportStatus((byte) 0X80, (byte) 00); // reset - operation is over
-		} // if
+		} // if ok
 
 	}// doUpdate
 
@@ -307,7 +302,7 @@ public class DiskControlUnit {
 		cpuBuss.deleteObserver(adapterDCU);
 		ifDisks.removeDiskPanelActionListener(adapterDCU);
 		removeAllDiskDrives();
-	}//
+	}// appClose
 
 	private void appInit() {
 		cpuBuss.addObserver(adapterDCU);
@@ -335,6 +330,7 @@ public class DiskControlUnit {
 		dcuActionListeners.remove(dcuListener);
 	}// addVDiskErroListener
 
+	@SuppressWarnings("unchecked")
 	private void fireDCUAction(int diskIndex, int actionType) {
 		Vector<DCUActionListener> actionListeners;
 		synchronized (this) {
@@ -359,12 +355,12 @@ public class DiskControlUnit {
 
 	private static final byte BYTE00 = (byte) 0x00;
 
-	 private static final int ERROR_NO_DISK = 10;
+	private static final int ERROR_NO_DISK = 10;
 	private static final int ERROR_INVALID_SECTOR_DESIGNATOR = 11;
-	 private static final int ERROR_NO_DRIVE = 12;
-	 private static final int ERROR_SECTOR_NOT_SET = 13;
-	 private static final int ERROR_INVALID_DMA_ADDRESS = 14;
-	 private static final int ERROR_INVALID_BYTE_COUNT = 15;
+	private static final int ERROR_NO_DRIVE = 12;
+	private static final int ERROR_SECTOR_NOT_SET = 13;
+	// private static final int ERROR_INVALID_DMA_ADDRESS = 14;
+	private static final int ERROR_INVALID_BYTE_COUNT = 15;
 	//
 	private static final byte COMMAND_READ = 01;
 	private static final byte COMMAND_WRITE = 02;

@@ -170,7 +170,7 @@ public class DiskUtility extends JDialog {
 
 	private void setActiveFileInfo(File currentActiveFile) {
 		activeDiskAbsolutePath = currentActiveFile.getAbsolutePath();
-//		activeDiskPath = currentActiveFile.getParent();
+		// activeDiskPath = currentActiveFile.getParent();
 		activeDiskName = currentActiveFile.getName();
 
 	}// setActiveFileInfo
@@ -233,8 +233,7 @@ public class DiskUtility extends JDialog {
 		} // if
 		for (File file : tempFiles) {
 			String filePath = file.getAbsolutePath();
-			System.out.println(filePath);
-			log.infof("Deleting file: %s%n", filePath);
+			log.infof("[DiskUtility.removeAllWorkingDisks]%n\t\tDeleting file: %s%n", filePath);
 			try {
 				file.delete();
 			} catch (Exception e) {
@@ -576,7 +575,8 @@ public class DiskUtility extends JDialog {
 	}// updateSector
 
 	private void doDiskLoad() {
-		JFileChooser fc = FilePicker.getDiskPicker();
+		JFileChooser fc = FilePicker.getDisk();
+		// JFileChooser fc = FilePicker.getDiskPicker();
 		if (fc.showOpenDialog(this) == JFileChooser.CANCEL_OPTION) {
 			log.info("Bailed out of disk open");
 			return;
@@ -629,7 +629,7 @@ public class DiskUtility extends JDialog {
 				/* do nothing special */
 			} // if answer
 		} // if change to file data
-		lblFileChangeIndicator.setVisible(false);		
+		lblFileChangeIndicator.setVisible(false);
 		if (diskDrive != null) {
 			diskDrive.dismount();
 			diskDrive = null;
@@ -661,10 +661,10 @@ public class DiskUtility extends JDialog {
 		setDataChange(false);
 	}// doFileSave
 
-
 	private void doDiskSaveAs() {
 		System.out.println("** [doDiskSaveAs] **");
-		JFileChooser fc = FilePicker.getDiskPicker();
+		JFileChooser fc = FilePicker.getDisk();
+		// JFileChooser fc = FilePicker.getDiskPicker();
 		if (fc.showOpenDialog(this) == JFileChooser.CANCEL_OPTION) {
 			log.info("Bailed out of disk open");
 			return;
@@ -674,7 +674,7 @@ public class DiskUtility extends JDialog {
 		String targetFileName = rawTargetFile.getName();
 		targetFileName = cleanupFileName(targetFileName, ".F3HD");
 		File targetFile = new File(targetDirectory + FILE_SEPARATOR + targetFileName);
-		String sourceFileName = diskDrive.getFileAbsoluteName();
+		// String sourceFileName = diskDrive.getFileAbsoluteName();
 		if (targetFile.exists()) {
 			if (JOptionPane.showConfirmDialog(null, "File Exits, Do you want to overwrite?", "Disk Save As...",
 					JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE) == JOptionPane.NO_OPTION) {
@@ -683,16 +683,6 @@ public class DiskUtility extends JDialog {
 		} // if does file exists
 
 		setActiveFileInfo(targetFile);
-		// doDiskClose();
-		// try {
-		// Files.copy(Paths.get(sourceFileName), Paths.get(targetDirectory, targetFileName),
-		// StandardCopyOption.REPLACE_EXISTING);
-		// log.info("SourceFileName: " + sourceFileName);
-		// log.info("targetFileName: " + targetFileName);
-		// } catch (IOException e) {
-		// log.error("Failed to copy from " + sourceFileName + " to " + targetFileName);
-		// } // try
-		// diskSetup(targetFileName, activeDiskAbsolutePath);
 		doDiskSave();
 		manageFileMenus(MNU_DISK_LOAD);
 
@@ -757,24 +747,22 @@ public class DiskUtility extends JDialog {
 	}// doDisplaySelectedFile
 
 	private void doToolsNew() {
-		System.out.println("DiskUtility.doToolsNew()");
-		File newFile = MakeNewDisk.makeNewDisk();
+		File newFile = MakeNewDisk.makeNewDisk(this);
 		if (newFile == null) {
 			log.error("Failed to make a new Disk");
 			return;
 		} // if no new disk
 
-		diskSetup(newFile.getAbsolutePath(), activeDiskAbsolutePath);
-		manageFileMenus(MNU_TOOLS_NEW);
+		loadDisk(newFile);
 	}// doToolsNew
 
 	private void doToolsUpdate() {
 		if (diskDrive == null) {
 			UpdateSystemDisk.updateDisks();
 		} else {
+			String absoluteFilePath = diskDrive.getFileAbsoluteName();
 			diskDrive.dismount();
 			diskDrive = null;
-			String absoluteFilePath = diskDrive.getFileAbsoluteName();
 
 			UpdateSystemDisk.updateDisk(absoluteFilePath);
 			diskSetup(absoluteFilePath, activeDiskAbsolutePath);
@@ -1168,12 +1156,17 @@ public class DiskUtility extends JDialog {
 	}// catAdjustTableLook
 
 	private void setDataChange(boolean state) {
-//		diskChanged = state;
+		// diskChanged = state;
 		fileChanged = state;
 		sectorChanged = state;
 	}// setDataChange
 
 	////////////////////////////////////////////////////////////////////////////////////////
+
+	public void close() {
+		appClose();
+	}// close
+
 	private void appClose() {
 		if (fileChanged | sectorChanged) {
 			String message = String.format("Disk: %s has outstanding changes.%nDo you want to save it?",
@@ -1189,7 +1182,6 @@ public class DiskUtility extends JDialog {
 				/* do nothing special */
 			} // if answer
 		} // if change to file data
-
 
 		Preferences myPrefs = Preferences.userNodeForPackage(DiskUtility.class).node(this.getClass().getSimpleName());
 		Dimension dim = this.getSize();
@@ -1245,6 +1237,7 @@ public class DiskUtility extends JDialog {
 		panelFileHex.setName(HEDP_FILE);
 		panelSectorDisplay.addChangeListener(adapterForDiskUtility);
 		panelSectorDisplay.setName(HEDP_SECTOR);
+
 	}// appInit
 
 	/**
@@ -1262,10 +1255,15 @@ public class DiskUtility extends JDialog {
 	private void initialize() {
 		this.setTitle("DiskUtility   2.0");
 		this.setBounds(100, 100, 655, 626);
-		// frameBase.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		// setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		this.addWindowListener(new WindowAdapter() {
 			@Override
 			public void windowClosing(WindowEvent arg0) {
+				appClose();
+			}
+
+			@Override
+			public void windowClosed(WindowEvent arg0) {
 				appClose();
 			}
 		});

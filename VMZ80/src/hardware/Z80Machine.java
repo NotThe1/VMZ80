@@ -48,6 +48,8 @@ import javax.swing.border.SoftBevelBorder;
 import codeSupport.AppLogger;
 import disks.DiskControlUnit;
 import disks.diskPanel.V_IF_DiskPanel;
+import disks.utility.DiskUtility;
+import disks.utility.MakeNewDisk;
 import disks.utility.UpdateSystemDisk;
 import hardware.View.TabDialog;
 import hardware.View.V_IF_CCR;
@@ -74,10 +76,11 @@ public class Z80Machine {
 	IOController ioc = IOController.getInstance();
 
 	private AppLogger log = AppLogger.getInstance();
-	private TabDialog tabDialog;
+	private TabDialog tabDialog = new TabDialog();
+	DiskUtility du;
 
 	Thread t_cpu = new Thread(cpu);
-//	private List<Component> frontPanels;
+	// private List<Component> frontPanels;
 
 	/**
 	 * Launch the application.
@@ -157,14 +160,17 @@ public class Z80Machine {
 	}// doFileNew
 
 	private void doFileOpen() {
-		JFileChooser filePicker = FilePicker.getMemoryPicker();
+		JFileChooser filePicker = FilePicker.getMemories();
+		// JFileChooser filePicker = FilePicker.getMemoryPicker();
 		if (filePicker.showOpenDialog(frameBase) != JFileChooser.OPEN_DIALOG) {
 			log.info("Closed foFileOpen");
 			return;
-		}
-		log.infof("File chosen is %s%n", filePicker.getSelectedFile().getAbsolutePath());
-		MemoryLoaderFromFile.loadMemoryImage(new File(filePicker.getSelectedFile().getAbsolutePath()));
-
+		} // if
+		for (File file : filePicker.getSelectedFiles()) {
+			log.infof("File chosen is %s%n", file.toString());
+			MemoryLoaderFromFile.loadMemoryImage(file);
+			// MemoryLoaderFromFile.loadMemoryImage(new File(filePicker.getSelectedFile().getAbsolutePath()));
+		} // for each file
 	}// doFileOpen
 
 	private void doFileSave() {
@@ -186,6 +192,19 @@ public class Z80Machine {
 		appClose();
 		System.exit(0);
 	}// doFileExit
+
+	//////////////////////////////////////////////////
+
+	private void doDiskUtility() {
+		if (du == null) {
+			du = new DiskUtility();
+		} // if only want one running copy
+		du.setVisible(true);
+	}// doDiskUtility
+
+	private void doDiskNew() {
+		MakeNewDisk.makeNewDisk(frameBase);
+	}// doDiskNew
 
 	//////////////////////////////////////////////////
 
@@ -347,8 +366,9 @@ public class Z80Machine {
 		loadROM();
 		tbRunStop.setSelected(true);
 		doRunStop();
-	}//boot
-	////////////////////////////////////////////////////////////////////////////////////////
+	}// boot
+		////////////////////////////////////////////////////////////////////////////////////////
+
 	private void appClose() {
 		Preferences myPrefs = Preferences.userNodeForPackage(Z80Machine.class).node(this.getClass().getSimpleName());
 		Dimension dim = frameBase.getSize();
@@ -361,12 +381,15 @@ public class Z80Machine {
 		saveTabDialogState(myPrefs);
 
 		myPrefs = null;
+
+		dcu.close();
+		ioc.close();
 	}// appClose
 
 	private void appInit() {
 		loadROM();
 
-		tabDialog = new TabDialog();
+		// tabDialog = new TabDialog();
 		tabDialog.setVisible(true);
 
 		Preferences myPrefs = Preferences.userNodeForPackage(Z80Machine.class).node(this.getClass().getSimpleName());
@@ -382,16 +405,9 @@ public class Z80Machine {
 
 		dcu.setDisplay(ifDiskPanel);
 		updateDisplaysMaster();
+		du = null;
 
 		ifProgramRegisters.addHDNumberValueChangedListener(applicationAdapter);
-//		frontPanels = new ArrayList<Component>();
-
-		// frontPanels.addAll(getAllComponents(desktopPane));
-		// frontPanels.addAll(getAllComponents(disksPanel));
-
-		// registerPanels = getAllComponents(desktopPane);
-		// diskPanels = getAllComponents(disksPanel);
-
 		CpuBuss.getInstance().addObserver(applicationAdapter);
 
 		log.addTimeStamp("Starting....");
@@ -439,10 +455,10 @@ public class Z80Machine {
 		btnBoot.setBorder(null);
 		btnBoot.setToolTipText("Boot");
 		btnBoot.setSelectedIcon(null);
-		btnBoot.setIcon(new ImageIcon(Z80Machine.class.getResource("/com/sun/java/swing/plaf/windows/icons/Computer.gif")));
+		btnBoot.setIcon(
+				new ImageIcon(Z80Machine.class.getResource("/com/sun/java/swing/plaf/windows/icons/Computer.gif")));
 		btnBoot.setHorizontalAlignment(SwingConstants.LEADING);
 		toolBar.add(btnBoot);
-
 
 		JPanel panelMain = new JPanel();
 		GridBagConstraints gbc_panelMain = new GridBagConstraints();
@@ -680,13 +696,15 @@ public class Z80Machine {
 		JMenu mnuTools = new JMenu("Tools");
 		menuBar.add(mnuTools);
 
-		JMenuItem mntmNewMenuItem = new JMenuItem("Pick OpCodeMap");
-		mntmNewMenuItem.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent arg0) {
+		JMenuItem mnuToolsDiskUtility = new JMenuItem("Disk Utilities");
+		mnuToolsDiskUtility.setName(MNU_TOOLS_DISK_UTILITY);
+		mnuToolsDiskUtility.addActionListener(applicationAdapter);
+		mnuTools.add(mnuToolsDiskUtility);
 
-			}
-		});
-		mnuTools.add(mntmNewMenuItem);
+		JMenuItem mnuToolsDiskNew = new JMenuItem("New Disk");
+		mnuToolsDiskNew.setName(MNU_TOOLS_DISK_NEW);
+		mnuToolsDiskNew.addActionListener(applicationAdapter);
+		mnuTools.add(mnuToolsDiskNew);
 
 	}// initialize
 
@@ -709,6 +727,9 @@ public class Z80Machine {
 	private static final String MNU_WINDOW_SPECIAL_REGISTERS = "mnuWindowsSpecialRegisters";
 	private static final String MNU_WINDOW_CONDITION_CODES = "mnuWindowsConditionCodes";
 	private static final String MNU_WINDOW_RESET = "mnuWindowsReset";
+
+	private static final String MNU_TOOLS_DISK_UTILITY = "mnuToolsDiskUtility";
+	private static final String MNU_TOOLS_DISK_NEW = "mnuToolsDiskNew";
 
 	private static final String BUTTON_RUN_STOP = "tbRunStop";
 	private static final String BUTTON_STEP = "btnStop";
@@ -733,7 +754,8 @@ public class Z80Machine {
 	private JPanel disksPanel;
 	//////////////////////////////////////////////////////////////////////////
 
-	class ApplicationAdapter implements ActionListener, HDNumberValueChangeListener,Observer {// , ListSelectionListener
+	class ApplicationAdapter implements ActionListener, HDNumberValueChangeListener, Observer {// ,
+																								// ListSelectionListener
 		/* ActionListener */
 		@Override
 		public void actionPerformed(ActionEvent actionEvent) {
@@ -750,6 +772,7 @@ public class Z80Machine {
 			case BUTTON_BOOT:
 				doBoot();
 				break;
+			/* Menu - File */
 			case MNU_FILE_NEW:
 				doFileNew();
 				break;
@@ -768,6 +791,9 @@ public class Z80Machine {
 			case MNU_FILE_EXIT:
 				doFileExit();
 				break;
+
+			/* Menu - Windows */
+
 			case MNU_WINDOW_PRIMARY_REGISTERS:
 			case MNU_WINDOW_PROGRAM_CONTROL:
 			case MNU_WINDOW_INDEX_REGISTERS:
@@ -779,9 +805,19 @@ public class Z80Machine {
 			case MNU_WINDOW_RESET:
 				doResetAllRegisterDisplays();
 				break;
+
+			/* Menu - tools */
+			case MNU_TOOLS_DISK_UTILITY:
+				doDiskUtility();
+				break;
+
+			case MNU_TOOLS_DISK_NEW:
+				doDiskNew();
+				break;
+
 			}// switch
 		}// actionPerformed
-		
+
 		////////////////////////////////
 		/* HDNumberValueChangeListener */
 
@@ -789,7 +825,7 @@ public class Z80Machine {
 		public void valueChanged(HDNumberValueChangeEvent hDNumberValueChangeEvent) {
 			tabDialog.updateDisplay();
 		}// valueChanged
-		
+
 		////////////////////////////////
 		/* Observer */
 
@@ -800,16 +836,16 @@ public class Z80Machine {
 				System.out.printf("[update - DEBUG]  Location %04X%n", ((MemoryTrapEvent) mte).getLocation());
 				tbRunStop.setSelected(false);
 				doRunStop();
-			}else if(trap.equals(Trap.HALT)) {
+			} else if (trap.equals(Trap.HALT)) {
 				tbRunStop.setSelected(false);
-//				int newLocation = (((MemoryTrapEvent) mte).getLocation() + 1) & 0xFFFF;
-//				WorkingRegisterSet.getInstance().setProgramCounter(newLocation);
+				// int newLocation = (((MemoryTrapEvent) mte).getLocation() + 1) & 0xFFFF;
+				// WorkingRegisterSet.getInstance().setProgramCounter(newLocation);
 				doRunStop();
 			} // if - debug
-//				stateDisplay.setDisplayComponentsEnabled(true);
-//				btnRun.setSelected(false);
-//				cpu.setError(ErrorType.STOP);
-//				updateView();
+				// stateDisplay.setDisplayComponentsEnabled(true);
+				// btnRun.setSelected(false);
+				// cpu.setError(ErrorType.STOP);
+				// updateView();
 
 		}// update
 	}// class AdapterAction

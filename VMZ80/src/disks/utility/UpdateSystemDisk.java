@@ -37,24 +37,24 @@ public class UpdateSystemDisk {
 			/* Boot Sector */
 			// URL rom = thisClass.getResource("/disks/resources/BootSector.mem");
 
-			InputStream in = thisClass.getClass().getResourceAsStream("/BootSector.mem");
+			InputStream in = thisClass.getClass().getResourceAsStream("/Z80Code/BootSector.mem");
 			BufferedReader reader = new BufferedReader(new InputStreamReader(in));
 
 			byte[] dataBoot = MemoryLoaderFromFile.loadMemoryImage(reader, 0x0200);
 			disk.position(0);
 			disk.put(dataBoot);
 
-			in = thisClass.getClass().getResourceAsStream("/CCP.mem");
+			in = thisClass.getClass().getResourceAsStream("/Z80Code/CCP.mem");
 			reader = new BufferedReader(new InputStreamReader(in));
 			byte[] dataCCP = MemoryLoaderFromFile.loadMemoryImage(reader, 0x0800);
 			disk.put(dataCCP);
 
-			in = thisClass.getClass().getResourceAsStream("/BDOS.mem");
+			in = thisClass.getClass().getResourceAsStream("/Z80Code/BDOS.mem");
 			reader = new BufferedReader(new InputStreamReader(in));
 			byte[] dataBDOS = MemoryLoaderFromFile.loadMemoryImage(reader, 0x0E00);
 			disk.put(dataBDOS);
 
-			in = thisClass.getClass().getResourceAsStream("/BIOS.mem");
+			in = thisClass.getClass().getResourceAsStream("/Z80Code/BIOS.mem");
 			reader = new BufferedReader(new InputStreamReader(in));
 			byte[] dataBIOS = MemoryLoaderFromFile.loadMemoryImage(reader, 0x0A00);
 			disk.put(dataBIOS);
@@ -80,8 +80,9 @@ public class UpdateSystemDisk {
 	}// updateDisk
 
 	public static void updateDisks() {
-		JFileChooser fc = FilePicker.getDiskPicker();
-		fc.setMultiSelectionEnabled(true); // Override the default single selection.
+		JFileChooser fc = FilePicker.getDisks();
+//		JFileChooser fc = FilePicker.getDiskPicker();
+//		fc.setMultiSelectionEnabled(true); // Override the default single selection.
 		if (fc.showOpenDialog(null) == JFileChooser.CANCEL_OPTION) {
 			return;
 		} // if

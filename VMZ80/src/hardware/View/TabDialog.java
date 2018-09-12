@@ -61,8 +61,10 @@ public class TabDialog extends JDialog implements Runnable {
 	}// refreshMemory
 
 	public void updateDisplay() {
-		refreshMemory();
-		tabDebug.run();
+		if (isVisible()) {
+			refreshMemory();
+			tabDebug.run();
+		}//if only do if the dialog is visible
 	}// refreshViews
 
 	private void appClose() {
@@ -106,18 +108,17 @@ public class TabDialog extends JDialog implements Runnable {
 		gbc_tabbedPane.gridx = 0;
 		gbc_tabbedPane.gridy = 0;
 		contentPanel.add(tabbedPane, gbc_tabbedPane);
-		
-		tabDebug = new DebugFrame();		
+
+		tabDebug = new DebugFrame();
 		tabDebug.setName(TAB_DEBUG);
 		tabbedPane.addTab("Debug", null, tabDebug, null);
 		GridBagConstraints gbc_debug = new GridBagConstraints();
-		gbc_debug.fill= GridBagConstraints.BOTH;
-		gbc_debug.gridx=0;
-		gbc_debug.gridy=0;
-		tabDebug.setLayout(new GridLayout(0,1,0,0));
+		gbc_debug.fill = GridBagConstraints.BOTH;
+		gbc_debug.gridx = 0;
+		gbc_debug.gridy = 0;
+		tabDebug.setLayout(new GridLayout(0, 1, 0, 0));
 		//////////////////////////////////////////////////////////////
-		
-		
+
 		tabDisasssembler = new JPanel();
 		tabDisasssembler.setName(TAB_DISASSEMBLER);
 		tabbedPane.addTab("Disassembler", null, tabDisasssembler, null);
@@ -247,20 +248,24 @@ public class TabDialog extends JDialog implements Runnable {
 		} // try
 
 	}// doLogPrint
-	//+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/ DEBUG /+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+
-	private void doDebugEnable(){
-		
-	}//doDebugEnable
-	private void doDebugReset(){
-		
+		// +/+/+/+/+/+/+/+/+/+/+/+/+/+/+/ DEBUG /+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+
+
+	private void doDebugEnable() {
+
+	}// doDebugEnable
+
+	private void doDebugReset() {
+
 	}// doDebugReset
-	private void doDebugRemove(){
-		
-	}//doDebugRemove
-	private void doDebugClear(){
-		
-	}//doDebugClear
-	//+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/ DEBUG /+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+
+
+	private void doDebugRemove() {
+
+	}// doDebugRemove
+
+	private void doDebugClear() {
+
+	}// doDebugClear
+		// +/+/+/+/+/+/+/+/+/+/+/+/+/+/+/ DEBUG /+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+
 
 	//////////////////////////////////////////////////////////////////////////
 
@@ -287,32 +292,33 @@ public class TabDialog extends JDialog implements Runnable {
 		}// stateChanged
 
 	}// class AdapterAction
-///////////////////////////	
-//	class AdapterDebug implements ActionListener{
-//		/* ActionListener */
-//		@Override
-//		public void actionPerformed(ActionEvent actionEvent) {
-//			String name = ((Component) actionEvent.getSource()).getName();
-//			switch (name) {
-//			case RB_ENABLE:
-//				doDebugEnable();
-//				break;
-//			case BTN_RESET:
-//				doDebugReset();
-//				break;
-//			case BTN_REMOVE:
-//				doDebugRemove();
-//				break;
-//			case BTN_CLEAR:
-//				doDebugClear();
-//				break;
-//		
-//			}//switch
-//			
-//		}//actionPerformed
-//		
-//	}//class AdapterDebug
-/////////////////////////////
+	///////////////////////////
+	// class AdapterDebug implements ActionListener{
+	// /* ActionListener */
+	// @Override
+	// public void actionPerformed(ActionEvent actionEvent) {
+	// String name = ((Component) actionEvent.getSource()).getName();
+	// switch (name) {
+	// case RB_ENABLE:
+	// doDebugEnable();
+	// break;
+	// case BTN_RESET:
+	// doDebugReset();
+	// break;
+	// case BTN_REMOVE:
+	// doDebugRemove();
+	// break;
+	// case BTN_CLEAR:
+	// doDebugClear();
+	// break;
+	//
+	// }//switch
+	//
+	// }//actionPerformed
+	//
+	// }//class AdapterDebug
+	/////////////////////////////
+
 	private static void addPopup(Component component, final JPopupMenu popup) {
 		component.addMouseListener(new MouseAdapter() {
 			public void mousePressed(MouseEvent e) {
@@ -347,13 +353,11 @@ public class TabDialog extends JDialog implements Runnable {
 	private static final String TAB_DISASSEMBLER = "tabDisassembler";
 	private static final String TAB_DEBUG = "tabDebug";
 
-
 	private JTextPane txtLog;
 	private JPanel tabMemoryDisplay;
 	private JTabbedPane tabbedPane;
 	private JPanel tabDisasssembler;
 	private final JPanel contentPanel = new JPanel();
 	private DebugFrame tabDebug;
-
 
 }// class TabDialog
