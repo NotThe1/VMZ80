@@ -292,31 +292,6 @@ public class TabDialog extends JDialog implements Runnable {
 		}// stateChanged
 
 	}// class AdapterAction
-	///////////////////////////
-	// class AdapterDebug implements ActionListener{
-	// /* ActionListener */
-	// @Override
-	// public void actionPerformed(ActionEvent actionEvent) {
-	// String name = ((Component) actionEvent.getSource()).getName();
-	// switch (name) {
-	// case RB_ENABLE:
-	// doDebugEnable();
-	// break;
-	// case BTN_RESET:
-	// doDebugReset();
-	// break;
-	// case BTN_REMOVE:
-	// doDebugRemove();
-	// break;
-	// case BTN_CLEAR:
-	// doDebugClear();
-	// break;
-	//
-	// }//switch
-	//
-	// }//actionPerformed
-	//
-	// }//class AdapterDebug
 	/////////////////////////////
 
 	private static void addPopup(Component component, final JPopupMenu popup) {

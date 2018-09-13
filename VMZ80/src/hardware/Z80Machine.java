@@ -125,14 +125,14 @@ public class Z80Machine {
 	private void doRunStop() {
 		////////////////////////////////////////////////////////////////
 		if (tbRunStop.isSelected()) {
-			cpu.setError(ErrorStatus.NONE);
+			CentralProcessingUnit.setError(ErrorStatus.NONE);
 			System.out.println("actionPerformed: doRun");
 			Thread t = new Thread(cpu);
 			t.start();
 		} else {
 			System.out.println("actionPerformed: doStop");
-			cpu.setError(ErrorStatus.STOP);
-			cpu.setError(ErrorStatus.NONE);
+//			CentralProcessingUnit.setError(ErrorStatus.STOP);
+			CentralProcessingUnit.setError(ErrorStatus.NONE);
 			updateDisplaysMaster();
 		} // if
 

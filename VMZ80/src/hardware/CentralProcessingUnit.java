@@ -1016,6 +1016,7 @@ public class CentralProcessingUnit implements Runnable {
 	private int opCodePage01() {
 		int instructionSize = 1;
 		if (cpuBuss.read(instructionBase) == (byte) 0X76) {// HALT
+			instructionSize = 0;
 			setError(ErrorStatus.HALT_INSTRUCTION);
 		} else {// LD r, r1
 			wrs.setReg(getSingleRegister345(instructionBase), wrs.getReg(getSingleRegister012(instructionBase)));

@@ -85,7 +85,8 @@ public class CpuBuss extends Observable implements ICore, IcpuBuss {
 				if (!isDebug) {// is this the first encounter ?
 					isDebug = true; // then set the flag
 					tellObservers(location, Trap.DEBUG);
-//					ans = DEBUG_CODE; // replace with fake halt
+////					ans = DEBUG_CODE; // replace with fake halt
+					ans = (byte)0x76; // replace with fake halt
 				} else {
 					isDebug = false; // else reset set the flag and return the actual value
 				} // inner if
