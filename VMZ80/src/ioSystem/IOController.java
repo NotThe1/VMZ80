@@ -16,11 +16,12 @@ public class IOController {
 
 	private Set<DeviceZ80> devicePopulation = new HashSet<>();
 
-	private HashMap<Byte, DeviceInput> devicesInput = new HashMap<>();
-	private HashMap<Byte, DeviceOutput> devicesOutput = new HashMap<>();
-	private HashMap<Byte, DeviceInput> devicesStatus = new HashMap<>();
+	private HashMap<Byte, DevicePipes> devicesInput = new HashMap<>();
+	private HashMap<Byte, DevicePipes> devicesOutput = new HashMap<>();
+	private HashMap<Byte, DevicePipes> devicesStatus = new HashMap<>();
 
-	private TTYZ80 tty = new TTYZ80();;
+	private TTYZ80 tty = new TTYZ80();
+//	private ListDevice listDevice = new ListDevice();
 
 	public static IOController getInstance() {
 		return instance;
@@ -31,34 +32,47 @@ public class IOController {
 			addDevice(tty);
 			Thread threadTTY = new Thread(tty);
 			threadTTY.start();
+//			addDevice(listDevice);
+//			Thread threadLST = new Thread(listDevice);
+//			threadLST.start();
 		} catch (IOException e) {
 			log.error("[IOController.IOController()]  Failed to Add a Device: " + e.getMessage());
 		} // try
 	}// Constructor
 
 	private void addDevice(DeviceZ80 device) throws IOException {//TTYZ80
-		PipedOutputStream os; // Sender
-		PipedInputStream is; // Receiver
-		if (device.getAddressIn() != null) {
-			os = new PipedOutputStream(); // Sender
-			is = new PipedInputStream(os); // Receiver
-			devicesInput.put(device.getAddressIn(), new DeviceInput(device, is));
-			device.setPipeIn(os);
+		
+		if (device.getAddressIn() != null) {// IN Command data to CPU
+			PipedOutputStream dataToCpuSender = new PipedOutputStream(); 
+			PipedInputStream dataToCpuReceiver = new PipedInputStream(dataToCpuSender);	
+			devicesInput.put(device.getAddressIn(), new DevicePipes(device, dataToCpuReceiver));
+			device.setDataToCpuSender(dataToCpuSender);
+			device.setDataToCpuReceiver(dataToCpuReceiver);
 		} // if input
 
-		if (device.getAddressOut() != null) {
-			os = new PipedOutputStream();
-			is = new PipedInputStream(os);
-			devicesOutput.put(device.getAddressOut(), new DeviceOutput(device, os));
-			device.setPipeOut(is);
+		if (device.getAddressOut() != null) {// OUT Command - data from CPU
+			PipedOutputStream dataFromCpuPutter = new PipedOutputStream();
+			PipedInputStream dataFromCpuGetter = new PipedInputStream(dataFromCpuPutter);
+			devicesOutput.put(device.getAddressOut(), new DevicePipes(device, dataFromCpuPutter));
+			device.setDataFromCpuReceiver(dataFromCpuGetter);
 		} // if input
+		
 
 		if (device.getAddressStatus() != null) {
-			os = new PipedOutputStream();
-//			is = new PipedInputStream(os);
-			is = devicesInput.get(device.getAddressIn()).is;
-			devicesStatus.put(device.getAddressStatus(), new DeviceInput(device, is));
-			device.setPipeStatus(os);
+			PipedOutputStream statusRequestSender = new PipedOutputStream();// from CPU
+			PipedInputStream statusRequestReceiver = new PipedInputStream(statusRequestSender);
+			
+			
+			PipedOutputStream statusResponseSender = new PipedOutputStream();
+			PipedInputStream  statusResponseReceiver= new PipedInputStream(statusResponseSender);
+
+
+			devicesStatus.put(device.getAddressStatus(),
+					new DevicePipes(device,statusResponseReceiver, statusRequestSender));
+			
+			device.setStatusRequestReceiver(statusRequestReceiver);
+			device.setStatusResponseSender(statusResponseSender);
+			
 		} // if input
 		devicePopulation.add(device);
 	}// addDevice
@@ -86,56 +100,95 @@ public class IOController {
 	}// byteToDevice
 
 	public Byte byteFromDevice(Byte address) throws IOException {
+		 int STATUS_DELAY = 8;
 		Byte value = 0x00;
-		if (devicesInput.containsKey(address)) {
+		if (devicesInput.containsKey(address)) { //data
 			if (devicesInput.get(address).is.available() > 0) {
 				value = (byte) devicesInput.get(address).is.read();
-//				log.infof("[IOController.byteFromDevice] value = %04X%n", value);
 			} // if something to read
-		} else if (devicesStatus.containsKey(address)) {
+		} else if (devicesStatus.containsKey(address)) {  //Status
 			try {
-				value = (byte) (devicesStatus.get(address).is.available()>0?(byte)0x03:(byte)0x01);
+				DevicePipes device = devicesStatus.get(address);
+				device.os.write(GET_STATUS);
+				device.os.flush();
+				if(device.is.available() >0) {
+					value = (byte) device.is.read();
+				}else {
+					Thread.sleep(STATUS_DELAY);
+				}//if
+				
+				if(device.is.available() >0) {
+					value = (byte) device.is.read();
+				}else {
+					log.errorf("device %02X has timed out on Status Read%n", address);
+				}//if
 			} catch (Exception e) {
-				e.printStackTrace();
-				System.exit(-1);
+//				e.printStackTrace();
+//				System.exit(-1);
 			} // try
 
 		} // if input device
-
 		return value;
 	}// byteFromDevice
-
-	/* this is really just a structure */
-	class DeviceInputStatus {
-		public DeviceZ80 device;
-		public PipedInputStream is;
-
-		public DeviceInputStatus(DeviceZ80 device, PipedInputStream is) {
-			this.device = device;
-			this.is = is;
-		}// Constructor
-	}// class DeviceInputStatus
+	
 	
 	/* this is really just a structure */
-	class DeviceInput {
+	class DevicePipes{
 		public DeviceZ80 device;
 		public PipedInputStream is;
-
-		public DeviceInput(DeviceZ80 device, PipedInputStream is) {
-			this.device = device;
-			this.is = is;
-		}// Constructor
-	}// class DeviceInputStatus
-
-	/* this is really just a structure */
-	class DeviceOutput {
-		public DeviceZ80 device;
 		public PipedOutputStream os;
 
-		public DeviceOutput(DeviceZ80 device, PipedOutputStream os) {
+		public DevicePipes(DeviceZ80 device,PipedInputStream is, PipedOutputStream os) {
 			this.device = device;
+			this.is = is;
 			this.os = os;
 		}// Constructor
-	}// class DeviceOutput
+		public DevicePipes(DeviceZ80 device,PipedInputStream is ) {
+			this(device,is,null);
+		}// Constructor
+		public DevicePipes(DeviceZ80 device, PipedOutputStream os) {
+			this(device,null,os);
+		}// Constructor
 
+		
+	}//class DevicePipes{
+	
+	
+//	class DeviceByteToCPU {
+//		public DeviceZ80 device;
+//		public PipedInputStream is;
+//
+//		public DeviceByteToCPU(DeviceZ80 device, PipedInputStream is) {
+//			this.device = device;
+//			this.is = is;
+//		}// Constructor
+//	}// class DeviceInputStatus
+//
+//	/* this is really just a structure */
+//	class DeviceByteFromCPU {
+//		public DeviceZ80 device;
+//		public PipedOutputStream os;
+//
+//		public DeviceByteFromCPU(DeviceZ80 device, PipedOutputStream os) {
+//			this.device = device;
+//			this.os = os;
+//		}// Constructor
+//	}// class DeviceOutput
+//	
+//	/* this is really just a structure */
+//	class DeviceStatus {
+//		public DeviceZ80 device;
+//		public PipedInputStream is;
+//		public PipedOutputStream os;
+//
+//		public DeviceStatus(DeviceZ80 device, PipedOutputStream os,PipedInputStream is) {
+//			this.device = device;
+//			this.is = is;
+//			this.os = os;
+//		}// Constructor
+//	}// class DeviceAskForStatus
+//	
+	public static final byte GET_STATUS = (byte) 0xFF;
+
+	
 }// class IOController

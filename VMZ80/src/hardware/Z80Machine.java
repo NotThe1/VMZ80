@@ -131,8 +131,8 @@ public class Z80Machine {
 			t.start();
 		} else {
 			System.out.println("actionPerformed: doStop");
-//			CentralProcessingUnit.setError(ErrorStatus.STOP);
-			CentralProcessingUnit.setError(ErrorStatus.NONE);
+			CentralProcessingUnit.setError(ErrorStatus.HALT_INSTRUCTION);
+//			CentralProcessingUnit.setError(ErrorStatus.NONE);
 			updateDisplaysMaster();
 		} // if
 

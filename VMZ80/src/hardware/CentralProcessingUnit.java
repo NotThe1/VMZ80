@@ -48,7 +48,8 @@ public class CentralProcessingUnit implements Runnable {
 
 	public void run() {
 		while (!isError()) {
-			startInstruction();
+			executeInstruction(wrs.getProgramCounter());
+//			startInstruction();
 		} // while
 		System.out.printf("[]cpu.run pc = %04X%n", wrs.getProgramCounter());
 	}// run

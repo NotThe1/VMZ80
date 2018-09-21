@@ -63,16 +63,23 @@ public class TTYZ80 extends DeviceZ80 implements Runnable {
 		long delay = 5;
 		while (true) {
 			try {
-				while(pipeOut.available()!=0) {
-					byteFromCPU((byte) pipeOut.read());
-				}//while
+				while (dataFromCpuReceiver.available() != 0) { // Data
+					// System.out.println("data request");
+					byteFromCPU((byte) dataFromCpuReceiver.read());
+				} // while
+
+				if (statusRequestReceiver.available() != 0) { // Status
+					byte statusRequest[] = new byte[1];
+					statusRequestReceiver.read(statusRequest);
+					byte count = (byte) (dataToCpuReceiver.available() +1);
+//					System.out.printf("Request = %02X,Response = %02X, pipeStatusRequest.available() = %d%n",
+//							statusRequest[0],count,	statusRequestReceiver.available());
+					statusResponseSender.write(count);
+					statusResponseSender.flush();
+				} // if status request
+
 				Thread.sleep(delay);
-//				if (pipeOut.available() == 0) {
-//					Thread.sleep(delay);
-//				} else {
-//					byteFromCPU((byte) pipeOut.read());
-//					// log.addError("[TTYZ80.run()] ");
-//				} // if
+
 			} catch (IOException | InterruptedException e) {
 				log.error("[TTYZ80.run()]  IOException: " + e.getMessage());
 				// e.printStackTrace();
@@ -84,7 +91,7 @@ public class TTYZ80 extends DeviceZ80 implements Runnable {
 	@Override
 	public void byteToCPU(Byte value) {
 		try {
-			this.pipeIn.write(value);
+			this.dataToCpuSender.write(value);
 			// this.pipeIn.flush();
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
@@ -176,12 +183,11 @@ public class TTYZ80 extends DeviceZ80 implements Runnable {
 	}// getLastElement
 
 	private void showStatus(char keyChar) {
-		
-		
-			String msg = String.format("Last Char = %s     [0x%02X]", keyChar,(byte) keyChar);
-			
-			lblKeyChar.setText(msg);
-		
+
+		String msg = String.format("Last Char = %s     [0x%02X]", keyChar, (byte) keyChar);
+
+		lblKeyChar.setText(msg);
+
 	}// showStatus
 
 	private void clearDoc() {
@@ -200,7 +206,7 @@ public class TTYZ80 extends DeviceZ80 implements Runnable {
 
 	private void doClearInBuffer() {
 		try {
-			pipeOut.skip(pipeOut.available());
+			dataFromCpuReceiver.skip(dataFromCpuReceiver.available());
 		} catch (IOException e) {
 			log.error("[TTYZ80.run()]  IOException: " + e.getMessage());
 			// e.printStackTrace();
@@ -260,8 +266,8 @@ public class TTYZ80 extends DeviceZ80 implements Runnable {
 	private void doColumnsChanged() {
 		maxColumn = (int) spinnerColumns.getValue();
 	}// doColumnsChanged
-	
-	private void setupScreen(Preferences myPrefs,JTextArea textScreen) {
+
+	private void setupScreen(Preferences myPrefs, JTextArea textScreen) {
 		textScreen.setCaretColor(new Color(myPrefs.getInt("CaretColor", Color.RED.getRGB())));
 		textScreen.setBackground(new Color(myPrefs.getInt("BackgroundColor", Color.BLACK.getRGB())));
 		textScreen.setForeground(new Color(myPrefs.getInt("ForegroundColor", Color.GREEN.getRGB())));
@@ -272,7 +278,7 @@ public class TTYZ80 extends DeviceZ80 implements Runnable {
 		textScreen.setEditable(false);
 		textScreen.getCaret().setVisible(false);
 
-	}//setupScreen
+	}// setupScreen
 
 	public void close() {
 		appClose();
@@ -318,7 +324,7 @@ public class TTYZ80 extends DeviceZ80 implements Runnable {
 		mnuBehaviorExtend.setSelected(myPrefs.getBoolean("Extended", true));
 		mnuBehaviorWrap.setSelected(myPrefs.getBoolean("Wrap", false));
 		mnuBehaviorTruncate.setSelected(myPrefs.getBoolean("Truncate", false));
-		setupScreen( myPrefs, textScreen);
+		setupScreen(myPrefs, textScreen);
 
 		myPrefs = null;
 		tabSize = 9;
@@ -563,9 +569,9 @@ public class TTYZ80 extends DeviceZ80 implements Runnable {
 	}// initialize
 		/////////////////////////////////////////////////////////
 
-	class AdapterTTY implements ActionListener, ChangeListener, KeyListener,FocusListener {
+	class AdapterTTY implements ActionListener, ChangeListener, KeyListener, FocusListener {
 		/* ActionListener */
-		
+
 		@Override
 		public void actionPerformed(ActionEvent actionEvent) {
 			String name = ((Component) actionEvent.getSource()).getName();
@@ -626,25 +632,25 @@ public class TTYZ80 extends DeviceZ80 implements Runnable {
 			byteToCPU((byte) keyEvent.getKeyChar());
 			showStatus(keyEvent.getKeyChar());
 		}// keyTyped
-		
-		
+
 		/* FocusListener */
 
 		@Override
 		public void focusGained(FocusEvent focusEvent) {
-			textScreen.getCaret().setVisible(true);			
-		}//focusGained
+			textScreen.getCaret().setVisible(true);
+		}// focusGained
 
 		@Override
 		public void focusLost(FocusEvent focusEvent) {
-			textScreen.getCaret().setVisible(false);			
-		}//focusLost
+			textScreen.getCaret().setVisible(false);
+		}// focusLost
 
 	}// class AdapterTTY
 
 	public static final Byte IN = (byte) 0X0EC;
 	public static final Byte OUT = (byte) 0X0EC;
 	public static final Byte STATUS = (byte) 0X0ED;
+	private static final Byte STATUS_RESPONSE = (byte) 0X03;
 
 	// private static final String EMPTY_STRING = "";
 	private static final String SPACE = " ";
@@ -687,5 +693,17 @@ public class TTYZ80 extends DeviceZ80 implements Runnable {
 	public Byte getAddressStatus() {
 		return STATUS;
 	}// getAddressStatus
+
+	@Override
+	public void statusRequest(Byte value) {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public void statusResponse(Byte value) {
+		// TODO Auto-generated method stub
+
+	}
 
 }// class TTY
