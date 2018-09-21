@@ -35,6 +35,10 @@ public class FilterFactory {
 		return new FileNameExtensionFilter("All Collections", FilePicker.COLLECTIONS_MEMORY,FilePicker.COLLECTIONS_LISTING);
 	}// getDisk getListingCollection
 
+	public static FileNameExtensionFilter getPrinterOutput() {
+		return new FileNameExtensionFilter("Z80 Printer output", "txt","log","print");
+	}// getDisk getListingCollection
+
 
 
 }// class FilterFactory

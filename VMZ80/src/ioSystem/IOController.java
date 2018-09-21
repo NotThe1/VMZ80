@@ -8,6 +8,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import codeSupport.AppLogger;
+import ioSystem.listDevice.ListDevice;
 import ioSystem.ttyZ80.TTYZ80;
 
 public class IOController {
@@ -21,7 +22,7 @@ public class IOController {
 	private HashMap<Byte, DevicePipes> devicesStatus = new HashMap<>();
 
 	private TTYZ80 tty = new TTYZ80();
-//	private ListDevice listDevice = new ListDevice();
+	private ListDevice listDevice = new ListDevice();
 
 	public static IOController getInstance() {
 		return instance;
@@ -32,9 +33,9 @@ public class IOController {
 			addDevice(tty);
 			Thread threadTTY = new Thread(tty);
 			threadTTY.start();
-//			addDevice(listDevice);
-//			Thread threadLST = new Thread(listDevice);
-//			threadLST.start();
+			addDevice(listDevice);
+			Thread threadLST = new Thread(listDevice);
+			threadLST.start();
 		} catch (IOException e) {
 			log.error("[IOController.IOController()]  Failed to Add a Device: " + e.getMessage());
 		} // try
@@ -108,11 +109,18 @@ public class IOController {
 			} // if something to read
 		} else if (devicesStatus.containsKey(address)) {  //Status
 			try {
+//				if (address==(byte)0x11){
+//					System.out.printf("[ioc.byteFromDevice] address = %02X%n", address);
+//				}//if
 				DevicePipes device = devicesStatus.get(address);
 				device.os.write(GET_STATUS);
 				device.os.flush();
 				if(device.is.available() >0) {
 					value = (byte) device.is.read();
+					if (address==(byte)0x11){
+						System.out.printf("[ioc.byteFromDevice] addressx = %02X, Value = %02X%n", address,value);
+					}//if
+
 				}else {
 					Thread.sleep(STATUS_DELAY);
 				}//if

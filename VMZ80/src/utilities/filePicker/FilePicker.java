@@ -95,6 +95,17 @@ public class FilePicker {
 	}// getMemory
 
 
+	/* Printer Output*/
+	public static JFileChooser getPrinterOutput(Path newPath) {
+		printerOutputPath = newPath.toString();
+		return getPrinterOutput();
+	}// getPrinterOutput
+
+	public static JFileChooser getPrinterOutput() {
+		return getChooser(printerOutputPath, FilterFactory.getPrinterOutput(), false);
+	}// getPrinterOutput
+
+
 	////////////////////////////////////////////////////////////////////////////////
 	public FilePicker() {
 	}// Constructor
@@ -120,24 +131,13 @@ public class FilePicker {
 		return fileChooser;
 	}// customiseChooser
 
-	// * private static final String DATA_NAME = "VMdata";
 	private static final String DIR_PARENT = "Z80Work";
-	// * private static final String DISK_NAME = "Disks";
 	private static final String DIR_DISK = "Disks";
-	// * private static final String MEMORY_NAME = "Memory";
 	private static final String DIR_MEMORY = "Memory";
-	// * private static final String ASM_NAME = "Asm";
 	private static final String DIR_CODE = "Code";
-	// private static final String Z80_NAME = "Z80";
-	// * private static final String LISTS = "Lists";
 	private static final String DIR_COLLECTIONS = "Collections";
-	// private static final String CPM_LISTING = "cpmListings";
-	// private static final String CODE_PATH = "C:\\Users\\admin\\git\\assemblerZ80\\assemblerZ80\\Code";
-	//
-	// public static final String LIST_ASM_SUFFIX = "ListAsm";
-	// public static final String LIST_Z80_SUFFIX = "ListZ80";
-	// public static final String LIST_MEM_SUFFIX = "ListMem";
-	// public static final String LISTING_SUFFIX = "txt";
+	private static final String DIR_PRINT_OUTPUT = "PrintOutput";
+
 	public static final String COLLECTIONS_LISTING = "colListing";
 	public static final String COLLECTIONS_MEMORY = "colMemory";
 	//
@@ -145,15 +145,10 @@ public class FilePicker {
 	private static String fileSeparator = System.getProperty("file.separator", "\\");
 	private static String parentDirectory = userDirectory + fileSeparator + DIR_PARENT + fileSeparator;
 	//
-	// private static String dataPath = baseDirectory + DATA_NAME;
-	// * private static String diskPath = baseDirectory + DISK_NAME;
 	private static String pathDisk = parentDirectory + DIR_DISK;
-	// * private static String memoryPath = baseDirectory + MEMORY_NAME;
 	private static String pathMemory = parentDirectory + DIR_MEMORY;
-	// * private static String asmPath = baseDirectory + ASM_NAME;
 	private static String pathCode = parentDirectory + DIR_CODE;
-	// private static String z80Path = baseDirectory + Z80_NAME;
-	// * private static String listPath = baseDirectory + LISTS;
 	private static String collectionsPath = parentDirectory + DIR_COLLECTIONS;
+	private static String printerOutputPath = parentDirectory + DIR_PRINT_OUTPUT;
 
 }// class FilePicker1
