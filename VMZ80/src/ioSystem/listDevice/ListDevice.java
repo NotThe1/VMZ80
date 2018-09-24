@@ -1,11 +1,13 @@
 package ioSystem.listDevice;
 
 import java.awt.Component;
+import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.GridLayout;
 import java.awt.Insets;
+import java.awt.Point;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.print.PrinterException;
@@ -298,7 +300,7 @@ public class ListDevice extends DeviceZ80 implements Runnable {
 				end = aLine.getEndOffset() - 1;
 				theLine = doc.getText(start, end - start); // Strip LF
 				bufferedWriter.write(theLine + System.lineSeparator());
-//				System.out.printf("start = %d, end = %d, text = %s%n", start, end, doc.getText(start, end - start));
+				// System.out.printf("start = %d, end = %d, text = %s%n", start, end, doc.getText(start, end - start));
 				aLine = elementIterator.next();
 			} // while
 			bufferedWriter.close();
@@ -310,12 +312,40 @@ public class ListDevice extends DeviceZ80 implements Runnable {
 
 	}// saveToFile
 
+	@Override
+	public void setVisible(boolean state) {
+		frameLST.setVisible(state);
+	}// setVisible
+
+	@Override
+	public boolean isVisible() {
+		return frameLST.isVisible();
+	}// isVisible
+
 	//////////////////////////////////////////////////////////
 	public void close() {
 		appClose();
 	}// close
 
 	private void appInit() {
+		Preferences myPrefs = Preferences.userNodeForPackage(ListDevice.class).node(this.getClass().getSimpleName());
+		frameLST.setSize(myPrefs.getInt("Width", 761), myPrefs.getInt("Height", 693));
+		frameLST.setLocation(myPrefs.getInt("LocX", 100), myPrefs.getInt("LocY", 100));
+
+		tabSize = myPrefs.getInt("tabSize", 9); // default for CP/M
+
+		maxColumn = (myPrefs.getInt("maxColumns", 80));
+		limitColumns = myPrefs.getBoolean("limitColumns", false);
+		int style = FontChooser.getStyleFromText(myPrefs.get("fontFamily", "Plain"));
+
+		Font newFont = new Font(myPrefs.get("fontFamily", "Courier New"), style, myPrefs.getInt("fontSize", 13));
+		textAreaList.setFont(newFont);
+		myPrefs = null;
+
+		Font f = textAreaList.getFont();
+
+		System.out.printf("[loadProperties] Font family = %s, Font Size = %d%n", f.getFamily(), f.getSize());
+
 		doc = textAreaList.getDocument();
 		loadProperties();
 		frameLST.setVisible(true);
@@ -323,6 +353,12 @@ public class ListDevice extends DeviceZ80 implements Runnable {
 
 	private void appClose() {
 		Preferences myPrefs = Preferences.userNodeForPackage(ListDevice.class).node(this.getClass().getSimpleName());
+		Dimension dim = frameLST.getSize();
+		myPrefs.putInt("Height", dim.height);
+		myPrefs.putInt("Width", dim.width);
+		Point point = frameLST.getLocation();
+		myPrefs.putInt("LocX", point.x);
+		myPrefs.putInt("LocY", point.y);
 
 		myPrefs.putInt("tabSize", tabSize);
 
@@ -581,12 +617,12 @@ public class ListDevice extends DeviceZ80 implements Runnable {
 	public void statusRequest(Byte value) {
 		// TODO Auto-generated method stub
 
-	}
+	}//
 
 	@Override
 	public void statusResponse(Byte value) {
 		// TODO Auto-generated method stub
 
-	}
+	}//
 
 }// class ListDevice

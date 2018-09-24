@@ -87,5 +87,9 @@ abstract public class DeviceZ80 {
 	abstract public void statusResponse(Byte value);
 
 	abstract public void close();
+	
+	abstract public void setVisible(boolean state);
+	
+	abstract public boolean isVisible();
 
 }// class DeviceZ80

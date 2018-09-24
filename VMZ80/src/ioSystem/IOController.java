@@ -86,6 +86,27 @@ public class IOController {
 			} // if
 		} // for each device
 	}// close
+	
+	public boolean isVisible(String deviceName) {
+		for (DeviceZ80 d :devicePopulation) {
+			if (d.getName().equals(deviceName)){
+				return d.isVisible();
+			}// if
+		}//for
+		log.warnf("device: %s not found for isVisible%n", deviceName);
+		return false; // default to not visible
+	}//is visible
+	
+	public void setVisible(String deviceName, boolean state) {
+		for (DeviceZ80 d :devicePopulation) {
+			if (d.getName().equals(deviceName)){
+				d.setVisible(state);
+				return;
+			}// if
+		}//for
+		log.warnf("device: %s not found for setVisible %s%n", deviceName,state);
+		return;
+	}//setVisible
 
 	public void byteToDevice(byte address, byte value) {
 		if (devicesOutput.containsKey(address)) {
@@ -162,40 +183,7 @@ public class IOController {
 	}//class DevicePipes{
 	
 	
-//	class DeviceByteToCPU {
-//		public DeviceZ80 device;
-//		public PipedInputStream is;
-//
-//		public DeviceByteToCPU(DeviceZ80 device, PipedInputStream is) {
-//			this.device = device;
-//			this.is = is;
-//		}// Constructor
-//	}// class DeviceInputStatus
-//
-//	/* this is really just a structure */
-//	class DeviceByteFromCPU {
-//		public DeviceZ80 device;
-//		public PipedOutputStream os;
-//
-//		public DeviceByteFromCPU(DeviceZ80 device, PipedOutputStream os) {
-//			this.device = device;
-//			this.os = os;
-//		}// Constructor
-//	}// class DeviceOutput
-//	
-//	/* this is really just a structure */
-//	class DeviceStatus {
-//		public DeviceZ80 device;
-//		public PipedInputStream is;
-//		public PipedOutputStream os;
-//
-//		public DeviceStatus(DeviceZ80 device, PipedOutputStream os,PipedInputStream is) {
-//			this.device = device;
-//			this.is = is;
-//			this.os = os;
-//		}// Constructor
-//	}// class DeviceAskForStatus
-//	
+
 	public static final byte GET_STATUS = (byte) 0xFF;
 
 	

@@ -279,6 +279,18 @@ public class TTYZ80 extends DeviceZ80 implements Runnable {
 		textScreen.getCaret().setVisible(false);
 
 	}// setupScreen
+	
+	@Override
+	public void setVisible(boolean state) {
+		frameTTY.setVisible(state);		
+	}//setVisible
+
+	@Override
+	public boolean isVisible() {
+		return frameTTY.isVisible();
+	}//isVisible
+
+
 
 	public void close() {
 		appClose();
