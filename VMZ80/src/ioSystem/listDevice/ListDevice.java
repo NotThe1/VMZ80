@@ -214,7 +214,7 @@ public class ListDevice extends DeviceZ80 implements Runnable {
 
 		Font f = textAreaList.getFont();
 
-		System.out.printf("[loadProperties] Font family = %s, Font Size = %d%n", f.getFamily(), f.getSize());
+//		System.out.printf("[loadProperties] Font family = %s, Font Size = %d%n", f.getFamily(), f.getSize());
 	}// loadProperties
 
 	private void displayPrintable(String s) {
@@ -344,7 +344,7 @@ public class ListDevice extends DeviceZ80 implements Runnable {
 
 		Font f = textAreaList.getFont();
 
-		System.out.printf("[loadProperties] Font family = %s, Font Size = %d%n", f.getFamily(), f.getSize());
+//		System.out.printf("[loadProperties] Font family = %s, Font Size = %d%n", f.getFamily(), f.getSize());
 
 		doc = textAreaList.getDocument();
 		loadProperties();

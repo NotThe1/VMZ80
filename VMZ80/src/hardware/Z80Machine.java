@@ -132,7 +132,7 @@ public class Z80Machine {
 		} else {
 			System.out.println("actionPerformed: doStop");
 			CentralProcessingUnit.setError(ErrorStatus.HALT_INSTRUCTION);
-//			CentralProcessingUnit.setError(ErrorStatus.NONE);
+			// CentralProcessingUnit.setError(ErrorStatus.NONE);
 			updateDisplaysMaster();
 		} // if
 
@@ -216,6 +216,22 @@ public class Z80Machine {
 		ifSpecialRegisters.updateDisplay();
 		ifCCR.updateDisplay();
 	}// updateDisplaysMaster
+
+	private void doDeviceToggle(String name) {
+		String deviceName;
+		switch (name) {
+		case MNU_WINDOW_LST:
+			deviceName = "lst";
+			break;
+		case MNU_WINDOW_TTY:
+			deviceName = "tty";
+			break;
+		default:
+			log.warnf("unknown device: %s for toggle%n", name);
+			return;
+		}// switch
+		ioc.setVisible(deviceName, !ioc.isVisible(deviceName));
+	}// doDeviceToggle
 
 	private void doWindowToggle(String name) {
 		Component target = null;
@@ -380,6 +396,7 @@ public class Z80Machine {
 		saveInternalFrameLocations(myPrefs);
 		saveTabDialogState(myPrefs);
 
+		myPrefs.put("VisibleDevices", ioc.getVisibleDevices());
 		myPrefs = null;
 
 		dcu.close();
@@ -401,6 +418,9 @@ public class Z80Machine {
 		frameBase.setBounds(frameBounds);
 		restoreInternalFrameLocations(myPrefs);
 		restoreTabDialogState(myPrefs);
+		
+		ioc.setVisibleDevices(myPrefs.get("VisibleDevices", ""));
+		
 		myPrefs = null;
 
 		dcu.setDisplay(ifDiskPanel);
@@ -655,13 +675,26 @@ public class Z80Machine {
 		JMenuItem mnuWindowPrimaryRegisters = new JMenuItem("Primary Registers");
 		mnuWindowPrimaryRegisters.addActionListener(applicationAdapter);
 
-		JMenuItem mnuWindowZ80Support = new JMenuItem("Z80 Support");
+		JMenuItem mnuWindowZ80Support = new JMenuItem("Z80 Machine Support");
 		mnuWindowZ80Support.setName(MNU_WINDOW_Z80_SUPPORT);
 		mnuWindowZ80Support.addActionListener(applicationAdapter);
+
+		JMenuItem mnuWindowsLST = new JMenuItem("List Device");
+		mnuWindowsLST.setName(MNU_WINDOW_LST);
+		mnuWindowsLST.addActionListener(applicationAdapter);
+		mnuWindow.add(mnuWindowsLST);
+
+		JMenuItem mnuWindowsTTY = new JMenuItem("TTY Device");
+		mnuWindowsTTY.setName(MNU_WINDOW_TTY);
+		mnuWindowsTTY.addActionListener(applicationAdapter);
+		mnuWindow.add(mnuWindowsTTY);
 		mnuWindow.add(mnuWindowZ80Support);
 
 		JSeparator separator = new JSeparator();
 		mnuWindow.add(separator);
+
+		JSeparator separator_4 = new JSeparator();
+		mnuWindow.add(separator_4);
 		mnuWindowPrimaryRegisters.setName(MNU_WINDOW_PRIMARY_REGISTERS);
 		mnuWindow.add(mnuWindowPrimaryRegisters);
 
@@ -727,6 +760,9 @@ public class Z80Machine {
 	private static final String MNU_WINDOW_SPECIAL_REGISTERS = "mnuWindowsSpecialRegisters";
 	private static final String MNU_WINDOW_CONDITION_CODES = "mnuWindowsConditionCodes";
 	private static final String MNU_WINDOW_RESET = "mnuWindowsReset";
+
+	private static final String MNU_WINDOW_TTY = "mnuWindowsTTY";
+	private static final String MNU_WINDOW_LST = "mnuWindowsLST";
 
 	private static final String MNU_TOOLS_DISK_UTILITY = "mnuToolsDiskUtility";
 	private static final String MNU_TOOLS_DISK_NEW = "mnuToolsDiskNew";
@@ -794,6 +830,10 @@ public class Z80Machine {
 
 			/* Menu - Windows */
 
+			case MNU_WINDOW_LST:
+			case MNU_WINDOW_TTY:
+				doDeviceToggle(name);
+				break;
 			case MNU_WINDOW_PRIMARY_REGISTERS:
 			case MNU_WINDOW_PROGRAM_CONTROL:
 			case MNU_WINDOW_INDEX_REGISTERS:

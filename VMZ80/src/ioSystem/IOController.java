@@ -107,6 +107,34 @@ public class IOController {
 		log.warnf("device: %s not found for setVisible %s%n", deviceName,state);
 		return;
 	}//setVisible
+	
+	public String getVisibleDevices() {
+		String ans = "";
+		for (DeviceZ80 d :devicePopulation) {
+			if (d.isVisible()){
+				ans += "|"+d.getName();
+			}// if
+		}//for
+		System.out.printf("[IOController.getVisibleDevices] %s%n", ans);
+		return ans;
+	}//getVisibleDevices
+	
+	public void setVisibleDevices(String deviceSet) {
+		setDevicesVisible(false);
+		String devices[] = deviceSet.split("\\|");
+		for (String deviceName:devices) {
+			if (deviceName=="") {
+				continue;
+			}//if
+			setVisible(deviceName,true);
+		}//for
+	}//setVisibleDevices
+	
+	private void setDevicesVisible(boolean state) {
+		for (DeviceZ80 d :devicePopulation) {
+			d.setVisible(state);
+		}//for
+	}//setDevicesVisible
 
 	public void byteToDevice(byte address, byte value) {
 		if (devicesOutput.containsKey(address)) {
