@@ -41,11 +41,11 @@ public class IOController {
 		} // try
 	}// Constructor
 
-	private void addDevice(DeviceZ80 device) throws IOException {//TTYZ80
-		
+	private void addDevice(DeviceZ80 device) throws IOException {// TTYZ80
+
 		if (device.getAddressIn() != null) {// IN Command data to CPU
-			PipedOutputStream dataToCpuSender = new PipedOutputStream(); 
-			PipedInputStream dataToCpuReceiver = new PipedInputStream(dataToCpuSender);	
+			PipedOutputStream dataToCpuSender = new PipedOutputStream();
+			PipedInputStream dataToCpuReceiver = new PipedInputStream(dataToCpuSender);
 			devicesInput.put(device.getAddressIn(), new DevicePipes(device, dataToCpuReceiver));
 			device.setDataToCpuSender(dataToCpuSender);
 			device.setDataToCpuReceiver(dataToCpuReceiver);
@@ -57,20 +57,17 @@ public class IOController {
 			devicesOutput.put(device.getAddressOut(), new DevicePipes(device, dataFromCpuPutter));
 			device.setDataFromCpuReceiver(dataFromCpuGetter);
 		} // if input
-		
 
 		if (device.getAddressStatus() != null) {
 			PipedOutputStream statusRequestSender = new PipedOutputStream();// from CPU
 			PipedInputStream statusRequestReceiver = new PipedInputStream(statusRequestSender);
-			
-			
-			PipedOutputStream statusResponseSender = new PipedOutputStream();
-			PipedInputStream  statusResponseReceiver= new PipedInputStream(statusResponseSender);
 
+			PipedOutputStream statusResponseSender = new PipedOutputStream();
+			PipedInputStream statusResponseReceiver = new PipedInputStream(statusResponseSender);
 
 			devicesStatus.put(device.getAddressStatus(),
-					new DevicePipes(device,statusResponseReceiver, statusRequestSender));
-			
+					new DevicePipes(device, statusResponseReceiver, statusRequestSender));
+
 			device.setStatusRequestReceiver(statusRequestReceiver);
 			device.setStatusResponseSender(statusResponseSender);
 			
@@ -79,6 +76,7 @@ public class IOController {
 	}// addDevice
 
 	public void close() {
+//		System.err.printf("[IOController.close] - %s%n" , "Close");
 		for (DeviceZ80 d : devicePopulation) {
 			if (d != null) {
 				d.close();
@@ -86,55 +84,55 @@ public class IOController {
 			} // if
 		} // for each device
 	}// close
-	
+
 	public boolean isVisible(String deviceName) {
-		for (DeviceZ80 d :devicePopulation) {
-			if (d.getName().equals(deviceName)){
+		for (DeviceZ80 d : devicePopulation) {
+			if (d.getName().equals(deviceName)) {
 				return d.isVisible();
-			}// if
-		}//for
+			} // if
+		} // for
 		log.warnf("device: %s not found for isVisible%n", deviceName);
 		return false; // default to not visible
-	}//is visible
-	
+	}// is visible
+
 	public void setVisible(String deviceName, boolean state) {
-		for (DeviceZ80 d :devicePopulation) {
-			if (d.getName().equals(deviceName)){
+		for (DeviceZ80 d : devicePopulation) {
+			if (d.getName().equals(deviceName)) {
 				d.setVisible(state);
 				return;
-			}// if
-		}//for
-		log.warnf("device: %s not found for setVisible %s%n", deviceName,state);
+			} // if
+		} // for
+		log.warnf("device: %s not found for setVisible %s%n", deviceName, state);
 		return;
-	}//setVisible
-	
+	}// setVisible
+
 	public String getVisibleDevices() {
 		String ans = "";
-		for (DeviceZ80 d :devicePopulation) {
-			if (d.isVisible()){
-				ans += "|"+d.getName();
-			}// if
-		}//for
+		for (DeviceZ80 d : devicePopulation) {
+			if (d.isVisible()) {
+				ans += "|" + d.getName();
+			} // if
+		} // for
 		System.out.printf("[IOController.getVisibleDevices] %s%n", ans);
 		return ans;
-	}//getVisibleDevices
-	
+	}// getVisibleDevices
+
 	public void setVisibleDevices(String deviceSet) {
 		setDevicesVisible(false);
 		String devices[] = deviceSet.split("\\|");
-		for (String deviceName:devices) {
-			if (deviceName=="") {
+		for (String deviceName : devices) {
+			if (deviceName == "") {
 				continue;
-			}//if
-			setVisible(deviceName,true);
-		}//for
-	}//setVisibleDevices
-	
+			} // if
+			setVisible(deviceName, true);
+		} // for
+	}// setVisibleDevices
+
 	private void setDevicesVisible(boolean state) {
-		for (DeviceZ80 d :devicePopulation) {
+		for (DeviceZ80 d : devicePopulation) {
 			d.setVisible(state);
-		}//for
-	}//setDevicesVisible
+		} // for
+	}// setDevicesVisible
 
 	public void byteToDevice(byte address, byte value) {
 		if (devicesOutput.containsKey(address)) {
@@ -150,69 +148,67 @@ public class IOController {
 	}// byteToDevice
 
 	public Byte byteFromDevice(Byte address) throws IOException {
-		 int STATUS_DELAY = 8;
+		int STATUS_DELAY = 7;
 		Byte value = 0x00;
-		if (devicesInput.containsKey(address)) { //data
+		if (devicesInput.containsKey(address)) { // data
 			if (devicesInput.get(address).is.available() > 0) {
 				value = (byte) devicesInput.get(address).is.read();
 			} // if something to read
-		} else if (devicesStatus.containsKey(address)) {  //Status
-			try {
-//				if (address==(byte)0x11){
-//					System.out.printf("[ioc.byteFromDevice] address = %02X%n", address);
-//				}//if
-				DevicePipes device = devicesStatus.get(address);
-				device.os.write(GET_STATUS);
-				device.os.flush();
-				if(device.is.available() >0) {
-					value = (byte) device.is.read();
-					if (address==(byte)0x11){
-						System.out.printf("[ioc.byteFromDevice] addressx = %02X, Value = %02X%n", address,value);
-					}//if
+		} else if (devicesStatus.containsKey(address)) { // Status
+			DevicePipes device = devicesStatus.get(address);
+			if (device.device.getName().equals("tty")) {
+				value = (byte) (device.device.dataToCpuReceiver.available() + 1);
+			} else {
 
-				}else {
-					Thread.sleep(STATUS_DELAY);
-				}//if
-				
-				if(device.is.available() >0) {
-					value = (byte) device.is.read();
-				}else {
-					log.errorf("device %02X has timed out on Status Read%n", address);
-				}//if
-			} catch (Exception e) {
-//				e.printStackTrace();
-//				System.exit(-1);
-			} // try
+				try {
+					device.os.write(GET_STATUS);
+					device.os.flush();
+					if (device.is.available() > 0) {
+						value = (byte) device.is.read();
+						if (address == (byte) 0x11) {
+							System.out.printf("[ioc.byteFromDevice] addressx = %02X, Value = %02X%n", address, value);
+						} // if
+					} else {
+						Thread.sleep(STATUS_DELAY);
+					} // if
 
+					if (device.is.available() > 0) {
+						value = (byte) device.is.read();
+					} else {
+						// log.errorf("device %02X has timed out on Status Read%n", address);
+					} // if
+
+				} catch (Exception e) {
+					// e.printStackTrace();
+					// System.exit(-1);
+				} // try
+			} // if tty
 		} // if input device
 		return value;
 	}// byteFromDevice
-	
-	
+
 	/* this is really just a structure */
-	class DevicePipes{
+	class DevicePipes {
 		public DeviceZ80 device;
 		public PipedInputStream is;
 		public PipedOutputStream os;
 
-		public DevicePipes(DeviceZ80 device,PipedInputStream is, PipedOutputStream os) {
+		public DevicePipes(DeviceZ80 device, PipedInputStream is, PipedOutputStream os) {
 			this.device = device;
 			this.is = is;
 			this.os = os;
 		}// Constructor
-		public DevicePipes(DeviceZ80 device,PipedInputStream is ) {
-			this(device,is,null);
-		}// Constructor
-		public DevicePipes(DeviceZ80 device, PipedOutputStream os) {
-			this(device,null,os);
+
+		public DevicePipes(DeviceZ80 device, PipedInputStream is) {
+			this(device, is, null);
 		}// Constructor
 
-		
-	}//class DevicePipes{
-	
-	
+		public DevicePipes(DeviceZ80 device, PipedOutputStream os) {
+			this(device, null, os);
+		}// Constructor
+
+	}// class DevicePipes{
 
 	public static final byte GET_STATUS = (byte) 0xFF;
 
-	
 }// class IOController

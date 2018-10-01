@@ -68,15 +68,15 @@ public class TTYZ80 extends DeviceZ80 implements Runnable {
 					byteFromCPU((byte) dataFromCpuReceiver.read());
 				} // while
 
-				if (statusRequestReceiver.available() != 0) { // Status
-					byte statusRequest[] = new byte[1];
-					statusRequestReceiver.read(statusRequest);
-					byte count = (byte) (dataToCpuReceiver.available() +1);
-//					System.out.printf("Request = %02X,Response = %02X, pipeStatusRequest.available() = %d%n",
-//							statusRequest[0],count,	statusRequestReceiver.available());
-					statusResponseSender.write(count);
-					statusResponseSender.flush();
-				} // if status request
+//				if (statusRequestReceiver.available() != 0) { // Status
+//					byte statusRequest[] = new byte[1];
+//					statusRequestReceiver.read(statusRequest);
+//					byte count = (byte) (dataToCpuReceiver.available() +1);
+////					System.out.printf("Request = %02X,Response = %02X, pipeStatusRequest.available() = %d%n",
+////							statusRequest[0],count,	statusRequestReceiver.available());
+//					statusResponseSender.write(count);
+//					statusResponseSender.flush();
+//				} // if status request
 
 				Thread.sleep(delay);
 
