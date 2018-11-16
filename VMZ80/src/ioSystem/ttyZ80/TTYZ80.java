@@ -16,7 +16,8 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.io.IOException;
+import java.util.LinkedList;
+import java.util.Queue;
 import java.util.prefs.Preferences;
 
 import javax.swing.Box;
@@ -58,45 +59,36 @@ public class TTYZ80 extends DeviceZ80 implements Runnable {
 	private int maxColumn;
 	private boolean truncateColumns;
 	private int tabSize;
+	private Queue<Byte> internalBuffer = new LinkedList<Byte>();
 
 	public void run() {
 		long delay = 5;
 		while (true) {
+			if (statusFromCPU.size() > 0) {
+				statusFromCPU.poll();
+				statusToCPU.offer((byte) dataToCPU.size());
+			} // if Status request
+
+			if (dataFromCPU.size() > 0) {
+				byteFromCPU(dataFromCPU.poll());
+			} // if byte to read
+
 			try {
-				while (dataFromCpuReceiver.available() != 0) { // Data
-					// System.out.println("data request");
-					byteFromCPU((byte) dataFromCpuReceiver.read());
-				} // while
-
-//				if (statusRequestReceiver.available() != 0) { // Status
-//					byte statusRequest[] = new byte[1];
-//					statusRequestReceiver.read(statusRequest);
-//					byte count = (byte) (dataToCpuReceiver.available() +1);
-////					System.out.printf("Request = %02X,Response = %02X, pipeStatusRequest.available() = %d%n",
-////							statusRequest[0],count,	statusRequestReceiver.available());
-//					statusResponseSender.write(count);
-//					statusResponseSender.flush();
-//				} // if status request
-
 				Thread.sleep(delay);
-
-			} catch (IOException | InterruptedException e) {
-				log.error("[TTYZ80.run()]  IOException: " + e.getMessage());
-				// e.printStackTrace();
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
 			} // try
-		} // while
 
+			while (internalBuffer.size() != 0) {
+				dataToCPU.offer(internalBuffer.poll());
+			} // while data
+		} // while - true
 	}// run
 
 	@Override
 	public void byteToCPU(Byte value) {
-		try {
-			this.dataToCpuSender.write(value);
-			// this.pipeIn.flush();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} // try
+		dataToCPU.offer(value);
 	}// byteToCPU
 
 	@Override
@@ -205,12 +197,7 @@ public class TTYZ80 extends DeviceZ80 implements Runnable {
 	}// doClearScreen
 
 	private void doClearInBuffer() {
-		try {
-			dataFromCpuReceiver.skip(dataFromCpuReceiver.available());
-		} catch (IOException e) {
-			log.error("[TTYZ80.run()]  IOException: " + e.getMessage());
-			// e.printStackTrace();
-		} // try
+		dataFromCPU.clear();
 	}// doClearInBuffer
 
 	private void doColumnBehavior() {
@@ -279,18 +266,16 @@ public class TTYZ80 extends DeviceZ80 implements Runnable {
 		textScreen.getCaret().setVisible(false);
 
 	}// setupScreen
-	
+
 	@Override
 	public void setVisible(boolean state) {
-		frameTTY.setVisible(state);		
-	}//setVisible
+		frameTTY.setVisible(state);
+	}// setVisible
 
 	@Override
 	public boolean isVisible() {
 		return frameTTY.isVisible();
-	}//isVisible
-
-
+	}// isVisible
 
 	public void close() {
 		appClose();
@@ -352,12 +337,16 @@ public class TTYZ80 extends DeviceZ80 implements Runnable {
 
 	/**
 	 * Create the application.
+	 * 
+	 * @wbp.parser.entryPoint
 	 */
-	public TTYZ80() {
-		super("tty", IN, OUT, STATUS);
+	/* @formatter:off */
+	public TTYZ80(String name,Byte addressIn,Byte addressOut,Byte addressStatus){
+		super(name,addressIn,addressOut,addressStatus);
 		initialize();
 		appInit();
 	}// Constructor
+/* @formatter:on  */
 
 	/**
 	 * Initialize the contents of the frame.
@@ -641,7 +630,8 @@ public class TTYZ80 extends DeviceZ80 implements Runnable {
 
 		@Override
 		public void keyTyped(KeyEvent keyEvent) {
-			byteToCPU((byte) keyEvent.getKeyChar());
+			internalBuffer.offer((byte) keyEvent.getKeyChar());
+			// byteToCPU((byte) keyEvent.getKeyChar());byteToCPU(internalBuffer.poll();
 			showStatus(keyEvent.getKeyChar());
 		}// keyTyped
 
@@ -706,16 +696,7 @@ public class TTYZ80 extends DeviceZ80 implements Runnable {
 		return STATUS;
 	}// getAddressStatus
 
-	@Override
-	public void statusRequest(Byte value) {
-		// TODO Auto-generated method stub
 
-	}
-
-	@Override
-	public void statusResponse(Byte value) {
-		// TODO Auto-generated method stub
-
-	}
+	
 
 }// class TTY

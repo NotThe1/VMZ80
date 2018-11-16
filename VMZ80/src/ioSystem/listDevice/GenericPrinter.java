@@ -13,8 +13,6 @@ import java.awt.event.ActionListener;
 import java.awt.print.PrinterException;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.text.MessageFormat;
 import java.util.Date;
 import java.util.prefs.Preferences;
@@ -36,13 +34,12 @@ import javax.swing.text.ElementIterator;
 
 import codeSupport.ASCII_CODES;
 import codeSupport.AppLogger;
-import ioSystem.DeviceZ80A;
+import ioSystem.DeviceZ80;
 import utilities.filePicker.FilePicker;
 import utilities.fontChooser.FontChooser;
 
-public class GenericPrinter extends DeviceZ80A implements Runnable {
+public class GenericPrinter extends DeviceZ80 implements Runnable {
 
-	private static final long serialVersionUID = 1L;
 	private ApplicationAdapter adapterApplication = new ApplicationAdapter();
 	AppLogger log = AppLogger.getInstance();
 
@@ -55,18 +52,8 @@ public class GenericPrinter extends DeviceZ80A implements Runnable {
 	private JTextArea textAreaList;
 	private Document doc;
 	private JFrame frameLST;
-	private Path newListingPath = Paths.get("."); // location to save listing to file
+//	private Path newListingPath = Paths.get("."); // location to save listing to file
 
-	// public static void main(String[] args) {
-	// try {
-	// ListDevice frameLST = new ListDevice();
-	// frameLST.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
-	// frameLST.setVisible(true);
-	// } catch (Exception e) {
-	// e.printStackTrace();
-	// } // try
-	// }// main
-	///////////////////////////////////////////////////////////
 
 	public void run() {
 		long delay = 5;
@@ -131,22 +118,10 @@ public class GenericPrinter extends DeviceZ80A implements Runnable {
 				display(Character.toString(c));
 				break;
 			case ASCII_CODES.CR: // ignore CR
-				// Element rootElement = doc.getDefaultRootElement();
-				// Element lastElement = rootElement.getElement(rootElement.getElementCount() - 1);
-				// int start = lastElement.getStartOffset();
-				// int end = lastElement.getEndOffset();
-				// try {
-				// System.out.printf("lastEmement = %s%n", doc.getText(start, end - start));
-				// } catch (BadLocationException e) {
-				//
-				// e.printStackTrace();
-				// }
-				// System.out.printf("Start = %d, End =%d, size = %d%n%n", start, end, end - start);
-				//
-				// // display(Character.toString(c));
+				// Ignore CR
 				break;
 			default:
-
+				// Ignore
 				break;
 			}// switch
 
@@ -171,13 +146,7 @@ public class GenericPrinter extends DeviceZ80A implements Runnable {
 
 	@Override
 	public void byteToCPU(Byte value) {
-		// try {
-		// this.pipeIn.write((byte) 0xFF);
-		// // this.pipeIn.flush();
-		// } catch (IOException e) {
-		// // TODO Auto-generated catch block
-		// e.printStackTrace();
-		// } // try
+		// Printers do not send data to the CPU
 	}// byteToCPU
 
 	public void doProperties() {
@@ -205,7 +174,7 @@ public class GenericPrinter extends DeviceZ80A implements Runnable {
 		textAreaList.setFont(newFont);
 		myPrefs = null;
 
-		Font f = textAreaList.getFont();
+//		Font f = textAreaList.getFont();
 
 		// System.out.printf("[loadProperties] Font family = %s, Font Size = %d%n", f.getFamily(), f.getSize());
 	}// loadProperties
@@ -274,7 +243,7 @@ public class GenericPrinter extends DeviceZ80A implements Runnable {
 			System.out.println("Bailed out of the open");
 			return;
 		} // if - open
-		newListingPath = Paths.get(fc.getSelectedFile().getParent());
+//		newListingPath = Paths.get(fc.getSelectedFile().getParent());
 
 		String listingFile = fc.getSelectedFile().getAbsolutePath();
 
@@ -336,8 +305,7 @@ public class GenericPrinter extends DeviceZ80A implements Runnable {
 		textAreaList.setFont(newFont);
 		myPrefs = null;
 
-		Font f = textAreaList.getFont();
-
+//		Font f = textAreaList.getFont();
 		// System.out.printf("[loadProperties] Font family = %s, Font Size = %d%n", f.getFamily(), f.getSize());
 
 		doc = textAreaList.getDocument();
@@ -606,17 +574,5 @@ public class GenericPrinter extends DeviceZ80A implements Runnable {
 		}// actionPerformed
 
 	}// class ApplicationAdapter
-
-	@Override
-	public void statusRequest(Byte value) {
-		// TODO Auto-generated method stub
-
-	}//
-
-	@Override
-	public void statusResponse(Byte value) {
-		// TODO Auto-generated method stub
-
-	}//
 
 }// class ListDevice

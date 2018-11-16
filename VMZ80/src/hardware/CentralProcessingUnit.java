@@ -1,7 +1,5 @@
 package hardware;
 
-import java.io.IOException;
-
 import codeSupport.AppLogger;
 import codeSupport.Z80;
 import codeSupport.Z80.ConditionCode;
@@ -1179,17 +1177,17 @@ public class CentralProcessingUnit implements Runnable {
 			case 2: // OUT (n),A - D3
 				instructionSize = 2;
 				Byte IOaddress = cpuBuss.read(wrs.getProgramCounter() + 1);
-				ioc.byteToDevice(IOaddress, wrs.getReg(Register.A));
+				ioc.byteFromCPU(IOaddress, wrs.getReg(Register.A));
 				break;
 			case 3: // IN A,(n) - DB
 				instructionSize = 2;
 				IOaddress = cpuBuss.read(wrs.getProgramCounter() + 1);
-				try {
-					wrs.setReg(Register.A, ioc.byteFromDevice(IOaddress));
-				} catch (IOException e) {
-					log.errorf("Bad IO read from %02XH%n", IOaddress);
-					System.err.print(e.toString());
-				} // try
+					wrs.setReg(Register.A, ioc.byteToCPU(IOaddress));
+//				try {
+//				} catch (IOException e) {
+//					log.errorf("Bad IO read from %02XH%n", IOaddress);
+//					System.err.print(e.toString());
+//				} // try
 
 				break;
 			case 4: // EX (SP),HL - E3

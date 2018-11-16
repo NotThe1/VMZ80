@@ -60,7 +60,7 @@ public class ListDevicePropertyDialog extends JDialog implements ActionListener 
 	}// showDialog
 
 	private void saveProperties() {
-		Preferences myPrefs = Preferences.userNodeForPackage(ListDevice.class).node("ListDevice");
+		Preferences myPrefs = Preferences.userNodeForPackage(GenericPrinter.class).node("ListDevice");
 
 		myPrefs.putInt("tabSize", (int) spinnerTab.getValue());
 
@@ -81,7 +81,7 @@ public class ListDevicePropertyDialog extends JDialog implements ActionListener 
 	}// saveProperties
 
 	private void readProperties() {
-		Preferences myPrefs = Preferences.userNodeForPackage(ListDevice.class).node("ListDevice");
+		Preferences myPrefs = Preferences.userNodeForPackage(GenericPrinter.class).node("ListDevice");
 
 		spinnerTab.setValue(myPrefs.getInt("tabSize", 1)); // default for CP/M
 
