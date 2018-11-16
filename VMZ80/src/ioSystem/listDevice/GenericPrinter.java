@@ -41,7 +41,7 @@ import ioSystem.DeviceZ80A;
 import utilities.filePicker.FilePicker;
 import utilities.fontChooser.FontChooser;
 
-public class GenericPrinter extends DeviceZ80A{// implements Runnable {
+public class GenericPrinter extends DeviceZ80A implements Runnable {
 
 	private static final long serialVersionUID = 1L;
 	private ApplicationAdapter adapterApplication = new ApplicationAdapter();
@@ -69,31 +69,24 @@ public class GenericPrinter extends DeviceZ80A{// implements Runnable {
 	// }// main
 	///////////////////////////////////////////////////////////
 
-//	public void run() {
-//		long delay = 5;
-//		while (true) {
-//			try {
-//				while (dataFromCPU.size() != 0) {
-//					byteFromCPU(dataFromCPU.poll());
-//				} // while
-//
-////				if (statusRequestReceiver.available() != 0) { // Status
-////					byte statusRequest[] = new byte[1];
-////					statusRequestReceiver.read(statusRequest);
-////
-////					statusResponseSender.write(STATUS_RESPONSE);
-////					statusResponseSender.flush();
-//				} // if status request
-//
-//				Thread.sleep(delay);
-//
-//			} catch (IOException | InterruptedException e) {
-//				log.error("[ListDevice.run()]  IOException: " + e.getMessage());
-//				// e.printStackTrace();
-//			} // try
-//		} // while
-//
-//	}// run
+	public void run() {
+		long delay = 5;
+		while (true) {
+			if (statusFromCPU.size() > 0) {
+				statusFromCPU.poll();
+				statusToCPU.offer(STATUS_RESPONSE);
+			} // if Status request
+			while (dataFromCPU.size() != 0) {
+				byteFromCPU(dataFromCPU.poll());
+			} // while
+			try {
+				Thread.sleep(delay);
+			} catch (InterruptedException e) {
+				log.errorf("Timeout - Generic Printer%n");
+			} // try
+		} // while
+
+	}// run
 
 	public void lineFeed() {
 		displayPrintable(Character.toString(ASCII_CODES.LF));
