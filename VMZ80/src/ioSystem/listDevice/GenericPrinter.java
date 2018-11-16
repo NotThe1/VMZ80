@@ -16,7 +16,6 @@ import java.io.FileWriter;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.MessageFormat;
-import java.util.AbstractQueue;
 import java.util.Date;
 import java.util.prefs.Preferences;
 
@@ -387,12 +386,8 @@ public class GenericPrinter extends DeviceZ80A implements Runnable {
 	}// appClose
 
 	/* @formatter:off */
-	public GenericPrinter(String name,byte addressIn,byte addressOut,byte addressStatus,
-			AbstractQueue<Byte> dataToCPU,
-			AbstractQueue<Byte> dataFromCPU,
-			AbstractQueue<Byte> statusToCPU,
-			AbstractQueue<Byte> statusFromCPU) {
-		super(name,addressIn,addressOut,addressStatus,dataToCPU,dataFromCPU,statusToCPU,statusFromCPU);
+	public GenericPrinter(String name,Byte addressIn,Byte addressOut,Byte addressStatus) {
+		super(name,addressIn,addressOut,addressStatus);
 		initialize();
 		appInit();
 	}// Constructor
@@ -570,9 +565,9 @@ public class GenericPrinter extends DeviceZ80A implements Runnable {
 	private static final String SPACE = " "; // Space
 
 	public static final Byte IN = null;
-	public static final Byte OUT = (byte) 0X0EC;
-	public static final Byte STATUS = (byte) 0X0ED;
-	public static final byte STATUS_RESPONSE = (byte) 0XFF;
+	public static final Byte OUT = (byte) 0X010;
+	public static final Byte STATUS = (byte) 0X011;
+	public static final Byte STATUS_RESPONSE = (byte) 0XFF;
 
 	private static final String BTN_LINE_FEED = "btnLineFeed";
 	private static final String BTN_FORM_FEED = "btnFormFeed";

@@ -7,9 +7,9 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.ConcurrentLinkedQueue;
 
 import codeSupport.AppLogger;
+import ioSystem.listDevice.GenericPrinter;
 import ioSystem.ttyZ80.TTYZ80A;
 
 public class IOControllerA {
@@ -23,28 +23,32 @@ public class IOControllerA {
 	private HashMap<Byte, DeviceZ80A> devicesStatus = new HashMap<>();
 
 	private TTYZ80A tty;
-	// private ListDevice listDevice = new ListDevice();
+	private GenericPrinter printer;
 
 	public static IOControllerA getInstance() {
 		return instance;
 	}// getInstance
 
 	private IOControllerA() {
-		tty = makeTTY();
+		tty = new TTYZ80A("tty", TTYZ80A.IN, TTYZ80A.OUT, TTYZ80A.STATUS);
 		try {
 			addDevice(tty);
 			Thread threadTTY = new Thread(tty);
 			threadTTY.start();
-			// addDevice(listDevice);
-			// Thread threadLST = new Thread(listDevice);
-			// threadLST.start();
 		} catch (IOException e) {
-			log.error("[IOController.IOController()]  Failed to Add a Device: " + e.getMessage());
+			log.error("[IOController.IOController()]  Failed to Add a Device: tty " + e.getMessage());
+		} // try
+		printer = new GenericPrinter("printer", GenericPrinter.IN, GenericPrinter.OUT, GenericPrinter.STATUS);
+		try {
+			addDevice(printer);
+			Thread threadPrinter = new Thread(printer);
+			threadPrinter.start();
+		} catch (IOException e) {
+			log.error("[IOController.IOController()]  Failed to Add a Device: printer" + e.getMessage());
 		} // try
 	}// Constructor
 
 	private void addDevice(DeviceZ80A device) throws IOException {// TTYZ80
-		String name = device.getName();
 
 		if (device.getAddressIn() != null) {// IN Command data to CPU
 			devicesInput.put(device.getAddressIn(), device);
@@ -126,71 +130,30 @@ public class IOControllerA {
 	}// byteToDevice
 
 	public Byte byteToCPU(Byte address) {
-		
-		Byte value = null;;
+
+		Byte value = null;
+		;
 		DeviceZ80A deviceStatus = devicesStatus.get(address);
 		DeviceZ80A deviceData = devicesInput.get(address);
-		
+
 		if (deviceStatus != null) {
 			deviceStatus.statusFromCPU.offer(address);
-			
+
 			try {
 				Thread.sleep(10);
 			} catch (InterruptedException interruptedException) {
 				log.errorf("Status timeout for address %02X%n", address);
-			} //try
-			
+			} // try
+
 			return deviceStatus.statusToCPU.poll();
-				
+
 		} else if (deviceData != null) {
-			value =  deviceData.dataToCPU.poll();
-		}else {
+			value = deviceData.dataToCPU.poll();
+		} else {
 			log.infof("Address unknown for Data/Status to CPU : %02X%n", address);
 			return null;
 		} // if
 		return value;
 	}// byteFromDevice
-
-	private TTYZ80A makeTTY() {
-		// ConcurrentLinkedQueue<Byte> dataToCPU = new ConcurrentLinkedQueue<Byte>();
-		// ConcurrentLinkedQueue<Byte> dataFromCPU = new ConcurrentLinkedQueue<Byte>();
-		//
-		// ConcurrentLinkedQueue<Byte> statusToCPU = new ConcurrentLinkedQueue<Byte>();
-		// ConcurrentLinkedQueue<Byte> statusFromCPU = new ConcurrentLinkedQueue<Byte>();
-		/* @formatter:off */
-		return  new TTYZ80A(
-				"tty",TTYZ80A.IN,TTYZ80A.OUT,TTYZ80A.STATUS,
-				new ConcurrentLinkedQueue<Byte>(),
-				new ConcurrentLinkedQueue<Byte>(),
-				new ConcurrentLinkedQueue<Byte>(),
-				new ConcurrentLinkedQueue<Byte>());
-        /* @formatter:on  */
-	}// makeTTY
-
-	/* this is really just a structure */
-	// class DeviceQueues {
-	// public DeviceZ80A device;
-	// public DeviceQueues(DeviceZ80A device, AbstractQueue<Byte> dataQueue, String queueDirection) {
-	// this.device = device;
-	// switch (queueDirection) {
-	// case DeviceZ80A.DATA_TO_CPU:
-	// this.dataToCPU = dataQueue;
-	// case DeviceZ80A.DATA_FROM_CPU:
-	// this.dataFromCPU = dataQueue;
-	// break;
-	// default:
-	// log.infof("[IOControllerA.DevicesPipes] bad constructor: queueDirection = %s%n", queueDirection);
-	// }// switch
-	// }// Constructor
-	//
-	// public DeviceQueues(DeviceZ80A device, AbstractQueue<Byte> statusToCPU, AbstractQueue<Byte> statusFromCPU) {
-	// this.device = device;
-	// this.statusToCPU = statusToCPU;
-	// this.statusFromCPU = statusFromCPU;
-	// }// Constructor
-	//
-	// }// class DevicePipes{
-	//
-	// public static final byte GET_STATUS = (byte) 0xFF;
 
 }// class IOController
