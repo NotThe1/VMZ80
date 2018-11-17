@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -65,7 +66,7 @@ import utilities.menus.MenuUtility;
 public class DebugFrame extends JInternalFrame implements Runnable {
 
 	private static final long serialVersionUID = 1L;
-	private AppLogger log = AppLogger.getInstance();
+//	private AppLogger log = AppLogger.getInstance();
 	private AdapterDebug adapterDebug = new AdapterDebug();
 	private DefaultListModel<String> trapModel = new DefaultListModel<String>();
 	private CpuBuss cpuBuss = CpuBuss.getInstance();
@@ -80,21 +81,6 @@ public class DebugFrame extends JInternalFrame implements Runnable {
 	private String currentFilePath = null;
 	private boolean fileIsCurrent;
 
-	// /**
-	// * Launch the application.
-	// */
-	// public static void main(String[] args) {
-	// EventQueue.invokeLater(new Runnable() {
-	// public void run() {
-	// try {
-	// DebugFrame frame = new DebugFrame();
-	// frame.setVisible(true);
-	// } catch (Exception e) {
-	// e.printStackTrace();
-	// }//try
-	// }//run
-	// });//EventQueue.invokeLater
-	// }//main
 
 	private void loadList() {
 		trapModel.clear();
@@ -226,15 +212,6 @@ public class DebugFrame extends JInternalFrame implements Runnable {
 		gbc_splitPane.gridx = 0;
 		gbc_splitPane.gridy = 0;
 		panelMain.add(splitPane, gbc_splitPane);
-
-		// JPanel panel_1 = new JPanel();
-		// splitPane.setLeftComponent(panel_1);
-		// GridBagLayout gbl_panel_1 = new GridBagLayout();
-		// gbl_panel_1.columnWidths = new int[]{0};
-		// gbl_panel_1.rowHeights = new int[]{0};
-		// gbl_panel_1.columnWeights = new double[]{Double.MIN_VALUE};
-		// gbl_panel_1.rowWeights = new double[]{Double.MIN_VALUE};
-		// panel_1.setLayout(gbl_panel_1);
 
 		JPanel panelBreaks = new JPanel();
 		panelBreaks.setBorder(null);
@@ -371,7 +348,7 @@ public class DebugFrame extends JInternalFrame implements Runnable {
 		gbc_scrollPane_1.gridy = 11;
 		panelBreaks.add(scrollPane_1, gbc_scrollPane_1);
 
-		listTraps = new JList();
+		listTraps = new JList<String>();
 		scrollPane_1.setViewportView(listTraps);
 		listTraps.setBorder(new LineBorder(new Color(0, 0, 0), 1, true));
 		listTraps.setPreferredSize(new Dimension(75, 0));
@@ -451,8 +428,8 @@ public class DebugFrame extends JInternalFrame implements Runnable {
 	private static final String NO_ACTIVE_FILE = "<< No Active File >>";
 	private static final String EMPTY_STRING = "";
 	private static final String DOT = ".";
-	private static final String PUM_LOG_PRINT = "popupLogPrint";
-	private static final String PUM_LOG_CLEAR = "popupLogClear";
+//	private static final String PUM_LOG_PRINT = "popupLogPrint";
+//	private static final String PUM_LOG_CLEAR = "popupLogClear";
 
 	private static final String ENABLE = "Enable";
 	private static final String DISABLE = "Disable";
@@ -506,18 +483,19 @@ public class DebugFrame extends JInternalFrame implements Runnable {
 
 		// Limits thisFilesLimit = new Limits();
 		boolean weHaveAFile = false;
-
-		Set<String> filePaths = fileList.keySet();
-		for (String filePath : filePaths) {
-			if (isLineInThisFile(lineNumber, filePath)) {
+		
+		for(Map.Entry<String, Limits> entry: fileList.entrySet()) {
+			if (isLineInThisFile(lineNumber, entry.getKey())) {
 				weHaveAFile = true;
-				currentFilePath = filePath;
-				Limits thisLimits = fileList.get(filePath);
+				currentFilePath = entry.getKey();
+				Limits thisLimits = fileList.get(entry.getKey());
 				currentStart = thisLimits.start;
 				currentEnd = thisLimits.end;
 				break;
 			} // if
-		} // for
+		}// for each
+
+
 		lblStatus.setText("-");
 		if (!weHaveAFile) {
 			clearCurrentIndicaters();
@@ -764,7 +742,7 @@ public class DebugFrame extends JInternalFrame implements Runnable {
 	// +/+/+/+/+/+/+/+/+/+/+/+/+/+/+/ DEBUG /+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+
 
 	///////////////////////////
-	class Limits {
+	static class  Limits {
 		public int start;
 		public int end;
 

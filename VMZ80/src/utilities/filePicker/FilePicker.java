@@ -110,15 +110,15 @@ public class FilePicker {
 	public FilePicker() {
 	}// Constructor
 
-	private static JFileChooser getChooser(String target, String filterDescription, String... filterExtensions) {
-		FileNameExtensionFilter filter = new FileNameExtensionFilter(filterDescription, filterExtensions);
-		return getChooser(target, filter, false);
-	}// customiseChooser
-
-	private static JFileChooser getChoosers(String target, String filterDescription, String... filterExtensions) {
-		FileNameExtensionFilter filter = new FileNameExtensionFilter(filterDescription, filterExtensions);
-		return getChooser(target, filter, true);
-	}// customiseChooser
+//	private static JFileChooser getChooser(String target, String filterDescription, String... filterExtensions) {
+//		FileNameExtensionFilter filter = new FileNameExtensionFilter(filterDescription, filterExtensions);
+//		return getChooser(target, filter, false);
+//	}// customiseChooser
+//
+//	private static JFileChooser getChoosers(String target, String filterDescription, String... filterExtensions) {
+//		FileNameExtensionFilter filter = new FileNameExtensionFilter(filterDescription, filterExtensions);
+//		return getChooser(target, filter, true);
+//	}// customiseChooser
 
 	private static JFileChooser getChooser(String target, FileNameExtensionFilter filter, boolean multiSelect) {
 		if (!new File(target).exists()) {

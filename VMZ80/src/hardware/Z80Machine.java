@@ -16,7 +16,6 @@ import java.awt.event.WindowEvent;
 import java.beans.PropertyVetoException;
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.Observable;
@@ -50,7 +49,6 @@ import disks.DiskControlUnit;
 import disks.diskPanel.V_IF_DiskPanel;
 import disks.utility.DiskUtility;
 import disks.utility.MakeNewDisk;
-import disks.utility.UpdateSystemDisk;
 import hardware.View.TabDialog;
 import hardware.View.V_IF_CCR;
 import hardware.View.V_IF_IndexRegisters;
@@ -125,11 +123,13 @@ public class Z80Machine {
 	private void doRunStop() {
 		////////////////////////////////////////////////////////////////
 		if (tbRunStop.isSelected()) {
+			tbRunStop.setToolTipText(BUTTON_STOP_TIP);
 			CentralProcessingUnit.setError(ErrorStatus.NONE);
 			System.out.println("actionPerformed: doRun");
 			Thread t = new Thread(cpu);
 			t.start();
 		} else {
+			tbRunStop.setToolTipText(BUTTON_RUN_TIP);
 			System.out.println("actionPerformed: doStop");
 			CentralProcessingUnit.setError(ErrorStatus.HALT_INSTRUCTION);
 			// CentralProcessingUnit.setError(ErrorStatus.NONE);
@@ -137,26 +137,21 @@ public class Z80Machine {
 		} // if
 
 		setDisplaysEnabled(!tbRunStop.isSelected());
-		// for (Component component : frontPanels) {
-		// component.setEnabled(!tbRunStop.isSelected());
-		// } // for register displays enabled
-
-		///////////////////////////////////////////////////////////////
 	}// doRunStop
 
 	// ----------------------------------------------------------
 
 	private void doFileNew() {
-		System.out.println("** [doFileNew] **");
-		String diskPath = "C:\\Users\\admin\\VMdata\\Disks\\ZZZ.F3HD";
-		File file = new File(diskPath);
-		file.delete();
-		try {
-			file.createNewFile();
-			UpdateSystemDisk.updateDisk(diskPath);
-		} catch (IOException e) {
-			// log.addError(" Did not create file :" + diskPath);
-		} // try
+//		System.out.println("** [doFileNew] **");
+//		String diskPath = "C:\\Users\\admin\\VMdata\\Disks\\ZZZ.F3HD";
+//		File file = new File(diskPath);
+//		file.delete();
+//		try {
+//			file.createNewFile();
+//			UpdateSystemDisk.updateDisk(diskPath);
+//		} catch (IOException e) {
+//			log.error(" Did not create file :" + diskPath);
+//		} // try
 	}// doFileNew
 
 	private void doFileOpen() {
@@ -255,7 +250,9 @@ public class Z80Machine {
 			target = ifCCR;
 			break;
 		}// switch
-		target.setVisible(!target.isVisible());
+		if (target != null) {
+			target.setVisible(!target.isVisible());
+		} // if null
 	}// doWindowToggle
 
 	///////////////////////////////////////
@@ -358,11 +355,11 @@ public class Z80Machine {
 	}// getInternalFrameLocations
 
 	private void saveInternalFrameLocations(Preferences myPrefs) { //
-		Point location = new Point();
+//		Point location = new Point();
 		JInternalFrame[] internalFrames = desktopPane.getAllFrames();
 		for (JInternalFrame internalFrame : internalFrames) {
 			String key = internalFrame.getClass().getSimpleName();
-			location = internalFrame.getLocation();
+			Point location = internalFrame.getLocation();
 			myPrefs.putInt(key + ".x", location.x);
 			myPrefs.putInt(key + ".y", location.y);
 			myPrefs.putBoolean(key + ".isIcon", internalFrame.isIcon());
@@ -418,9 +415,9 @@ public class Z80Machine {
 		frameBase.setBounds(frameBounds);
 		restoreInternalFrameLocations(myPrefs);
 		restoreTabDialogState(myPrefs);
-		
+
 		ioc.setVisibleDevices(myPrefs.get("VisibleDevices", ""));
-		
+
 		myPrefs = null;
 
 		dcu.setDisplay(ifDiskPanel);
@@ -536,7 +533,7 @@ public class Z80Machine {
 		tbRunStop.setBorder(null);
 		tbRunStop.setSelectedIcon(
 				new ImageIcon("C:\\Users\\admin\\git\\VM\\VM\\resources\\Button-Turn-Off-icon-64.png"));
-		tbRunStop.setToolTipText("Run");
+		tbRunStop.setToolTipText(BUTTON_RUN_TIP);
 		tbRunStop.setIcon(new ImageIcon("C:\\Users\\admin\\git\\VM\\VM\\resources\\Button-Turn-On-icon-64.png"));
 		runStopPanel.add(tbRunStop);
 
@@ -768,6 +765,9 @@ public class Z80Machine {
 	private static final String MNU_TOOLS_DISK_NEW = "mnuToolsDiskNew";
 
 	private static final String BUTTON_RUN_STOP = "tbRunStop";
+	private static final String BUTTON_RUN_TIP = "Run";
+	private static final String BUTTON_STOP_TIP = "Stop";
+
 	private static final String BUTTON_STEP = "btnStop";
 
 	private static final String BUTTON_BOOT = "btnBoot";

@@ -594,25 +594,11 @@ public class DiskUtility extends JDialog {
 
 	}// doFileNew
 
-	private int checkForDataChange() {
-		int result = JOptionPane.NO_OPTION;
-
-		// if (hexEditDisplay.isDataChanged()) {
-		// String message = String.format("File: %s has outstanding changes.%nDo you want to save it before exiting?",
-		// activeFileName);
-		// result = JOptionPane.showConfirmDialog(frameBase.getContentPane(), message, "Exit Hex Editor",
-		// JOptionPane.YES_NO_CANCEL_OPTION);
-		// if (result == JOptionPane.CANCEL_OPTION) {
-		// // return cancel result
-		// } else if (result == JOptionPane.YES_OPTION) {
-		// doFileSave();
-		// } else if (result == JOptionPane.NO_OPTION) {
-		// /* do nothing special */
-		// } // if answer
-		// } // DataChanged
-
-		return result;
-	}// checkForDataChange
+//	private int checkForDataChange() {
+//		int result = JOptionPane.NO_OPTION;
+//
+//		return result;
+//	}// checkForDataChange
 
 	private void doDiskClose() {
 		if (fileChanged | sectorChanged) {
@@ -936,6 +922,7 @@ public class DiskUtility extends JDialog {
 
 	private void findFiles(File enterFile, Pattern p) {
 		File[] files = enterFile.listFiles();
+		try {
 		for (File file : files) {
 			if (rbRecurse.isSelected() && file.isDirectory()) {
 				findFiles(file, p);
@@ -946,6 +933,9 @@ public class DiskUtility extends JDialog {
 			} // if recursive
 
 		} // for files
+		}catch(NullPointerException npe) {
+			
+		}//try
 	}// findFiles
 
 	private void processTheFile(File file, Pattern p) {
@@ -1101,6 +1091,7 @@ public class DiskUtility extends JDialog {
 	}// getPattern
 
 	private void catGetEntries(File enterFile, CatalogTableModel model) {
+		try {
 		File[] files = enterFile.listFiles();
 		for (File file : files) {
 			if (rbRecurse.isSelected() && file.isDirectory()) {
@@ -1111,6 +1102,9 @@ public class DiskUtility extends JDialog {
 				// skip
 			} // if recursive
 		} // for files
+		}catch(NullPointerException npe) {
+			
+		}// try
 	}// catGetEntries
 
 	private void catGetDiskInfo(File file, CatalogTableModel model) {
@@ -2732,7 +2726,7 @@ public class DiskUtility extends JDialog {
 
 	}// class AdapterAction
 
-	public class FileNameVerifier extends InputVerifier {
+	public static class FileNameVerifier extends InputVerifier {
 		String fileNameRegex = "[\\w|\\?]{0,7}[\\w|\\?|*]{1}\\.?[\\w|\\?]{0,2}[\\w|\\?|*]?";
 		Pattern p = Pattern.compile(fileNameRegex);
 

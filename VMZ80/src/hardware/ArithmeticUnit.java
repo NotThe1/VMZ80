@@ -613,7 +613,7 @@ public class ArithmeticUnit {
 	}// setFlags
 
 	private void setFlags(String operationSize, boolean aSubtraction) {
-		int bitIndex = (operationSize == BYTE_ARG) ? 8 : 16;
+		int bitIndex = operationSize.equals(BYTE_ARG) ? 8 : 16;
 		sign = sum.get(bitIndex - 1);
 
 		BitSet bs = sum.get(0, bitIndex);

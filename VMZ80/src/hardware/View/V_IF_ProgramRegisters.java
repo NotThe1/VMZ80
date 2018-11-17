@@ -14,6 +14,7 @@ import utilities.hdNumberBox.HDNumberValueChangeEvent;
 import utilities.hdNumberBox.HDNumberValueChangeListener;
 
 public class V_IF_ProgramRegisters extends JInternalFrame  implements Runnable{
+	private static final long serialVersionUID = 1L;
 
 	AdapterV_IF_ProgramRegisters adapterProgramRegisters = new AdapterV_IF_ProgramRegisters();	
 	WorkingRegisterSet wrs = WorkingRegisterSet.getInstance();

@@ -68,7 +68,7 @@ public class CPMDirectoryEntry {
 	}// Constructor - rawDirectory bigDisk
 	
 	public byte[] getRawDirectory(){
-		return rawDirectory;
+		return rawDirectory.clone();
 	}//getRawDirectory
 
 	private void setAllocationTable() {

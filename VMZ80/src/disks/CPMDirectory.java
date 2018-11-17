@@ -4,8 +4,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.Map;
 import java.util.Queue;
-import java.util.Set;
 
 public class CPMDirectory {
 
@@ -337,10 +337,15 @@ public class CPMDirectory {
 
 		// we have all entries that match the name & type with the directory index & extent number
 		ArrayList<Integer> ans = new ArrayList<Integer>();
-		Set<Integer> extentNumbers = targetEntries.keySet();
-		for (Integer extentNuber : extentNumbers) {
-			ans.add(targetEntries.get(extentNuber)); // get the indexes in order
-		}//for
+		
+		for(Map.Entry<Integer, Integer> entry:targetEntries.entrySet()) {
+			ans.add(entry.getValue());
+		}//for each
+		
+//		Set<Integer> extentNumbers = targetEntries.keySet();
+//		for (Integer extentNuber : extentNumbers) {
+//			ans.add(targetEntries.get(extentNuber)); // get the indexes in order
+//		}//for
 		return ans;
 	}//getDirectoryEntries
 

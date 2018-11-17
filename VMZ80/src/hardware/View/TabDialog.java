@@ -67,9 +67,9 @@ public class TabDialog extends JDialog implements Runnable {
 		}//if only do if the dialog is visible
 	}// refreshViews
 
-	private void appClose() {
-
-	}// appClose
+//	private void appClose() {
+//
+//	}// appClose
 
 	private void appInit() {
 		tabbedPane.addChangeListener(adapterTabDialog);
@@ -249,23 +249,23 @@ public class TabDialog extends JDialog implements Runnable {
 
 	}// doLogPrint
 		// +/+/+/+/+/+/+/+/+/+/+/+/+/+/+/ DEBUG /+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+
-
-	private void doDebugEnable() {
-
-	}// doDebugEnable
-
-	private void doDebugReset() {
-
-	}// doDebugReset
-
-	private void doDebugRemove() {
-
-	}// doDebugRemove
-
-	private void doDebugClear() {
-
-	}// doDebugClear
-		// +/+/+/+/+/+/+/+/+/+/+/+/+/+/+/ DEBUG /+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+
+//
+//	private void doDebugEnable() {
+//
+//	}// doDebugEnable
+//
+//	private void doDebugReset() {
+//
+//	}// doDebugReset
+//
+//	private void doDebugRemove() {
+//
+//	}// doDebugRemove
+//
+//	private void doDebugClear() {
+//
+//	}// doDebugClear
+//		// +/+/+/+/+/+/+/+/+/+/+/+/+/+/+/ DEBUG /+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+
 
 	//////////////////////////////////////////////////////////////////////////
 
@@ -318,10 +318,10 @@ public class TabDialog extends JDialog implements Runnable {
 	private static final String PUM_LOG_PRINT = "popupLogPrint";
 	private static final String PUM_LOG_CLEAR = "popupLogClear";
 
-	private static final String RB_ENABLE = "rbEnabled";
-	private static final String BTN_RESET = "btnReset";
-	private static final String BTN_REMOVE = "btnRemovet";
-	private static final String BTN_CLEAR = "btnCLEAR";
+//	private static final String RB_ENABLE = "rbEnabled";
+//	private static final String BTN_RESET = "btnReset";
+//	private static final String BTN_REMOVE = "btnRemovet";
+//	private static final String BTN_CLEAR = "btnCLEAR";
 
 	private static final String TAB_APP_LOG = "tabApplicationLog";
 	private static final String TAB_MEMORY = "tabMemoryDisplay";

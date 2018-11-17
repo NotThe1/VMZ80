@@ -3,11 +3,12 @@ package disks.utility;
 public class CatalogTableModel extends MyTableModel {
 
 	private static final long serialVersionUID = 1L;
+
 	public CatalogTableModel() {
-		super(new String[] {FILE,DISK,LOCATION});
+		super(new String[] { FILE, DISK, LOCATION });
 		// TODO Auto-generated constructor stub
-	}//Constructor
-	
+	}// Constructor
+
 	@Override
 	public Class<?> getColumnClass(int columnIndex) {
 		if (columnIndex > this.getColumnCount() - 1) {
@@ -15,8 +16,8 @@ public class CatalogTableModel extends MyTableModel {
 					columnIndex, this.getColumnCount());
 			throw new IllegalArgumentException(msg);
 		} // if
-		
-		Class<?> ans = String.class;
+
+		Class<?> ans;// = String.class;
 		switch (columnIndex) {
 		case 0: // cpmFile
 			ans = String.class;
@@ -27,14 +28,14 @@ public class CatalogTableModel extends MyTableModel {
 		case 2: // Location
 			ans = String.class;
 			break;
+		default:
+			ans = String.class;
 		}// switch
 		return ans;
 	}// getColumnClass
-	
-	
+
 	public static final String FILE = "cpmFile";
 	public static final String DISK = "disk";
 	public static final String LOCATION = "Location";
 
-
-}//class CatalogTableModel
+}// class CatalogTableModel

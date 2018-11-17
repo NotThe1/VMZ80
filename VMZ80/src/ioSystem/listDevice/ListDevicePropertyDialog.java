@@ -33,6 +33,7 @@ import utilities.fontChooser.FontChooser;
 //import com.jgoodies.forms.factories.DefaultComponentFactory;
 
 public class ListDevicePropertyDialog extends JDialog implements ActionListener {
+	private static final long serialVersionUID = 1L;
 
 	private final JPanel panelColumns = new JPanel();
 	Component c;

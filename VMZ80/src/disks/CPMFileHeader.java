@@ -14,7 +14,7 @@ public class CPMFileHeader {
 	protected ArrayList<Integer> sectors;
 	
 
-	public String fileName;
+//	public String fileName;
 
 	public CPMFileHeader(CPMDirectory directory, String fileName) {
 		this.recordCount = directory.getTotalRecordCount(fileName);

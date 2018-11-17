@@ -109,7 +109,7 @@ public class DiskDrive {
 		this.totalSectorsOnDisk = diskMetric.getTotalSectorsOnDisk();
 		this.totalBytesOnDisk = diskMetric.getTotalBytes();
 		// this.bootable = diskMetric.isBootDisk();
-		this.description = diskMetric.descriptor;
+//		this.description = diskMetric.descriptor;
 	}// resolveDiskType
 
 	// ---------------------------------------
@@ -141,7 +141,7 @@ public class DiskDrive {
 	public byte[] read() {
 		setSectorPosition();
 		disk.get(readSector);
-		return readSector;
+		return readSector.clone();
 	}// read
 	
 	public byte[] readNext() {

@@ -32,7 +32,7 @@ public class DirectoryTableModel extends MyTableModel {
 			throw new IllegalArgumentException(msg);
 		} // if
 		
-		Class<?> ans = String.class;
+		Class<?> ans;
 		switch (columnIndex) {
 		case 0: // Index
 			ans = Integer.class;
@@ -60,6 +60,9 @@ public class DirectoryTableModel extends MyTableModel {
 			break;
 		case 8:// Blocks
 			ans = Integer.class;
+			break;
+		default:
+			ans = String.class;
 			break;
 		}// switch
 		return ans;

@@ -18,6 +18,7 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.util.LinkedList;
 import java.util.Queue;
+import java.util.concurrent.TimeUnit;
 import java.util.prefs.Preferences;
 
 import javax.swing.Box;
@@ -62,7 +63,7 @@ public class TTYZ80 extends DeviceZ80 implements Runnable {
 	private Queue<Byte> internalBuffer = new LinkedList<Byte>();
 
 	public void run() {
-		long delay = 5;
+		long delay = 1;
 		while (true) {
 			if (statusFromCPU.size() > 0) {
 				statusFromCPU.poll();
@@ -74,7 +75,8 @@ public class TTYZ80 extends DeviceZ80 implements Runnable {
 			} // if byte to read
 
 			try {
-				Thread.sleep(delay);
+				TimeUnit.MICROSECONDS.sleep(100);//1000 = i milli
+//				Thread.sleep(delay);
 			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -652,7 +654,7 @@ public class TTYZ80 extends DeviceZ80 implements Runnable {
 	public static final Byte IN = (byte) 0X0EC;
 	public static final Byte OUT = (byte) 0X0EC;
 	public static final Byte STATUS = (byte) 0X0ED;
-	private static final Byte STATUS_RESPONSE = (byte) 0X03;
+//	private static final Byte STATUS_RESPONSE = (byte) 0X03;
 
 	// private static final String EMPTY_STRING = "";
 	private static final String SPACE = " ";
@@ -681,20 +683,20 @@ public class TTYZ80 extends DeviceZ80 implements Runnable {
 	private JTextArea textScreen;
 	private JSpinner spinnerColumns;
 
-	@Override
-	public Byte getAddressIn() {
-		return IN;
-	}// getAddressIn
-
-	@Override
-	public Byte getAddressOut() {
-		return OUT;
-	}// getAddressOut
-
-	@Override
-	public Byte getAddressStatus() {
-		return STATUS;
-	}// getAddressStatus
+//	@Override
+//	public Byte getAddressIn() {
+//		return IN;
+//	}// getAddressIn
+//
+//	@Override
+//	public Byte getAddressOut() {
+//		return OUT;
+//	}// getAddressOut
+//
+//	@Override
+//	public Byte getAddressStatus() {
+//		return STATUS;
+//	}// getAddressStatus
 
 
 	

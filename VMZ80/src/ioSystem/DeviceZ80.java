@@ -71,11 +71,21 @@ abstract public class DeviceZ80 {
 		return this.statusFromCPU;
 	}// getDataFromCPU
 
-	abstract public Byte getAddressIn();
-
-	abstract public Byte getAddressOut();
-
-	abstract public Byte getAddressStatus();
+	 public Byte getAddressIn(){
+		 return this.addressIn;
+	 }//getAddressIn
+	 
+	 public Byte getAddressOut(){
+		 return this.addressOut;
+	 }//getAddressOut
+	 
+	 public Byte getAddressStatus(){
+		 return this.addressStatus;
+	 }//getAddressStatus
+	 
+//	abstract public Byte getAddressOut();
+//
+//	abstract public Byte getAddressStatus();
 
 	abstract public void byteFromCPU(Byte value);
 

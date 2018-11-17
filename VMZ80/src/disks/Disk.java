@@ -9,9 +9,9 @@ public class Disk {
 
 	// Constants
 	// for actual number of drives
-	
+
 	public static final int NUMBER_OF_DISKS = 4;
-	
+
 	// for disk Metrics
 	public static final String TYPE_3DD = "F3DD";
 	public static final String TYPE_3HD = "F3HD";
@@ -31,7 +31,7 @@ public class Disk {
 	public static final int DIRECTORY_ENTRYS_PER_RECORD = LOGICAL_SECTOR_SIZE / DIRECTORY_ENTRY_SIZE;
 	public static final int DIRECTORY_ALLOC_SIZE_SMALL = 16;
 	public static final int DIRECTORY_ALLOC_SIZE_BIG = DIRECTORY_ALLOC_SIZE_SMALL / 2;
-	public static final int DIRECTORY_ENTRY_RECORD_LIMIT = 0X80;		// 128
+	public static final int DIRECTORY_ENTRY_RECORD_LIMIT = 0X80; // 128
 
 	public static final byte NULL_BYTE = (byte) 0x00;
 	public static final byte EMPTY_ENTRY = (byte) 0xE5;
@@ -61,17 +61,11 @@ public class Disk {
 	// private final static int DIR_SMALL_BLOCKS_COUNT = 16;
 	// private final static int DIR_BIG_BLOCKS_COUNT = 8;
 
-	public final static byte[] EMPTY_DIRECTORY_ENTRY = new byte[] { Disk.EMPTY_ENTRY,
+	protected final static byte[] EMPTY_DIRECTORY_ENTRY = new byte[] { Disk.EMPTY_ENTRY, Disk.NULL_BYTE, Disk.NULL_BYTE,
 			Disk.NULL_BYTE, Disk.NULL_BYTE, Disk.NULL_BYTE, Disk.NULL_BYTE, Disk.NULL_BYTE, Disk.NULL_BYTE,
-			Disk.NULL_BYTE, Disk.NULL_BYTE,
-			Disk.NULL_BYTE, Disk.NULL_BYTE, Disk.NULL_BYTE,
-			Disk.NULL_BYTE,
-			Disk.NULL_BYTE,
-			Disk.NULL_BYTE,
-			Disk.NULL_BYTE,
 			Disk.NULL_BYTE, Disk.NULL_BYTE, Disk.NULL_BYTE, Disk.NULL_BYTE, Disk.NULL_BYTE, Disk.NULL_BYTE,
-			Disk.NULL_BYTE, Disk.NULL_BYTE,
 			Disk.NULL_BYTE, Disk.NULL_BYTE, Disk.NULL_BYTE, Disk.NULL_BYTE, Disk.NULL_BYTE, Disk.NULL_BYTE,
-			Disk.NULL_BYTE, Disk.NULL_BYTE };
+			Disk.NULL_BYTE, Disk.NULL_BYTE, Disk.NULL_BYTE, Disk.NULL_BYTE, Disk.NULL_BYTE, Disk.NULL_BYTE,
+			Disk.NULL_BYTE, Disk.NULL_BYTE, Disk.NULL_BYTE, Disk.NULL_BYTE, Disk.NULL_BYTE };
 
 }

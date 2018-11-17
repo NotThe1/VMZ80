@@ -90,20 +90,20 @@ public class GenericPrinter extends DeviceZ80 implements Runnable {
 		log.infof("lineCount = %d, lines to skip = %d%n", lineCount, linesToSkip);
 	}// formFeed
 
-	@Override
-	public Byte getAddressIn() {
-		return IN;
-	}// getAddressIn
-
-	@Override
-	public Byte getAddressOut() {
-		return OUT;
-	}// getAddressOut
-
-	@Override
-	public Byte getAddressStatus() {
-		return STATUS;
-	}// getAddressStatus
+//	@Override
+//	public Byte getAddressIn() {
+//		return IN;
+//	}// getAddressIn
+//
+//	@Override
+//	public Byte getAddressOut() {
+//		return OUT;
+//	}// getAddressOut
+//
+//	@Override
+//	public Byte getAddressStatus() {
+//		return STATUS;
+//	}// getAddressStatus
 
 	@Override
 	public void byteFromCPU(Byte value) {
@@ -434,7 +434,7 @@ public class GenericPrinter extends DeviceZ80 implements Runnable {
 		gbc_verticalStrut.insets = new Insets(0, 0, 5, 0);
 		gbc_verticalStrut.gridx = 0;
 		gbc_verticalStrut.gridy = 2;
-		panelButtons.add(verticalStrut, gbc_verticalStrut);
+		panelButtons.add(verticalStrut1, gbc_verticalStrut1);
 
 		JButton btnFormFeed = new JButton("Form Feed");
 		btnFormFeed.setName(BTN_FORM_FEED);
@@ -452,7 +452,7 @@ public class GenericPrinter extends DeviceZ80 implements Runnable {
 		gbc_verticalStrut.insets = new Insets(0, 0, 5, 0);
 		gbc_verticalStrut.gridx = 0;
 		gbc_verticalStrut.gridy = 4;
-		panelButtons.add(verticalStrut, gbc_verticalStrut);
+		panelButtons.add(verticalStrut2, gbc_verticalStrut2);
 
 		JButton btnSaveToFile = new JButton("Save to File ...");
 		btnSaveToFile.setName(BTN_SAVE_TO_FILE);
@@ -470,7 +470,7 @@ public class GenericPrinter extends DeviceZ80 implements Runnable {
 		gbc_verticalStrut.insets = new Insets(0, 0, 5, 0);
 		gbc_verticalStrut.gridx = 0;
 		gbc_verticalStrut.gridy = 6;
-		panelButtons.add(verticalStrut, gbc_verticalStrut);
+		panelButtons.add(verticalStrut3, gbc_verticalStrut3);
 
 		JButton btnPrint = new JButton("Print ...");
 		btnPrint.setName(BTN_PRINT);
@@ -488,7 +488,7 @@ public class GenericPrinter extends DeviceZ80 implements Runnable {
 		gbc_verticalStrut.insets = new Insets(0, 0, 5, 0);
 		gbc_verticalStrut.gridx = 0;
 		gbc_verticalStrut.gridy = 8;
-		panelButtons.add(verticalStrut, gbc_verticalStrut);
+		panelButtons.add(verticalStrut4, gbc_verticalStrut4);
 
 		JButton btnProperties = new JButton("Properties ...");
 		btnProperties.setName(BTN_PROPERTIES);
@@ -506,7 +506,7 @@ public class GenericPrinter extends DeviceZ80 implements Runnable {
 		gbc_verticalStrut.insets = new Insets(0, 0, 5, 0);
 		gbc_verticalStrut.gridx = 0;
 		gbc_verticalStrut.gridy = 10;
-		panelButtons.add(verticalStrut, gbc_verticalStrut);
+		panelButtons.add(verticalStrut5, gbc_verticalStrut5);
 
 		JButton btnClear = new JButton("Clear");
 		btnClear.setName(BTN_CLEAR);

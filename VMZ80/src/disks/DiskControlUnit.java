@@ -176,9 +176,9 @@ public class DiskControlUnit {
 		return Disk.NUMBER_OF_DISKS;
 	}// getMaxNumberOfDrives
 
-	public DiskDrive[] getDrives() {
-		return drives;
-	}// getDrives
+//	public DiskDrive[] getDrives() {
+//		return drives;
+//	}// getDrives
 
 	private void debugShowControlTable() {
 		// log.infof("currentCommand: %02X%n", currentCommand);
@@ -377,8 +377,8 @@ public class DiskControlUnit {
 	private static final int DCT_SECTOR = 4; // DB 1
 	private static final int DCT_BYTE_COUNT = 5; // DW 1
 	private static final int DCT_DMA_ADDRESS = 7; // DW 1
-	private static final int DCT_NEXT_STATUS_BLOCK = 9; // DW 1
-	private static final int DCT_NEXT_DCT = 11; // DW 1
+//	private static final int DCT_NEXT_STATUS_BLOCK = 9; // DW 1
+//	private static final int DCT_NEXT_DCT = 11; // DW 1
 
 	//////////////////////////////////////////////
 

@@ -14,7 +14,6 @@ import javax.swing.JToggleButton;
 import javax.swing.SwingConstants;
 import javax.swing.border.LineBorder;
 
-import codeSupport.AppLogger;
 import disks.Disk;
 import disks.DiskDrive;
 
@@ -22,17 +21,17 @@ public class V_IF_DiskPanel extends JInternalFrame implements Runnable {
 	private static final long serialVersionUID = 1L;
 
 	private Adapter_V_IF_DiskPanel adapterDiskPanel = new Adapter_V_IF_DiskPanel();
-	private AppLogger log = AppLogger.getInstance();
+	// private AppLogger log = AppLogger.getInstance();
 
 	DiskDrive[] disks = new DiskDrive[Disk.NUMBER_OF_DISKS];
 	JToggleButton[] buttons = new JToggleButton[Disk.NUMBER_OF_DISKS];
-	HashMap<JToggleButton,Integer> buttonMap;
+	HashMap<JToggleButton, Integer> buttonMap;
 
 	@Override
 	public void run() {
 		updateDisplay(this.disks);
 	}// run
-	
+
 	@Override
 	public void setEnabled(boolean state) {
 		super.setEnabled(state);
@@ -40,18 +39,17 @@ public class V_IF_DiskPanel extends JInternalFrame implements Runnable {
 		tbDiskB.setEnabled(state);
 		tbDiskC.setEnabled(state);
 		tbDiskD.setEnabled(state);
-	}//setEnabled
-	
-	
+	}// setEnabled
+
 	public void updateDisks(DiskDrive[] disks) {
 		this.disks = disks;
-	}//updateDisks
+	}// updateDisks
 
 	public void updateDisplay(DiskDrive[] disks) {
-		String name, toolTip;
+		// String name, toolTip;
 		boolean haveDisk;
 		for (int i = 0; i < Disk.NUMBER_OF_DISKS; i++) {
-			haveDisk = disks[i]==null?false:true;
+			haveDisk = disks[i] == null ? false : true;
 			buttons[i].setText(haveDisk ? disks[i].getFileName() : NO_DISK);
 			buttons[i].setToolTipText(haveDisk ? disks[i].getFilePath() : NO_DISK_HELP);
 			buttons[i].setSelected(haveDisk ? true : false);
@@ -180,15 +178,15 @@ public class V_IF_DiskPanel extends JInternalFrame implements Runnable {
 	}// removeDiskPanelActionListener
 
 	public void fireDiskPanelAction(boolean selected, int diskIndex) {
-		Vector<DiskPanelEventListener> actionListeners;
-		synchronized (this) {
-			actionListeners = (Vector<DiskPanelEventListener>) diskPanelActionListeners.clone();
-		} // synchronized
-
-		int size = actionListeners.size();
-		if (size == 0) {
-			return; // no listeners
-		} // if
+//		Vector<DiskPanelEventListener> actionListeners;
+//		synchronized (this) {
+//			actionListeners = (Vector<DiskPanelEventListener>) diskPanelActionListeners.clone();
+//		} // synchronized
+//
+//		int size = actionListeners.size();
+//		if (size == 0) {
+//			return; // no listeners
+//		} // if
 
 		DiskPanelEvent diskPanelEvent = new DiskPanelEvent(this, selected, diskIndex);
 		for (DiskPanelEventListener listener : diskPanelActionListeners) {
@@ -223,10 +221,9 @@ public class V_IF_DiskPanel extends JInternalFrame implements Runnable {
 		/* ActionListener */
 		@Override
 		public void actionPerformed(ActionEvent actionEvent) {
-			JToggleButton button = (JToggleButton) actionEvent.getSource();			
+			JToggleButton button = (JToggleButton) actionEvent.getSource();
 			fireDiskPanelAction(button.isSelected(), buttonMap.get(button));
 		}// actionPerformed
-
 
 	}// class Adapter_V_IF_DiskPanel
 }//

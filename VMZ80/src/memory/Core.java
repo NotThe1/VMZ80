@@ -68,7 +68,7 @@ public class Core extends Observable implements ICore {
 	}//initialize
 	
 	public  byte[] getStorage(){
-		return this.storage;
+		return this.storage.clone();
 	}//getStorage
 
 	/**

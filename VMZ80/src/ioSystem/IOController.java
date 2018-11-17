@@ -109,7 +109,7 @@ public class IOController {
 		setDevicesVisible(false);
 		String devices[] = deviceSet.split("\\|");
 		for (String deviceName : devices) {
-			if (deviceName == "") {
+			if (deviceName.equals("")) {
 				continue;
 			} // if
 			setVisible(deviceName, true);
@@ -139,11 +139,17 @@ public class IOController {
 		if (deviceStatus != null) {
 			deviceStatus.statusFromCPU.offer(address);
 
-			try {
-				Thread.sleep(10);
-			} catch (InterruptedException interruptedException) {
-				log.errorf("Status timeout for address %02X%n", address);
-			} // try
+//			try {
+//				Thread.sleep(1);
+//			} catch (InterruptedException interruptedException) {
+//				log.errorf("Status timeout for address %02X%n", address);
+//			} // try
+			
+			long startMilli = System.currentTimeMillis();
+			while (deviceStatus.statusToCPU.size()==0) {
+				// Wait until response is there
+			}//while
+			log.infof("IO time = %d%n", System.currentTimeMillis()-startMilli);
 
 			return deviceStatus.statusToCPU.poll();
 
