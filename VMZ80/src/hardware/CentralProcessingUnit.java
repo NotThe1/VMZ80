@@ -461,7 +461,7 @@ public class CentralProcessingUnit implements Runnable {
 		case (byte) 0X29:// ADD IXY,IXY
 		case (byte) 0X39:// ADD IXY,SP
 			instructionSize = 2;
-			regDouble = Z80.doubleRegisters1[(cpuBuss.read(instructionBase + 1) >> 4) & 0b0000_0011];
+			regDouble = Z80.getDoubleRegister1((cpuBuss.read(instructionBase + 1) >> 4) & 0b0000_0011);
 			arg1 = getValue(wrs.getDoubleReg(activeIndexRegister));
 			arg2 = getValue(wrs.getDoubleReg(regDouble));
 			result = au.addWord(arg1, arg2);
@@ -479,7 +479,8 @@ public class CentralProcessingUnit implements Runnable {
 		case (byte) 0X76: // LD (IXY+d),M
 		case (byte) 0X77: // LD (IXY=d),A
 			instructionSize = 3;
-			regSingle = Z80.singleRegisters[cpuBuss.read(instructionBase + 1) & 0b0000_0111];
+//			regSingle = Z80.singleRegisters[cpuBuss.read(instructionBase + 1) & 0b0000_0111];
+			regSingle = Z80.getSingleRegister(cpuBuss.read(instructionBase + 1) & 0b0000_0111);
 			argument = wrs.getReg(regSingle);
 			cpuBuss.write(netLocation, argument);
 			break;
@@ -491,7 +492,7 @@ public class CentralProcessingUnit implements Runnable {
 		case (byte) 0X6E: // LD L,(IXY=d)
 		case (byte) 0X7E: // LD A,(IXY+d)
 			instructionSize = 3;
-			regSingle = Z80.singleRegisters[(cpuBuss.read(instructionBase + 1) >> 3) & 0b0000_0111];
+			regSingle = Z80.getSingleRegister((cpuBuss.read(instructionBase + 1) >> 3) & 0b0000_0111);
 			argument = cpuBuss.read(netLocation);
 			wrs.setReg(regSingle, argument);
 			break;
@@ -1393,6 +1394,9 @@ public class CentralProcessingUnit implements Runnable {
 
 			wrs.setProgramCounter(PCvalue);
 			break;
+		default:
+			// NOP
+			break;
 		}// switch yyy
 
 		return instructionSize;
@@ -1595,25 +1599,25 @@ public class CentralProcessingUnit implements Runnable {
 	private Register getDoubleRegister1_45(int location) {
 		byte source = cpuBuss.read(location);
 		int index = (source & Z80.MASK_DOUBLE_REGISTER45) >> 4;
-		return Z80.doubleRegisters1[index];
+		return Z80.getDoubleRegister1(index);
 	}// getDoubleRegister1_45
 
 	private Register getDoubleRegister2_45(int location) {
 		byte source = cpuBuss.read(location);
 		int index = (source & Z80.MASK_DOUBLE_REGISTER45) >> 4;
-		return Z80.doubleRegisters2[index];
+		return Z80.getDoubleRegister2(index);
 	}// getDoubleRegister2_45
 
 	private Register getSingleRegister012(int location) {
 		byte source = cpuBuss.read(location);
 		int index = source & Z80.MASK_REGISTER_123;
-		return Z80.singleRegisters[index];
+		return Z80.getSingleRegister(index);
 	}// getSingleRegister012
 
 	private Register getSingleRegister345(int location) {
 		byte source = cpuBuss.read(location);
 		int index = (source & Z80.MASK_REGISTER_345) >> 3;
-		return Z80.singleRegisters[index];
+		return Z80.getSingleRegister(index);
 	}// getSingleRegister345
 
 	private boolean isBit3Set(int location) {
@@ -1622,7 +1626,7 @@ public class CentralProcessingUnit implements Runnable {
 
 	private ConditionCode getConditionCode(int location) {
 		byte source = cpuBuss.read(location);
-		return Z80.conditionCode[(source & Z80.MASK_CONDITION_CODE) >> 3];
+		return Z80.getConditionCode((source & Z80.MASK_CONDITION_CODE) >> 3);
 	}
 
 }// class CentralProcessingUnit

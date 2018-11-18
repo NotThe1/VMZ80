@@ -42,7 +42,7 @@ public class V_IF_DiskPanel extends JInternalFrame implements Runnable {
 	}// setEnabled
 
 	public void updateDisks(DiskDrive[] disks) {
-		this.disks = disks;
+		this.disks = disks.clone();
 	}// updateDisks
 
 	public void updateDisplay(DiskDrive[] disks) {

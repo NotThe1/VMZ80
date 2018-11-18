@@ -5,6 +5,15 @@ public class Disk {
 
 	public Disk() {
 		// TODO Auto-generated constructor stub
+	}//Constructor
+	
+	public static byte[] getEmptyDirectory() {
+		return new byte[] { Disk.EMPTY_ENTRY, Disk.NULL_BYTE, Disk.NULL_BYTE,
+				Disk.NULL_BYTE, Disk.NULL_BYTE, Disk.NULL_BYTE, Disk.NULL_BYTE, Disk.NULL_BYTE, Disk.NULL_BYTE,
+				Disk.NULL_BYTE, Disk.NULL_BYTE, Disk.NULL_BYTE, Disk.NULL_BYTE, Disk.NULL_BYTE, Disk.NULL_BYTE,
+				Disk.NULL_BYTE, Disk.NULL_BYTE, Disk.NULL_BYTE, Disk.NULL_BYTE, Disk.NULL_BYTE, Disk.NULL_BYTE,
+				Disk.NULL_BYTE, Disk.NULL_BYTE, Disk.NULL_BYTE, Disk.NULL_BYTE, Disk.NULL_BYTE, Disk.NULL_BYTE,
+				Disk.NULL_BYTE, Disk.NULL_BYTE, Disk.NULL_BYTE, Disk.NULL_BYTE, Disk.NULL_BYTE };
 	}
 
 	// Constants
@@ -61,11 +70,11 @@ public class Disk {
 	// private final static int DIR_SMALL_BLOCKS_COUNT = 16;
 	// private final static int DIR_BIG_BLOCKS_COUNT = 8;
 
-	protected final static byte[] EMPTY_DIRECTORY_ENTRY = new byte[] { Disk.EMPTY_ENTRY, Disk.NULL_BYTE, Disk.NULL_BYTE,
-			Disk.NULL_BYTE, Disk.NULL_BYTE, Disk.NULL_BYTE, Disk.NULL_BYTE, Disk.NULL_BYTE, Disk.NULL_BYTE,
-			Disk.NULL_BYTE, Disk.NULL_BYTE, Disk.NULL_BYTE, Disk.NULL_BYTE, Disk.NULL_BYTE, Disk.NULL_BYTE,
-			Disk.NULL_BYTE, Disk.NULL_BYTE, Disk.NULL_BYTE, Disk.NULL_BYTE, Disk.NULL_BYTE, Disk.NULL_BYTE,
-			Disk.NULL_BYTE, Disk.NULL_BYTE, Disk.NULL_BYTE, Disk.NULL_BYTE, Disk.NULL_BYTE, Disk.NULL_BYTE,
-			Disk.NULL_BYTE, Disk.NULL_BYTE, Disk.NULL_BYTE, Disk.NULL_BYTE, Disk.NULL_BYTE };
+//	protected final static byte[] EMPTY_DIRECTORY_ENTRY = new byte[] { Disk.EMPTY_ENTRY, Disk.NULL_BYTE, Disk.NULL_BYTE,
+//			Disk.NULL_BYTE, Disk.NULL_BYTE, Disk.NULL_BYTE, Disk.NULL_BYTE, Disk.NULL_BYTE, Disk.NULL_BYTE,
+//			Disk.NULL_BYTE, Disk.NULL_BYTE, Disk.NULL_BYTE, Disk.NULL_BYTE, Disk.NULL_BYTE, Disk.NULL_BYTE,
+//			Disk.NULL_BYTE, Disk.NULL_BYTE, Disk.NULL_BYTE, Disk.NULL_BYTE, Disk.NULL_BYTE, Disk.NULL_BYTE,
+//			Disk.NULL_BYTE, Disk.NULL_BYTE, Disk.NULL_BYTE, Disk.NULL_BYTE, Disk.NULL_BYTE, Disk.NULL_BYTE,
+//			Disk.NULL_BYTE, Disk.NULL_BYTE, Disk.NULL_BYTE, Disk.NULL_BYTE, Disk.NULL_BYTE };
 
-}
+}//class Disk

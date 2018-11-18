@@ -93,7 +93,8 @@ public class FontChooser extends JDialog implements ListSelectionListener, Actio
 		textSize.setText(Integer.toString(listSize.getSelectedValue()));
 		int style = getStyleFromText(textStyle.getText());
 
-		selectedFont = new Font(textFamily.getText(), style, Integer.valueOf(textSize.getText()));
+		selectedFont = new Font(textFamily.getText(), style, Integer.parseInt(textSize.getText()));
+//		selectedFont = new Font(textFamily.getText(), style, Integer.valueOf(textSize.getText()));
 		lblSelectedFont.setFont(selectedFont);
 
 		String display = String.format("%s %s %s", textFamily.getText(), textStyle.getText(), textSize.getText());

@@ -5,7 +5,7 @@ import java.awt.Font;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.HashMap;
-import java.util.Set;
+import java.util.Map;
 
 import javax.swing.JInternalFrame;
 import javax.swing.JToggleButton;
@@ -25,7 +25,7 @@ public class V_IF_PrimaryRegisters extends JInternalFrame implements Runnable {
 
 	WorkingRegisterSet wrs = WorkingRegisterSet.getInstance();
 	HashMap<HDNumberBox, DisplayRegisterAttributes> displayRegisters = new HashMap<>();
-	
+
 	@Override
 	public void run() {
 		updateDisplay();
@@ -43,10 +43,8 @@ public class V_IF_PrimaryRegisters extends JInternalFrame implements Runnable {
 		regH.setEnabled(state);
 		regL.setEnabled(state);
 		regF.setEnabled(state);
-	}//setEnabled
-	
+	}// setEnabled
 
-	
 	private void doValueChanged(byte newValue, HDNumberBox numberBox) {
 		byte value = newValue;
 		if (numberBox.equals(regF)) {
@@ -64,9 +62,9 @@ public class V_IF_PrimaryRegisters extends JInternalFrame implements Runnable {
 
 	public void updateDisplay() {
 		boolean auxRegisters = tbMainAux.isSelected();
-		Set<HDNumberBox> ks = displayRegisters.keySet();
-		for (HDNumberBox numberBox : ks) {
-			DisplayRegisterAttributes dra = displayRegisters.get(numberBox);
+		for (Map.Entry<HDNumberBox, DisplayRegisterAttributes> entry : displayRegisters.entrySet()) {
+			DisplayRegisterAttributes dra = entry.getValue();
+			HDNumberBox numberBox = entry.getKey();
 			if (auxRegisters) {
 				setRegisterDisplayTitle(numberBox, dra.getTitleAlt());
 				setRegisterValueQuiet(numberBox, dra.getRegAlt());
@@ -74,7 +72,20 @@ public class V_IF_PrimaryRegisters extends JInternalFrame implements Runnable {
 				setRegisterDisplayTitle(numberBox, dra.getTitleMain());
 				setRegisterValueQuiet(numberBox, dra.getRegMain());
 			} // if
-		} // for
+
+		} // for each
+
+		// Set<HDNumberBox> ks = displayRegisters.keySet();
+		// for (HDNumberBox numberBox : ks) {
+		// DisplayRegisterAttributes dra = displayRegisters.get(numberBox);
+		// if (auxRegisters) {
+		// setRegisterDisplayTitle(numberBox, dra.getTitleAlt());
+		// setRegisterValueQuiet(numberBox, dra.getRegAlt());
+		// } else {
+		// setRegisterDisplayTitle(numberBox, dra.getTitleMain());
+		// setRegisterValueQuiet(numberBox, dra.getRegMain());
+		// } // if
+		// } // for
 	}// setRegisterDisplay
 
 	private void setRegisterDisplayTitle(HDNumberBox reg, String title) {
@@ -83,7 +94,7 @@ public class V_IF_PrimaryRegisters extends JInternalFrame implements Runnable {
 	}// setRegisterDisplayTitle
 
 	private void setRegisterValueQuiet(HDNumberBox regDisplay, Z80.Register regCCR) {
-		regDisplay.setValueQuiet(wrs.getReg(regCCR)&0xFF);
+		regDisplay.setValueQuiet(wrs.getReg(regCCR) & 0xFF);
 	}// setRegisterValue
 
 	/////////////////////////////////////////////////////////////////////////////////
@@ -96,7 +107,7 @@ public class V_IF_PrimaryRegisters extends JInternalFrame implements Runnable {
 	}// Constructor
 
 	private void appInit() {
-		
+
 		/* initialize the register control array */
 		displayRegisters.put(regA, new DisplayRegisterAttributes("A", Z80.Register.A, "A'", Z80.Register.Ap));
 		displayRegisters.put(regB, new DisplayRegisterAttributes("B", Z80.Register.B, "B'", Z80.Register.Bp));
@@ -108,7 +119,6 @@ public class V_IF_PrimaryRegisters extends JInternalFrame implements Runnable {
 		displayRegisters.put(regF, new DisplayRegisterAttributes("F", Z80.Register.F, "F'", Z80.Register.Fp));
 
 		updateDisplay();
-
 
 	}// appInit
 
@@ -123,7 +133,7 @@ public class V_IF_PrimaryRegisters extends JInternalFrame implements Runnable {
 		tbMainAux.setBounds(10, 19, 84, 23);
 		getContentPane().add(tbMainAux);
 
-		regA = new HDNumberBox(0,0xFF,0,false);
+		regA = new HDNumberBox(0, 0xFF, 0, false);
 		regA.setBorder(new TitledBorder(null, "A", TitledBorder.CENTER, TitledBorder.TOP, null, null));
 		regA.setHexDisplay("%02X");
 		regA.setName("A");
@@ -133,17 +143,17 @@ public class V_IF_PrimaryRegisters extends JInternalFrame implements Runnable {
 		regA.addHDNumberValueChangedListener(adapterViewPrimaryRegisters);
 		getContentPane().add(regA);
 
-		regB = new HDNumberBox(0,0xFF,0,false);
+		regB = new HDNumberBox(0, 0xFF, 0, false);
 		regB.setBorder(new TitledBorder(null, "B", TitledBorder.CENTER, TitledBorder.TOP, null, null));
 		regB.setHexDisplay("%02X");
 		regB.setName("B");
 		regB.setBounds(150, 10, 35, 40);
 		regB.setToolTipText("Register B");
 		regB.setFont(new Font("Courier New", Font.BOLD, 15));
-		regB.addHDNumberValueChangedListener(adapterViewPrimaryRegisters);		
+		regB.addHDNumberValueChangedListener(adapterViewPrimaryRegisters);
 		getContentPane().add(regB);
 
-		regC = new HDNumberBox(0,0xFF,0,false);
+		regC = new HDNumberBox(0, 0xFF, 0, false);
 		regC.setBorder(new TitledBorder(null, "C", TitledBorder.CENTER, TitledBorder.TOP, null, null));
 		regC.setHexDisplay("%02X");
 		regC.setName("C");
@@ -153,7 +163,7 @@ public class V_IF_PrimaryRegisters extends JInternalFrame implements Runnable {
 		regC.addHDNumberValueChangedListener(adapterViewPrimaryRegisters);
 		getContentPane().add(regC);
 
-		regD = new HDNumberBox(0,0xFF,0,false);
+		regD = new HDNumberBox(0, 0xFF, 0, false);
 		regD.setBorder(new TitledBorder(null, "D", TitledBorder.CENTER, TitledBorder.TOP, null, null));
 		regD.setHexDisplay("%02X");
 		regD.setName("D");
@@ -163,7 +173,7 @@ public class V_IF_PrimaryRegisters extends JInternalFrame implements Runnable {
 		regD.addHDNumberValueChangedListener(adapterViewPrimaryRegisters);
 		getContentPane().add(regD);
 
-		regE = new HDNumberBox(0,0xFF,0,false);
+		regE = new HDNumberBox(0, 0xFF, 0, false);
 		regE.setBorder(new TitledBorder(null, "E", TitledBorder.CENTER, TitledBorder.TOP, null, null));
 		regE.setHexDisplay("%02X");
 		regE.setName("E");
@@ -173,7 +183,7 @@ public class V_IF_PrimaryRegisters extends JInternalFrame implements Runnable {
 		regE.addHDNumberValueChangedListener(adapterViewPrimaryRegisters);
 		getContentPane().add(regE);
 
-		regH = new HDNumberBox(0,0xFF,0,false);
+		regH = new HDNumberBox(0, 0xFF, 0, false);
 		regH.setBorder(new TitledBorder(null, "H", TitledBorder.CENTER, TitledBorder.TOP, null, null));
 		regH.setHexDisplay("%02X");
 		regH.setName("H");
@@ -183,7 +193,7 @@ public class V_IF_PrimaryRegisters extends JInternalFrame implements Runnable {
 		regH.addHDNumberValueChangedListener(adapterViewPrimaryRegisters);
 		getContentPane().add(regH);
 
-		regL = new HDNumberBox(0,0xFF,0,false);
+		regL = new HDNumberBox(0, 0xFF, 0, false);
 		regL.setBorder(new TitledBorder(null, "L", TitledBorder.CENTER, TitledBorder.TOP, null, null));
 		regL.setHexDisplay("%02X");
 		regL.setName("L");
@@ -193,7 +203,7 @@ public class V_IF_PrimaryRegisters extends JInternalFrame implements Runnable {
 		regL.addHDNumberValueChangedListener(adapterViewPrimaryRegisters);
 		getContentPane().add(regL);
 
-		regF = new HDNumberBox(0,0xFF,0,false);
+		regF = new HDNumberBox(0, 0xFF, 0, false);
 		regF.setBorder(new TitledBorder(null, "F", TitledBorder.CENTER, TitledBorder.TOP, null, null));
 		regF.setHexDisplay("%02X");
 		regF.setName("F");
@@ -222,7 +232,7 @@ public class V_IF_PrimaryRegisters extends JInternalFrame implements Runnable {
 
 	//////////////////////////////////////////////////////////////////////////
 
-	 private class AdapterV_IF_PrimaryRegisters implements HDNumberValueChangeListener, ActionListener {
+	private class AdapterV_IF_PrimaryRegisters implements HDNumberValueChangeListener, ActionListener {
 		/* HDNumberValueChangeListener */
 		@Override
 		public void valueChanged(HDNumberValueChangeEvent hDNumberValueChangeEvent) {
@@ -241,7 +251,7 @@ public class V_IF_PrimaryRegisters extends JInternalFrame implements Runnable {
 
 	//////////////////////////////////////////////////////////////////////////
 
-	 class DisplayRegisterAttributes {
+	static class DisplayRegisterAttributes {
 		private String titleMain;
 		private Z80.Register regMain;
 		private String titleAlt;

@@ -63,7 +63,6 @@ public class TTYZ80 extends DeviceZ80 implements Runnable {
 	private Queue<Byte> internalBuffer = new LinkedList<Byte>();
 
 	public void run() {
-		long delay = 1;
 		while (true) {
 			if (statusFromCPU.size() > 0) {
 				statusFromCPU.poll();
@@ -76,12 +75,10 @@ public class TTYZ80 extends DeviceZ80 implements Runnable {
 
 			try {
 				TimeUnit.MICROSECONDS.sleep(100);//1000 = i milli
-//				Thread.sleep(delay);
 			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			} // try
-
 			while (internalBuffer.size() != 0) {
 				dataToCPU.offer(internalBuffer.poll());
 			} // while data

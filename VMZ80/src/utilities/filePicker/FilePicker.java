@@ -4,6 +4,7 @@ import java.io.File;
 import java.nio.file.Path;
 
 import javax.swing.JFileChooser;
+import javax.swing.JOptionPane;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
 public class FilePicker {
@@ -121,9 +122,18 @@ public class FilePicker {
 //	}// customiseChooser
 
 	private static JFileChooser getChooser(String target, FileNameExtensionFilter filter, boolean multiSelect) {
-		if (!new File(target).exists()) {
-			new File(target).mkdirs();
-		} // make sure the target directory exists
+		File targetDirectory = new File(target);
+		if(!targetDirectory.exists()) {
+			if(!targetDirectory.mkdirs()) {
+				JOptionPane.showMessageDialog(null, "unable to make folder: " + target,
+						"File Piicker",JOptionPane.ERROR_MESSAGE);
+			}//if bad make dir
+		}//if dir not there
+		
+//		if (!new File(target).exists()) {
+//			new File(target).mkdirs();
+//		} // make sure the target directory exists
+		
 		JFileChooser fileChooser = new JFileChooser(target);
 		fileChooser.setMultiSelectionEnabled(multiSelect);
 		fileChooser.addChoosableFileFilter(filter);

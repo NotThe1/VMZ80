@@ -52,8 +52,7 @@ public class GenericPrinter extends DeviceZ80 implements Runnable {
 	private JTextArea textAreaList;
 	private Document doc;
 	private JFrame frameLST;
-//	private Path newListingPath = Paths.get("."); // location to save listing to file
-
+	// private Path newListingPath = Paths.get("."); // location to save listing to file
 
 	public void run() {
 		long delay = 5;
@@ -90,20 +89,20 @@ public class GenericPrinter extends DeviceZ80 implements Runnable {
 		log.infof("lineCount = %d, lines to skip = %d%n", lineCount, linesToSkip);
 	}// formFeed
 
-//	@Override
-//	public Byte getAddressIn() {
-//		return IN;
-//	}// getAddressIn
-//
-//	@Override
-//	public Byte getAddressOut() {
-//		return OUT;
-//	}// getAddressOut
-//
-//	@Override
-//	public Byte getAddressStatus() {
-//		return STATUS;
-//	}// getAddressStatus
+	// @Override
+	// public Byte getAddressIn() {
+	// return IN;
+	// }// getAddressIn
+	//
+	// @Override
+	// public Byte getAddressOut() {
+	// return OUT;
+	// }// getAddressOut
+	//
+	// @Override
+	// public Byte getAddressStatus() {
+	// return STATUS;
+	// }// getAddressStatus
 
 	@Override
 	public void byteFromCPU(Byte value) {
@@ -174,7 +173,7 @@ public class GenericPrinter extends DeviceZ80 implements Runnable {
 		textAreaList.setFont(newFont);
 		myPrefs = null;
 
-//		Font f = textAreaList.getFont();
+		// Font f = textAreaList.getFont();
 
 		// System.out.printf("[loadProperties] Font family = %s, Font Size = %d%n", f.getFamily(), f.getSize());
 	}// loadProperties
@@ -243,7 +242,7 @@ public class GenericPrinter extends DeviceZ80 implements Runnable {
 			System.out.println("Bailed out of the open");
 			return;
 		} // if - open
-//		newListingPath = Paths.get(fc.getSelectedFile().getParent());
+		// newListingPath = Paths.get(fc.getSelectedFile().getParent());
 
 		String listingFile = fc.getSelectedFile().getAbsolutePath();
 
@@ -305,7 +304,7 @@ public class GenericPrinter extends DeviceZ80 implements Runnable {
 		textAreaList.setFont(newFont);
 		myPrefs = null;
 
-//		Font f = textAreaList.getFont();
+		// Font f = textAreaList.getFont();
 		// System.out.printf("[loadProperties] Font family = %s, Font Size = %d%n", f.getFamily(), f.getSize());
 
 		doc = textAreaList.getDocument();
@@ -343,6 +342,9 @@ public class GenericPrinter extends DeviceZ80 implements Runnable {
 			break;
 		case Font.BOLD | Font.ITALIC:
 			currentStyle = "Bold Italic";
+			break;
+		default:
+			currentStyle = "Plain";
 			break;
 		}// switch
 

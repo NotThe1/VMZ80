@@ -18,18 +18,54 @@ public class Z80 {
 		NZ, Z, NC, C, PO, PE, P, M
 	}// enum conditionCode
 	
+	public static  byte getBit(int bit) {
+		return (byte) (BITS[bit] & BYTE_MASK);
+	}//getBit
+	
+	public static  byte getBitNot(int bit) {
+		return (byte) (BITS_NOT[bit] & BYTE_MASK);
+	}//getBitNot
+	
+	public static Register getSingleRegister(int index) {
+		return singleRegisters[index];
+	}//getSingleRegister
+	
+	public static Register[] getAllSingleRegisters() {
+		return singleRegisters.clone();
+	}//getAllSingleResisters()
+	
+	public static ConditionCode getConditionCode(int index) {
+		return conditionCode[index];
+	}//getConditionCode
+	
+	public static Register getDoubleRegister1(int index) {
+		return doubleRegisters1[index];
+	}//getDoubleRegister1
+	
+	public static Register[] getAllDoubleRegisters1() {
+		return doubleRegisters1.clone();
+	}//getAllDoubleRegisters1
+	
+	public static Register getDoubleRegister2(int index) {
+		return doubleRegisters2[index];
+	}//getDoubleRegister1
+	
+	public static Register[] getAllDoubleRegisters2() {
+		return doubleRegisters2.clone();
+	}//getAllDoubleRegisters1
+	
 	/**
 	 *  tables
 	 */
 
-	public static Register[] singleRegisters = new Register[] { Register.B, Register.C, Register.D, Register.E,
+	private static Register[] singleRegisters = new Register[] { Register.B, Register.C, Register.D, Register.E,
 			Register.H, Register.L, Register.M, Register.A };
 
-	public static Register[] doubleRegisters1 = new Register[] { Register.BC, Register.DE, Register.HL, Register.SP };
+	private static Register[] doubleRegisters1 = new Register[] { Register.BC, Register.DE, Register.HL, Register.SP };
 
-	public static Register[] doubleRegisters2 = new Register[] { Register.BC, Register.DE, Register.HL, Register.AF };
+	private static Register[] doubleRegisters2 = new Register[] { Register.BC, Register.DE, Register.HL, Register.AF };
 
-	public static ConditionCode[] conditionCode = new ConditionCode[] { ConditionCode.NZ, ConditionCode.Z,
+	private static ConditionCode[] conditionCode = new ConditionCode[] { ConditionCode.NZ, ConditionCode.Z,
 			ConditionCode.NC, ConditionCode.C, ConditionCode.PO, ConditionCode.PE, ConditionCode.P, ConditionCode.M };
 
 	/**
@@ -139,8 +175,8 @@ public class Z80 {
 	public static final byte BIT_NOT_6 = (byte) ~BIT_6;
 	public static final byte BIT_NOT_7 = (byte) ~BIT_7;
 
-	public static final byte[] BITS = { BIT_0, BIT_1, BIT_2, BIT_3, BIT_4, BIT_5, BIT_6, BIT_7 };
-	public static final byte[] BITS_NOT = { BIT_NOT_0, BIT_NOT_1, BIT_NOT_2, BIT_NOT_3, BIT_NOT_4, BIT_NOT_5, BIT_NOT_6,
+	private static final byte[] BITS = { BIT_0, BIT_1, BIT_2, BIT_3, BIT_4, BIT_5, BIT_6, BIT_7 };
+	private static final byte[] BITS_NOT = { BIT_NOT_0, BIT_NOT_1, BIT_NOT_2, BIT_NOT_3, BIT_NOT_4, BIT_NOT_5, BIT_NOT_6,
 			BIT_NOT_7 };
 
 

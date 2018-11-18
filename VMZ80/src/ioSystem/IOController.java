@@ -95,14 +95,22 @@ public class IOController {
 	}// setVisible
 
 	public String getVisibleDevices() {
-		String ans = "";
+		StringBuilder sb = new StringBuilder();
 		for (DeviceZ80 d : devicePopulation) {
 			if (d.isVisible()) {
-				ans += "|" + d.getName();
+				sb.append( "|" + d.getName());
 			} // if
 		} // for
-		System.out.printf("[IOController.getVisibleDevices] %s%n", ans);
-		return ans;
+//		log.infof("[IOController.getVisibleDevices] %s%n",sb.toString());
+		return sb.toString();
+//		String ans = "";
+//		for (DeviceZ80 d : devicePopulation) {
+//			if (d.isVisible()) {
+//				ans += "|" + d.getName();
+//			} // if
+//		} // for
+//		System.out.printf("[IOController.getVisibleDevices] %s%n", ans);
+//		return ans;
 	}// getVisibleDevices
 
 	public void setVisibleDevices(String deviceSet) {

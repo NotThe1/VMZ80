@@ -329,19 +329,22 @@ public class ArithmeticUnit {
 	}// getBitValue
 
 	public void bitTest(byte arg, int bit) {
-		byte mask = Z80.BITS[getBitValue(bit)];
+		byte mask = Z80.getBit(getBitValue(bit));
+//		byte mask = Z80.BITS[getBitValue(bit)];
 		halfCarry = true;
 		nFlag = false;
 		zero = (arg & mask) != mask;
 	}// bitTest
 
 	public byte bitSet(byte arg, int bit) {
-		byte mask = Z80.BITS[getBitValue(bit)];
+		byte mask = Z80.getBit(getBitValue(bit));
+//		byte mask = Z80.BITS[getBitValue(bit)];
 		return (byte) (arg | mask);
 	}// bitTest
 
 	public byte bitRes(byte arg, int bit) {
-		byte mask = Z80.BITS_NOT[getBitValue(bit)];
+		byte mask = Z80.getBitNot(getBitValue(bit));
+//		byte mask = Z80.BITS_NOT[getBitValue(bit)];
 		return (byte) (arg & mask);
 	}// bitTest
 

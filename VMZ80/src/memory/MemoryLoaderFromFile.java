@@ -23,7 +23,7 @@ public class MemoryLoaderFromFile {
 	static public byte[] loadMemoryImage(File sourceFile, int size) {
 		result = new byte[size];
 		loadMemoryImage(sourceFile);
-		return result;
+		return result.clone();
 
 	}//
 
@@ -39,7 +39,7 @@ public class MemoryLoaderFromFile {
 	static public byte[] loadMemoryImage(BufferedReader bufferedReader, int size) {
 		result = new byte[size];
 		loadMemoryImage(bufferedReader);
-		return result;
+		return result.clone();
 	}
 
 	static public void loadMemoryImage(BufferedReader bufferedReader) {

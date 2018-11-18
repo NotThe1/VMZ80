@@ -80,7 +80,7 @@ public class TabDialog extends JDialog implements Runnable {
 
 		refreshMemory();
 		Thread t_disassembler = new Thread(disassembler);
-		t_disassembler.run();
+		t_disassembler.start();
 	}// appInit
 
 	public TabDialog() {
@@ -112,10 +112,10 @@ public class TabDialog extends JDialog implements Runnable {
 		tabDebug = new DebugFrame();
 		tabDebug.setName(TAB_DEBUG);
 		tabbedPane.addTab("Debug", null, tabDebug, null);
-		GridBagConstraints gbc_debug = new GridBagConstraints();
-		gbc_debug.fill = GridBagConstraints.BOTH;
-		gbc_debug.gridx = 0;
-		gbc_debug.gridy = 0;
+//		GridBagConstraints gbc_debug = new GridBagConstraints();
+//		gbc_debug.fill = GridBagConstraints.BOTH;
+//		gbc_debug.gridx = 0;
+//		gbc_debug.gridy = 0;
 		tabDebug.setLayout(new GridLayout(0, 1, 0, 0));
 		//////////////////////////////////////////////////////////////
 

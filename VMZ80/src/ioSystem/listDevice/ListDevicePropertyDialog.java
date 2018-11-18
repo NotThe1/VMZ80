@@ -54,7 +54,7 @@ public class ListDevicePropertyDialog extends JDialog implements ActionListener 
 	public int showDialog() {
 		dialogResultValue = JOptionPane.CANCEL_OPTION;
 		this.setLocationRelativeTo(this.getOwner());
-		
+
 		this.setVisible(true);
 		this.dispose();
 		return dialogResultValue;
@@ -110,13 +110,13 @@ public class ListDevicePropertyDialog extends JDialog implements ActionListener 
 
 	private void doBtnNewFont() {
 
-		FontChooser fontChooser = new FontChooser(this,lblFontFamily.getText(), lblFontStyle.getText(),
+		FontChooser fontChooser = new FontChooser(this, lblFontFamily.getText(), lblFontStyle.getText(),
 				Integer.valueOf(lblFontSize.getText()));
 
 		if (fontChooser.showDialog() == JOptionPane.OK_OPTION) {
 			Font newFont = fontChooser.selectedFont();
 
-			String currentStyle = "Plain";
+			String currentStyle;
 			switch (newFont.getStyle()) {
 			case Font.PLAIN:
 				currentStyle = "Plain";
@@ -130,7 +130,9 @@ public class ListDevicePropertyDialog extends JDialog implements ActionListener 
 			case Font.BOLD | Font.ITALIC:
 				currentStyle = "Bold Italic";
 				break;
-
+			default:
+				currentStyle = "Plain";
+				break;
 			}// switch
 
 			lblFontFamily.setText(newFont.getFamily());
@@ -163,7 +165,7 @@ public class ListDevicePropertyDialog extends JDialog implements ActionListener 
 	 */
 	public ListDevicePropertyDialog(Component c) {
 		super(SwingUtilities.getWindowAncestor(c), "List Device Propert Dialog", Dialog.DEFAULT_MODALITY_TYPE);
-		this.c = c;		// save if calling FontChooser ??
+		this.c = c; // save if calling FontChooser ??
 		initialize();
 		appInit();
 	}// Constructor
@@ -257,7 +259,9 @@ public class ListDevicePropertyDialog extends JDialog implements ActionListener 
 		panelColumns.add(lblNewLabel, gbc_lblNewLabel);
 
 		spinnerColumns = new JSpinner();
-		spinnerColumns.setModel(new SpinnerNumberModel(new Integer(120), new Integer(10), null, new Integer(1)));
+		spinnerColumns
+				.setModel(new SpinnerNumberModel(Integer.valueOf(120), Integer.valueOf(10), null, Integer.valueOf(1)));
+		// spinnerColumns.setModel(new SpinnerNumberModel(new Integer(120), new Integer(10), null, new Integer(1)));
 		GridBagConstraints gbc_spinnerColumns = new GridBagConstraints();
 		gbc_spinnerColumns.anchor = GridBagConstraints.EAST;
 		gbc_spinnerColumns.insets = new Insets(0, 0, 0, 5);

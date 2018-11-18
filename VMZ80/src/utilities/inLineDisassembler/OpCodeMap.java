@@ -443,6 +443,9 @@ public class OpCodeMap {
 				instruction = "SRL";
 				function = "0->[b7->b0]->cy";
 				break;
+			default:
+				// NOP
+				break;
 			}// switch
 			register = registers[code % 8];
 
@@ -472,6 +475,9 @@ public class OpCodeMap {
 				instruction = "SET";
 				operation = "Set";
 				break;
+			default:
+				instruction = "BAD";
+				break;
 			}// switch instruction
 
 			int bitBase = code - (hiByte * 0x40);
@@ -500,6 +506,9 @@ public class OpCodeMap {
 				break;
 			case 7:
 				bitString = "7";
+				break;
+			default:
+				bitString = "?";
 				break;
 			}// switch bits
 			key = String.format("CB%02X", code);

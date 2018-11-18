@@ -43,7 +43,10 @@ public class MakeNewDisk {
 					"YES - Continue, NO - Cancel", JOptionPane.YES_NO_OPTION) == JOptionPane.NO_OPTION) {
 				return null;
 			} else {
-				selectedFile.delete();
+				if(!selectedFile.delete()){
+					JOptionPane.showMessageDialog(null, "Unable to delete old file: " + selectedFile.getAbsolutePath(),"Make new disk",JOptionPane.ERROR_MESSAGE);
+					return null;
+				}// if not deleted
 				selectedFile = null;
 				selectedFile = new File(targetAbsoluteFileName);
 			} // inner if

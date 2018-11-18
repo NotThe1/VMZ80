@@ -15,16 +15,19 @@ public class CPMDirectoryEntry {
 	private boolean bigDisk;
 
 	public static CPMDirectoryEntry emptyDirectoryEntry(boolean bigDisk) {
-		return new CPMDirectoryEntry(Disk.EMPTY_DIRECTORY_ENTRY,bigDisk);
+		return new CPMDirectoryEntry(Disk.getEmptyDirectory(),bigDisk);
+//		return new CPMDirectoryEntry(Disk.EMPTY_DIRECTORY_ENTRY,bigDisk);
 	}//emptyDirectoryEntry(boolean bigDisk)
 	
 	public static CPMDirectoryEntry emptyDirectoryEntry() {
-		return new CPMDirectoryEntry(Disk.EMPTY_DIRECTORY_ENTRY);
+		return new CPMDirectoryEntry(Disk.getEmptyDirectory());
+//		return new CPMDirectoryEntry(Disk.EMPTY_DIRECTORY_ENTRY);
 	}//emptyDirectoryEntry()
 	
 
 	public void markAsDeleted() {
-		rawDirectory = Disk.EMPTY_DIRECTORY_ENTRY.clone();		
+//		rawDirectory = Disk.EMPTY_DIRECTORY_ENTRY.clone();		
+		rawDirectory = Disk.getEmptyDirectory();		
 	}//markAsDeleted
 
 	public CPMDirectoryEntry() {
