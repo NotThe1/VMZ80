@@ -14,7 +14,7 @@ public class DiskMetrics {
 	public String descriptor;
 	public int sectorsPerBlock;
 	public int directoryBlockCount;
-	public int directoryStartSector;
+//	public int directoryStartSector;
 
 	// Block size
 	private int blockSizeInBytes;

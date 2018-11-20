@@ -99,7 +99,8 @@ public class Z80Machine {
 	// ---------------------------------------------------------
 
 	private void loadROM() {
-		InputStream in = this.getClass().getResourceAsStream("/Z80code/ROM.mem");
+		InputStream in = this.getClass().getResourceAsStream("/workingOS/ROM.mem");
+//		InputStream in = this.getClass().getResourceAsStream("/Z80code/ROM.mem");
 		BufferedReader reader = new BufferedReader(new InputStreamReader(in));
 		MemoryLoaderFromFile.loadMemoryImage(reader);
 	}// loadROM
@@ -476,6 +477,12 @@ public class Z80Machine {
 				new ImageIcon(Z80Machine.class.getResource("/com/sun/java/swing/plaf/windows/icons/Computer.gif")));
 		btnBoot.setHorizontalAlignment(SwingConstants.LEADING);
 		toolBar.add(btnBoot);
+		
+		Component verticalStrut = Box.createVerticalStrut(20);
+		toolBar.add(verticalStrut);
+		
+		JToggleButton btnTest = new JToggleButton("Released");
+		toolBar.add(btnTest);
 
 		JPanel panelMain = new JPanel();
 		GridBagConstraints gbc_panelMain = new GridBagConstraints();

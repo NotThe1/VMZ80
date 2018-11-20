@@ -66,7 +66,7 @@ public class TTYZ80 extends DeviceZ80 implements Runnable {
 		while (true) {
 			if (statusFromCPU.size() > 0) {
 				statusFromCPU.poll();
-				statusToCPU.offer((byte) dataToCPU.size());
+				statusToCPU.offer( (byte) (dataToCPU.size()+1));
 			} // if Status request
 
 			if (dataFromCPU.size() > 0) {

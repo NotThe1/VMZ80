@@ -28,6 +28,8 @@ public class CentralProcessingUnit implements Runnable {
 
 	private static ErrorStatus errorCurrent = ErrorStatus.NONE;
 	private int instructionBase;
+	
+	@SuppressWarnings("unused")
 	private int interruptMode = Z80.MODE_0;
 
 	public static CentralProcessingUnit getInstance() {

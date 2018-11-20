@@ -1,0 +1,22 @@
+0001: 0000             TBA        EQU    0100H
+0002: 0000             Start:
+*************
+[ASM.resolveRelativeValue] Argument out of range TBA 100
+*************
+0003: 0000 18 00                  JR     TBA
+0004: 0002 18 74                  JR     TBA1
+*************
+[ASM.resolveRelativeValue] Argument out of range TBA2 176
+*************
+0005: 0004 18 00                  JR     TBA2
+0006: 0006 18 F8                  JR     Start
+0007: 0008                        DS     070H
+0008: 0078             TBA1:
+0009: 0078                        DS     0FEh
+0010: 0176             TBA2:
+           ************************   Xref   ************************
+0000: $               0078
+0002: Start           0000   0006
+0001: TBA             0100   0003
+0008: TBA1            0078   0004
+0010: TBA2            0176   0005

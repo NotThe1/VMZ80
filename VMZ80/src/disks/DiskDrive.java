@@ -30,7 +30,7 @@ public class DiskDrive {
 	protected long totalBytesOnDisk;
 	private String fileAbsoluteName;
 	private String fileLocalName;
-	public String description;
+//	public String description;
 
 	private FileChannel fileChannel;
 	private MappedByteBuffer disk;

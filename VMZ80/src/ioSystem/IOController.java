@@ -163,6 +163,7 @@ public class IOController {
 
 		} else if (deviceData != null) {
 			value = deviceData.dataToCPU.poll();
+//			System.out.printf("[IOController.byteToCPU] %02X%n", value);
 		} else {
 			log.infof("Address unknown for Data/Status to CPU : %02X%n", address);
 			return null;

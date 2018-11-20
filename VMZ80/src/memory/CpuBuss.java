@@ -27,6 +27,7 @@ public class CpuBuss extends Observable implements ICore, IcpuBuss {
 	private boolean isDebug = false;
 	private boolean isDebugEnabled = false;
 
+	@SuppressWarnings("unused")
 	private static final byte DEBUG_CODE = (byte) 0X76; // DEBUG opCode
 
 	public static CpuBuss getInstance() {

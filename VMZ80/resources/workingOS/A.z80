@@ -1,0 +1,10 @@
+TBA	EQU	0100H
+Start:
+       JR	TBA
+	   JR	TBA1
+	   JR	TBA2
+	   JR	Start
+	   DS	070H
+	TBA1:
+	   DS	0FEh
+TBA2:
