@@ -3,7 +3,7 @@
 0003: 0000         ; ROM.asm
 0004: 0000         ; Rom for bios set up for diskA to be 3.5HD (1.44MB) disk
 0005: 0000
-0006: 0000         ; 2018-11-20
+0006: 0000         ; 2018-11-20 Optimized for Z80
 0007: 0000         ; 2017-03-02 Refactored the CP/M Suite
 0008: 0000
 0009: 0000

@@ -99,8 +99,7 @@ public class Z80Machine {
 	// ---------------------------------------------------------
 
 	private void loadROM() {
-		InputStream in = this.getClass().getResourceAsStream("/workingOS/ROM.mem");
-//		InputStream in = this.getClass().getResourceAsStream("/Z80code/ROM.mem");
+		InputStream in = this.getClass().getResourceAsStream("/Z80code/ROM.mem");
 		BufferedReader reader = new BufferedReader(new InputStreamReader(in));
 		MemoryLoaderFromFile.loadMemoryImage(reader);
 	}// loadROM

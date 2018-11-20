@@ -3,7 +3,7 @@
  ; ROM.asm
  ; Rom for bios set up for diskA to be 3.5HD (1.44MB) disk
  
- ; 2018-11-20 
+ ; 2018-11-20 Optimized for Z80
  ; 2017-03-02 Refactored the CP/M Suite
  
  
