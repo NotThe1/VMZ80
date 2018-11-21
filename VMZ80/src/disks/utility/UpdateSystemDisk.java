@@ -37,6 +37,7 @@ public class UpdateSystemDisk {
 			/* Boot Sector */
 			// URL rom = thisClass.getResource("/disks/resources/BootSector.mem");
 
+//			InputStream in = thisClass.getClass().getResourceAsStream("/workingOS/BootSector.mem");
 			InputStream in = thisClass.getClass().getResourceAsStream("/Z80Code/BootSector.mem");
 			BufferedReader reader = new BufferedReader(new InputStreamReader(in));
 
@@ -45,16 +46,19 @@ public class UpdateSystemDisk {
 			disk.put(dataBoot);
 
 			in = thisClass.getClass().getResourceAsStream("/Z80Code/CCP.mem");
+//			in = thisClass.getClass().getResourceAsStream("/workingOS/CCP.mem");
 			reader = new BufferedReader(new InputStreamReader(in));
 			byte[] dataCCP = MemoryLoaderFromFile.loadMemoryImage(reader, 0x0800);
 			disk.put(dataCCP);
 
 			in = thisClass.getClass().getResourceAsStream("/Z80Code/BDOS.mem");
+//			in = thisClass.getClass().getResourceAsStream("/workingOS/BDOS.mem");
 			reader = new BufferedReader(new InputStreamReader(in));
 			byte[] dataBDOS = MemoryLoaderFromFile.loadMemoryImage(reader, 0x0E00);
 			disk.put(dataBDOS);
 
 			in = thisClass.getClass().getResourceAsStream("/Z80Code/BIOS.mem");
+//			in = thisClass.getClass().getResourceAsStream("/workingOS/BIOS.mem");
 			reader = new BufferedReader(new InputStreamReader(in));
 			byte[] dataBIOS = MemoryLoaderFromFile.loadMemoryImage(reader, 0x0A00);
 			disk.put(dataBIOS);
