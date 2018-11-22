@@ -49,6 +49,7 @@ import disks.DiskControlUnit;
 import disks.diskPanel.V_IF_DiskPanel;
 import disks.utility.DiskUtility;
 import disks.utility.MakeNewDisk;
+import disks.utility.UpdateSystemDisk;
 import hardware.View.TabDialog;
 import hardware.View.V_IF_CCR;
 import hardware.View.V_IF_IndexRegisters;
@@ -99,8 +100,8 @@ public class Z80Machine {
 	// ---------------------------------------------------------
 
 	private void loadROM() {
-//		InputStream in = this.getClass().getResourceAsStream("/workingOS/ROM.mem");
-		InputStream in = this.getClass().getResourceAsStream("/Z80code/ROM.mem");
+		InputStream in = this.getClass().getResourceAsStream("/workingOS/ROM.mem");
+//		InputStream in = this.getClass().getResourceAsStream("/Z80code/ROM.mem");
 		BufferedReader reader = new BufferedReader(new InputStreamReader(in));
 		MemoryLoaderFromFile.loadMemoryImage(reader);
 	}// loadROM
@@ -481,7 +482,13 @@ public class Z80Machine {
 		Component verticalStrut = Box.createVerticalStrut(20);
 		toolBar.add(verticalStrut);
 		
-		JToggleButton btnTest = new JToggleButton("Released");
+		JButton btnTest = new JButton("Update Disk A");
+		btnTest.setToolTipText("C:\\Users\\admin\\Z80Work\\Disks\\A.F3HD");
+		btnTest.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent arg0) {
+				UpdateSystemDisk.updateDisk("C:\\Users\\admin\\Z80Work\\Disks\\A.F3HD");
+			}//
+		});
 		toolBar.add(btnTest);
 
 		JPanel panelMain = new JPanel();

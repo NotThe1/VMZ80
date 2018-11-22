@@ -1,10 +1,14 @@
 TBA	EQU	0100H
+	ORG   080H
 Start:
-       JR	TBA
+ ;      JR	TBA
 	   JR	TBA1
-	   JR	TBA2
+;	   JR	TBA2
 	   JR	Start
 	   DS	070H
 	TBA1:
 	   DS	0FEh
 TBA2:
+
+org 	500H
+		DB	'start of TPA'

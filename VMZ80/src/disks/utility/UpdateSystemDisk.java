@@ -37,8 +37,8 @@ public class UpdateSystemDisk {
 			/* Boot Sector */
 			// URL rom = thisClass.getResource("/disks/resources/BootSector.mem");
 
-//			InputStream in = thisClass.getClass().getResourceAsStream("/workingOS/BootSector.mem");
-			InputStream in = thisClass.getClass().getResourceAsStream("/Z80Code/BootSector.mem");
+			InputStream in = thisClass.getClass().getResourceAsStream("/workingOS/BootSector.mem");
+//			InputStream in = thisClass.getClass().getResourceAsStream("/Z80Code/BootSector.mem");
 			BufferedReader reader = new BufferedReader(new InputStreamReader(in));
 
 			byte[] dataBoot = MemoryLoaderFromFile.loadMemoryImage(reader, 0x0200);
