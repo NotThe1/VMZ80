@@ -1,8 +1,9 @@
 ;     File created by MakeZ80Source on Tue Sep 18 10:01:22 EDT 2018 from:
 ;     C:\Users\admin\Dropbox\Resources\CPM\CurrentOS\8080\BootSector.asm
- ; BootSector.Z80
+ ; BootSector.Z80 
+ ; Build 2.0A
  
- ; 2018-11-22   Z80 idiom
+ ; 2018-11-22 begin  Z80 idiom update
  ; 2017-04-07 Added equates for message IO : BOOT_CON_ADDRESS
  ;				 , and default IOBYTE : IOBYTE_DEFAULT
  ; 2017-03-02 Refactored the CP/M Suite
@@ -21,19 +22,20 @@
  Start:
  	LD		SP,Start-1						; stack goes down from here
  	CALL	SendBootMessage					; display boot message
- 	LD		B,Page0ImageEnd-Page0Image		; Size of code to move
+ 	LD		BC,Page0ImageEnd-Page0Image		; Size of code to move
  	LD		HL,Page0Image					; Source of page 0 code
  	LD		DE,0000							; Location 0, the target
  
  ; Set up page zero,Move (B) bytes from (HL) to (DE).
  
- HL2DE:
- 	LD		A,(HL)
- 	LD	(DE),A
- 	INC		HL
- 	INC		DE
- 	DEC		B
- 	JP	NZ,HL2DE
+; HL2DE:
+; 	LD		A,(HL)
+; 	LD	(DE),A
+; 	INC		HL
+; 	INC		DE
+; 	DEC		B
+; 	JP	NZ,HL2DE
+	LDIR
  
  ; Now  start to move data to Disk Control Block
  
@@ -91,7 +93,7 @@
  	DB		' loader'
  	DB		CR,LF,
  	DB		'Build '
- 	DB		'1.10  : 1.0 - 1.1 - 1.2'
+ 	DB		'2.0A  : 1.0 - 1.1 - 1.2'
  	DB		CR,LF,EndOfMessage
  
  SendBootMessage:
