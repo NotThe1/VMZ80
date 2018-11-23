@@ -48,7 +48,7 @@ public class WorkingRegisterSet {
 	}// Constructor
 		// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-	public void initialize() {
+	public  void initialize() {
 		registers.clear();
 		Byte value = 0X00;
 		for (Register register : Register.values()) {

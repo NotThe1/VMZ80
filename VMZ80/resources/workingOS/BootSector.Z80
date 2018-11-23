@@ -47,7 +47,7 @@
  WaitForBootComplete:
  	LD		A,(HL)								; Get the control byte
  	OR		A								; is it set to 0 (Completed operation) ?
- 	JP	NZ,WaitForBootComplete				; if not try again
+ 	JR	NZ,WaitForBootComplete				; if not try again
  
  	LD		A,(DiskStatusLocation)				; after operation what's the status?
  	CP		080H							; any errors ?

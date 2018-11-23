@@ -379,6 +379,7 @@ public class Z80Machine {
 	private void doBoot() {
 		Core.getInstance().initialize();
 		loadROM();
+		WorkingRegisterSet.getInstance().initialize();
 		tbRunStop.setSelected(true);
 		doRunStop();
 	}// boot

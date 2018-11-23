@@ -3,12 +3,17 @@
  ; ROM.Z80
  ; Rom for BIOS set up for diskA to be 3.5HD (1.44MB) disk
  
+ ; 2018-11-23 Moved code away from the DiskControlBlock
  ; 2018-11-22  Z80 idiom
  ; 2017-03-02 Refactored the CP/M Suite
  
  
- 	$Include ./osHeader.Z80
- 	$Include ./diskHeader.Z80
+  	$Include ./stdHeader.Z80
+;	$Include ./osHeader.Z80
+; 	$Include ./diskHeader.Z80
+	
+ BOOT_CON_ADDRESS	EQU	0ECH				; tty data address
+ 
  
  	ORG		0000
  
@@ -28,8 +33,28 @@
  	LD		A,(DiskStatusLocation)				; after operation what's the status?
  	CP		080H							; any errors ?
  
- 	JP	NC,TPA								; now execute the boot loader
- 	HALT
+ 	JP	NC,TPA								; now execute the boot loader;
+ ;	HALT
+	CALL	NoDisk;
+	HALT
+;---------------------------------------
+
+	ORG   DMABuffer
+ 
+ NoDisk:
+ 	LD		HL,NoDiskMessage
+ SendMessage1:
+ 	LD		A,(HL)
+ 	OR		A
+ 	RET	Z
+ 	OUT		(BOOT_CON_ADDRESS),A				; Console address
+ 	INC		HL
+ 	JR		SendMessage1
+	
+NoDiskMessage:
+ 	DB		CR,LF
+ 	DB		'No System Disk Mounted'
+ 	DB		CR,LF,EndOfMessage 
  ;---------------------------------------
  ROMControl:
  	DB		DiskReadCode					; Read function
@@ -41,5 +66,6 @@
  	DW		TPA								; read into this address
  	DW		DiskStatusLocation				; pointer to next block - no linking
  	DW		DiskControlTable				; pointer to next table- no linking
- CodeEnd:
+
+  CodeEnd:
  
