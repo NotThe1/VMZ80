@@ -101,7 +101,7 @@ public class Z80Machine {
 
 	private void loadROM() {
 		InputStream in = this.getClass().getResourceAsStream("/workingOS/ROM.mem");
-//		InputStream in = this.getClass().getResourceAsStream("/Z80code/ROM.mem");
+		// InputStream in = this.getClass().getResourceAsStream("/Z80code/ROM.mem");
 		BufferedReader reader = new BufferedReader(new InputStreamReader(in));
 		MemoryLoaderFromFile.loadMemoryImage(reader);
 	}// loadROM
@@ -139,21 +139,22 @@ public class Z80Machine {
 		} // if
 
 		setDisplaysEnabled(!tbRunStop.isSelected());
+		btnBoot.setEnabled(!tbRunStop.isSelected());
 	}// doRunStop
 
 	// ----------------------------------------------------------
 
 	private void doFileNew() {
-//		System.out.println("** [doFileNew] **");
-//		String diskPath = "C:\\Users\\admin\\VMdata\\Disks\\ZZZ.F3HD";
-//		File file = new File(diskPath);
-//		file.delete();
-//		try {
-//			file.createNewFile();
-//			UpdateSystemDisk.updateDisk(diskPath);
-//		} catch (IOException e) {
-//			log.error(" Did not create file :" + diskPath);
-//		} // try
+		// System.out.println("** [doFileNew] **");
+		// String diskPath = "C:\\Users\\admin\\VMdata\\Disks\\ZZZ.F3HD";
+		// File file = new File(diskPath);
+		// file.delete();
+		// try {
+		// file.createNewFile();
+		// UpdateSystemDisk.updateDisk(diskPath);
+		// } catch (IOException e) {
+		// log.error(" Did not create file :" + diskPath);
+		// } // try
 	}// doFileNew
 
 	private void doFileOpen() {
@@ -357,7 +358,7 @@ public class Z80Machine {
 	}// getInternalFrameLocations
 
 	private void saveInternalFrameLocations(Preferences myPrefs) { //
-//		Point location = new Point();
+		// Point location = new Point();
 		JInternalFrame[] internalFrames = desktopPane.getAllFrames();
 		for (JInternalFrame internalFrame : internalFrames) {
 			String key = internalFrame.getClass().getSimpleName();
@@ -377,10 +378,13 @@ public class Z80Machine {
 	}// setDisplaysEnabled
 
 	private void doBoot() {
+		int numberOfdrives0 = dcu.getMaxNumberOfDrives();
 		Core.getInstance().initialize();
 		loadROM();
 		WorkingRegisterSet.getInstance().initialize();
 		tbRunStop.setSelected(true);
+		int numberOfdrives1 = dcu.getMaxNumberOfDrives();
+		;
 		doRunStop();
 	}// boot
 		////////////////////////////////////////////////////////////////////////////////////////
@@ -469,7 +473,7 @@ public class Z80Machine {
 		gbc_toolBar.gridy = 0;
 		frameBase.getContentPane().add(toolBar, gbc_toolBar);
 
-		JToggleButton btnBoot = new JToggleButton("");
+		btnBoot = new JToggleButton("");
 		btnBoot.setName(BUTTON_BOOT);
 		btnBoot.addActionListener(applicationAdapter);
 		btnBoot.setBorder(null);
@@ -479,10 +483,10 @@ public class Z80Machine {
 				new ImageIcon(Z80Machine.class.getResource("/com/sun/java/swing/plaf/windows/icons/Computer.gif")));
 		btnBoot.setHorizontalAlignment(SwingConstants.LEADING);
 		toolBar.add(btnBoot);
-		
+
 		Component verticalStrut = Box.createVerticalStrut(20);
 		toolBar.add(verticalStrut);
-		
+
 		JButton btnTest = new JButton("Update Disk A");
 		btnTest.setToolTipText("C:\\Users\\admin\\Z80Work\\Disks\\A.F3HD");
 		btnTest.addActionListener(new ActionListener() {
@@ -803,6 +807,7 @@ public class Z80Machine {
 	private JSpinner spinnerStepCount;
 	private JToggleButton tbRunStop;
 	private JPanel disksPanel;
+	private JToggleButton btnBoot;
 	//////////////////////////////////////////////////////////////////////////
 
 	class ApplicationAdapter implements ActionListener, HDNumberValueChangeListener, Observer {// ,
