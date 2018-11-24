@@ -2,7 +2,6 @@
 ;     C:\Users\admin\Dropbox\Resources\CPM\CurrentOS\8080\BIOS.asm
  ; BIOS.Z80
  
- ; 2018-11-22 Z80 idiom
  ; 2017-03-31 Added List out functionality for List Device
  ; 2017-03-02 Refactored the CP/M Suite
  ; 2017-02-08 All disk drives are 3.5 DH disks (1.44MB)

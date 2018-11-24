@@ -1,14 +1,29 @@
-TBA	EQU	0100H
-	ORG   080H
-Start:
- ;      JR	TBA
-	   JR	TBA1
-;	   JR	TBA2
-	   JR	Start
-	   DS	070H
-	TBA1:
-	   DS	0FEh
-TBA2:
 
-org 	500H
-		DB	'start of TPA'
+StackTop	EQU		0100
+	ORG   0100H
+Const:
+	LD	SP,StackTop
+	CALL GetConsoleStatus
+	OR	A
+	HALT
+	DB	0,0,0,0,
+GetConsoleStatus:
+	LD	IX,ConStat
+	LD	A,01H
+	CALL SelectRoutine
+	HALT
+	
+SelectRoutine:
+	AND	03H
+	ADD	A,A
+	LD	D,00H
+	LD	E,A
+	ADD	IX,DE
+	JP	(IX)
+	
+	
+ConStat:
+	DW	1234H
+	DW	5678H
+	DW	9ABCH
+	DW	0DEF0H

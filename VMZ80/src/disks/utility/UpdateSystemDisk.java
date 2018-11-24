@@ -57,8 +57,8 @@ public class UpdateSystemDisk {
 			byte[] dataBDOS = MemoryLoaderFromFile.loadMemoryImage(reader, 0x0E00);
 			disk.put(dataBDOS);
 
-			in = thisClass.getClass().getResourceAsStream("/Z80Code/BIOS.mem");
-//			in = thisClass.getClass().getResourceAsStream("/workingOS/BIOS.mem");
+//			in = thisClass.getClass().getResourceAsStream("/Z80Code/BIOS.mem");
+			in = thisClass.getClass().getResourceAsStream("/workingOS/BIOS.mem");
 			reader = new BufferedReader(new InputStreamReader(in));
 			byte[] dataBIOS = MemoryLoaderFromFile.loadMemoryImage(reader, 0x0A00);
 			disk.put(dataBIOS);
