@@ -68,6 +68,7 @@ public class ArithmeticUnit {
 						"[au] daa()%n bad flagMix%n" + " value: %02X, subtractFlag: %s, carryIn: %s,halfCarryIn: %s",
 						value, subtractFlag, carryIn, halfCarryIn);
 				log.error(message);
+				CentralProcessingUnit.setRunning(false);
 				CentralProcessingUnit.setError(ErrorStatus.ARITHMETIC_UNIT_ERROR);
 			}// switch Subtraction
 
@@ -445,6 +446,7 @@ public class ArithmeticUnit {
 				+ " augend: %s ,addend: %s ,carryIn: %s",
 						bitCount,augend,addend,carryIn);
 				log.error(message);
+				CentralProcessingUnit.setRunning(false);
 				CentralProcessingUnit.setError(ErrorStatus.ARITHMETIC_UNIT_ERROR);
 			}// switch
 		} // for
@@ -468,6 +470,7 @@ public class ArithmeticUnit {
 			String message = String.format("[au] getSum(): bad ans.length: %02X%n",ans.length);
 			log.error(message);
 			CentralProcessingUnit.setError(ErrorStatus.ARITHMETIC_UNIT_ERROR);
+			CentralProcessingUnit.setRunning(false);
 		}// switch
 		return ans;
 	}// getSum

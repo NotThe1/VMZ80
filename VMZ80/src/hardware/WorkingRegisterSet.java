@@ -106,6 +106,7 @@ public class WorkingRegisterSet {
 		default:
 			String message = String.format("[wrs] setDoubleReg() - bad register %s", reg);
 			log.error(message);
+			CentralProcessingUnit.setRunning(false);
 			CentralProcessingUnit.setError(ErrorStatus.WORKING_REGISTER_SET_ERROR);
 		}// switch
 	}// setDoubleReg
@@ -142,6 +143,7 @@ public class WorkingRegisterSet {
 		default:
 			log.errorf("[workingRegisterSet] %n getDoubleReg-%s at location %04X,", reg,
 					this.programCounter);
+			CentralProcessingUnit.setRunning(false);
 			CentralProcessingUnit.setError(ErrorStatus.WORKING_REGISTER_SET_ERROR);
 		}// switch
 
@@ -185,6 +187,7 @@ public class WorkingRegisterSet {
 		default:
 			String message = String.format("[wrs] getDoubleRegArray() - bad register %s", reg);
 			log.error(message);
+			CentralProcessingUnit.setRunning(false);
 			CentralProcessingUnit.setError(ErrorStatus.WORKING_REGISTER_SET_ERROR);
 		}// switch
 

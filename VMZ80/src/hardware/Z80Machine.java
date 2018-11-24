@@ -108,6 +108,7 @@ public class Z80Machine {
 
 	private void doStep() {
 		CentralProcessingUnit.setError(ErrorStatus.NONE);
+		CentralProcessingUnit.setRunning(true);
 		EventQueue.invokeLater(new Runnable() {
 			public void run() {
 				int stepCount = (int) spinnerStepCount.getValue();
@@ -116,6 +117,7 @@ public class Z80Machine {
 						break;
 					} // if
 				} // for step count
+				CentralProcessingUnit.setRunning(false);
 				updateDisplaysMaster();
 			}// run
 		});// EventQueue.invokeLater
@@ -127,6 +129,7 @@ public class Z80Machine {
 		if (tbRunStop.isSelected()) {
 			tbRunStop.setToolTipText(BUTTON_STOP_TIP);
 			CentralProcessingUnit.setError(ErrorStatus.NONE);
+			CentralProcessingUnit.setRunning(true);
 			System.out.println("actionPerformed: doRun");
 			Thread t = new Thread(cpu);
 			t.start();
@@ -134,6 +137,7 @@ public class Z80Machine {
 			tbRunStop.setToolTipText(BUTTON_RUN_TIP);
 			System.out.println("actionPerformed: doStop");
 			CentralProcessingUnit.setError(ErrorStatus.HALT_INSTRUCTION);
+			CentralProcessingUnit.setRunning(false);
 			// CentralProcessingUnit.setError(ErrorStatus.NONE);
 			updateDisplaysMaster();
 		} // if
