@@ -1,36 +1,63 @@
 0001: 0100
-0002: 0100             StackTop   EQU    0100
+0002: 0100             StackTop   EQU    0100H
 0003: 0100                        ORG    0100H
-0004: 0100             Const:
-0005: 0100 31 64 00               LD     SP,StackTop
-0006: 0103 CD 0C 01               CALL   GetConsoleStatus
-0007: 0106 B7                     OR     A
-0008: 0107 76                     HALT
-0009: 0108 00 00 00 00                DB     0,0,0,0,
-0010: 010C             GetConsoleStatus:
-0011: 010C DD 21 20 01               LD     IX,ConStat
-0012: 0110 3E 01                  LD     A,01H
-0013: 0112 CD 16 01               CALL   SelectRoutine
-0014: 0115 76                     HALT
-0015: 0116
-0016: 0116             SelectRoutine:
-0017: 0116 E6 03                  AND    03H
-0018: 0118 87                     ADD    A,A
-0019: 0119 16 00                  LD     D,00H
-0020: 011B 5F                     LD     E,A
-0021: 011C DD 19                  ADD    IX,DE
-0022: 011E DD E9                  JP     (IX)
-0023: 0120
-0024: 0120
-0025: 0120             ConStat:
-0026: 0120 34 12                  DW     1234H
-0027: 0122 78 56                  DW     5678H
-0028: 0124 BC 9A                  DW     9ABCH
-0029: 0126 F0 DE                  DW     0DEF0H
+0004: 0100
+0005: 0100             Start:
+0006: 0100 31 00 01               LD     SP,StackTop
+0007: 0103 CD 07 01               CALL   Const
+0008: 0106 76                     HALT
+0009: 0107
+0010: 0107
+0011: 0107             Const:
+0012: 0107 C3 10 01               JP     GetConsoleStatus
+0013: 010A B7                     OR     A
+0014: 010B 76                     HALT
+0015: 010C 00 00 00 00                DB     0,0,0,0,
+0016: 0110             GetConsoleStatus:
+0017: 0110 DD 21 29 01               LD     IX,ConStat
+0018: 0114 3E 01                  LD     A,01H
+0019: 0116 C3 1A 01               JP     SelectRoutine
+0020: 0119 76                     HALT
+0021: 011A
+0022: 011A             SelectRoutine:
+0023: 011A E6 03                  AND    03H
+0024: 011C 87                     ADD    A,A
+0025: 011D 16 00                  LD     D,00H
+0026: 011F 5F                     LD     E,A
+0027: 0120 DD 19                  ADD    IX,DE
+0028: 0122 DD 6E 00               LD     L,(IX+0)             ;
+0029: 0125 DD 66 01               LD     H,(IX+1)
+0030: 0128 E9                     JP     (HL)
+0031: 0129
+0032: 0129
+0033: 0129             ConStat:
+0034: 0129 35 01                  DW     device00
+0035: 012B 37 01                  DW     device01
+0036: 012D 39 01                  DW     device10
+0037: 012F 3B 01                  DW     device11
+0038: 0131 00 00 00 00                DB     0,0,0,0
+0039: 0135
+0040: 0135             device00:
+0041: 0135 C9                     RET
+0042: 0136 76                     HALT
+0043: 0137             device01:
+0044: 0137 C9                     RET
+0045: 0138 76                     HALT
+0046: 0139             device10:
+0047: 0139 C9                     RET
+0048: 013A 76                     HALT
+0049: 013B             device11:
+0050: 013B C9                     RET
+0051: 013C 76                     HALT
            ************************   Xref   ************************
-0000: $               0126
-0004: Const           0100
-0025: ConStat         0120   0011
-0010: GetConsoleStatus 010C   0006
-0016: SelectRoutine   0116   0013
-0002: StackTop        0064   0005
+0000: $               013C
+0011: Const           0107   0007
+0033: ConStat         0129   0017
+0040: device00        0135   0034
+0043: device01        0137   0035
+0046: device10        0139   0036
+0049: device11        013B   0037
+0016: GetConsoleStatus 0110   0012
+0022: SelectRoutine   011A   0019
+0002: StackTop        0100   0006
+0005: Start           0100

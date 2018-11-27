@@ -456,7 +456,7 @@ public class DebugFrame extends JInternalFrame implements Runnable {
 	private JLabel lblLisingName;
 	private JMenu mnuFiles;
 
-	public void setProgramCounter(int programCounter) {
+	private void setProgramCounter(int programCounter) {
 		this.programCounter = programCounter & 0XFFFF;
 
 		setFileToShow(programCounter);

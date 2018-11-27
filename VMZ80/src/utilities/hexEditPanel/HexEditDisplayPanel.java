@@ -201,6 +201,10 @@ public class HexEditDisplayPanel extends JPanel implements Runnable {
 	public void setDot(int position) {
 		textHex.setCaretPosition(position);
 	}// setDot
+	
+	public void refresh() {
+		fillPane();
+	}//refresh
 
 	void fillPane() {
 		if (currentExtent == 0) {

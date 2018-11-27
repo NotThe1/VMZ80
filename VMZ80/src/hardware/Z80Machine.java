@@ -15,12 +15,13 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.beans.PropertyVetoException;
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.Observable;
 import java.util.Observer;
 import java.util.prefs.Preferences;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.swing.Box;
 import javax.swing.ImageIcon;
@@ -161,28 +162,65 @@ public class Z80Machine {
 		// } // try
 	}// doFileNew
 
-	private void doFileOpen() {
+	private void doFileLoadMemory() {
+//		JFileChooser filePicker = FilePicker.getMemories();
+//		// JFileChooser filePicker = FilePicker.getMemoryPicker();
+//		if (filePicker.showOpenDialog(frameBase) != JFileChooser.OPEN_DIALOG) {
+//			log.info("abandoned File Load Memory");
+//			return;
+//		} // if
+//		for (File file : filePicker.getSelectedFiles()) {
+//			log.infof("File chosen is %s%n", file.toString());
+//			MemoryLoaderFromFile.loadMemoryImage(file);
+//			// MemoryLoaderFromFile.loadMemoryImage(new File(filePicker.getSelectedFile().getAbsolutePath()));
+//		} // for each file
+//		updateDisplaysMaster();
+		
+		
+		JFileChooser filePicker = new JFileChooser("C:\\Users\\admin\\git\\VMZ80\\VMZ80\\resources\\workingOS");
+		if (filePicker.showOpenDialog(frameBase) != JFileChooser.OPEN_DIALOG) {
+			log.info("abandoned File Load Memory");
+			return;
+		} // if
+		MemoryLoaderFromFile.loadMemoryImage(filePicker.getSelectedFile());
+		updateDisplaysMaster();
+	}// doFileOpen
+
+	private void doFileSaveMemory() {
 		JFileChooser filePicker = FilePicker.getMemories();
 		// JFileChooser filePicker = FilePicker.getMemoryPicker();
 		if (filePicker.showOpenDialog(frameBase) != JFileChooser.OPEN_DIALOG) {
-			log.info("Closed foFileOpen");
+			log.info("abandoned File Load Memory");
 			return;
 		} // if
-		for (File file : filePicker.getSelectedFiles()) {
-			log.infof("File chosen is %s%n", file.toString());
-			MemoryLoaderFromFile.loadMemoryImage(file);
-			// MemoryLoaderFromFile.loadMemoryImage(new File(filePicker.getSelectedFile().getAbsolutePath()));
-		} // for each file
-	}// doFileOpen
-
-	private void doFileSave() {
-		System.out.println("** [doFileSave] **");
+		final String DEFAULT_TYPE = "MEM";
+		final String DEFAULT_FILE_TYPE = "." + DEFAULT_TYPE;
+		String selectedFilePath = filePicker.getSelectedFile().getAbsolutePath();
+		String saveFilePath;
+		Pattern memoryFileTypes = Pattern.compile("(?i)\\.(HEX|MEM)$");
+		Matcher fileTypeMatcher = memoryFileTypes.matcher(selectedFilePath);
+		String fileType = "XXX";
+		if (fileTypeMatcher.find()) {// type is either MEM or HEX
+			saveFilePath = selectedFilePath;
+			fileType = fileTypeMatcher.group(1);
+		} else {
+			Pattern fileTypePattern = Pattern.compile("\\.([^.]+$)");
+			fileTypeMatcher=fileTypePattern.matcher(selectedFilePath);
+			if (fileTypeMatcher.find()) {// has other file type
+				saveFilePath = fileTypeMatcher.replaceFirst(DEFAULT_FILE_TYPE);
+				fileType = DEFAULT_TYPE;
+			}else {// has no file type
+				saveFilePath = selectedFilePath + DEFAULT_FILE_TYPE;
+				fileType = DEFAULT_TYPE;
+			}//inner if
+		} // if
+	
+		System.out.printf("[Z80Machine.doFileSaveMemory]fileType: %s, saveFilePath: %s%n", fileType,saveFilePath);
 
 	}// doFileSave
 
 	private void doFileSaveAs() {
 		System.out.println("** [doFileSaveAs] **");
-
 	}// doFileSaveAs
 
 	private void doFilePrint() {
@@ -451,7 +489,7 @@ public class Z80Machine {
 	 */
 	private void initialize() {
 		frameBase = new JFrame();
-		frameBase.setTitle("Z80 Machine    0.0");
+		frameBase.setTitle("Z80 Machine    A.0.1");
 		frameBase.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frameBase.addWindowListener(new WindowAdapter() {
 			@Override
@@ -655,18 +693,18 @@ public class Z80Machine {
 		mnuFileNew.addActionListener(applicationAdapter);
 		mnuFile.add(mnuFileNew);
 
-		JMenuItem mnuFileOpen = new JMenuItem("Open...");
-		mnuFileOpen.setName(MNU_FILE_OPEN);
-		mnuFileOpen.addActionListener(applicationAdapter);
-		mnuFile.add(mnuFileOpen);
+		JMenuItem mnuFileLoadMemory = new JMenuItem("Load Memory...");
+		mnuFileLoadMemory.setName(MNU_FILE_LOAD_MEMORY);
+		mnuFileLoadMemory.addActionListener(applicationAdapter);
+		mnuFile.add(mnuFileLoadMemory);
 
 		JSeparator separator99 = new JSeparator();
 		mnuFile.add(separator99);
 
-		JMenuItem mnuFileSave = new JMenuItem("Save...");
-		mnuFileSave.setName(MNU_FILE_SAVE);
-		mnuFileSave.addActionListener(applicationAdapter);
-		mnuFile.add(mnuFileSave);
+		JMenuItem mnuFileSaveMemory = new JMenuItem("Save Memory...");
+		mnuFileSaveMemory.setName(MNU_FILE_SAVE_MEMORY);
+		mnuFileSaveMemory.addActionListener(applicationAdapter);
+		mnuFile.add(mnuFileSaveMemory);
 
 		JMenuItem mnuFileSaveAs = new JMenuItem("Save As...");
 		mnuFileSaveAs.setName(MNU_FILE_SAVE_AS);
@@ -767,8 +805,8 @@ public class Z80Machine {
 
 	//////////////////////////////////////////////////////////////////////////
 	private static final String MNU_FILE_NEW = "mnuFileNew";
-	private static final String MNU_FILE_OPEN = "mnuFileOpen";
-	private static final String MNU_FILE_SAVE = "mnuFileSave";
+	private static final String MNU_FILE_LOAD_MEMORY = "mnuFileLoadMemory";
+	private static final String MNU_FILE_SAVE_MEMORY = "mnuFileSaveMemory";
 	private static final String MNU_FILE_SAVE_AS = "mnuFileSaveAs";
 	private static final String MNU_FILE_PRINT = "mnuFilePrint";
 	private static final String MNU_FILE_EXIT = "mnuFileExit";
@@ -836,11 +874,11 @@ public class Z80Machine {
 			case MNU_FILE_NEW:
 				doFileNew();
 				break;
-			case MNU_FILE_OPEN:
-				doFileOpen();
+			case MNU_FILE_LOAD_MEMORY:
+				doFileLoadMemory();
 				break;
-			case MNU_FILE_SAVE:
-				doFileSave();
+			case MNU_FILE_SAVE_MEMORY:
+				doFileSaveMemory();
 				break;
 			case MNU_FILE_SAVE_AS:
 				doFileSaveAs();

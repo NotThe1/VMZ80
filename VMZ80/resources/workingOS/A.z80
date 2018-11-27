@@ -1,16 +1,22 @@
 
-StackTop	EQU		0100
+StackTop	EQU		0100H
 	ORG   0100H
-Const:
+
+Start:	
 	LD	SP,StackTop
-	CALL GetConsoleStatus
+	CALL Const
+	HALT
+	
+	
+Const:
+	JP GetConsoleStatus
 	OR	A
 	HALT
 	DB	0,0,0,0,
 GetConsoleStatus:
 	LD	IX,ConStat
 	LD	A,01H
-	CALL SelectRoutine
+	JP SelectRoutine
 	HALT
 	
 SelectRoutine:
@@ -19,11 +25,27 @@ SelectRoutine:
 	LD	D,00H
 	LD	E,A
 	ADD	IX,DE
-	JP	(IX)
+	LD	L,(IX+0);
+	LD	H,(IX+1)
+	JP	(HL)
 	
 	
 ConStat:
-	DW	1234H
-	DW	5678H
-	DW	9ABCH
-	DW	0DEF0H
+	DW	device00
+	DW	device01
+	DW	device10
+	DW	device11
+	DB 0,0,0,0
+	
+device00:
+	RET
+	HALT
+device01:
+	RET
+	HALT
+device10:
+	RET
+	HALT
+device11:
+	RET
+	HALT
