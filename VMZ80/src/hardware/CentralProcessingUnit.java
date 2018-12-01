@@ -14,7 +14,9 @@ import memory.CpuBuss;
  * This class is responsible for the execution of the instruction for the system. It is a singleton Construction
  * 
  * @author Frank Martyn
- * @version 1.0
+ * @version 1.0.1
+ *
+ * 2018-12-01   wrapped a try catch around reading byte from IOC. Reported to Application Log.
  *
  */
 
@@ -1231,12 +1233,12 @@ public class CentralProcessingUnit implements Runnable {
 			case 3: // IN A,(n) - DB
 				instructionSize = 2;
 				IOaddress = cpuBuss.read(wrs.getProgramCounter() + 1);
-				wrs.setReg(Register.A, ioc.byteToCPU(IOaddress));
-				// try {
-				// } catch (IOException e) {
-				// log.errorf("Bad IO read from %02XH%n", IOaddress);
-				// System.err.print(e.toString());
-				// } // try
+				 try {
+					wrs.setReg(Register.A, ioc.byteToCPU(IOaddress));
+				 } catch (Exception e) {
+				 log.errorf("Bad IO read from %02XH%n", IOaddress);
+				 System.err.print(e.toString());
+				 } // try
 
 				break;
 			case 4: // EX (SP),HL - E3

@@ -1,45 +1,59 @@
-
+; A.Z80
+;
+;	2018-11-30
+; 1
+		
+IN_OPCODE	EQU		0DBH		; opcode for read
+		
+		
 StackTop	EQU		0100H
-	ORG   0100H
 
+
+	ORG   0100H
 Start:	
 	LD	SP,StackTop
 	CALL Const
 	HALT
 	
-	
 Const:
-	JP GetConsoleStatus
+	CALL GetConsoleStatus
 	OR	A
-	HALT
-	DB	0,0,0,0,
+	RET		Z				; 00 => No data pending
+	LD		A,0FFH
+	RET						; OFFH => Data in Buffer
+
 GetConsoleStatus:
-	LD	IX,ConStat
-	LD	A,01H
+	LD	IX,ConStatVector	; vector to I/O routines
+	LD	IY,ConStatPort		; vector to I/O values
+	LD	A,00H			;LD		A,(IOBYTE)
 	JP SelectRoutine
 	HALT
 	
 SelectRoutine:
-	AND	03H
-	ADD	A,A
+	AND	03H					; Get bits 0 & 1;
 	LD	D,00H
-	LD	E,A
-	ADD	IX,DE
-	LD	L,(IX+0);
-	LD	H,(IX+1)
-	JP	(HL)
+	LD	E,A					; load byte index int DE
+	ADD	IY,DE				; add to the value vector base
 	
-	
-ConStat:
-	DW	device00
-	DW	device01
-	DW	device10
-	DW	device11
-	DB 0,0,0,0
+	ADD	A,A					; Double for word size index
+;	LD	D,00H
+	LD	E,A					; load word index int DE
+	ADD	IX,DE				; add to the Routine vector base
+	LD	L,(IX+0)
+	LD	H,(IX+1)			; HL Points to the routine
+	JP	(HL)				; go to the routine
 	
 device00:
-	RET
+InputStatusRoutine:
+	LD	A,(IY + (ConStatPort - ConStatPort))	; Status Port
+	LD	(InputStatusPort),A
+	DB	IN_OPCODE
+InputStatusPort:	DB	00	; Modified code location
+	LD	D,(IY + (ConStatInMask-ConStatPort))
+	AND	D
+	RET						; 00 => No data pending
 	HALT
+	
 device01:
 	RET
 	HALT
@@ -49,3 +63,77 @@ device10:
 device11:
 	RET
 	HALT
+DummyInSatus:
+	LD	A,0FFH
+	RET						; Dummy always returns FFH
+
+;++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+;-----------CON: ----------------------------
+		ORG		1000H
+ConStatVectorBase:
+ConStatVector:	;	EQU $ - ConStatVectorBase
+	DW	InputStatusRoutine		; TTY:
+	DW	InputStatusRoutine		; CRT:
+	DW	InputStatusRoutine		; BAT:
+	DW	DummyInSatus			; UC1: - Dummy
+ConDataVector:	;	EQU $ - ConStatVectorBase
+	DW	device00
+	DW	device01
+	DW	device10
+	DW	device11
+ConStatPort:	;	EQU $ - ConStatVectorBase
+	DB	TTYStatusPort
+	DB	CRT_StatusPort
+	DB	CommsStatusPort
+	DB	PrinterStatusPort
+ConDataPort:	;	EQU $ - ConStatVectorBase
+	DB	TTYDataPort
+	DB	CRT_DataPort
+	DB	CommsDataPort
+	DB	PrinterDataPort
+ConStatInMask:	;	EQU $ - ConStatVectorBase
+	DB	TTYStatusInMask
+	DB	CRT_StatusInMask
+	DB	CommsStatusInMask
+	DB	PrinterStatusInMask
+ConStatOutMask:	;	EQU $ - ConStatVectorBase
+	DB	TTYStatusOutMask
+	DB	CRT_StatusOutMask
+	DB	CommsStatusOutMask
+	DB	PrinterStatusOutMask
+	
+;StatVector EQU	ConStatVector - ConStatVectorBase
+;DataVector EQU  ConDataVector-ConStatVectorBase
+;
+;ConDataPxx EQU ConDataPort - ConStatPort 
+	
+	DB 0,0,0,0
+	
+	
+PhysicalStatusPort:
+		TTYStatusPort				EQU		0EDH
+		CRT_StatusPort				EQU		02H
+		CommsStatusPort				EQU		0EDH
+		PrinterStatusPort			EQU		011H
+		
+PhysicalDataPort:
+		TTYDataPort					EQU		0ECH
+		CRT_DataPort				EQU		01H
+		CommsDataPort				EQU		0ECH
+		PrinterDataPort				EQU		010H
+		
+PhysicalStatusInMask:
+		TTYStatusInMask				EQU		02H
+		CRT_StatusInMask			EQU		07FH
+		CommsStatusInMask			EQU		02H
+		PrinterStatusInMask			EQU		07FH
+
+PhysicalStatusOutMask:
+		TTYStatusOutMask			EQU		01H
+		CRT_StatusOutMask			EQU		080H
+		CommsStatusOutMask			EQU		01DH
+		PrinterStatusOutMask		EQU		0FFH
+
+
+;++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++

@@ -66,7 +66,7 @@ import utilities.menus.MenuUtility;
 public class DebugFrame extends JInternalFrame implements Runnable {
 
 	private static final long serialVersionUID = 1L;
-//	private AppLogger log = AppLogger.getInstance();
+	// private AppLogger log = AppLogger.getInstance();
 	private AdapterDebug adapterDebug = new AdapterDebug();
 	private DefaultListModel<String> trapModel = new DefaultListModel<String>();
 	private CpuBuss cpuBuss = CpuBuss.getInstance();
@@ -80,7 +80,6 @@ public class DebugFrame extends JInternalFrame implements Runnable {
 	private int currentStart, currentEnd;
 	private String currentFilePath = null;
 	private boolean fileIsCurrent;
-
 
 	private void loadList() {
 		trapModel.clear();
@@ -428,8 +427,8 @@ public class DebugFrame extends JInternalFrame implements Runnable {
 	private static final String NO_ACTIVE_FILE = "<< No Active File >>";
 	private static final String EMPTY_STRING = "";
 	private static final String DOT = ".";
-//	private static final String PUM_LOG_PRINT = "popupLogPrint";
-//	private static final String PUM_LOG_CLEAR = "popupLogClear";
+	// private static final String PUM_LOG_PRINT = "popupLogPrint";
+	// private static final String PUM_LOG_CLEAR = "popupLogClear";
 
 	private static final String ENABLE = "Enable";
 	private static final String DISABLE = "Disable";
@@ -483,8 +482,8 @@ public class DebugFrame extends JInternalFrame implements Runnable {
 
 		// Limits thisFilesLimit = new Limits();
 		boolean weHaveAFile = false;
-		
-		for(Map.Entry<String, Limits> entry: fileList.entrySet()) {
+
+		for (Map.Entry<String, Limits> entry : fileList.entrySet()) {
 			if (isLineInThisFile(lineNumber, entry.getKey())) {
 				weHaveAFile = true;
 				currentFilePath = entry.getKey();
@@ -493,8 +492,7 @@ public class DebugFrame extends JInternalFrame implements Runnable {
 				currentEnd = thisLimits.end;
 				break;
 			} // if
-		}// for each
-
+		} // for each
 
 		lblStatus.setText("-");
 		if (!weHaveAFile) {
@@ -589,12 +587,15 @@ public class DebugFrame extends JInternalFrame implements Runnable {
 					JOptionPane.ERROR_MESSAGE);
 			return; // exit gracefully
 		} // try
+//		boolean newFile = !fileList.containsKey(listFileFullPath);
 		fileList.put(listFileFullPath, new Limits(startAddress, endAddress));
 		listings.put(listFileFullPath, stringBuilder.toString());
 		loadDisplay(listFileFullPath);
 		taListing.setCaretPosition(0);
-		MenuUtility.addItemToList(mnuFiles, new File(listFileFullPath), new JCheckBoxMenuItem());
-
+//		if (newFile) {
+			MenuUtility.addItemToList(mnuFiles, new File(listFileFullPath), new JCheckBoxMenuItem());
+//			System.out.printf("[DebugFrame.addFile] %s%n", "New File");
+//		} // if new File
 	}// addFile
 
 	private void loadDisplay(String filePath) {
@@ -610,7 +611,7 @@ public class DebugFrame extends JInternalFrame implements Runnable {
 
 	private void doAddFilesFromList() {
 		JFileChooser fc = FilePicker.getListingCollection();
-//		JFileChooser fc = FilePicker.getAllListPicker();// FilePicker.getAnyListPicker();
+		// JFileChooser fc = FilePicker.getAllListPicker();// FilePicker.getAnyListPicker();
 		if (fc.showOpenDialog(this) != JFileChooser.APPROVE_OPTION) {
 			System.out.println("You cancelled the Load Asm from File List...");
 		} else {
@@ -620,7 +621,7 @@ public class DebugFrame extends JInternalFrame implements Runnable {
 				fileReader = new FileReader((fc.getSelectedFile().getAbsolutePath()));
 				BufferedReader reader = new BufferedReader(fileReader);
 				while ((filePathName = reader.readLine()) != null) {
-//					filePathName = filePathName.replaceFirst("(?i)\\.mem$", "\\.list");
+					// filePathName = filePathName.replaceFirst("(?i)\\.mem$", "\\.list");
 					addFile(filePathName);
 				} // while
 				reader.close();
@@ -634,7 +635,7 @@ public class DebugFrame extends JInternalFrame implements Runnable {
 
 	private void doSaveSelectedToList() {
 		JFileChooser fc = FilePicker.getListingCollection();
-//		JFileChooser fc = FilePicker.getListAsmPicker();
+		// JFileChooser fc = FilePicker.getListAsmPicker();
 		if (fc.showSaveDialog(this) != JFileChooser.APPROVE_OPTION) {
 			System.out.println("You cancelled Save Selected as Collection...");
 			return;
@@ -742,7 +743,7 @@ public class DebugFrame extends JInternalFrame implements Runnable {
 	// +/+/+/+/+/+/+/+/+/+/+/+/+/+/+/ DEBUG /+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+
 
 	///////////////////////////
-	static class  Limits {
+	static class Limits {
 		public int start;
 		public int end;
 

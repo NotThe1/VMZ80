@@ -1,63 +1,181 @@
-0001: 0100
-0002: 0100             StackTop   EQU    0100H
-0003: 0100                        ORG    0100H
-0004: 0100
-0005: 0100             Start:
-0006: 0100 31 00 01               LD     SP,StackTop
-0007: 0103 CD 07 01               CALL   Const
-0008: 0106 76                     HALT
-0009: 0107
-0010: 0107
-0011: 0107             Const:
-0012: 0107 C3 10 01               JP     GetConsoleStatus
-0013: 010A B7                     OR     A
-0014: 010B 76                     HALT
-0015: 010C 00 00 00 00                DB     0,0,0,0,
-0016: 0110             GetConsoleStatus:
-0017: 0110 DD 21 29 01               LD     IX,ConStat
-0018: 0114 3E 01                  LD     A,01H
-0019: 0116 C3 1A 01               JP     SelectRoutine
-0020: 0119 76                     HALT
-0021: 011A
-0022: 011A             SelectRoutine:
-0023: 011A E6 03                  AND    03H
-0024: 011C 87                     ADD    A,A
-0025: 011D 16 00                  LD     D,00H
-0026: 011F 5F                     LD     E,A
-0027: 0120 DD 19                  ADD    IX,DE
-0028: 0122 DD 6E 00               LD     L,(IX+0)             ;
-0029: 0125 DD 66 01               LD     H,(IX+1)
-0030: 0128 E9                     JP     (HL)
-0031: 0129
-0032: 0129
-0033: 0129             ConStat:
-0034: 0129 35 01                  DW     device00
-0035: 012B 37 01                  DW     device01
-0036: 012D 39 01                  DW     device10
-0037: 012F 3B 01                  DW     device11
-0038: 0131 00 00 00 00                DB     0,0,0,0
-0039: 0135
-0040: 0135             device00:
-0041: 0135 C9                     RET
-0042: 0136 76                     HALT
-0043: 0137             device01:
-0044: 0137 C9                     RET
-0045: 0138 76                     HALT
-0046: 0139             device10:
-0047: 0139 C9                     RET
-0048: 013A 76                     HALT
-0049: 013B             device11:
-0050: 013B C9                     RET
-0051: 013C 76                     HALT
+0001: 0100         ; A.Z80
+0002: 0100         ;
+0003: 0100         ;	2018-11-30
+0004: 0100         ; 1
+0005: 0100
+0006: 0100             IN_OPCODE  EQU    0DBH                 ; opcode for read
+0007: 0100
+0008: 0100
+0009: 0100             StackTop   EQU    0100H
+0010: 0100
+0011: 0100
+0012: 0100                        ORG    0100H
+0013: 0100             Start:
+0014: 0100 31 00 01               LD     SP,StackTop
+0015: 0103 CD 07 01               CALL   Const
+0016: 0106 76                     HALT
+0017: 0107
+0018: 0107             Const:
+0019: 0107 CD 0F 01               CALL   GetConsoleStatus
+0020: 010A B7                     OR     A
+0021: 010B C8                     RET    Z                    ; 00 => No data pending
+0022: 010C 3E FF                  LD     A,0FFH
+0023: 010E C9                     RET                         ; OFFH => Data in Buffer
+0024: 010F
+0025: 010F             GetConsoleStatus:
+0026: 010F DD 21 00 10               LD     IX,ConStatVector     ; vector to I/O routines
+0027: 0113 FD 21 10 10               LD     IY,ConStatPort       ; vector to I/O values
+0028: 0117 3E 00                  LD     A,00H                ;LD		A,(IOBYTE)
+0029: 0119 C3 1D 01               JP     SelectRoutine
+0030: 011C 76                     HALT
+0031: 011D
+0032: 011D             SelectRoutine:
+0033: 011D E6 03                  AND    03H                  ; Get bits 0 & 1;
+0034: 011F 16 00                  LD     D,00H
+0035: 0121 5F                     LD     E,A                  ; load byte index int DE
+0036: 0122 FD 19                  ADD    IY,DE                ; add to the value vector base
+0037: 0124
+0038: 0124 87                     ADD    A,A                  ; Double for word size index
+0039: 0125         ;	LD	D,00H
+0040: 0125 5F                     LD     E,A                  ; load word index int DE
+0041: 0126 DD 19                  ADD    IX,DE                ; add to the Routine vector base
+0042: 0128 DD 6E 00               LD     L,(IX+0)
+0043: 012B DD 66 01               LD     H,(IX+1)             ; HL Points to the routine
+0044: 012E E9                     JP     (HL)                 ; go to the routine
+0045: 012F
+0046: 012F             device00:
+0047: 012F             InputStatusRoutine:
+0048: 012F FD 7E 00               LD     A,(IY+(ConStatPort-ConStatPort)) ; Status Port
+0049: 0132 32 36 01               LD     (InputStatusPort),A
+0050: 0135 DB                     DB     IN_OPCODE
+0051: 0136 00          InputStatusPort: DB     00                   ; Modified code location
+0052: 0137 FD 56 08               LD     D,(IY+(ConStatInMask-ConStatPort))
+0053: 013A A2                     AND    D
+0054: 013B C9                     RET                         ; 00 => No data pending
+0055: 013C 76                     HALT
+0056: 013D
+0057: 013D             device01:
+0058: 013D C9                     RET
+0059: 013E 76                     HALT
+0060: 013F             device10:
+0061: 013F C9                     RET
+0062: 0140 76                     HALT
+0063: 0141             device11:
+0064: 0141 C9                     RET
+0065: 0142 76                     HALT
+0066: 0143             DummyInSatus:
+0067: 0143 3E FF                  LD     A,0FFH
+0068: 0145 C9                     RET                         ; Dummy always returns FFH
+0069: 0146
+0070: 0146         ;++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+0071: 0146
+0072: 0146         ;-----------CON: ----------------------------
+0073: 0146                        ORG    1000H
+0074: 1000             ConStatVectorBase:
+0075: 1000             ConStatVector:                      ;	EQU $ - ConStatVectorBase
+0076: 1000 2F 01                  DW     InputStatusRoutine   ; TTY:
+0077: 1002 2F 01                  DW     InputStatusRoutine   ; CRT:
+0078: 1004 2F 01                  DW     InputStatusRoutine   ; BAT:
+0079: 1006 43 01                  DW     DummyInSatus         ; UC1: - Dummy
+0080: 1008             ConDataVector:                      ;	EQU $ - ConStatVectorBase
+0081: 1008 2F 01                  DW     device00
+0082: 100A 3D 01                  DW     device01
+0083: 100C 3F 01                  DW     device10
+0084: 100E 41 01                  DW     device11
+0085: 1010             ConStatPort:                      ;	EQU $ - ConStatVectorBase
+0086: 1010 ED                     DB     TTYStatusPort
+0087: 1011 02                     DB     CRT_StatusPort
+0088: 1012 ED                     DB     CommsStatusPort
+0089: 1013 11                     DB     PrinterStatusPort
+0090: 1014             ConDataPort:                      ;	EQU $ - ConStatVectorBase
+0091: 1014 EC                     DB     TTYDataPort
+0092: 1015 01                     DB     CRT_DataPort
+0093: 1016 EC                     DB     CommsDataPort
+0094: 1017 10                     DB     PrinterDataPort
+0095: 1018             ConStatInMask:                      ;	EQU $ - ConStatVectorBase
+0096: 1018 02                     DB     TTYStatusInMask
+0097: 1019 7F                     DB     CRT_StatusInMask
+0098: 101A 02                     DB     CommsStatusInMask
+0099: 101B 7F                     DB     PrinterStatusInMask
+0100: 101C             ConStatOutMask:                      ;	EQU $ - ConStatVectorBase
+0101: 101C 01                     DB     TTYStatusOutMask
+0102: 101D 80                     DB     CRT_StatusOutMask
+0103: 101E 1D                     DB     CommsStatusOutMask
+0104: 101F FF                     DB     PrinterStatusOutMask
+0105: 1020
+0106: 1020         ;StatVector EQU	ConStatVector - ConStatVectorBase
+0107: 1020         ;DataVector EQU  ConDataVector-ConStatVectorBase
+0108: 1020         ;
+0109: 1020         ;ConDataPxx EQU ConDataPort - ConStatPort
+0110: 1020
+0111: 1020 00 00 00 00                DB     0,0,0,0
+0112: 1024
+0113: 1024
+0114: 1024             PhysicalStatusPort:
+0115: 1024             TTYStatusPort EQU    0EDH
+0116: 1024             CRT_StatusPort EQU    02H
+0117: 1024             CommsStatusPort EQU    0EDH
+0118: 1024             PrinterStatusPort EQU    011H
+0119: 1024
+0120: 1024             PhysicalDataPort:
+0121: 1024             TTYDataPort EQU    0ECH
+0122: 1024             CRT_DataPort EQU    01H
+0123: 1024             CommsDataPort EQU    0ECH
+0124: 1024             PrinterDataPort EQU    010H
+0125: 1024
+0126: 1024             PhysicalStatusInMask:
+0127: 1024             TTYStatusInMask EQU    02H
+0128: 1024             CRT_StatusInMask EQU    07FH
+0129: 1024             CommsStatusInMask EQU    02H
+0130: 1024             PrinterStatusInMask EQU    07FH
+0131: 1024
+0132: 1024             PhysicalStatusOutMask:
+0133: 1024             TTYStatusOutMask EQU    01H
+0134: 1024             CRT_StatusOutMask EQU    080H
+0135: 1024             CommsStatusOutMask EQU    01DH
+0136: 1024             PrinterStatusOutMask EQU    0FFH
+0137: 1024
+0138: 1024
+0139: 1024         ;++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
            ************************   Xref   ************************
-0000: $               013C
-0011: Const           0107   0007
-0033: ConStat         0129   0017
-0040: device00        0135   0034
-0043: device01        0137   0035
-0046: device10        0139   0036
-0049: device11        013B   0037
-0016: GetConsoleStatus 0110   0012
-0022: SelectRoutine   011A   0019
-0002: StackTop        0100   0006
-0005: Start           0100
+0000: $               1024
+0123: CommsDataPort   00EC   0093
+0129: CommsStatusInMask 0002   0098
+0135: CommsStatusOutMask 001D   0103
+0117: CommsStatusPort 00ED   0088
+0090: ConDataPort     1014
+0080: ConDataVector   1008
+0018: Const           0107   0015
+0095: ConStatInMask   1018   0052
+0100: ConStatOutMask  101C
+0085: ConStatPort     1010   0027 0048 0052
+0075: ConStatVector   1000   0026
+0074: ConStatVectorBase 1000
+0122: CRT_DataPort    0001   0092
+0128: CRT_StatusInMask 007F   0097
+0134: CRT_StatusOutMask 0080   0102
+0116: CRT_StatusPort  0002   0087
+0046: device00        012F   0081
+0057: device01        013D   0082
+0060: device10        013F   0083
+0063: device11        0141   0084
+0066: DummyInSatus    0143   0079
+0025: GetConsoleStatus 010F   0019
+0006: IN_OPCODE       00DB   0050
+0051: InputStatusPort 0136   0049
+0047: InputStatusRoutine 012F   0076 0077 0078
+0120: PhysicalDataPort 1024
+0126: PhysicalStatusInMask 1024
+0132: PhysicalStatusOutMask 1024
+0114: PhysicalStatusPort 1024
+0124: PrinterDataPort 0010   0094
+0130: PrinterStatusInMask 007F   0099
+0136: PrinterStatusOutMask 00FF   0104
+0118: PrinterStatusPort 0011   0089
+0032: SelectRoutine   011D   0029
+0009: StackTop        0100   0014
+0013: Start           0100
+0121: TTYDataPort     00EC   0091
+0127: TTYStatusInMask 0002   0096
+0133: TTYStatusOutMask 0001   0101
+0115: TTYStatusPort   00ED   0086
