@@ -1,10 +1,12 @@
 ; A.Z80
 ;
 ;	2018-11-30
-; 1
+; 5
 		
 IN_OPCODE	EQU		0DBH		; opcode for read
-		
+OUT_OPCODE	EQU		0D3H		; opcode for Write
+END_OF_FILE	EQU		01AH;		; End Of File code
+ASCII_MASK	EQU		07FH		; bits 0-6		
 		
 StackTop	EQU		0100H
 
@@ -12,24 +14,90 @@ StackTop	EQU		0100H
 	ORG   0100H
 Start:	
 	LD	SP,StackTop
-	CALL Const
+;	CALL ConStatus
+;	CALL	ConIn
+	LD		C,045H
+	CALL	CONOut
 	HALT
+	JR		Start
 	
-Const:
-	CALL GetConsoleStatus
+IOBYTE:	DS 1
+;---------------------------------------------------------------------------
+;				BIOS Character I/O devices
+;
+;				BIOS JMP vector		Function
+;					--				--------
+;		ConStatus:	02			 	Console Status
+;		ConIn:		03				Console In 
+;					04				Console Out
+;					05				List Out
+;					06				Punch Out
+;					07				Reader In 
+;					0F				List Status 
+
+ 
+ 
+;---------------------------------------------------------------------------
+ ;	Console Status  BIOS 02
+ ; Entered directly from BIOS JMP vector, returns Register A
+ ; 00H -> No data ,  0FFH -> there is data
+ ;
+	
+ConStatus:
+	CALL GetConInStatus
 	OR	A
 	RET		Z				; 00 => No data pending
 	LD		A,0FFH
 	RET						; OFFH => Data in Buffer
 
-GetConsoleStatus:
-	LD	IX,ConStatVector	; vector to I/O routines
-	LD	IY,ConStatPort		; vector to I/O values
-	LD	A,00H			;LD		A,(IOBYTE)
-	JP SelectRoutine
+GetConInStatus:
+	LD		IX,ConStatInVector		; vector to I/O routines
+	JR		GetConStatus
+GetConOutStatus:
+	LD		IX,ConStatOutVector		; vector to I/O routines
+				
+GetConStatus:
+	LD		A,(IOBYTE)				; Get Physical device
+	LD		IY,ConStatPort			; vector to I/O values
+	CALL	SetIndexesIO			; set up IX & IY
+	LD		L,(IX+0)
+	LD		H,(IX+1)				; HL Points to the routine
+	JP		(HL)
+
 	HALT
 	
-SelectRoutine:
+ ;---------------------------------------------------------------------------
+ ;	Console In  BIOS 03
+ ; Get console Input character entered directly from the BIOS jmp Vector
+ ; return the character from the console in the A register.
+ ; most significant bit will be 0. except when "reader" (communication)
+ ; port has input , all 8 bits are reurned
+ ;
+ ; normally this follows a call to CONST ( a blocking call) to indicates a char is ready.
+ 
+ ConIn:
+ 	CALL	GetConInStatus		; is there incoming data ?
+	JR		Z,ConIn				; loop until there is some
+	LD		L,(IX + ConDataInVector - ConStatInVector)
+	LD		H,(IX +(ConDataInVector - ConStatInVector+1))
+	JP		(HL)
+
+;---------------------------------------------------------------------------
+ ;	Console Out  BIOS 04
+ ;  entered directly from BIOS JMP Vector. it outputs the
+ ; character in the C register to the appropriate device according to
+ ; bits 1,0 of IOBYTE
+ CONOut:
+	CALL	GetConOutStatus
+	JR		Z,CONOut
+	LD		L,(IX + ConDataOutVector - ConStatOutVector)
+	LD		H,(IX +(ConDataOutVector - ConStatOutVector+1))
+	JP		(HL)
+ ;	LD		A,(IOBYTE)							; get i/o redirection byte
+ ;	CALL 	SelectRoutine
+ 	
+;=============================================================================	
+SetIndexesIO:
 	AND	03H					; Get bits 0 & 1;
 	LD	D,00H
 	LD	E,A					; load byte index int DE
@@ -39,101 +107,153 @@ SelectRoutine:
 ;	LD	D,00H
 	LD	E,A					; load word index int DE
 	ADD	IX,DE				; add to the Routine vector base
-	LD	L,(IX+0)
-	LD	H,(IX+1)			; HL Points to the routine
-	JP	(HL)				; go to the routine
+	RET
+
+
+SelectRoutine:
+	AND		03H					; Get bits 0 & 1;
+	LD		D,00H
+	LD		E,A					; load byte index int DE
+	ADD		IY,DE				; add to the value vector base
 	
-device00:
-InputStatusRoutine:
-	LD	A,(IY + (ConStatPort - ConStatPort))	; Status Port
-	LD	(InputStatusPort),A
-	DB	IN_OPCODE
-InputStatusPort:	DB	00	; Modified code location
-	LD	D,(IY + (ConStatInMask-ConStatPort))
-	AND	D
+	ADD		A,A					; Double for word size index
+;	LD	D,00H
+	LD		E,A					; load word index int DE
+	ADD		IX,DE				; add to the Routine vector base
+	LD		L,(IX+0)
+	LD		H,(IX+1)			; HL Points to the routine
+	JP		(HL)				; go to the routine
+	
+
+TTYOutStatus:
+CRTOutStatus:
+COMOutStatus:
+	LD		D,(IY + (ConStatOutMask-ConStatPort))
+	JR		ConInOutStatus
+TTYInStatus:
+CRTInStatus:
+COMInStatus:
+	LD		D,(IY + (ConStatInMask-ConStatPort))
+ConInOutStatus:
+	LD		A,(IY + (ConStatPort - ConStatPort))	; Status Port
+	LD		(InputStatusPort),A
+	DB		IN_OPCODE
+InputStatusPort:
+	DB	00		; Modified code location
+	AND		D
 	RET						; 00 => No data pending
 	HALT
 	
-device01:
+TTYInData:
+CRTInData0:
+COMInData:
+	LD		A,(IY + ConDataPort-ConStatPort)
+	LD		(InputDataPort),A
+	DB		IN_OPCODE
+InputDataPort:		DB	00		; Modified code location
 	RET
-	HALT
-device10:
+	
+CRTInData:
+	CALL	CRTInData0
+	AND		ASCII_MASK			; strip off bit 7
 	RET
-	HALT
-device11:
+	
+TTYOutData:
+CRTOutData:
+COMOutData:
+	LD		A,(IY + ConDataPort-ConStatPort)
+	LD		(OutputDataPort),A
+	LD		A,C					; Get Byte from C to output
+	DB		OUT_OPCODE
+OutputDataPort:		DB	00		; Modified code location
 	RET
-	HALT
-DummyInSatus:
+
+	
+
+
+	
+DummyStatus:
 	LD	A,0FFH
+	OR	A					; Reset the Z Flag
 	RET						; Dummy always returns FFH
+DummyInput:
+	LD	A,END_OF_FILE;		; Always returns End Of File
+DummyOutput:
+	RET
 
 ;++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-;-----------CON: ----------------------------
+;-----------  CON: -----Bits 1 & 0 -------------------
 		ORG		1000H
-ConStatVectorBase:
-ConStatVector:	;	EQU $ - ConStatVectorBase
-	DW	InputStatusRoutine		; TTY:
-	DW	InputStatusRoutine		; CRT:
-	DW	InputStatusRoutine		; BAT:
-	DW	DummyInSatus			; UC1: - Dummy
-ConDataVector:	;	EQU $ - ConStatVectorBase
-	DW	device00
-	DW	device01
-	DW	device10
-	DW	device11
-ConStatPort:	;	EQU $ - ConStatVectorBase
+ConStatInVector:
+	DW	TTYInStatus
+	DW	CRTInStatus
+	DW	COMInStatus
+	DW	DummyStatus
+ConStatOutVector:
+	DW	TTYOutStatus
+	DW	CRTOutStatus
+	DW	COMOutStatus
+	DW	DummyStatus	
+ConDataInVector:
+	DW	TTYInData
+	DW	CRTInData
+	DW	COMInData
+	DW	DummyInput
+ConDataOutVector:
+	DW	TTYOutData
+	DW	CRTOutData
+	DW	COMOutData
+	DW	DummyOutput
+ConStatPort:
 	DB	TTYStatusPort
-	DB	CRT_StatusPort
-	DB	CommsStatusPort
-	DB	PrinterStatusPort
-ConDataPort:	;	EQU $ - ConStatVectorBase
+	DB	CRTStatusPort
+	DB	COMStatusPort
+	DB	LPTStatusPort
+ConDataPort:
 	DB	TTYDataPort
-	DB	CRT_DataPort
-	DB	CommsDataPort
-	DB	PrinterDataPort
-ConStatInMask:	;	EQU $ - ConStatVectorBase
+	DB	CRTDataPort
+	DB	COMDataPort
+	DB	LPTDataPort
+ConStatInMask:
 	DB	TTYStatusInMask
-	DB	CRT_StatusInMask
-	DB	CommsStatusInMask
-	DB	PrinterStatusInMask
-ConStatOutMask:	;	EQU $ - ConStatVectorBase
+	DB	CRTStatusInMask
+	DB	COMStatusInMask
+	DB	LPTStatusInMask
+ConStatOutMask:
 	DB	TTYStatusOutMask
 	DB	CRT_StatusOutMask
-	DB	CommsStatusOutMask
-	DB	PrinterStatusOutMask
+	DB	COMStatusOutMask
+	DB	LPTStatusOutMask
 	
-;StatVector EQU	ConStatVector - ConStatVectorBase
-;DataVector EQU  ConDataVector-ConStatVectorBase
-;
-;ConDataPxx EQU ConDataPort - ConStatPort 
+
 	
-	DB 0,0,0,0
+
 	
 	
 PhysicalStatusPort:
 		TTYStatusPort				EQU		0EDH
-		CRT_StatusPort				EQU		02H
-		CommsStatusPort				EQU		0EDH
-		PrinterStatusPort			EQU		011H
+		CRTStatusPort				EQU		02H
+		COMStatusPort				EQU		0EDH
+		LPTStatusPort			EQU		011H
 		
 PhysicalDataPort:
 		TTYDataPort					EQU		0ECH
-		CRT_DataPort				EQU		01H
-		CommsDataPort				EQU		0ECH
-		PrinterDataPort				EQU		010H
+		CRTDataPort				EQU		01H
+		COMDataPort				EQU		0ECH
+		LPTDataPort				EQU		010H
 		
 PhysicalStatusInMask:
 		TTYStatusInMask				EQU		02H
-		CRT_StatusInMask			EQU		07FH
-		CommsStatusInMask			EQU		02H
-		PrinterStatusInMask			EQU		07FH
+		CRTStatusInMask			EQU		07FH
+		COMStatusInMask			EQU		02H
+		LPTStatusInMask			EQU		07FH
 
 PhysicalStatusOutMask:
 		TTYStatusOutMask			EQU		01H
 		CRT_StatusOutMask			EQU		080H
-		CommsStatusOutMask			EQU		01DH
-		PrinterStatusOutMask		EQU		0FFH
+		COMStatusOutMask			EQU		01DH
+		LPTStatusOutMask		EQU		0FFH
 
 
 ;++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
