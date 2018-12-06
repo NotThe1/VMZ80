@@ -1,5 +1,10 @@
 package ioSystem.ttyZ80;
 
+/*
+ * 		2018-12-06  Changed Status return Value:
+ *                  MSB == 0, Output ready, Bits0-7 contains number of bytes in Keybord buffer
+ */
+
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
@@ -47,6 +52,7 @@ import javax.swing.text.Element;
 
 import codeSupport.ASCII_CODES;
 import codeSupport.AppLogger;
+import codeSupport.Z80;
 import ioSystem.DeviceZ80;
 import utilities.fontChooser.FontChooser;
 
@@ -66,7 +72,10 @@ public class TTYZ80 extends DeviceZ80 implements Runnable {
 		while (true) {
 			if (statusFromCPU.size() > 0) {
 				statusFromCPU.poll();
-				statusToCPU.offer( (byte) (dataToCPU.size()+1));
+				byte charsInBuffer = (byte) (dataToCPU.size() & 0x7F);
+				// Set MSB if not ready for data from CPU
+				byte statusValue = (byte) (((charsInBuffer) & Z80.BYTE_MASK) );
+				statusToCPU.offer( statusValue);
 			} // if Status request
 
 			if (dataFromCPU.size() > 0) {
@@ -352,6 +361,7 @@ public class TTYZ80 extends DeviceZ80 implements Runnable {
 	 */
 	private void initialize() {
 		frameTTY = new JFrame();
+		frameTTY.setTitle("TTYZ80              Rev 1.0.1");
 		frameTTY.setBounds(100, 100, 450, 300);
 		GridBagLayout gridBagLayout = new GridBagLayout();
 		gridBagLayout.columnWidths = new int[] { 0, 0 };
@@ -651,6 +661,7 @@ public class TTYZ80 extends DeviceZ80 implements Runnable {
 	public static final Byte IN = (byte) 0X0EC;
 	public static final Byte OUT = (byte) 0X0EC;
 	public static final Byte STATUS = (byte) 0X0ED;
+	public static final Byte STATUS_VALUE_OUT = (byte) 0b1000_0000;  // MSB set
 //	private static final Byte STATUS_RESPONSE = (byte) 0X03;
 
 	// private static final String EMPTY_STRING = "";

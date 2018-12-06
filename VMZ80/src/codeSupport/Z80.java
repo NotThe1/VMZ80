@@ -75,6 +75,9 @@ public class Z80 {
 	public static final int WORD_MASK = 0X00FFFF;
 	public static final int BYTE_MASK = 0X00FF;
 	public static final int HI_BYTE_MASK = 0X00FF00;
+	public static final int MSB_BYTE_MASK = 0b1000_0000;
+	public static final int MSB_WORD_MASK = 0b1000_0000_0000_0000;
+	public static final int ASCII_MASK = 0x7F;	
 	
 	public static final int MASK_PAGE = 0b1100_0000;
 	public static final int MASK_ZZZ = 0b0000_0111;

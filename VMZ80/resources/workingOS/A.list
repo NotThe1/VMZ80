@@ -7,318 +7,389 @@
 0007: 0100             OUT_OPCODE EQU    0D3H                 ; opcode for Write
 0008: 0100             END_OF_FILE EQU    01AH                 ;		; End Of File code
 0009: 0100             ASCII_MASK EQU    07FH                 ; bits 0-6
-0010: 0100
-0011: 0100             StackTop   EQU    0100H
-0012: 0100
+0010: 0100             DUMMY_VALUE EQU    00H                  ; place holder for Dummy Status mask
+0011: 0100
+0012: 0100             StackTop   EQU    0100H
 0013: 0100
-0014: 0100                        ORG    0100H
-0015: 0100             Start:
-0016: 0100 31 00 01               LD     SP,StackTop
-0017: 0103         ;	CALL ConStatus
-0018: 0103         ;	CALL	ConIn
-0019: 0103 0E 45                  LD     C,045H
-0020: 0105 CD 3C 01               CALL   CONOut
-0021: 0108 76                     HALT
-0022: 0109 18 F5                  JR     Start
-0023: 010B
-0024: 010B             IOBYTE:    DS     1
-0025: 010C         ;---------------------------------------------------------------------------
-0026: 010C         ;				BIOS Character I/O devices
-0027: 010C         ;
-0028: 010C         ;				BIOS JMP vector		Function
-0029: 010C         ;					--				--------
-0030: 010C         ;		ConStatus:	02			 	Console Status
-0031: 010C         ;		ConIn:		03				Console In
-0032: 010C         ;					04				Console Out
-0033: 010C         ;					05				List Out
-0034: 010C         ;					06				Punch Out
-0035: 010C         ;					07				Reader In
-0036: 010C         ;					0F				List Status
-0037: 010C
-0038: 010C
-0039: 010C
-0040: 010C         ;---------------------------------------------------------------------------
-0041: 010C         ;	Console Status  BIOS 02
-0042: 010C         ; Entered directly from BIOS JMP vector, returns Register A
-0043: 010C         ; 00H -> No data ,  0FFH -> there is data
-0044: 010C         ;
-0045: 010C
-0046: 010C             ConStatus:
-0047: 010C CD 14 01               CALL   GetConInStatus
-0048: 010F B7                     OR     A
-0049: 0110 C8                     RET    Z                    ; 00 => No data pending
-0050: 0111 3E FF                  LD     A,0FFH
-0051: 0113 C9                     RET                         ; OFFH => Data in Buffer
-0052: 0114
-0053: 0114             GetConInStatus:
-0054: 0114 DD 21 00 10               LD     IX,ConStatInVector   ; vector to I/O routines
-0055: 0118 18 04                  JR     GetConStatus
-0056: 011A             GetConOutStatus:
-0057: 011A DD 21 08 10               LD     IX,ConStatOutVector  ; vector to I/O routines
-0058: 011E
-0059: 011E             GetConStatus:
-0060: 011E 3A 0B 01               LD     A,(IOBYTE)           ; Get Physical device
-0061: 0121 FD 21 20 10               LD     IY,ConStatPort       ; vector to I/O values
-0062: 0125 CD 48 01               CALL   SetIndexesIO         ; set up IX & IY
-0063: 0128 DD 6E 00               LD     L,(IX+0)
-0064: 012B DD 66 01               LD     H,(IX+1)             ; HL Points to the routine
-0065: 012E E9                     JP     (HL)
-0066: 012F
-0067: 012F 76                     HALT
-0068: 0130
-0069: 0130         ;---------------------------------------------------------------------------
-0070: 0130         ;	Console In  BIOS 03
-0071: 0130         ; Get console Input character entered directly from the BIOS jmp Vector
-0072: 0130         ; return the character from the console in the A register.
-0073: 0130         ; most significant bit will be 0. except when "reader" (communication)
-0074: 0130         ; port has input , all 8 bits are reurned
-0075: 0130         ;
-0076: 0130         ; normally this follows a call to CONST ( a blocking call) to indicates a char is ready.
-0077: 0130
-0078: 0130             ConIn:
-0079: 0130 CD 14 01               CALL   GetConInStatus       ; is there incoming data ?
-0080: 0133 28 FB                  JR     Z,ConIn              ; loop until there is some
-0081: 0135 DD 6E 10               LD     L,(IX+ConDataInVector-ConStatInVector)
-0082: 0138 DD 66 11               LD     H,(IX+(ConDataInVector-ConStatInVector+1))
-0083: 013B E9                     JP     (HL)
-0084: 013C
-0085: 013C         ;---------------------------------------------------------------------------
-0086: 013C         ;	Console Out  BIOS 04
-0087: 013C         ;  entered directly from BIOS JMP Vector. it outputs the
-0088: 013C         ; character in the C register to the appropriate device according to
-0089: 013C         ; bits 1,0 of IOBYTE
-0090: 013C             CONOut:
-0091: 013C CD 1A 01               CALL   GetConOutStatus
-0092: 013F 28 FB                  JR     Z,CONOut
-0093: 0141 DD 6E 10               LD     L,(IX+ConDataOutVector-ConStatOutVector)
-0094: 0144 DD 66 11               LD     H,(IX+(ConDataOutVector-ConStatOutVector+1))
-0095: 0147 E9                     JP     (HL)
-0096: 0148         ;	LD		A,(IOBYTE)							; get i/o redirection byte
-0097: 0148         ;	CALL 	SelectRoutine
-0098: 0148
-0099: 0148         ;=============================================================================
-0100: 0148             SetIndexesIO:
-0101: 0148 E6 03                  AND    03H                  ; Get bits 0 & 1;
-0102: 014A 16 00                  LD     D,00H
-0103: 014C 5F                     LD     E,A                  ; load byte index int DE
-0104: 014D FD 19                  ADD    IY,DE                ; add to the value vector base
-0105: 014F
-0106: 014F 87                     ADD    A,A                  ; Double for word size index
-0107: 0150         ;	LD	D,00H
-0108: 0150 5F                     LD     E,A                  ; load word index int DE
-0109: 0151 DD 19                  ADD    IX,DE                ; add to the Routine vector base
-0110: 0153 C9                     RET
-0111: 0154
-0112: 0154
-0113: 0154             SelectRoutine:
-0114: 0154 E6 03                  AND    03H                  ; Get bits 0 & 1;
-0115: 0156 16 00                  LD     D,00H
-0116: 0158 5F                     LD     E,A                  ; load byte index int DE
-0117: 0159 FD 19                  ADD    IY,DE                ; add to the value vector base
-0118: 015B
-0119: 015B 87                     ADD    A,A                  ; Double for word size index
-0120: 015C         ;	LD	D,00H
-0121: 015C 5F                     LD     E,A                  ; load word index int DE
-0122: 015D DD 19                  ADD    IX,DE                ; add to the Routine vector base
-0123: 015F DD 6E 00               LD     L,(IX+0)
-0124: 0162 DD 66 01               LD     H,(IX+1)             ; HL Points to the routine
-0125: 0165 E9                     JP     (HL)                 ; go to the routine
-0126: 0166
-0127: 0166
-0128: 0166             TTYOutStatus:
-0129: 0166             CRTOutStatus:
-0130: 0166             COMOutStatus:
-0131: 0166 FD 56 0C               LD     D,(IY+(ConStatOutMask-ConStatPort))
-0132: 0169 18 03                  JR     ConInOutStatus
-0133: 016B             TTYInStatus:
-0134: 016B             CRTInStatus:
-0135: 016B             COMInStatus:
-0136: 016B FD 56 08               LD     D,(IY+(ConStatInMask-ConStatPort))
-0137: 016E             ConInOutStatus:
-0138: 016E FD 7E 00               LD     A,(IY+(ConStatPort-ConStatPort)) ; Status Port
-0139: 0171 32 75 01               LD     (InputStatusPort),A
-0140: 0174 DB                     DB     IN_OPCODE
-0141: 0175             InputStatusPort:
-0142: 0175 00                     DB     00                   ; Modified code location
-0143: 0176 A2                     AND    D
-0144: 0177 C9                     RET                         ; 00 => No data pending
-0145: 0178 76                     HALT
-0146: 0179
-0147: 0179             TTYInData:
-0148: 0179             CRTInData0:
-0149: 0179             COMInData:
-0150: 0179 FD 7E 04               LD     A,(IY+ConDataPort-ConStatPort)
-0151: 017C 32 80 01               LD     (InputDataPort),A
-0152: 017F DB                     DB     IN_OPCODE
-0153: 0180 00          InputDataPort: DB     00                   ; Modified code location
-0154: 0181 C9                     RET
-0155: 0182
-0156: 0182             CRTInData:
-0157: 0182 CD 79 01               CALL   CRTInData0
-0158: 0185 E6 7F                  AND    ASCII_MASK           ; strip off bit 7
-0159: 0187 C9                     RET
-0160: 0188
-0161: 0188             TTYOutData:
-0162: 0188             CRTOutData:
-0163: 0188             COMOutData:
-0164: 0188 FD 7E 04               LD     A,(IY+ConDataPort-ConStatPort)
-0165: 018B 32 90 01               LD     (OutputDataPort),A
-0166: 018E 79                     LD     A,C                  ; Get Byte from C to output
-0167: 018F D3                     DB     OUT_OPCODE
-0168: 0190 00          OutputDataPort: DB     00                   ; Modified code location
-0169: 0191 C9                     RET
-0170: 0192
-0171: 0192
-0172: 0192
-0173: 0192
-0174: 0192
-0175: 0192             DummyStatus:
-0176: 0192 3E FF                  LD     A,0FFH
-0177: 0194 B7                     OR     A                    ; Reset the Z Flag
-0178: 0195 C9                     RET                         ; Dummy always returns FFH
-0179: 0196             DummyInput:
-0180: 0196 3E 1A                  LD     A,END_OF_FILE        ;		; Always returns End Of File
-0181: 0198             DummyOutput:
-0182: 0198 C9                     RET
-0183: 0199
-0184: 0199         ;++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-0185: 0199
-0186: 0199         ;-----------  CON: -----Bits 1 & 0 -------------------
-0187: 0199                        ORG    1000H
-0188: 1000             ConStatInVector:
-0189: 1000 6B 01                  DW     TTYInStatus
-0190: 1002 6B 01                  DW     CRTInStatus
-0191: 1004 6B 01                  DW     COMInStatus
-0192: 1006 92 01                  DW     DummyStatus
-0193: 1008             ConStatOutVector:
-0194: 1008 66 01                  DW     TTYOutStatus
-0195: 100A 66 01                  DW     CRTOutStatus
-0196: 100C 66 01                  DW     COMOutStatus
-0197: 100E 92 01                  DW     DummyStatus
-0198: 1010             ConDataInVector:
-0199: 1010 79 01                  DW     TTYInData
-0200: 1012 82 01                  DW     CRTInData
-0201: 1014 79 01                  DW     COMInData
-0202: 1016 96 01                  DW     DummyInput
-0203: 1018             ConDataOutVector:
-0204: 1018 88 01                  DW     TTYOutData
-0205: 101A 88 01                  DW     CRTOutData
-0206: 101C 88 01                  DW     COMOutData
-0207: 101E 98 01                  DW     DummyOutput
-0208: 1020             ConStatPort:
-0209: 1020 ED                     DB     TTYStatusPort
-0210: 1021 02                     DB     CRTStatusPort
-0211: 1022 ED                     DB     COMStatusPort
-0212: 1023 11                     DB     LPTStatusPort
-0213: 1024             ConDataPort:
-0214: 1024 EC                     DB     TTYDataPort
-0215: 1025 01                     DB     CRTDataPort
-0216: 1026 EC                     DB     COMDataPort
-0217: 1027 10                     DB     LPTDataPort
-0218: 1028             ConStatInMask:
-0219: 1028 02                     DB     TTYStatusInMask
-0220: 1029 7F                     DB     CRTStatusInMask
-0221: 102A 02                     DB     COMStatusInMask
-0222: 102B 7F                     DB     LPTStatusInMask
-0223: 102C             ConStatOutMask:
-0224: 102C 01                     DB     TTYStatusOutMask
-0225: 102D 80                     DB     CRT_StatusOutMask
-0226: 102E 1D                     DB     COMStatusOutMask
-0227: 102F FF                     DB     LPTStatusOutMask
-0228: 1030
-0229: 1030
-0230: 1030
-0231: 1030
-0232: 1030
-0233: 1030
-0234: 1030             PhysicalStatusPort:
-0235: 1030             TTYStatusPort EQU    0EDH
-0236: 1030             CRTStatusPort EQU    02H
-0237: 1030             COMStatusPort EQU    0EDH
-0238: 1030             LPTStatusPort EQU    011H
-0239: 1030
-0240: 1030             PhysicalDataPort:
-0241: 1030             TTYDataPort EQU    0ECH
-0242: 1030             CRTDataPort EQU    01H
-0243: 1030             COMDataPort EQU    0ECH
-0244: 1030             LPTDataPort EQU    010H
-0245: 1030
-0246: 1030             PhysicalStatusInMask:
-0247: 1030             TTYStatusInMask EQU    02H
-0248: 1030             CRTStatusInMask EQU    07FH
-0249: 1030             COMStatusInMask EQU    02H
-0250: 1030             LPTStatusInMask EQU    07FH
-0251: 1030
-0252: 1030             PhysicalStatusOutMask:
-0253: 1030             TTYStatusOutMask EQU    01H
-0254: 1030             CRT_StatusOutMask EQU    080H
-0255: 1030             COMStatusOutMask EQU    01DH
-0256: 1030             LPTStatusOutMask EQU    0FFH
-0257: 1030
-0258: 1030
-0259: 1030         ;++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+0014: 0100
+0015: 0100                        ORG    0100H
+0016: 0100             Start:
+0017: 0100 31 00 01               LD     SP,StackTop
+0018: 0103         ;	CALL ConStatus
+0019: 0103         ;	CALL	ConIn
+0020: 0103         ;	LD		C,045H
+0021: 0103         ;	CALL	CONOut
+0022: 0103 CD 2A 01               CALL   LISTST
+0023: 0106 76                     HALT
+0024: 0107 18 F7                  JR     Start
+0025: 0109
+0026: 0109             IOBYTE:    DS     1
+0027: 010A         ;---------------------------------------------------------------------------
+0028: 010A         ;				BIOS Character I/O devices
+0029: 010A         ;
+0030: 010A         ;				BIOS JMP vector		Function
+0031: 010A         ;					--				--------
+0032: 010A         ;		ConStatus:	02			 	Console Status
+0033: 010A         ;		ConIn:		03				Console In
+0034: 010A         ;		CONOut:		04				Console Out
+0035: 010A         ;					05				List Out
+0036: 010A         ;					06				Punch Out
+0037: 010A         ;					07				Reader In
+0038: 010A         ;					0F				List Status
+0039: 010A
+0040: 010A
+0041: 010A
+0042: 010A         ;---------------------------------------------------------------------------
+0043: 010A         ;	Console Status:		BIOS 02
+0044: 010A         ; Entered directly from BIOS JMP vector, returns Register A
+0045: 010A         ; 00H -> No data ,  0FFH -> there is data
+0046: 010A         ;
+0047: 010A
+0048: 010A             ConStatus:
+0049: 010A CD 3C 01               CALL   GetConInStatus
+0050: 010D B7                     OR     A
+0051: 010E C8                     RET    Z                    ; 00 => No data pending
+0052: 010F 3E FF                  LD     A,0FFH
+0053: 0111 C9                     RET                         ; OFFH => Data in Buffer
+0054: 0112
+0055: 0112         ;---------------------------------------------------------------------------
+0056: 0112         ;	Console In:		BIOS 03
+0057: 0112         ; Get console Input character entered directly from the BIOS jmp Vector
+0058: 0112         ; return the character from the console in the A register.
+0059: 0112         ; most significant bit will be 0. except when "reader" (communication)
+0060: 0112         ; port has input , all 8 bits are reurned
+0061: 0112         ;
+0062: 0112         ; normally this follows a call to CONST ( a blocking call) to indicates a char is ready.
+0063: 0112
+0064: 0112             ConIn:
+0065: 0112 CD 3C 01               CALL   GetConInStatus       ; is there incoming data ?
+0066: 0115 28 FB                  JR     Z,ConIn              ; loop until there is some
+0067: 0117 DD 6E 10               LD     L,(IX+ConDataInVector-ConStatInVector)
+0068: 011A DD 66 11               LD     H,(IX+(ConDataInVector-ConStatInVector+1))
+0069: 011D E9                     JP     (HL)
+0070: 011E
+0071: 011E         ;---------------------------------------------------------------------------
+0072: 011E         ;	Console Out:		BIOS 04
+0073: 011E         ;  entered directly from BIOS JMP Vector. it outputs the
+0074: 011E         ; character in the C register to the appropriate device according to
+0075: 011E         ; bits 1,0 of IOBYTE
+0076: 011E             CONOut:
+0077: 011E CD 42 01               CALL   GetConOutStatus
+0078: 0121 28 FB                  JR     Z,CONOut
+0079: 0123 DD 6E 10               LD     L,(IX+ConDataOutVector-ConStatOutVector)
+0080: 0126 DD 66 11               LD     H,(IX+(ConDataOutVector-ConStatOutVector+1))
+0081: 0129 E9                     JP     (HL)
+0082: 012A         ;---------------------------------------------------------------------------
+0083: 012A         ;	List Status:  BIOS 0F
+0084: 012A
+0085: 012A             LISTST:
+0086: 012A         ; List Device (output) status entered directly from the BIOS JMP Vector
+0087: 012A         ; returns in A the list device status that indicates if the device will
+0088: 012A         ; accept another character the IOBYTE's bits 7,6 determine the physical device
+0089: 012A         ; A =  00H : no Device cannot accept data. zero flag set
+0090: 012A         ;     0FFH :  All can accept data. zero flag cleared
+0091: 012A
+0092: 012A 3E 00                  LD     A,00H
+0093: 012C CD 5A 01               CALL   GetAllLSTStatus
+0094: 012F 76                     HALT
+0095: 0130
+0096: 0130
+0097: 0130         ;=============================================================================
+0098: 0130             SetIndexesIO:
+0099: 0130 E6 03                  AND    03H                  ; Get bits 0 & 1;
+0100: 0132 16 00                  LD     D,00H
+0101: 0134 5F                     LD     E,A                  ; load byte index int DE
+0102: 0135 FD 19                  ADD    IY,DE                ; add to the value vector base
+0103: 0137
+0104: 0137 87                     ADD    A,A                  ; Double for word size index
+0105: 0138         ;	LD	D,00H
+0106: 0138 5F                     LD     E,A                  ; load word index int DE
+0107: 0139 DD 19                  ADD    IX,DE                ; add to the Routine vector base
+0108: 013B C9                     RET
+0109: 013C
+0110: 013C         ;---------------------------------------------------------------------
+0111: 013C             GetConInStatus:
+0112: 013C DD 21 AD 01               LD     IX,ConStatInVector   ; vector to I/O routines
+0113: 0140 18 04                  JR     GetConStatus
+0114: 0142             GetConOutStatus:
+0115: 0142 DD 21 B5 01               LD     IX,ConStatOutVector  ; vector to I/O routines
+0116: 0146
+0117: 0146             GetConStatus:
+0118: 0146 3A 09 01               LD     A,(IOBYTE)           ; Get Physical device
+0119: 0149 FD 21 CD 01               LD     IY,ConStatPort       ; vector to I/O values
+0120: 014D CD 30 01               CALL   SetIndexesIO         ; set up IX & IY
+0121: 0150 DD 6E 00               LD     L,(IX+0)
+0122: 0153 DD 66 01               LD     H,(IX+1)             ; HL Points to the routine
+0123: 0156 E9                     JP     (HL)
+0124: 0157         ;----------------------------------------------------------------
+0125: 0157
+0126: 0157             GetLSTStatus:
+0127: 0157 3A 09 01               LD     A,(IOBYTE)           ; Get Physical device
+0128: 015A             GetAllLSTStatus:
+0129: 015A DD 21 00 10               LD     IX,LSTStatOutVector  ; vector to I/O routines
+0130: 015E FD 21 0A 10               LD     IY,LSTStatPort       ; vector to I/O values
+0131: 0162 CD 30 01               CALL   SetIndexesIO         ; set up IX & IY
+0132: 0165 DD 6E 00               LD     L,(IX+0)
+0133: 0168 DD 66 01               LD     H,(IX+1)             ; HL Points to the routine
+0134: 016B E9                     JP     (HL)
+0135: 016C
+0136: 016C         ;++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+0137: 016C             TTYOutStatus:
+0138: 016C             CRTOutStatus:
+0139: 016C             COMOutStatus:
+0140: 016C FD 56 0C               LD     D,(IY+(ConStatOutMask-ConStatPort))
+0141: 016F 18 03                  JR     ConInOutStatus
+0142: 0171             TTYInStatus:
+0143: 0171             CRTInStatus:
+0144: 0171             COMInStatus:
+0145: 0171 FD 56 08               LD     D,(IY+(ConStatInMask-ConStatPort))
+0146: 0174             ConInOutStatus:
+0147: 0174 FD 7E 00               LD     A,(IY+(ConStatPort-ConStatPort)) ; Status Port
+0148: 0177 32 7B 01               LD     (InputStatusPort),A
+0149: 017A DB                     DB     IN_OPCODE
+0150: 017B             InputStatusPort:
+0151: 017B 00                     DB     00                   ; Modified code location
+0152: 017C A2                     AND    D
+0153: 017D C9                     RET                         ; 00 => No data pending
+0154: 017E 76                     HALT
+0155: 017F
+0156: 017F             TTYInData:
+0157: 017F             CRTInData0:
+0158: 017F             COMInData:
+0159: 017F FD 7E 04               LD     A,(IY+ConDataPort-ConStatPort)
+0160: 0182 32 86 01               LD     (InputDataPort),A
+0161: 0185 DB                     DB     IN_OPCODE
+0162: 0186 00          InputDataPort: DB     00                   ; Modified code location
+0163: 0187 C9                     RET
+0164: 0188
+0165: 0188             CRTInData:
+0166: 0188 CD 7F 01               CALL   CRTInData0
+0167: 018B E6 7F                  AND    ASCII_MASK           ; strip off bit 7
+0168: 018D C9                     RET
+0169: 018E
+0170: 018E             TTYOutData:
+0171: 018E             CRTOutData:
+0172: 018E             COMOutData:
+0173: 018E FD 7E 04               LD     A,(IY+ConDataPort-ConStatPort)
+0174: 0191 32 96 01               LD     (OutputDataPort),A
+0175: 0194 79                     LD     A,C                  ; Get Byte from C to output
+0176: 0195 D3                     DB     OUT_OPCODE
+0177: 0196 00          OutputDataPort: DB     00                   ; Modified code location
+0178: 0197 C9                     RET
+0179: 0198         ;......................................................
+0180: 0198             LPTOutStatus:
+0181: 0198 FD 56 08               LD     D,(IY+(LSTStatOutMask-LSTStatPort))
+0182: 019B FD 7E 00               LD     A,(IY+(LSTStatPort-LSTStatPort)) ; Status port
+0183: 019E 32 A2 01               LD     (InputStatusPort1),A
+0184: 01A1 DB                     DB     IN_OPCODE
+0185: 01A2             InputStatusPort1:
+0186: 01A2 00                     DB     00                   ; Modified code location
+0187: 01A3 A2                     AND    D
+0188: 01A4 C9                     RET                         ; 00 => No data pending
+0189: 01A5 76                     HALT
+0190: 01A6
+0191: 01A6         ;........................................................
+0192: 01A6             DummyStatus:
+0193: 01A6 3E FF                  LD     A,0FFH
+0194: 01A8 B7                     OR     A                    ; Reset the Z Flag
+0195: 01A9 C9                     RET                         ; Dummy always returns FFH
+0196: 01AA             DummyInput:
+0197: 01AA 3E 1A                  LD     A,END_OF_FILE        ;			; Always returns End Of File
+0198: 01AC             DummyOutput:
+0199: 01AC C9                     RET
+0200: 01AD
+0201: 01AD         ;++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+0202: 01AD
+0203: 01AD         ;-----------  CON: -----Bits 1 & 0 -------------------
+0204: 01AD         ;		ORG		2000H
+0205: 01AD             ConStatInVector:
+0206: 01AD 71 01                  DW     TTYInStatus
+0207: 01AF 71 01                  DW     CRTInStatus
+0208: 01B1 71 01                  DW     COMInStatus
+0209: 01B3 A6 01                  DW     DummyStatus
+0210: 01B5             ConStatOutVector:
+0211: 01B5 6C 01                  DW     TTYOutStatus
+0212: 01B7 6C 01                  DW     CRTOutStatus
+0213: 01B9 6C 01                  DW     COMOutStatus
+0214: 01BB A6 01                  DW     DummyStatus
+0215: 01BD             ConDataInVector:
+0216: 01BD 7F 01                  DW     TTYInData
+0217: 01BF 88 01                  DW     CRTInData
+0218: 01C1 7F 01                  DW     COMInData
+0219: 01C3 AA 01                  DW     DummyInput
+0220: 01C5             ConDataOutVector:
+0221: 01C5 8E 01                  DW     TTYOutData
+0222: 01C7 8E 01                  DW     CRTOutData
+0223: 01C9 8E 01                  DW     COMOutData
+0224: 01CB AC 01                  DW     DummyOutput
+0225: 01CD             ConStatPort:
+0226: 01CD ED                     DB     TTYStatusPort
+0227: 01CE 02                     DB     CRTStatusPort
+0228: 01CF ED                     DB     COMStatusPort
+0229: 01D0 00                     DB     DUMMY_VALUE
+0230: 01D1             ConDataPort:
+0231: 01D1 EC                     DB     TTYDataPort
+0232: 01D2 01                     DB     CRTDataPort
+0233: 01D3 EC                     DB     COMDataPort
+0234: 01D4 00                     DB     DUMMY_VALUE
+0235: 01D5             ConStatInMask:
+0236: 01D5 02                     DB     TTYStatusInMask
+0237: 01D6 7F                     DB     CRTStatusInMask
+0238: 01D7 02                     DB     COMStatusInMask
+0239: 01D8 00                     DB     DUMMY_VALUE
+0240: 01D9             ConStatOutMask:
+0241: 01D9 01                     DB     TTYStatusOutMask
+0242: 01DA 80                     DB     CRT_StatusOutMask
+0243: 01DB 1D                     DB     COMStatusOutMask
+0244: 01DC 00                     DB     DUMMY_VALUE
+0245: 01DD
+0246: 01DD         ;-----------  LST: -----Bits 7 & 6 -------------------
+0247: 01DD                        ORG    1000H
+0248: 1000             LSTStatInVector:
+0249: 1000         ;	DW	TTYInStatus
+0250: 1000         ;	DW	CRTInStatus
+0251: 1000         ;	DW	LPTInStatus
+0252: 1000         ;	DW	DummyStatus
+0253: 1000             LSTStatOutVector:
+0254: 1000 6C 01                  DW     TTYOutStatus
+0255: 1002 6C 01                  DW     CRTOutStatus
+0256: 1004 98 01                  DW     LPTOutStatus
+0257: 1006 A6 01                  DW     DummyStatus
+0258: 1008         ;LSTDataInVector:
+0259: 1008         ;	DW	TTYInData
+0260: 1008         ;	DW	CRTInData
+0261: 1008         ;	DW	LPTInData
+0262: 1008         ;	DW	DummyInput
+0263: 1008             LSTDataOutVector:
+0264: 1008         ;	DW	TTYOutData
+0265: 1008         ;	DW	CRTOutData
+0266: 1008         ;	DW	LPTOutData
+0267: 1008 AC 01                  DW     DummyOutput
+0268: 100A             LSTStatPort:
+0269: 100A ED                     DB     TTYStatusPort
+0270: 100B 02                     DB     CRTStatusPort
+0271: 100C 11                     DB     LPTStatusPort
+0272: 100D 00                     DB     DUMMY_VALUE
+0273: 100E             LSTDataPort:
+0274: 100E EC                     DB     TTYDataPort
+0275: 100F 01                     DB     CRTDataPort
+0276: 1010 10                     DB     LPTDataPort
+0277: 1011 00                     DB     DUMMY_VALUE
+0278: 1012         ;LSTStatInMask:
+0279: 1012         ;	DB	TTYStatusInMask
+0280: 1012         ;	DB	CRTStatusInMask
+0281: 1012         ;	DB	LPTtatusInMask
+0282: 1012         ;	DB	DUMMY_VALUE
+0283: 1012             LSTStatOutMask:
+0284: 1012 01                     DB     TTYStatusOutMask
+0285: 1013 80                     DB     CRT_StatusOutMask
+0286: 1014 FF                     DB     LPTStatusOutMask
+0287: 1015 00                     DB     DUMMY_VALUE
+0288: 1016
+0289: 1016
+0290: 1016
+0291: 1016
+0292: 1016         ;---------------------------------------------------------------
+0293: 1016
+0294: 1016             PhysicalStatusPort:
+0295: 1016             TTYStatusPort EQU    0EDH
+0296: 1016             CRTStatusPort EQU    02H
+0297: 1016             COMStatusPort EQU    0EDH
+0298: 1016             LPTStatusPort EQU    011H
+0299: 1016
+0300: 1016             PhysicalDataPort:
+0301: 1016             TTYDataPort EQU    0ECH
+0302: 1016             CRTDataPort EQU    01H
+0303: 1016             COMDataPort EQU    0ECH
+0304: 1016             LPTDataPort EQU    010H
+0305: 1016
+0306: 1016             PhysicalStatusInMask:
+0307: 1016             TTYStatusInMask EQU    02H
+0308: 1016             CRTStatusInMask EQU    07FH
+0309: 1016             COMStatusInMask EQU    02H
+0310: 1016             LPTStatusInMask EQU    07FH
+0311: 1016
+0312: 1016             PhysicalStatusOutMask:
+0313: 1016             TTYStatusOutMask EQU    01H
+0314: 1016             CRT_StatusOutMask EQU    080H
+0315: 1016             COMStatusOutMask EQU    01DH
+0316: 1016             LPTStatusOutMask EQU    0FFH
+0317: 1016
+0318: 1016
+0319: 1016         ;++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
            ************************   Xref   ************************
-0000: $               1030
-0009: ASCII_MASK      007F   0158
-0243: COMDataPort     00EC   0216
-0149: COMInData       0179   0201
-0135: COMInStatus     016B   0191
-0163: COMOutData      0188   0206
-0130: COMOutStatus    0166   0196
-0249: COMStatusInMask 0002   0221
-0255: COMStatusOutMask 001D   0226
-0237: COMStatusPort   00ED   0211
-0198: ConDataInVector 1010   0081 0082
-0203: ConDataOutVector 1018   0093 0094
-0213: ConDataPort     1024   0150 0164
-0078: ConIn           0130   0080
-0137: ConInOutStatus  016E   0132
-0090: CONOut          013C   0020 0092
-0218: ConStatInMask   1028   0136
-0188: ConStatInVector 1000   0054 0081 0082
-0223: ConStatOutMask  102C   0131
-0193: ConStatOutVector 1008   0057 0093 0094
-0208: ConStatPort     1020   0061 0131 0136 0138 0150 0164
-0046: ConStatus       010C
-0254: CRT_StatusOutMask 0080   0225
-0242: CRTDataPort     0001   0215
-0156: CRTInData       0182   0200
-0148: CRTInData0      0179   0157
-0134: CRTInStatus     016B   0190
-0162: CRTOutData      0188   0205
-0129: CRTOutStatus    0166   0195
-0248: CRTStatusInMask 007F   0220
-0236: CRTStatusPort   0002   0210
-0179: DummyInput      0196   0202
-0181: DummyOutput     0198   0207
-0175: DummyStatus     0192   0192 0197
-0008: END_OF_FILE     001A   0180
-0053: GetConInStatus  0114   0047 0079
-0056: GetConOutStatus 011A   0091
-0059: GetConStatus    011E   0055
-0006: IN_OPCODE       00DB   0140 0152
-0153: InputDataPort   0180   0151
-0141: InputStatusPort 0175   0139
-0024: IOBYTE          010B   0060
-0244: LPTDataPort     0010   0217
-0250: LPTStatusInMask 007F   0222
-0256: LPTStatusOutMask 00FF   0227
-0238: LPTStatusPort   0011   0212
-0007: OUT_OPCODE      00D3   0167
-0168: OutputDataPort  0190   0165
-0240: PhysicalDataPort 1030
-0246: PhysicalStatusInMask 1030
-0252: PhysicalStatusOutMask 1030
-0234: PhysicalStatusPort 1030
-0113: SelectRoutine   0154
-0100: SetIndexesIO    0148   0062
-0011: StackTop        0100   0016
-0015: Start           0100   0022
-0241: TTYDataPort     00EC   0214
-0147: TTYInData       0179   0199
-0133: TTYInStatus     016B   0189
-0161: TTYOutData      0188   0204
-0128: TTYOutStatus    0166   0194
-0247: TTYStatusInMask 0002   0219
-0253: TTYStatusOutMask 0001   0224
-0235: TTYStatusPort   00ED   0209
+0000: $               1016
+0009: ASCII_MASK      007F   0167
+0303: COMDataPort     00EC   0233
+0158: COMInData       017F   0218
+0144: COMInStatus     0171   0208
+0172: COMOutData      018E   0223
+0139: COMOutStatus    016C   0213
+0309: COMStatusInMask 0002   0238
+0315: COMStatusOutMask 001D   0243
+0297: COMStatusPort   00ED   0228
+0215: ConDataInVector 01BD   0067 0068
+0220: ConDataOutVector 01C5   0079 0080
+0230: ConDataPort     01D1   0159 0173
+0064: ConIn           0112   0066
+0146: ConInOutStatus  0174   0141
+0076: CONOut          011E   0078
+0235: ConStatInMask   01D5   0145
+0205: ConStatInVector 01AD   0067 0068 0112
+0240: ConStatOutMask  01D9   0140
+0210: ConStatOutVector 01B5   0079 0080 0115
+0225: ConStatPort     01CD   0119 0140 0145 0147 0159 0173
+0048: ConStatus       010A
+0314: CRT_StatusOutMask 0080   0242 0285
+0302: CRTDataPort     0001   0232 0275
+0165: CRTInData       0188   0217
+0157: CRTInData0      017F   0166
+0143: CRTInStatus     0171   0207
+0171: CRTOutData      018E   0222
+0138: CRTOutStatus    016C   0212 0255
+0308: CRTStatusInMask 007F   0237
+0296: CRTStatusPort   0002   0227 0270
+0010: DUMMY_VALUE     0000   0229 0234 0239 0244 0272 0277 0287
+0196: DummyInput      01AA   0219
+0198: DummyOutput     01AC   0224 0267
+0192: DummyStatus     01A6   0209 0214 0257
+0008: END_OF_FILE     001A   0197
+0128: GetAllLSTStatus 015A   0093
+0111: GetConInStatus  013C   0049 0065
+0114: GetConOutStatus 0142   0077
+0117: GetConStatus    0146   0113
+0126: GetLSTStatus    0157
+0006: IN_OPCODE       00DB   0149 0161 0184
+0162: InputDataPort   0186   0160
+0150: InputStatusPort 017B   0148
+0185: InputStatusPort1 01A2   0183
+0026: IOBYTE          0109   0118 0127
+0085: LISTST          012A   0022
+0304: LPTDataPort     0010   0276
+0180: LPTOutStatus    0198   0256
+0310: LPTStatusInMask 007F
+0316: LPTStatusOutMask 00FF   0286
+0298: LPTStatusPort   0011   0271
+0263: LSTDataOutVector 1008
+0273: LSTDataPort     100E
+0248: LSTStatInVector 1000
+0283: LSTStatOutMask  1012   0181
+0253: LSTStatOutVector 1000   0129
+0268: LSTStatPort     100A   0130 0181 0182
+0007: OUT_OPCODE      00D3   0176
+0177: OutputDataPort  0196   0174
+0300: PhysicalDataPort 1016
+0306: PhysicalStatusInMask 1016
+0312: PhysicalStatusOutMask 1016
+0294: PhysicalStatusPort 1016
+0098: SetIndexesIO    0130   0120 0131
+0012: StackTop        0100   0017
+0016: Start           0100   0024
+0301: TTYDataPort     00EC   0231 0274
+0156: TTYInData       017F   0216
+0142: TTYInStatus     0171   0206
+0170: TTYOutData      018E   0221
+0137: TTYOutStatus    016C   0211 0254
+0307: TTYStatusInMask 0002   0236
+0313: TTYStatusOutMask 0001   0241 0284
+0295: TTYStatusPort   00ED   0226 0269
