@@ -2,7 +2,7 @@ package ioSystem.ttyZ80;
 
 /*
  * 		2018-12-06  Changed Status return Value:
- *                  MSB == 0, Output ready, Bits0-7 contains number of bytes in Keybord buffer
+ *                  MSB == 1, Output ready, Bits0-7 contains number of bytes in Keybord buffer
  */
 
 import java.awt.Color;
@@ -73,8 +73,8 @@ public class TTYZ80 extends DeviceZ80 implements Runnable {
 			if (statusFromCPU.size() > 0) {
 				statusFromCPU.poll();
 				byte charsInBuffer = (byte) (dataToCPU.size() & 0x7F);
-				// Set MSB if not ready for data from CPU
-				byte statusValue = (byte) (((charsInBuffer) & Z80.BYTE_MASK) );
+				// Set MSB if  ready for data from CPU
+				byte statusValue = (byte) (((charsInBuffer) & Z80.BYTE_MASK)|STATUS_OUT_READY );
 				statusToCPU.offer( statusValue);
 			} // if Status request
 
@@ -661,7 +661,7 @@ public class TTYZ80 extends DeviceZ80 implements Runnable {
 	public static final Byte IN = (byte) 0X0EC;
 	public static final Byte OUT = (byte) 0X0EC;
 	public static final Byte STATUS = (byte) 0X0ED;
-	public static final Byte STATUS_VALUE_OUT = (byte) 0b1000_0000;  // MSB set
+	public static final Byte STATUS_OUT_READY = (byte) 0b1000_0000;  // MSB set
 //	private static final Byte STATUS_RESPONSE = (byte) 0X03;
 
 	// private static final String EMPTY_STRING = "";

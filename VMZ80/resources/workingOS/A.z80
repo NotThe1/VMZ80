@@ -1,326 +1,526 @@
 ; A.Z80
 ;
 ;	2018-11-30
-; 5
+; 1
+
+; BIOS Function Descriptions are from THE PROGRAMMER'S CP/M® HANDBOOK
+; by Andy Johnson-Laird
+; 
+; Published by
+; Osborne/McGraw-Hill
+; 2600 Tenth Street
+; Berkeley, California 94710
+; U.S.A.
 		
 IN_OPCODE	EQU		0DBH		; opcode for read
-OUT_OPCODE	EQU		0D3H		; opcode for Write
-END_OF_FILE	EQU		01AH;		; End Of File code
+;?OUT_OPCODE	EQU		0D3H		; opcode for Write
+;?END_OF_FILE	EQU		01AH;		; End Of File code
 ASCII_MASK	EQU		07FH		; bits 0-6
-DUMMY_VALUE	EQU		00H			; place holder for Dummy Status mask		
-		
+;?DUMMY_VALUE	EQU		00H			; place holder for Dummy Status mask
+MINUS_ONE		EQU		0FFH		; byte size -1		
+;?		
 StackTop	EQU		0100H
-
-
+;?
+;?
 	ORG   0100H
 Start:	
 	LD	SP,StackTop
 ;	CALL ConStatus
-;	CALL	ConIn
+	CALL	ConIn
 ;	LD		C,045H
 ;	CALL	CONOut
-	CALL	LISTST
+;	CALL	LISTST
 	HALT
 	JR		Start
 	
-IOBYTE:	DS 1
-;---------------------------------------------------------------------------
-;				BIOS Character I/O devices
-;
-;				BIOS JMP vector		Function
-;					--				--------
-;		ConStatus:	02			 	Console Status
-;		ConIn:		03				Console In 
-;		CONOut:		04				Console Out
-;					05				List Out
-;					06				Punch Out
-;					07				Reader In 
-;					0F				List Status 
-
- 
- 
+IOBYTE:	DB     00000000B  		; LST: device 0
+;?;---------------------------------------------------------------------------
+;?;				BIOS Character I/O devices
+;?;
+;?;				BIOS JMP vector		Function
+;?;					--				--------
+;?;		ConStatus:	02			 	Console Status
+;?;		ConIn:		03				Console In 
+;?;		CONOut:		04				Console Out
+;?;					05				List Out
+;?;					06				Punch Out
+;?;					07				Reader In 
+;?;					0F				List Status 
+;?
+;? 
 ;---------------------------------------------------------------------------
  ;	Console Status:		BIOS 02
- ; Entered directly from BIOS JMP vector, returns Register A
- ; 00H -> No data ,  0FFH -> there is data
- ;
+;  CONST simply returns an indicator showing whether there is an incoming
+; character from the console device. The convention is that A = OFFH if a character
+; is waiting to be processed, A = 0 if one is not. Note that the zero flag need not be set
+; to reflect the contents of the A register - it is the contents that are important.
+; CONST is called by the CCP whenever the CCP is in the middle of an
+; operation that can be interrupted by pressing a keyboard character.
+; 
+; The BDOS will call CONST if a program makes a Read Console Status
+; function call (B$CONST, code 11, OBH). It is also called by the console input BIOS
+; routine, CONIN
 	
 ConStatus:
+	LD		A,(IOBYTE)
+	LD		IX,CON_Vector
+	CALL	SetDeviceVector		; IX has the vector for the Physical Device
 	CALL	GetConInStatus
 	OR	A
 	RET		Z					; 00 => No data pending
 	LD		A,0FFH
 	RET							; OFFH => Data in Buffer
-
-	;---------------------------------------------------------------------------
+;---------------------------------------------------------------------
  ;	Console In:		BIOS 03
- ; Get console Input character entered directly from the BIOS jmp Vector
- ; return the character from the console in the A register.
- ; most significant bit will be 0. except when "reader" (communication)
- ; port has input , all 8 bits are reurned
- ;
+;  CONIN reads the next character from the console to the A register and sets the
+; most significant (parity) bit to O. ; Normally, CONIN will call the CONST routine
+; until it detects A = OFFH. Only then will it input the data character and mask off
+; the parity bit. CONIN is called by the CCP and by the BDOS when a program executes a
+; Read Console Byte function (B$CONIN, code 1).
+
  ; normally this follows a call to CONST ( a blocking call) to indicates a char is ready.
  
  ConIn:
- 	CALL	GetConInStatus		; is there incoming data ?
+	CALL	ConStatus
 	JR		Z,ConIn				; loop until there is some
-	LD		L,(IX + ConDataInVector - ConStatInVector)
-	LD		H,(IX +(ConDataInVector - ConStatInVector+1))
+								; Call to ConStatus Sets up IX with Physical Table
+	LD		L,(IX + DataReadIndex)
+	LD		H,(IX +(DataReadIndex +1 ))
 	JP		(HL)
 
 ;---------------------------------------------------------------------------
- ;	Console Out:		BIOS 04
- ;  entered directly from BIOS JMP Vector. it outputs the
- ; character in the C register to the appropriate device according to
- ; bits 1,0 of IOBYTE
- CONOut:
-	CALL	GetConOutStatus
-	JR		Z,CONOut
-	LD		L,(IX + ConDataOutVector - ConStatOutVector)
-	LD		H,(IX +(ConDataOutVector - ConStatOutVector+1))
-	JP		(HL)
- ;---------------------------------------------------------------------------
- ;	List Status:  BIOS 0F
- 
- LISTST:
- ; List Device (output) status entered directly from the BIOS JMP Vector
- ; returns in A the list device status that indicates if the device will
- ; accept another character the IOBYTE's bits 7,6 determine the physical device
- ; A =  00H : no Device cannot accept data. zero flag set
- ;     0FFH :  All can accept data. zero flag cleared
- 
-	LD			B,04				; we want to test all 4 devices
-LISTST0:
-	LD			A,B
-	DEC			A					; device definitions are Zero based
-	CALL		GetAllLSTStatus
-	JR			Z,LISTST1
-	LD			A,0FFH
-	RET
- LISTST1:
-	DJNZ		LISTST0				; do all 4 devices
-	RET
- 	
-;=============================================================================	
-SetIndexesIO:
-	AND	03H					; Get bits 0 & 1;
-	LD	D,00H
-	LD	E,A					; load byte index int DE
-	ADD	IY,DE				; add to the value vector base
-	
-	ADD	A,A					; Double for word size index
-;	LD	D,00H
-	LD	E,A					; load word index int DE
-	ADD	IX,DE				; add to the Routine vector base
-	RET
+
+;---------------------------------------------------------------------
+GetConOutStatus:
+				; vector to CON Devices
+	LD		D,(IX + OutputMaskIndex)	; setup Output mask	
+	JR		GetConStatus
+GetConInStatus:
+	LD		D,(IX + InputMaskIndex)		; setup Input mask
+GetConStatus:	
+	LD		L,(IX + StatusReadIndex)
+	LD		H,(IX + (StatusReadIndex + 1))	; Load HL with address for Status Read
+	JP		(HL)						; jump to the stats read routine
 	
 ;---------------------------------------------------------------------
-GetConInStatus:
-	LD		IX,ConStatInVector		; vector to I/O routines
-	JR		GetConStatus
-GetConOutStatus:
-	LD		IX,ConStatOutVector		; vector to I/O routines
-				
-GetConStatus:
-	LD		A,(IOBYTE)				; Get Physical device
-	LD		IY,ConStatPort			; vector to I/O values
-	CALL	SetIndexesIO			; set up IX & IY 
-	LD		L,(IX+0)
-	LD		H,(IX+1)				; HL Points to the routine
-	JP		(HL)
-;----------------------------------------------------------------
 
-GetLSTStatus:
-	LD		A,(IOBYTE)				; Get Physical device				
-GetAllLSTStatus:
-	LD		IX,LSTStatOutVector		; vector to I/O routines
-	LD		IY,LSTStatPort			; vector to I/O values
-	CALL	SetIndexesIO			; set up IX & IY 
-	LD		L,(IX+0)
-	LD		H,(IX+1)				; HL Points to the routine
-	JP		(HL)
+DataRead:							; 
+	LD	A,(IX + DataPortIndex)
+	LD	(AddressData),A			; modify code with the Data port
+	DB	IN_OPCODE
+AddressData:
+	DB	00							; perform the read data
+	RET
+
+DataReadASCII:
+	CALL	DataRead
+	AND		ASCII_MASK				; Strip off MSB
+	RET								; AND		ASCII_MASK
+
+DataWrite:							;        Routine stub
+	RET
+	
+; Enter Status Read with Target mask in D	
+StatusRead:							;        Routine stub
+	LD	A,(IX + StatusPortIndex)
+	LD	(AddressStatus),A			; modify code with the status port
+	DB	IN_OPCODE
+AddressStatus:
+	DB	00
+	AND	D							; Check return vale with the mask
+	RET
+	
+DUMMYRead:							;        Routine stub
+	RET
+DUMMYWrite:							;        Routine stub
+	RET
+DUMMYCheck:							;        Routine stub
+	LD		A,MINUS_ONE				; Always return 0FFH
+	OR		A						; Set flags
+	RET
+
+;=============================================================================	
+SetDeviceVector:
+	AND	03H					; Get bits 0 & 1;
+	ADD	A,A					; Double for word size index
+	LD	D,00H
+	LD	E,A					; load byte index int DE
+	ADD	IX,DE				; add to the value vector base
+	
+	LD	E,(IX + 0)
+	LD	D,(IX + 1)			; DE now has the Vector for the device
+	LD	IX,0000H
+	ADD	IX,DE				; Move it to IX
+	RET
+
 
 ;++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-TTYOutStatus:
-CRTOutStatus:
-COMOutStatus:
-	LD		D,(IY + (ConStatOutMask-ConStatPort))
-	JR		ConInOutStatus
-TTYInStatus:
-CRTInStatus:
-COMInStatus:
-	LD		D,(IY + (ConStatInMask-ConStatPort))
-ConInOutStatus:
-	LD		A,(IY + (ConStatPort - ConStatPort))	; Status Port
-	LD		(InputStatusPort),A
-	DB		IN_OPCODE
-InputStatusPort:
-	DB		00					; Modified code location
-	AND		D
-	RET							; 00 => No data pending
-	HALT
-	
-TTYInData:
-CRTInData0:
-COMInData:
-	LD		A,(IY + ConDataPort-ConStatPort)
-	LD		(InputDataPort),A
-	DB		IN_OPCODE
-InputDataPort:		DB	00		; Modified code location
-	RET
-	
-CRTInData:
-	CALL	CRTInData0
-	AND		ASCII_MASK			; strip off bit 7
-	RET
-	
-TTYOutData:
-CRTOutData:
-COMOutData:
-	LD		A,(IY + ConDataPort-ConStatPort)
-	LD		(OutputDataPort),A
-	LD		A,C					; Get Byte from C to output
-	DB		OUT_OPCODE
-OutputDataPort:		DB	00		; Modified code location
-	RET
-;......................................................
-LPTOutStatus:
-	LD		D,(IY+(LSTStatOutMask-LSTStatPort))
-	LD		A,(IY + (LSTStatPort-LSTStatPort))	; Status port
-	LD		(InputStatusPort1),A
-	DB		IN_OPCODE
-InputStatusPort1:
-	DB		00					; Modified code location
-	AND		D
-	RET							; 00 => No data pending
-	HALT
 
-;........................................................	
-DummyStatus:
-	LD	A,0FFH
-	OR	A						; Reset the Z Flag
-	RET							; Dummy always returns FFH
-DummyInput:
-	LD	A,END_OF_FILE;			; Always returns End Of File
-DummyOutput:
-	RET
+TTY_StatusPort		EQU		0EDH
+TTY_DataPort		EQU		0ECH
+TTY_OutputMask		EQU		80H		; Status Mask
+TTY_InputMask		EQU		7FH		; Status Mask
 
-;++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+CRT_StatusPort		EQU		02H
+CRT_DataPort		EQU		01H
+CRT_OutputMask		EQU		80H		; Status Mask - ready for output
+CRT_InputMask		EQU		07FH	; Status Mask - bytes yet to have been read
 
-;-----------  CON: -----Bits 1 & 0 -------------------
-;		ORG		2000H
-ConStatInVector:
-	DW	TTYInStatus
-	DW	CRTInStatus
-	DW	COMInStatus
-	DW	DummyStatus
-ConStatOutVector:
-	DW	TTYOutStatus
-	DW	CRTOutStatus
-	DW	COMOutStatus
-	DW	DummyStatus	
-ConDataInVector:
-	DW	TTYInData
-	DW	CRTInData
-	DW	COMInData
-	DW	DummyInput
-ConDataOutVector:
-	DW	TTYOutData
-	DW	CRTOutData
-	DW	COMOutData
-	DW	DummyOutput
-ConStatPort:
-	DB	TTYStatusPort
-	DB	CRTStatusPort
-	DB	COMStatusPort
-	DB	DUMMY_VALUE
-ConDataPort:
-	DB	TTYDataPort
-	DB	CRTDataPort
-	DB	COMDataPort
-	DB	DUMMY_VALUE
-ConStatInMask:
-	DB	TTYStatusInMask
-	DB	CRTStatusInMask
-	DB	COMStatusInMask
-	DB	DUMMY_VALUE
-ConStatOutMask:
-	DB	TTYStatusOutMask
-	DB	CRT_StatusOutMask
-	DB	COMStatusOutMask
-	DB	DUMMY_VALUE
+COM_StatusPort		EQU		0EDH
+COM_DataPort		EQU		0ECH
+COM_OutputMask		EQU		01H		; Status Mask
+COM_InputMask		EQU		02H		; Status Mask
+
+LPT_StatusPort		EQU		011H
+LPT_DataPort		EQU		010H
+LPT_OutputMask		EQU		0FFH	; Status Mask - ready for output
+LPT_InputMask		EQU		07FH	; Status Mask - not used
+
+DUMMY_StatusPort	EQU		011H
+DUMMY_DataPort		EQU		010H
+DUMMY_OutputMask	EQU		0FFH	; Status Mask - ready for output
+DUMMY_InputMask		EQU		07FH	; Status Mask - not used
+
+
+StatusPortIndex		EQU		0
+DataPortIndex		EQU		1	
+OutputMaskIndex		EQU		2	
+InputMaskIndex		EQU		3		
+StatusReadIndex		EQU		4	
+DataReadIndex		EQU		6	
+DataWriteIndex		EQU		8
+
+TTY_Table:
+ 	DB		TTY_StatusPort
+ 	DB		TTY_DataPort
+ 	DB		TTY_OutputMask
+ 	DB		TTY_InputMask
+	DW		StatusRead
+	DW		DataReadASCII
+	DW		DataWrite
 	
-;-----------  LST: -----Bits 7 & 6 -------------------
-		ORG		1000H
-LSTStatInVector:
-;	DW	TTYInStatus
-;	DW	CRTInStatus
-;	DW	LPTInStatus
-;	DW	DummyStatus
-LSTStatOutVector:
-	DW	TTYOutStatus
-	DW	CRTOutStatus
-	DW	LPTOutStatus
-	DW	DummyStatus	
-;LSTDataInVector:
-;	DW	TTYInData
-;	DW	CRTInData
-;	DW	LPTInData
-;	DW	DummyInput
-LSTDataOutVector:
-;	DW	TTYOutData
-;	DW	CRTOutData
-;	DW	LPTOutData
-	DW	DummyOutput
-LSTStatPort:
-	DB	TTYStatusPort
-	DB	CRTStatusPort
-	DB	LPTStatusPort
-	DB	DUMMY_VALUE
-LSTDataPort:
-	DB	TTYDataPort
-	DB	CRTDataPort
-	DB	LPTDataPort
-	DB	DUMMY_VALUE
-;LSTStatInMask:
-;	DB	TTYStatusInMask
-;	DB	CRTStatusInMask
-;	DB	LPTtatusInMask
-;	DB	DUMMY_VALUE
-LSTStatOutMask:
-	DB	TTYStatusOutMask
-	DB	CRT_StatusOutMask
-	DB	LPTStatusOutMask
-	DB	DUMMY_VALUE
-	
-	
+CRT_Table:
+ 	DB		CRT_StatusPort
+ 	DB		CRT_DataPort
+ 	DB		CRT_OutputMask
+ 	DB		CRT_InputMask
+	DW		StatusRead
+	DW		DataRead
+	DW		DataWrite
+COM_Table:
+ 	DB		COM_StatusPort	
+ 	DB		COM_DataPort	
+ 	DB		COM_OutputMask	
+ 	DB		COM_InputMask
+	DW		StatusRead
+	DW		DataRead
+	DW		DataWrite	
+LPT_Table:
+ 	DB		LPT_StatusPort	
+ 	DB		LPT_DataPort	
+ 	DB		LPT_OutputMask	
+ 	DB		LPT_InputMask
+	DW		StatusRead
+	DW		DataRead
+	DW		DataWrite	
+DUMMY_Table:
+ 	DB		DUMMY_StatusPort
+ 	DB		DUMMY_DataPort	
+ 	DB		DUMMY_OutputMask
+ 	DB		DUMMY_InputMask
+	DW		DUMMYCheck
+	DW		DUMMYRead
+	DW		DUMMYWrite
 
 	
-;---------------------------------------------------------------
-		
-PhysicalStatusPort:
-		TTYStatusPort				EQU		0EDH
-		CRTStatusPort				EQU		02H
-		COMStatusPort				EQU		0EDH
-		LPTStatusPort				EQU		011H
-		
-PhysicalDataPort:
-		TTYDataPort					EQU		0ECH
-		CRTDataPort					EQU		01H
-		COMDataPort					EQU		0ECH
-		LPTDataPort					EQU		010H
-		
-PhysicalStatusInMask:
-		TTYStatusInMask				EQU		02H
-		CRTStatusInMask				EQU		07FH
-		COMStatusInMask				EQU		02H
-		LPTStatusInMask				EQU		07FH
-
-PhysicalStatusOutMask:
-		TTYStatusOutMask			EQU		01H
-		CRT_StatusOutMask			EQU		080H
-		COMStatusOutMask			EQU		01DH
-		LPTStatusOutMask			EQU		0FFH
-
+ 
+;---------------------------------------------------------------------------
+CON_Vector:
+	DW		TTY_Table
+	DW		CRT_Table
+	DW		COM_Table
+	DW		DUMMY_Table
+RDR_Vector:
+	DW		TTY_Table
+	DW		CRT_Table
+	DW		DUMMY_Table	
+	DW		DUMMY_Table
+PUN_Vector:
+	DW		TTY_Table
+	DW		DUMMY_Table
+	DW		COM_Table
+	DW		CRT_Table
+LST_Vector:
+	DW		TTY_Table
+	DW		CRT_Table
+	DW		LPT_Table
+	DW		DUMMY_Table
+ 
+;?	;---------------------------------------------------------------------------
+;? ;	Console In:		BIOS 03
+;?;  CONIN reads the next character from the console to the A register and sets the
+;?; most significant (parity) bit to O. ; Normally, CONIN will call the CONST routine
+;?; until it detects A = OFFH. Only then will it input the data character and mask off
+;?; the parity bit. CONIN is called by the CCP and by the BDOS when a program executes a
+;?; Read Console Byte function (B$CONIN, code 1).
+;?
+;? ; normally this follows a call to CONST ( a blocking call) to indicates a char is ready.
+;? 
+;? ConIn:
+;? 	CALL	GetConInStatus		; is there incoming data ?
+;?	JR		Z,ConIn				; loop until there is some
+;?	LD		L,(IX + ConDataInVector - ConStatInVector)
+;?	LD		H,(IX +(ConDataInVector - ConStatInVector+1))
+;?	JP		(HL)
+;?
+;?;---------------------------------------------------------------------------
+;? ;	Console Out:		BIOS 04
+;?;  CONOUT outputs the character (in ASCII) in register C to the console. The
+;?; most significant (parity) bit of the character will always be O.
+;?; CONOUT must first check that the console device is ready to receive more
+;?; data, delaying if necessary until it is, and only then sending the character to the
+;?; device. CONOUT is called by the CCP and by the BDOS when a program executes a
+;?; Write Console Byte function (B$CONOUT, code 2).
+;?
+;? CONOut:
+;?	CALL	GetConOutStatus
+;?	JR		Z,CONOut
+;?	LD		L,(IX + ConDataOutVector - ConStatOutVector)
+;?	LD		H,(IX +(ConDataOutVector - ConStatOutVector+1))
+;?	JP		(HL)
+;? ;---------------------------------------------------------------------------
+;? ;	List Status:  BIOS 0F
+;? 
+;?  LISTST was added when CP/M was upgraded from version 1.4 to version 2.0.
+;?; This function returns the current status of the list device, using the IOBYTE if
+;?; necessary to select the correct physical device. It sets the A register to OFFH if the
+;?; list device can accept another character for output or to OOH if it is not ready.
+;?; Digital Research's documentation states that this function is used by the
+;?; DESPOOL utility program (which allows you to print a file "simultaneously" with
+;?; other operations) to improve console response during its operation, and that it is
+;?; acceptable for the routine always to return OOH if you choose not to implement it
+;?; fully.
+;?; Unfortunately, this statement is wrong. Many other programs use the LISTST
+;?; function to "poll" the list device to make sure it is ready, and if it fails to come
+;?; ready after a predetermined time, to output a message to the console indicating
+;?; that the printer is not ready. If you ever make a call to the BDOS list output
+;?; functions, Write Printer Byte and Print String (codes 5 and 9), and the printer is
+;?; not ready, then CP/M will wait forever-and your program will have lost control
+;?; so it cannot even detect that the problem has occurred. If LISTST always returns a
+;?; OOH, then the printer will always appear not to be ready. Not only does this makenonsense
+;?; out of the LISTST function, but it also causes a stream offalse "Printer
+;?; not Ready" error messages to appear on the console.
+;?;  
+;? LISTST:
+;?GetLSTStatus:
+;?	LD		A,(IOBYTE)				; Get Physical device
+;?	RLCA
+;?	RLCA							; Move bits 6 & 7 to bits 0 & 1
+;?	LD		IX,LSTStatOutVector		; vector to I/O routines
+;?	LD		IY,LSTStatPort			; vector to I/O values
+;?	CALL	SetIndexesIO			; set up IX & IY 
+;?	LD		L,(IX+0)
+;?	LD		H,(IX+1)				; HL Points to the routine
+;?	JP		(HL)
+;?
+;? 	
+;?;=============================================================================	
+;?SetIndexesIO:
+;?	AND	03H					; Get bits 0 & 1;
+;?	LD	D,00H
+;?	LD	E,A					; load byte index int DE
+;?	ADD	IY,DE				; add to the value vector base
+;?	
+;?	ADD	A,A					; Double for word size index
+;?;	LD	D,00H
+;?	LD	E,A					; load word index int DE
+;?	ADD	IX,DE				; add to the Routine vector base
+;?	RET
+;?	
+;?;----------------------------------------------------------------
+;?
+;?
+;?;++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+;?TTYOutStatus:
+;?CRTOutStatus:
+;?COMOutStatus:
+;?	LD		D,(IY + (ConStatOutMask-ConStatPort))
+;?	JR		ConInOutStatus
+;?TTYInStatus:
+;?CRTInStatus:
+;?COMInStatus:
+;?	LD		D,(IY + (ConStatInMask-ConStatPort))
+;?ConInOutStatus:
+;?	LD		A,(IY + (ConStatPort - ConStatPort))	; Status Port
+;?	LD		(InputStatusPort),A
+;?	DB		IN_OPCODE
+;?InputStatusPort:
+;?	DB		00					; Modified code location
+;?	AND		D
+;?	RET							; 00 => No data pending
+;?	HALT
+;?	
+;?TTYInData:
+;?CRTInData0:
+;?COMInData:
+;?	LD		A,(IY + ConDataPort-ConStatPort)
+;?	LD		(InputDataPort),A
+;?	DB		IN_OPCODE
+;?InputDataPort:		DB	00		; Modified code location
+;?	RET
+;?	
+;?CRTInData:
+;?	CALL	CRTInData0
+;?	AND		ASCII_MASK			; strip off bit 7
+;?	RET
+;?	
+;?TTYOutData:
+;?CRTOutData:
+;?COMOutData:
+;?	LD		A,(IY + ConDataPort-ConStatPort)
+;?	LD		(OutputDataPort),A
+;?	LD		A,C					; Get Byte from C to output
+;?	DB		OUT_OPCODE
+;?OutputDataPort:		DB	00		; Modified code location
+;?	RET
+;?;......................................................
+;?LPTOutStatus:
+;?	LD		D,(IY+(LSTStatOutMask-LSTStatPort))
+;?	LD		A,(IY + (LSTStatPort-LSTStatPort))	; Status port
+;?	LD		(InputStatusPort1),A
+;?	DB		IN_OPCODE
+;?InputStatusPort1:
+;?	DB		00					; Modified code location
+;?	AND		D
+;?	RET							; 00 => No data pending
+;?	HALT
+;?
+;?;........................................................	
+;?DummyStatus:
+;?	LD	A,0FFH
+;?	OR	A						; Reset the Z Flag
+;?	RET							; Dummy always returns FFH
+;?DummyInput:
+;?	LD	A,END_OF_FILE;			; Always returns End Of File
+;?DummyOutput:
+;?	RET
+;?
+;?;++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+;?
+;?;-----------  CON: -----Bits 1 & 0 -------------------
+;?;		ORG		2000H
+;?ConStatInVector:
+;?	DW	TTYInStatus
+;?	DW	CRTInStatus
+;?	DW	COMInStatus
+;?	DW	DummyStatus
+;?ConStatOutVector:
+;?	DW	TTYOutStatus
+;?	DW	CRTOutStatus
+;?	DW	COMOutStatus
+;?	DW	DummyStatus	
+;?ConDataInVector:
+;?	DW	TTYInData
+;?	DW	CRTInData
+;?	DW	COMInData
+;?	DW	DummyInput
+;?ConDataOutVector:
+;?	DW	TTYOutData
+;?	DW	CRTOutData
+;?	DW	COMOutData
+;?	DW	DummyOutput
+;?ConStatPort:
+;?	DB	TTYStatusPort
+;?	DB	CRTStatusPort
+;?	DB	COMStatusPort
+;?	DB	DUMMY_VALUE
+;?ConDataPort:
+;?	DB	TTYDataPort
+;?	DB	CRTDataPort
+;?	DB	COMDataPort
+;?	DB	DUMMY_VALUE
+;?ConStatInMask:
+;?	DB	TTYStatusInMask
+;?	DB	CRTStatusInMask
+;?	DB	COMStatusInMask
+;?	DB	DUMMY_VALUE
+;?ConStatOutMask:
+;?	DB	TTYStatusOutMask
+;?	DB	CRT_StatusOutMask
+;?	DB	COMStatusOutMask
+;?	DB	DUMMY_VALUE
+;?	
+;?;-----------  LST: -----Bits 7 & 6 -------------------
+;?		ORG		1000H
+;?LSTStatInVector:
+;?;	DW	TTYInStatus
+;?;	DW	CRTInStatus
+;?;	DW	LPTInStatus
+;?;	DW	DummyStatus
+;?LSTStatOutVector:
+;?	DW	TTYOutStatus
+;?	DW	CRTOutStatus
+;?	DW	LPTOutStatus
+;?	DW	DummyStatus	
+;?;LSTDataInVector:
+;?;	DW	TTYInData
+;?;	DW	CRTInData
+;?;	DW	LPTInData
+;?;	DW	DummyInput
+;?LSTDataOutVector:
+;? DW     DummyOutput ;	DW	TTYOutData
+;? DW     DummyOutput ;	DW	CRTOutData
+;? DW     DummyOutput ;	DW	LPTOutData
+;?	DW	DummyOutput
+;?LSTStatPort:
+;?	DB	TTYStatusPort
+;?	DB	CRTStatusPort
+;?	DB	LPTStatusPort
+;?	DB	DUMMY_VALUE
+;?LSTDataPort:
+;?	DB	TTYDataPort
+;?	DB	CRTDataPort
+;?	DB	LPTDataPort
+;?	DB	DUMMY_VALUE
+;?;LSTStatInMask:
+;?;	DB	TTYStatusInMask
+;?;	DB	CRTStatusInMask
+;?;	DB	LPTtatusInMask
+;?;	DB	DUMMY_VALUE
+;?LSTStatOutMask:
+;?	DB	TTYStatusOutMask
+;?	DB	CRT_StatusOutMask
+;?	DB	LPTStatusOutMask
+;?	DB	DUMMY_VALUE
+;?	
+;?	
+;?
+;?	
+;?;---------------------------------------------------------------
+;?		
+;?PhysicalStatusPort:
+;?		TTYStatusPort				EQU		0EDH
+;?		CRTStatusPort				EQU		02H
+;?		COMStatusPort				EQU		0EDH
+;?		LPTStatusPort				EQU		011H
+;?		
+;?PhysicalDataPort:
+;?		TTYDataPort					EQU		0ECH
+;?		CRTDataPort					EQU		01H
+;?		COMDataPort					EQU		0ECH
+;?		LPTDataPort					EQU		010H
+;?		
+;?PhysicalStatusInMask:
+;?		TTYStatusInMask				EQU		7FH			; Returns number of characters in Buffer
+;?		CRTStatusInMask				EQU		07FH
+;?		COMStatusInMask				EQU		02H
+;?		LPTStatusInMask				EQU		07FH
+;?
+;?PhysicalStatusOutMask:
+;?		TTYStatusOutMask			EQU		80H			; MSB set if Not ready fro characters from CPU
+;?		CRT_StatusOutMask			EQU		080H
+;?		COMStatusOutMask			EQU		01DH
+;?		LPTStatusOutMask			EQU		0FFH
+;?
 
 ;++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
