@@ -54,7 +54,7 @@ public class TabDialog extends JDialog implements Runnable {
 		// TODO Auto-generated method stub
 
 	}// run
-
+	
 	private void refreshMemory() {
 		hexDisplayMemory.setData(Core.getInstance().getStorage());
 		hexDisplayMemory.refresh();
