@@ -12,502 +12,543 @@
 0012: 0100         ; Berkeley, California 94710
 0013: 0100         ; U.S.A.
 0014: 0100
-0015: 0100             IN_OPCODE  EQU    0DBH                 ; opcode for read
-0016: 0100             OUT_OPCODE EQU    0D3H                 ; opcode for Write
-0017: 0100         ;?END_OF_FILE	EQU		01AH;		; End Of File code
-0018: 0100             ASCII_MASK EQU    07FH                 ; bits 0-6
-0019: 0100         ;?DUMMY_VALUE	EQU		00H			; place holder for Dummy Status mask
-0020: 0100             MINUS_ONE  EQU    0FFH                 ; byte size -1
-0021: 0100         ;?
-0022: 0100             StackTop   EQU    0100H
-0023: 0100         ;?
+0015: 0100
+0016: 0100             IOBYTE:    EQU    03H                  ; All Devices = 00
+0017: 0100
+0018: 0100             IN_OPCODE  EQU    0DBH                 ; opcode for read
+0019: 0100             OUT_OPCODE EQU    0D3H                 ; opcode for Write
+0020: 0100         ;?END_OF_FILE	EQU		01AH;		; End Of File code
+0021: 0100             ASCII_MASK EQU    07FH                 ; bits 0-6
+0022: 0100         ;?DUMMY_VALUE	EQU		00H			; place holder for Dummy Status mask
+0023: 0100             MINUS_ONE  EQU    0FFH                 ; byte size -1
 0024: 0100         ;?
-0025: 0100                        ORG    0100H
-0026: 0100             Start:
-0027: 0100 31 00 01               LD     SP,StackTop
-0028: 0103         ;	CALL ConStatus
-0029: 0103         ;	CALL	ConIn
-0030: 0103         ;	LD		C,045H
-0031: 0103         ;	CALL	CONOut
-0032: 0103 CD 3E 01               CALL   LISTST
-0033: 0106 76                     HALT
-0034: 0107 18 F7                  JR     Start
-0035: 0109
-0036: 0109 00          IOBYTE:    DB     00000000B            ; LST: device 0
-0037: 010A         ;---------------------------------------------------------------------------
-0038: 010A         ;				BIOS Character I/O devices
-0039: 010A         ;
-0040: 010A         ;				BIOS JMP vector		Function
-0041: 010A         ;					--				--------
-0042: 010A         ;		ConStatus:	02			 	Console Status
-0043: 010A         ;		ConIn:		03				Console In
-0044: 010A         ;		CONOut:		04				Console Out
-0045: 010A         ;					05				List Out
-0046: 010A         ;					06				Punch Out
-0047: 010A         ;					07				Reader In
-0048: 010A         ;		ListST		0F				List Status
-0049: 010A
-0050: 010A
-0051: 010A         ;---------------------------------------------------------------------------
-0052: 010A         ;	Console Status:		BIOS 02
-0053: 010A         ;  CONST simply returns an indicator showing whether there is an incoming
-0054: 010A         ; character from the console device. The convention is that A = OFFH if a character
-0055: 010A         ; is waiting to be processed, A = 0 if one is not. Note that the zero flag need not be set
-0056: 010A         ; to reflect the contents of the A register - it is the contents that are important.
-0057: 010A         ; CONST is called by the CCP whenever the CCP is in the middle of an
-0058: 010A         ; operation that can be interrupted by pressing a keyboard character.
-0059: 010A         ;
-0060: 010A         ; The BDOS will call CONST if a program makes a Read Console Status
-0061: 010A         ; function call (B$CONST, code 11, OBH). It is also called by the console input BIOS
-0062: 010A         ; routine, CONIN
-0063: 010A
-0064: 010A             ConStatus:
-0065: 010A 3A 09 01               LD     A,(IOBYTE)
-0066: 010D DD 21 D1 01               LD     IX,CON_Vector
-0067: 0111 CD 8A 01               CALL   SetDeviceVector      ; IX has the vector for the Physical Device
-0068: 0114 CD 57 01               CALL   GetInStatus
-0069: 0117 B7                     OR     A
-0070: 0118 C8                     RET    Z                    ; 00 => No data pending
-0071: 0119 3E FF                  LD     A,0FFH
-0072: 011B C9                     RET                         ; OFFH => Data in Buffer
-0073: 011C         ;---------------------------------------------------------------------
-0074: 011C         ;	Console In:		BIOS 03
-0075: 011C         ;  CONIN reads the next character from the console to the A register and sets the
-0076: 011C         ; most significant (parity) bit to O. ; Normally, CONIN will call the CONST routine
-0077: 011C         ; until it detects A = OFFH. Only then will it input the data character and mask off
-0078: 011C         ; the parity bit. CONIN is called by the CCP and by the BDOS when a program executes a
-0079: 011C         ; Read Console Byte function (B$CONIN, code 1).
-0080: 011C
-0081: 011C         ; normally this follows a call to CONST ( a blocking call) to indicates a char is ready.
-0082: 011C
-0083: 011C             ConIn:
-0084: 011C CD 0A 01               CALL   ConStatus
-0085: 011F 28 FB                  JR     Z,ConIn              ; loop until there is some
-0086: 0121         ; Call to ConStatus Sets up IX with Physical Table
-0087: 0121 DD 6E 06               LD     L,(IX+DataReadIndex)
-0088: 0124 DD 66 07               LD     H,(IX+(DataReadIndex+1))
-0089: 0127 E9                     JP     (HL)
-0090: 0128         ;---------------------------------------------------------------------------
-0091: 0128         ;	Console Out:		BIOS 04
-0092: 0128         ;  CONOUT outputs the character (in ASCII) in register C to the console. The
-0093: 0128         ; most significant (parity) bit of the character will always be O.
-0094: 0128         ; CONOUT must first check that the console device is ready to receive more
-0095: 0128         ; data, delaying if necessary until it is, and only then sending the character to the
-0096: 0128         ; device. CONOUT is called by the CCP and by the BDOS when a program executes a
-0097: 0128         ; Write Console Byte function (B$CONOUT, code 2).
-0098: 0128
-0099: 0128             CONOut:
-0100: 0128 3A 09 01               LD     A,(IOBYTE)
-0101: 012B DD 21 D1 01               LD     IX,CON_Vector
-0102: 012F CD 8A 01               CALL   SetDeviceVector      ; IX has the vector for the Physical Device
-0103: 0132             CONOutStat:
-0104: 0132 CD 52 01               CALL   GetOutStatus
-0105: 0135 28 FB                  JR     Z,CONOutStat         ; wait until ready
-0106: 0137 DD 6E 08               LD     L,(IX+DataWriteIndex)
-0107: 013A DD 66 09               LD     H,(IX+(DataWriteIndex+1))
-0108: 013D E9                     JP     (HL)
-0109: 013E
-0110: 013E
-0111: 013E         ;---------------------------------------------------------------------------
-0112: 013E         ;	List Status:  BIOS 0F
-0113: 013E
-0114: 013E         ;  LISTST was added when CP/M was upgraded from version 1.4 to version 2.0.
-0115: 013E         ; This function returns the current status of the list device, using the IOBYTE if
-0116: 013E         ; necessary to select the correct physical device. It sets the A register to OFFH if the
-0117: 013E         ; list device can accept another character for output or to OOH if it is not ready.
-0118: 013E         ; Digital Research's documentation states that this function is used by the
-0119: 013E         ; DESPOOL utility program (which allows you to print a file "simultaneously" with
-0120: 013E         ; other operations) to improve console response during its operation, and that it is
-0121: 013E         ; acceptable for the routine always to return OOH if you choose not to implement it
-0122: 013E         ; fully.
-0123: 013E         ; Unfortunately, this statement is wrong. Many other programs use the LISTST
-0124: 013E         ; function to "poll" the list device to make sure it is ready, and if it fails to come
-0125: 013E         ; ready after a predetermined time, to output a message to the console indicating
-0126: 013E         ; that the printer is not ready. If you ever make a call to the BDOS list output
-0127: 013E         ; functions, Write Printer Byte and Print String (codes 5 and 9), and the printer is
-0128: 013E         ; not ready, then CP/M will wait forever-and your program will have lost control
-0129: 013E         ; so it cannot even detect that the problem has occurred. If LISTST always returns a
-0130: 013E         ; OOH, then the printer will always appear not to be ready. Not only does this make nonsense
-0131: 013E         ; out of the LISTST function, but it also causes a stream of false "Printer
-0132: 013E         ; not Ready" error messages to appear on the console.
-0133: 013E         ;
-0134: 013E             LISTST:
-0135: 013E         ;?GetLSTStatus:
-0136: 013E 3A 09 01               LD     A,(IOBYTE)           ; Get Physical device
-0137: 0141 07                     RLCA
-0138: 0142 07                     RLCA                        ; Move bits 6 & 7 to bits 0 & 1
-0139: 0143
-0140: 0143 DD 21 E9 01               LD     IX,LST_Vector
-0141: 0147 CD 8A 01               CALL   SetDeviceVector      ; IX has the vector for the Physical Device
-0142: 014A CD 52 01               CALL   GetOutStatus
-0143: 014D
-0144: 014D B7                     OR     A
-0145: 014E C8                     RET    Z                    ; 00 => Device Ready
-0146: 014F 3E FF                  LD     A,0FFH
-0147: 0151 C9                     RET                         ; OFFH => Device No Ready
-0148: 0152
-0149: 0152         ;---------------------------------------------------------------------------
-0150: 0152
-0151: 0152         ;---------------------------------------------------------------------
-0152: 0152             GetOutStatus:
-0153: 0152         ; vector to CON Devices
-0154: 0152 DD 56 02               LD     D,(IX+OutputMaskIndex) ; setup Output mask
-0155: 0155 18 03                  JR     GetStatus
-0156: 0157             GetInStatus:
-0157: 0157 DD 56 03               LD     D,(IX+InputMaskIndex) ; setup Input mask
-0158: 015A             GetStatus:
-0159: 015A DD 6E 04               LD     L,(IX+StatusReadIndex)
-0160: 015D DD 66 05               LD     H,(IX+(StatusReadIndex+1)) ; Load HL with address for Status Read
-0161: 0160 E9                     JP     (HL)                 ; jump to the stats read routine
-0162: 0161
-0163: 0161         ;---------------------------------------------------------------------
-0164: 0161
-0165: 0161             DataRead:
-0166: 0161 DD 7E 01               LD     A,(IX+DataPortIndex)
-0167: 0164 32 68 01               LD     (AddressDataIn),A    ; modify code with the Data port
-0168: 0167 DB                     DB     IN_OPCODE
-0169: 0168             AddressDataIn:
-0170: 0168 00                     DB     00                   ; perform the read
-0171: 0169 C9                     RET
-0172: 016A
-0173: 016A             DataReadASCII:
-0174: 016A CD 61 01               CALL   DataRead
-0175: 016D E6 7F                  AND    ASCII_MASK           ; Strip off MSB
-0176: 016F C9                     RET                         ; AND		ASCII_MASK
-0177: 0170
-0178: 0170         ; Enter DataWrite the value to be output in C
-0179: 0170             DataWrite:
-0180: 0170 DD 7E 01               LD     A,(IX+DataPortIndex)
-0181: 0173 32 78 01               LD     (AddressDataOut),A   ; modify code with the Data port
-0182: 0176 79                     LD     A,C                  ; get value into ACC
-0183: 0177 D3                     DB     OUT_OPCODE
-0184: 0178             AddressDataOut:
-0185: 0178 00                     DB     00                   ; perform the write
-0186: 0179 C9                     RET
-0187: 017A
-0188: 017A
-0189: 017A         ; Enter Status Read with Target mask in D
-0190: 017A             StatusRead:
-0191: 017A DD 7E 00               LD     A,(IX+StatusPortIndex)
-0192: 017D 32 81 01               LD     (AddressStatus),A    ; modify code with the status port
-0193: 0180 DB                     DB     IN_OPCODE
-0194: 0181             AddressStatus:
-0195: 0181 00                     DB     00
-0196: 0182 A2                     AND    D                    ; Check return vale with the mask
-0197: 0183 C9                     RET
-0198: 0184
-0199: 0184             DUMMYRead:                      ;        Routine stub
-0200: 0184 C9                     RET
-0201: 0185             DUMMYWrite:                      ;        Routine stub
-0202: 0185 C9                     RET
-0203: 0186             DUMMYCheck:                      ;        Routine stub
-0204: 0186 3E FF                  LD     A,MINUS_ONE          ; Always return 0FFH
-0205: 0188 B7                     OR     A                    ; Set flags
-0206: 0189 C9                     RET
-0207: 018A
-0208: 018A         ;=============================================================================
-0209: 018A             SetDeviceVector:
-0210: 018A E6 03                  AND    03H                  ; Get bits 0 & 1;
-0211: 018C 87                     ADD    A,A                  ; Double for word size index
-0212: 018D 16 00                  LD     D,00H
-0213: 018F 5F                     LD     E,A                  ; load byte index int DE
-0214: 0190 DD 19                  ADD    IX,DE                ; add to the value vector base
-0215: 0192
-0216: 0192 DD 5E 00               LD     E,(IX+0)
-0217: 0195 DD 56 01               LD     D,(IX+1)             ; DE now has the Vector for the device
-0218: 0198 DD 21 00 00               LD     IX,0000H
-0219: 019C DD 19                  ADD    IX,DE                ; Move it to IX
-0220: 019E C9                     RET
-0221: 019F
-0222: 019F
-0223: 019F         ;++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-0224: 019F
-0225: 019F             TTY_StatusPort EQU    0EDH
-0226: 019F             TTY_DataPort EQU    0ECH
-0227: 019F             TTY_OutputMask EQU    80H                  ; Status Mask
-0228: 019F             TTY_InputMask EQU    7FH                  ; Status Mask
-0229: 019F
-0230: 019F             CRT_StatusPort EQU    02H
-0231: 019F             CRT_DataPort EQU    01H
-0232: 019F             CRT_OutputMask EQU    80H                  ; Status Mask - ready for output
-0233: 019F             CRT_InputMask EQU    07FH                 ; Status Mask - bytes yet to have been read
-0234: 019F
-0235: 019F             COM_StatusPort EQU    0EDH
-0236: 019F             COM_DataPort EQU    0ECH
-0237: 019F             COM_OutputMask EQU    01H                  ; Status Mask
-0238: 019F             COM_InputMask EQU    02H                  ; Status Mask
-0239: 019F
-0240: 019F             LPT_StatusPort EQU    011H
-0241: 019F             LPT_DataPort EQU    010H
-0242: 019F             LPT_OutputMask EQU    0FFH                 ; Status Mask - ready for output
-0243: 019F             LPT_InputMask EQU    07FH                 ; Status Mask - not used
-0244: 019F
-0245: 019F             DUMMY_StatusPort EQU    011H
-0246: 019F             DUMMY_DataPort EQU    010H
-0247: 019F             DUMMY_OutputMask EQU    0FFH                 ; Status Mask - ready for output
-0248: 019F             DUMMY_InputMask EQU    07FH                 ; Status Mask - not used
-0249: 019F
-0250: 019F         ; Device Table Control Block
-0251: 019F             StatusPortIndex EQU    0
-0252: 019F             DataPortIndex EQU    1
-0253: 019F             OutputMaskIndex EQU    2
-0254: 019F             InputMaskIndex EQU    3
-0255: 019F             StatusReadIndex EQU    4
-0256: 019F             DataReadIndex EQU    6
-0257: 019F             DataWriteIndex EQU    8
-0258: 019F
-0259: 019F
-0260: 019F             TTY_Table:
-0261: 019F ED                     DB     TTY_StatusPort
-0262: 01A0 EC                     DB     TTY_DataPort
-0263: 01A1 80                     DB     TTY_OutputMask
-0264: 01A2 7F                     DB     TTY_InputMask
-0265: 01A3 7A 01                  DW     StatusRead
-0266: 01A5 6A 01                  DW     DataReadASCII
-0267: 01A7 70 01                  DW     DataWrite
-0268: 01A9
-0269: 01A9             CRT_Table:
-0270: 01A9 02                     DB     CRT_StatusPort
-0271: 01AA 01                     DB     CRT_DataPort
-0272: 01AB 80                     DB     CRT_OutputMask
-0273: 01AC 7F                     DB     CRT_InputMask
-0274: 01AD 7A 01                  DW     StatusRead
-0275: 01AF 61 01                  DW     DataRead
-0276: 01B1 70 01                  DW     DataWrite
-0277: 01B3             COM_Table:
-0278: 01B3 ED                     DB     COM_StatusPort
-0279: 01B4 EC                     DB     COM_DataPort
-0280: 01B5 01                     DB     COM_OutputMask
-0281: 01B6 02                     DB     COM_InputMask
-0282: 01B7 7A 01                  DW     StatusRead
-0283: 01B9 61 01                  DW     DataRead
-0284: 01BB 70 01                  DW     DataWrite
-0285: 01BD             LPT_Table:
-0286: 01BD 11                     DB     LPT_StatusPort
-0287: 01BE 10                     DB     LPT_DataPort
-0288: 01BF FF                     DB     LPT_OutputMask
-0289: 01C0 7F                     DB     LPT_InputMask
-0290: 01C1 7A 01                  DW     StatusRead
-0291: 01C3 61 01                  DW     DataRead
-0292: 01C5 70 01                  DW     DataWrite
-0293: 01C7             DUMMY_Table:
-0294: 01C7 11                     DB     DUMMY_StatusPort
-0295: 01C8 10                     DB     DUMMY_DataPort
-0296: 01C9 FF                     DB     DUMMY_OutputMask
-0297: 01CA 7F                     DB     DUMMY_InputMask
-0298: 01CB 86 01                  DW     DUMMYCheck
-0299: 01CD 84 01                  DW     DUMMYRead
-0300: 01CF 85 01                  DW     DUMMYWrite
-0301: 01D1
-0302: 01D1
-0303: 01D1
-0304: 01D1         ;---------------------------------------------------------------------------
-0305: 01D1             CON_Vector:
-0306: 01D1 9F 01                  DW     TTY_Table
-0307: 01D3 A9 01                  DW     CRT_Table
-0308: 01D5 B3 01                  DW     COM_Table
-0309: 01D7 C7 01                  DW     DUMMY_Table
-0310: 01D9             RDR_Vector:
-0311: 01D9 9F 01                  DW     TTY_Table
-0312: 01DB A9 01                  DW     CRT_Table
-0313: 01DD C7 01                  DW     DUMMY_Table
-0314: 01DF C7 01                  DW     DUMMY_Table
-0315: 01E1             PUN_Vector:
-0316: 01E1 9F 01                  DW     TTY_Table
-0317: 01E3 C7 01                  DW     DUMMY_Table
-0318: 01E5 B3 01                  DW     COM_Table
-0319: 01E7 A9 01                  DW     CRT_Table
-0320: 01E9             LST_Vector:
-0321: 01E9 9F 01                  DW     TTY_Table
-0322: 01EB A9 01                  DW     CRT_Table
-0323: 01ED BD 01                  DW     LPT_Table
-0324: 01EF C7 01                  DW     DUMMY_Table
-0325: 01F1
-0326: 01F1
-0327: 01F1
-0328: 01F1         ;? ;---------------------------------------------------------------------------
-0329: 01F1         ;? ;	List Status:  BIOS 0F
-0330: 01F1         ;?
-0331: 01F1         ;?  LISTST was added when CP/M was upgraded from version 1.4 to version 2.0.
-0332: 01F1         ;?; This function returns the current status of the list device, using the IOBYTE if
-0333: 01F1         ;?; necessary to select the correct physical device. It sets the A register to OFFH if the
-0334: 01F1         ;?; list device can accept another character for output or to OOH if it is not ready.
-0335: 01F1         ;?; Digital Research's documentation states that this function is used by the
-0336: 01F1         ;?; DESPOOL utility program (which allows you to print a file "simultaneously" with
-0337: 01F1         ;?; other operations) to improve console response during its operation, and that it is
-0338: 01F1         ;?; acceptable for the routine always to return OOH if you choose not to implement it
-0339: 01F1         ;?; fully.
-0340: 01F1         ;?; Unfortunately, this statement is wrong. Many other programs use the LISTST
-0341: 01F1         ;?; function to "poll" the list device to make sure it is ready, and if it fails to come
-0342: 01F1         ;?; ready after a predetermined time, to output a message to the console indicating
-0343: 01F1         ;?; that the printer is not ready. If you ever make a call to the BDOS list output
-0344: 01F1         ;?; functions, Write Printer Byte and Print String (codes 5 and 9), and the printer is
-0345: 01F1         ;?; not ready, then CP/M will wait forever-and your program will have lost control
-0346: 01F1         ;?; so it cannot even detect that the problem has occurred. If LISTST always returns a
-0347: 01F1         ;?; OOH, then the printer will always appear not to be ready. Not only does this makenonsense
-0348: 01F1         ;?; out of the LISTST function, but it also causes a stream offalse "Printer
-0349: 01F1         ;?; not Ready" error messages to appear on the console.
-0350: 01F1         ;?;
-0351: 01F1         ;? LISTST:
-0352: 01F1         ;?GetLSTStatus:
-0353: 01F1         ;?	LD		A,(IOBYTE)				; Get Physical device
-0354: 01F1         ;?	RLCA
-0355: 01F1         ;?	RLCA							; Move bits 6 & 7 to bits 0 & 1
-0356: 01F1         ;?	LD		IX,LSTStatOutVector		; vector to I/O routines
-0357: 01F1         ;?	LD		IY,LSTStatPort			; vector to I/O values
-0358: 01F1         ;?	CALL	SetIndexesIO			; set up IX & IY
-0359: 01F1         ;?	LD		L,(IX+0)
-0360: 01F1         ;?	LD		H,(IX+1)				; HL Points to the routine
-0361: 01F1         ;?	JP		(HL)
-0362: 01F1         ;?
-0363: 01F1         ;?
-0364: 01F1         ;?;=============================================================================
-0365: 01F1         ;?SetIndexesIO:
-0366: 01F1         ;?	AND	03H					; Get bits 0 & 1;
-0367: 01F1         ;?	LD	D,00H
-0368: 01F1         ;?	LD	E,A					; load byte index int DE
-0369: 01F1         ;?	ADD	IY,DE				; add to the value vector base
-0370: 01F1         ;?
-0371: 01F1         ;?	ADD	A,A					; Double for word size index
-0372: 01F1         ;?;	LD	D,00H
-0373: 01F1         ;?	LD	E,A					; load word index int DE
-0374: 01F1         ;?	ADD	IX,DE				; add to the Routine vector base
-0375: 01F1         ;?	RET
-0376: 01F1         ;?
-0377: 01F1         ;?;----------------------------------------------------------------
-0378: 01F1         ;?
-0379: 01F1         ;?
-0380: 01F1         ;?;++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-0381: 01F1         ;?TTYOutStatus:
-0382: 01F1         ;?CRTOutStatus:
-0383: 01F1         ;?COMOutStatus:
-0384: 01F1         ;?	LD		D,(IY + (ConStatOutMask-ConStatPort))
-0385: 01F1         ;?	JR		ConInOutStatus
-0386: 01F1         ;?TTYInStatus:
-0387: 01F1         ;?CRTInStatus:
-0388: 01F1         ;?COMInStatus:
-0389: 01F1         ;?	LD		D,(IY + (ConStatInMask-ConStatPort))
-0390: 01F1         ;?ConInOutStatus:
-0391: 01F1         ;?	LD		A,(IY + (ConStatPort - ConStatPort))	; Status Port
-0392: 01F1         ;?	LD		(InputStatusPort),A
-0393: 01F1         ;?	DB		IN_OPCODE
-0394: 01F1         ;?InputStatusPort:
-0395: 01F1         ;?	DB		00					; Modified code location
-0396: 01F1         ;?	AND		D
-0397: 01F1         ;?	RET							; 00 => No data pending
-0398: 01F1         ;?	HALT
-0399: 01F1         ;?
-0400: 01F1         ;?TTYInData:
-0401: 01F1         ;?CRTInData0:
-0402: 01F1         ;?COMInData:
-0403: 01F1         ;?	LD		A,(IY + ConDataPort-ConStatPort)
-0404: 01F1         ;?	LD		(InputDataPort),A
-0405: 01F1         ;?	DB		IN_OPCODE
-0406: 01F1         ;?InputDataPort:		DB	00		; Modified code location
-0407: 01F1         ;?	RET
-0408: 01F1         ;?
-0409: 01F1         ;?CRTInData:
-0410: 01F1         ;?	CALL	CRTInData0
-0411: 01F1         ;?	AND		ASCII_MASK			; strip off bit 7
-0412: 01F1         ;?	RET
-0413: 01F1         ;?
-0414: 01F1         ;?TTYOutData:
-0415: 01F1         ;?CRTOutData:
-0416: 01F1         ;?COMOutData:
-0417: 01F1         ;?	LD		A,(IY + ConDataPort-ConStatPort)
-0418: 01F1         ;?	LD		(OutputDataPort),A
-0419: 01F1         ;?	LD		A,C					; Get Byte from C to output
-0420: 01F1         ;?	DB		OUT_OPCODE
-0421: 01F1         ;?OutputDataPort:		DB	00		; Modified code location
-0422: 01F1         ;?	RET
-0423: 01F1         ;?;......................................................
-0424: 01F1         ;?LPTOutStatus:
-0425: 01F1         ;?	LD		D,(IY+(LSTStatOutMask-LSTStatPort))
-0426: 01F1         ;?	LD		A,(IY + (LSTStatPort-LSTStatPort))	; Status port
-0427: 01F1         ;?	LD		(InputStatusPort1),A
-0428: 01F1         ;?	DB		IN_OPCODE
-0429: 01F1         ;?InputStatusPort1:
-0430: 01F1         ;?	DB		00					; Modified code location
-0431: 01F1         ;?	AND		D
-0432: 01F1         ;?	RET							; 00 => No data pending
-0433: 01F1         ;?	HALT
-0434: 01F1         ;?
-0435: 01F1         ;?;........................................................
-0436: 01F1         ;?DummyStatus:
-0437: 01F1         ;?	LD	A,0FFH
-0438: 01F1         ;?	OR	A						; Reset the Z Flag
-0439: 01F1         ;?	RET							; Dummy always returns FFH
-0440: 01F1         ;?DummyInput:
-0441: 01F1         ;?	LD	A,END_OF_FILE;			; Always returns End Of File
-0442: 01F1         ;?DummyOutput:
-0443: 01F1         ;?	RET
-0444: 01F1         ;?
-0445: 01F1         ;?;++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-0446: 01F1         ;?
-0447: 01F1
-0448: 01F1
-0449: 01F1         ;++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+0025: 0100             StackTop   EQU    0100H
+0026: 0100         ;?
+0027: 0100         ;?
+0028: 0100                        ORG    0100H
+0029: 0100             Start:
+0030: 0100 31 00 01               LD     SP,StackTop
+0031: 0103 C3 36 02               JP     BOOT
+0032: 0106         ;	CALL ConStatus
+0033: 0106         ;	CALL	ConIn
+0034: 0106         ;	LD		C,045H
+0035: 0106         ;	CALL	CONOut
+0036: 0106         ;	CALL	LISTST
+0037: 0106         ;	LD		C,041H
+0038: 0106         ;	CALL	LIST
+0039: 0106         ;	CALL	PUNCH
+0040: 0106         ;	CALL	READER
+0041: 0106 76                     HALT
+0042: 0107 18 F7                  JR     Start
+0043: 0109
+0044: 0109         ;---------------------------------------------------------------------------
+0045: 0109         ;				BIOS Character I/O devices
+0046: 0109         ;
+0047: 0109         ;				BIOS JMP vector		Function
+0048: 0109         ;					--				--------
+0049: 0109         ;		ConStatus:	02			 	Console Status
+0050: 0109         ;		ConIn:		03				Console In
+0051: 0109         ;		CONOut:		04				Console Out
+0052: 0109         ;		LIST:		05				List Out
+0053: 0109         ;		PUNCH:		06				Punch Out
+0054: 0109         ;		READER:		07				Reader In
+0055: 0109         ;		ListST		0F				List Status
+0056: 0109
+0057: 0109
+0058: 0109         ;---------------------------------------------------------------------------
+0059: 0109         ;	Console Status:		BIOS 02
+0060: 0109         ;  CONST simply returns an indicator showing whether there is an incoming
+0061: 0109         ; character from the console device. The convention is that A = OFFH if a character
+0062: 0109         ; is waiting to be processed, A = 0 if one is not. Note that the zero flag need not be set
+0063: 0109         ; to reflect the contents of the A register - it is the contents that are important.
+0064: 0109         ; CONST is called by the CCP whenever the CCP is in the middle of an
+0065: 0109         ; operation that can be interrupted by pressing a keyboard character.
+0066: 0109         ;
+0067: 0109         ; The BDOS will call CONST if a program makes a Read Console Status
+0068: 0109         ; function call (B$CONST, code 11, OBH). It is also called by the console input BIOS
+0069: 0109         ; routine, CONIN
+0070: 0109
+0071: 0109             ConStatus:
+0072: 0109 3A 00 00               LD     A,(IOBYTE)
+0073: 010C DD 21 FA 01               LD     IX,CON_Vector
+0074: 0110
+0075: 0110             GenericInStatus:                      ; Entry point for generic input status
+0076: 0110 CD B6 01               CALL   SetDeviceVector      ; IX has the vector for the Physical Device
+0077: 0113 CD 83 01               CALL   GetInStatus
+0078: 0116 B7                     OR     A
+0079: 0117 C8                     RET    Z                    ; 00 => No data pending
+0080: 0118 3E FF                  LD     A,0FFH
+0081: 011A C9                     RET                         ; OFFH => Data in Buffer
+0082: 011B         ;---------------------------------------------------------------------
+0083: 011B         ;	Console In:		BIOS 03
+0084: 011B         ;  CONIN reads the next character from the console to the A register and sets the
+0085: 011B         ; most significant (parity) bit to O. ; Normally, CONIN will call the CONST routine
+0086: 011B         ; until it detects A = OFFH. Only then will it input the data character and mask off
+0087: 011B         ; the parity bit. CONIN is called by the CCP and by the BDOS when a program executes a
+0088: 011B         ; Read Console Byte function (B$CONIN, code 1).
+0089: 011B         ; normally this follows a call to CONST ( a blocking call) to indicates a char is ready.
+0090: 011B
+0091: 011B         ; This is a blocking routine
+0092: 011B
+0093: 011B             ConIn:
+0094: 011B CD 09 01               CALL   ConStatus
+0095: 011E 28 FB                  JR     Z,ConIn              ; loop until there is some data to read
+0096: 0120         ; Call to ConStatus Sets up IX with Physical Table
+0097: 0120 DD 6E 06               LD     L,(IX+DataReadIndex)
+0098: 0123 DD 66 07               LD     H,(IX+(DataReadIndex+1))
+0099: 0126 E9                     JP     (HL)
+0100: 0127         ;---------------------------------------------------------------------------
+0101: 0127         ;	Console Out:		BIOS 04
+0102: 0127         ;  CONOUT outputs the character (in ASCII) in register C to the console. The
+0103: 0127         ; most significant (parity) bit of the character will always be O.
+0104: 0127         ; CONOUT must first check that the console device is ready to receive more
+0105: 0127         ; data, delaying if necessary until it is, and only then sending the character to the
+0106: 0127         ; device. CONOUT is called by the CCP and by the BDOS when a program executes a
+0107: 0127         ; Write Console Byte function (B$CONOUT, code 2).
+0108: 0127
+0109: 0127         ; This is a blocking routine
+0110: 0127
+0111: 0127             CONOut:
+0112: 0127 3A 00 00               LD     A,(IOBYTE)
+0113: 012A DD 21 FA 01               LD     IX,CON_Vector
+0114: 012E
+0115: 012E             GenericOutStatus:                      ; entry point for standard blocking write
+0116: 012E CD B6 01               CALL   SetDeviceVector      ; IX has the vector for the Physical Device
+0117: 0131             GenericOutStatus1:
+0118: 0131 CD 7E 01               CALL   GetOutStatus
+0119: 0134 28 FB                  JR     Z,GenericOutStatus1  ; wait until ready
+0120: 0136 DD 6E 08               LD     L,(IX+DataWriteIndex)
+0121: 0139 DD 66 09               LD     H,(IX+(DataWriteIndex+1))
+0122: 013C E9                     JP     (HL)
+0123: 013D
+0124: 013D         ;---------------------------------------------------------------------------
+0125: 013D         ;	List output  BIOS 05
+0126: 013D         ; LIST is similar to CONOUT except that it sends the character in register C to
+0127: 013D         ; the list device. It too checks first that the list device is ready to receive
+0128: 013D         ; the character. LIST is called by the CCP in response to the CONTROL-P toggle
+0129: 013D         ; for printer echo of console output, and by the BDOS when a program makes a
+0130: 013D         ; Write Printer Byte or Display String call (B$LISTOUT and B$PRINTS, codes 5 and 9).
+0131: 013D
+0132: 013D         ; This is a blocking routine
+0133: 013D
+0134: 013D             LIST:
+0135: 013D 3A 00 00               LD     A,(IOBYTE)
+0136: 0140 07                     RLCA                        ; move bits 7,6
+0137: 0141 07                     RLCA                        ; to 1,0
+0138: 0142 DD 21 12 02               LD     IX,LST_Vector
+0139: 0146 18 E6                  JR     GenericOutStatus     ; go to generic blocking out routine
+0140: 0148
+0141: 0148         ;---------------------------------------------------------------------------
+0142: 0148         ;	Punch output  BIOS 06
+0143: 0148         ;  PUNCH sends the character in register C to the "punch" device. As mentioned
+0144: 0148         ; earlier, the "punch" is rarely a real paper tape punch. In most BIOS's, the PUNCH
+0145: 0148         ; entry point either returns immediately and is effectively a null routine, or it outputs
+0146: 0148         ; the character to a communications device, such as a modem, on your computer.
+0147: 0148         ; PUNCH must check that the "punch" device is indeed ready to accept another
+0148: 0148         ; character for output, and must wait if it is not.
+0149: 0148         ;
+0150: 0148         ; Digital Research's documentation states that the character to be output will
+0151: 0148         ; always have its most significant bit set to O. This is not true. The BDOS simply
+0152: 0148         ; transfers control over to the PUNCH entry point in the BIOS; the setting of the
+0153: 0148         ; most significant bit will be determined by the program making the BDOS function
+0154: 0148         ; request (B$PUNOUT, code 4). This is important because the requirement of a zero
+0155: 0148         ; would preclude being able to send pure binary data via the BIOS PUNCH
+0156: 0148         ; function
+0157: 0148
+0158: 0148         ; This is a blocking routine
+0159: 0148
+0160: 0148             PUNCH:                          ; Punch output
+0161: 0148 3A 00 00               LD     A,(IOBYTE)
+0162: 014B 0F                     RRCA
+0163: 014C 0F                     RRCA
+0164: 014D 0F                     RRCA                        ; move bits 5,4
+0165: 014E 0F                     RRCA                        ; to 1,0
+0166: 014F DD 21 0A 02               LD     IX,PUN_Vector
+0167: 0153 18 D9                  JR     GenericOutStatus     ; go to generic blocking out routine
+0168: 0155
+0169: 0155         ;---------------------------------------------------------------------------
+0170: 0155         ;	Reader input  BIOS 07	-
+0171: 0155         ; As with the PUNCH entry point, the READER entry point rarely connects to
+0172: 0155         ; a real paper tape reader.
+0173: 0155         ; The READER function must return the next character from the reader device
+0174: 0155         ; in the A register, waiting, if need be, until there is a character.
+0175: 0155         ;
+0176: 0155         ; Digital Research's documentation again says that the most significant bit of
+0177: 0155         ; the A register must be 0, but this is not the case if you wish to receive pure binary
+0178: 0155         ; information via this function.
+0179: 0155         ; READER is called whenever a program makes a Read "Reader" Byte function
+0180: 0155         ; request (B$READIN, code 3).
+0181: 0155
+0182: 0155         ; This is a blocking routine
+0183: 0155
+0184: 0155             READER:                         ; Reader Input
+0185: 0155 3A 00 00               LD     A,(IOBYTE)
+0186: 0158 0F                     RRCA
+0187: 0159 0F                     RRCA                        ; move bits 3,2  to 1,0
+0188: 015A DD 21 02 02               LD     IX,RDR_Vector
+0189: 015E             READER1:
+0190: 015E CD 10 01               CALL   GenericInStatus
+0191: 0161 28 FB                  JR     Z,READER1            ; loop until there is some data to read
+0192: 0163
+0193: 0163 DD 6E 06               LD     L,(IX+DataReadIndex)
+0194: 0166 DD 66 07               LD     H,(IX+(DataReadIndex+1))
+0195: 0169 E9                     JP     (HL)
+0196: 016A
+0197: 016A
+0198: 016A         ;---------------------------------------------------------------------------
+0199: 016A         ;	List Status:  BIOS 0F
+0200: 016A
+0201: 016A         ;  LISTST was added when CP/M was upgraded from version 1.4 to version 2.0.
+0202: 016A         ; This function returns the current status of the list device, using the IOBYTE if
+0203: 016A         ; necessary to select the correct physical device. It sets the A register to OFFH if the
+0204: 016A         ; list device can accept another character for output or to OOH if it is not ready.
+0205: 016A         ; Digital Research's documentation states that this function is used by the
+0206: 016A         ; DESPOOL utility program (which allows you to print a file "simultaneously" with
+0207: 016A         ; other operations) to improve console response during its operation, and that it is
+0208: 016A         ; acceptable for the routine always to return OOH if you choose not to implement it
+0209: 016A         ; fully.
+0210: 016A         ; Unfortunately, this statement is wrong. Many other programs use the LISTST
+0211: 016A         ; function to "poll" the list device to make sure it is ready, and if it fails to come
+0212: 016A         ; ready after a predetermined time, to output a message to the console indicating
+0213: 016A         ; that the printer is not ready. If you ever make a call to the BDOS list output
+0214: 016A         ; functions, Write Printer Byte and Print String (codes 5 and 9), and the printer is
+0215: 016A         ; not ready, then CP/M will wait forever-and your program will have lost control
+0216: 016A         ; so it cannot even detect that the problem has occurred. If LISTST always returns a
+0217: 016A         ; OOH, then the printer will always appear not to be ready. Not only does this make nonsense
+0218: 016A         ; out of the LISTST function, but it also causes a stream of false "Printer
+0219: 016A         ; not Ready" error messages to appear on the console.
+0220: 016A         ;
+0221: 016A             LISTST:
+0222: 016A         ;?GetLSTStatus:
+0223: 016A 3A 00 00               LD     A,(IOBYTE)           ; Get Physical device
+0224: 016D 07                     RLCA
+0225: 016E 07                     RLCA                        ; Move bits 6 & 7 to bits 0 & 1
+0226: 016F DD 21 12 02               LD     IX,LST_Vector        ; Set th vector base
+0227: 0173 CD B6 01               CALL   SetDeviceVector      ; IX has the vector for the Physical Device
+0228: 0176 CD 7E 01               CALL   GetOutStatus
+0229: 0179
+0230: 0179 B7                     OR     A
+0231: 017A C8                     RET    Z                    ; 00 => Device Ready
+0232: 017B 3E FF                  LD     A,0FFH
+0233: 017D C9                     RET                         ; OFFH => Device No Ready
+0234: 017E
+0235: 017E         ;---------------------------------------------------------------------------
+0236: 017E
+0237: 017E         ;---------------------------------------------------------------------
+0238: 017E             GetOutStatus:
+0239: 017E         ; vector to CON Devices
+0240: 017E DD 56 02               LD     D,(IX+OutputMaskIndex) ; setup Output mask
+0241: 0181 18 03                  JR     GetStatus
+0242: 0183             GetInStatus:
+0243: 0183 DD 56 03               LD     D,(IX+InputMaskIndex) ; setup Input mask
+0244: 0186             GetStatus:
+0245: 0186 DD 6E 04               LD     L,(IX+StatusReadIndex)
+0246: 0189 DD 66 05               LD     H,(IX+(StatusReadIndex+1)) ; Load HL with address for Status Read
+0247: 018C E9                     JP     (HL)                 ; jump to the stats read routine
+0248: 018D
+0249: 018D         ;---------------------------------------------------------------------
+0250: 018D
+0251: 018D             DataRead:
+0252: 018D DD 7E 01               LD     A,(IX+DataPortIndex)
+0253: 0190 32 94 01               LD     (AddressDataIn),A    ; modify code with the Data port
+0254: 0193 DB                     DB     IN_OPCODE
+0255: 0194             AddressDataIn:
+0256: 0194 00                     DB     00                   ; perform the read
+0257: 0195 C9                     RET
+0258: 0196
+0259: 0196             DataReadASCII:
+0260: 0196 CD 8D 01               CALL   DataRead
+0261: 0199 E6 7F                  AND    ASCII_MASK           ; Strip off MSB
+0262: 019B C9                     RET                         ; AND		ASCII_MASK
+0263: 019C
+0264: 019C         ; Enter DataWrite the value to be output in C
+0265: 019C             DataWrite:
+0266: 019C DD 7E 01               LD     A,(IX+DataPortIndex)
+0267: 019F 32 A4 01               LD     (AddressDataOut),A   ; modify code with the Data port
+0268: 01A2 79                     LD     A,C                  ; get value into ACC
+0269: 01A3 D3                     DB     OUT_OPCODE
+0270: 01A4             AddressDataOut:
+0271: 01A4 00                     DB     00                   ; perform the write
+0272: 01A5 C9                     RET
+0273: 01A6
+0274: 01A6
+0275: 01A6         ; Enter Status Read with Target mask in D
+0276: 01A6             StatusRead:
+0277: 01A6 DD 7E 00               LD     A,(IX+StatusPortIndex)
+0278: 01A9 32 AD 01               LD     (AddressStatus),A    ; modify code with the status port
+0279: 01AC DB                     DB     IN_OPCODE
+0280: 01AD             AddressStatus:
+0281: 01AD 00                     DB     00
+0282: 01AE A2                     AND    D                    ; Check return vale with the mask
+0283: 01AF C9                     RET
+0284: 01B0
+0285: 01B0             DUMMYRead:                      ;        Routine stub
+0286: 01B0 C9                     RET
+0287: 01B1             DUMMYWrite:                      ;        Routine stub
+0288: 01B1 C9                     RET
+0289: 01B2             DUMMYCheck:                      ;        Routine stub
+0290: 01B2 3E FF                  LD     A,MINUS_ONE          ; Always return 0FFH
+0291: 01B4 B7                     OR     A                    ; Set flags
+0292: 01B5 C9                     RET
+0293: 01B6
+0294: 01B6         ;=============================================================================
+0295: 01B6             SetDeviceVector:
+0296: 01B6 E6 03                  AND    03H                  ; Get bits 0 & 1;
+0297: 01B8 87                     ADD    A,A                  ; Double for word size index
+0298: 01B9 16 00                  LD     D,00H
+0299: 01BB 5F                     LD     E,A                  ; load byte index int DE
+0300: 01BC DD 19                  ADD    IX,DE                ; add to the value vector base
+0301: 01BE         ; IX points at correct entry in vector
+0302: 01BE DD 5E 00               LD     E,(IX+0)
+0303: 01C1 DD 56 01               LD     D,(IX+1)             ; DE now has the Vector for the device
+0304: 01C4         ;	LD		IX,0000H
+0305: 01C4         ;	ADD		IX,DE				; Move it to IX
+0306: 01C4 D5                     PUSH   DE
+0307: 01C5 DD E1                  POP    IX                   ; Move it to IX
+0308: 01C7 C9                     RET
+0309: 01C8
+0310: 01C8
+0311: 01C8         ;++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+0312: 01C8         ; Physical Device Attributes
+0313: 01C8
+0314: 01C8             TTY_StatusPort EQU    0EDH
+0315: 01C8             TTY_DataPort EQU    0ECH
+0316: 01C8             TTY_OutputMask EQU    80H                  ; Status Mask
+0317: 01C8             TTY_InputMask EQU    7FH                  ; Status Mask
+0318: 01C8
+0319: 01C8             CRT_StatusPort EQU    02H
+0320: 01C8             CRT_DataPort EQU    01H
+0321: 01C8             CRT_OutputMask EQU    80H                  ; Status Mask - ready for output
+0322: 01C8             CRT_InputMask EQU    07FH                 ; Status Mask - bytes yet to have been read
+0323: 01C8
+0324: 01C8             COM_StatusPort EQU    0EDH
+0325: 01C8             COM_DataPort EQU    0ECH
+0326: 01C8             COM_OutputMask EQU    01H                  ; Status Mask
+0327: 01C8             COM_InputMask EQU    02H                  ; Status Mask
+0328: 01C8
+0329: 01C8             LPT_StatusPort EQU    011H
+0330: 01C8             LPT_DataPort EQU    010H
+0331: 01C8             LPT_OutputMask EQU    0FFH                 ; Status Mask - ready for output
+0332: 01C8             LPT_InputMask EQU    07FH                 ; Status Mask - not used
+0333: 01C8
+0334: 01C8             DUMMY_StatusPort EQU    011H
+0335: 01C8             DUMMY_DataPort EQU    010H
+0336: 01C8             DUMMY_OutputMask EQU    0FFH                 ; Status Mask - ready for output
+0337: 01C8             DUMMY_InputMask EQU    07FH                 ; Status Mask - not used
+0338: 01C8
+0339: 01C8         ; Device Table Control Block Definition
+0340: 01C8             StatusPortIndex EQU    0
+0341: 01C8             DataPortIndex EQU    1
+0342: 01C8             OutputMaskIndex EQU    2
+0343: 01C8             InputMaskIndex EQU    3
+0344: 01C8             StatusReadIndex EQU    4
+0345: 01C8             DataReadIndex EQU    6
+0346: 01C8             DataWriteIndex EQU    8
+0347: 01C8
+0348: 01C8         ;Physical Devices Control Blocks
+0349: 01C8
+0350: 01C8             TTY_Table:
+0351: 01C8 ED                     DB     TTY_StatusPort
+0352: 01C9 EC                     DB     TTY_DataPort
+0353: 01CA 80                     DB     TTY_OutputMask
+0354: 01CB 7F                     DB     TTY_InputMask
+0355: 01CC A6 01                  DW     StatusRead
+0356: 01CE 96 01                  DW     DataReadASCII
+0357: 01D0 9C 01                  DW     DataWrite
+0358: 01D2
+0359: 01D2             CRT_Table:
+0360: 01D2 02                     DB     CRT_StatusPort
+0361: 01D3 01                     DB     CRT_DataPort
+0362: 01D4 80                     DB     CRT_OutputMask
+0363: 01D5 7F                     DB     CRT_InputMask
+0364: 01D6 A6 01                  DW     StatusRead
+0365: 01D8 8D 01                  DW     DataRead
+0366: 01DA 9C 01                  DW     DataWrite
+0367: 01DC             COM_Table:
+0368: 01DC ED                     DB     COM_StatusPort
+0369: 01DD EC                     DB     COM_DataPort
+0370: 01DE 01                     DB     COM_OutputMask
+0371: 01DF 02                     DB     COM_InputMask
+0372: 01E0 A6 01                  DW     StatusRead
+0373: 01E2 8D 01                  DW     DataRead
+0374: 01E4 9C 01                  DW     DataWrite
+0375: 01E6             LPT_Table:
+0376: 01E6 11                     DB     LPT_StatusPort
+0377: 01E7 10                     DB     LPT_DataPort
+0378: 01E8 FF                     DB     LPT_OutputMask
+0379: 01E9 7F                     DB     LPT_InputMask
+0380: 01EA A6 01                  DW     StatusRead
+0381: 01EC 8D 01                  DW     DataRead
+0382: 01EE 9C 01                  DW     DataWrite
+0383: 01F0             DUMMY_Table:
+0384: 01F0 11                     DB     DUMMY_StatusPort
+0385: 01F1 10                     DB     DUMMY_DataPort
+0386: 01F2 FF                     DB     DUMMY_OutputMask
+0387: 01F3 7F                     DB     DUMMY_InputMask
+0388: 01F4 B2 01                  DW     DUMMYCheck
+0389: 01F6 B0 01                  DW     DUMMYRead
+0390: 01F8 B1 01                  DW     DUMMYWrite
+0391: 01FA
+0392: 01FA         ;---------------------------------------------------------------------------
+0393: 01FA
+0394: 01FA         ; Logical Device Vector, Controlled by IOBYTE
+0395: 01FA
+0396: 01FA             CON_Vector:                      ; IOBYTE bits 1 & 0
+0397: 01FA C8 01                  DW     TTY_Table
+0398: 01FC D2 01                  DW     CRT_Table
+0399: 01FE DC 01                  DW     COM_Table
+0400: 0200 F0 01                  DW     DUMMY_Table
+0401: 0202             RDR_Vector:                      ; IOBYTE bits 3 & 2
+0402: 0202 C8 01                  DW     TTY_Table
+0403: 0204 D2 01                  DW     CRT_Table
+0404: 0206 F0 01                  DW     DUMMY_Table
+0405: 0208 F0 01                  DW     DUMMY_Table
+0406: 020A             PUN_Vector:                      ; IOBYTE bits 5 & 4
+0407: 020A C8 01                  DW     TTY_Table
+0408: 020C F0 01                  DW     DUMMY_Table
+0409: 020E DC 01                  DW     COM_Table
+0410: 0210 D2 01                  DW     CRT_Table
+0411: 0212             LST_Vector:                      ; IOBYTE bits 7 & 6
+0412: 0212 E6 01                  DW     LPT_Table
+0413: 0214 D2 01                  DW     CRT_Table
+0414: 0216 E6 01                  DW     LPT_Table
+0415: 0218 F0 01                  DW     DUMMY_Table
+0416: 021A
+0417: 021A         ;++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+0418: 021A         ;--------------------------------------------------------------------------------
+0419: 021A         ;++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+0420: 021A             RAM        EQU    0                    ; Start of RAM ( and the Base page)
+0421: 021A
+0422: 021A         ; WarmBoot			EQU		RAM + 0				; Contains a JMP instruction to warm boot in BIOS
+0423: 021A         ; BIOSPAGE			EQU		RAM + 2				; BIOS Jump Vector Page
+0424: 021A         ; IOBYTE				EQU		RAM + 3				; Input/Output redirection byte
+0425: 021A
+0426: 021A             Pg0CurentUser EQU    RAM + 4              ; Current user ( bits 7-4)
+0427: 021A             Pg0CurentDisk EQU    Pg0CurentUser        ; Default logical disk (bits 0-3)
+0428: 021A             LF         EQU    0AH                  ; Line Feed
+0429: 021A             CR         EQU    0DH                  ; Carriage Return
+0430: 021A
+0431: 021A         ;?  BOOT:
+0432: 021A         ;?  EnterCPM:
+0433: 021A         ;?  	LD		A,0C3H							; JMP op code
+0434: 021A         ;?  	LD		(0000H),A							; set up the jump in location 0000H
+0435: 021A         ;?  	LD		(0005H),A							; and at location 0005H
+0436: 021A         ;?
+0437: 021A         ;?  	LD		HL,WarmBootEntry					; get BIOS vector address
+0438: 021A         ;?  	LD	(0001H),HL							; put address in location 1
+0439: 021A         ;?
+0440: 021A         ;?  	LD		HL,BDOSEntry						; Get BDOS entry point address
+0441: 021A         ;?  	LD	(0006H),HL							; put address at location 5
+0442: 021A         ;?
+0443: 021A         ;?  	LD		BC,DMABuffer						; DefaultDiskBuffer set disk I/O address to default
+0444: 021A         ;?  	CALL	SETDMA							; use normal BIOS routine
+0445: 021A         ;?
+0446: 021A         ;?  	EI
+0447: 021A         ;?  	LD		A,(Pg0CurentDisk)					; DefaultDisk  Transfer current default disk to
+0448: 021A         ;?  	LD		C,A								; Console Command Processor
+0449: 021A         ;?  	JP		CCPEntry						; transfer to CCP
+0450: 021A         ;?
+0451: 021A
+0452: 021A             BootMessage:
+0453: 021A 43 50 2F 4D 20 32 2E 32 20                DB     'CP/M 2.2 '
+0454: 0223 42 6F 6F 74 53 74 72 61 70 20 6C 6F 61 64 65 72                DB     'BootStrap loader'
+0455: 0233 0D 0A 00                DB     CR,LF,00             ;
+0456: 0236
+0457: 0236             BOOT:
+0458: 0236 3E 50                  LD     A,080
+0459: 0238 32 00 00               LD     (IOBYTE),A           ; Set up TTY for CON: and LPT for LST:
+0460: 023B 21 1A 02               LD     HL,BootMessage
+0461: 023E CD 42 02               CALL   DisplayMessage
+0462: 0241 76                     HALT
+0463: 0242
+0464: 0242             DisplayMessage:
+0465: 0242 7E                     LD     A,M                  ; get  character
+0466: 0243 B7                     OR     A                    ; is it NULL
+0467: 0244 C8                     RET    Z                    ; return if it is NULL (00)
+0468: 0245 4F                     LD     C,A
+0469: 0246 E5                     PUSH   HL                   ; save the pointer
+0470: 0247 CD 27 01               CALL   CONOut               ; display at the Console
+0471: 024A E1                     POP    HL                   ; retrieve the pointer
+0472: 024B 23                     INC    HL                   ; point at next character
+0473: 024C 18 F4                  JR     DisplayMessage
+0474: 024E
+0475: 024E
+0476: 024E
            ************************   Xref   ************************
-0000: $               01EF
-0169: AddressDataIn   0168   0167
-0184: AddressDataOut  0178   0181
-0194: AddressStatus   0181   0192
-0018: ASCII_MASK      007F   0175
-0236: COM_DataPort    00EC   0279
-0238: COM_InputMask   0002   0281
-0237: COM_OutputMask  0001   0280
-0235: COM_StatusPort  00ED   0278
-0277: COM_Table       01B3   0308 0318
-0305: CON_Vector      01D1   0066 0101
-0083: ConIn           011C   0085
-0099: CONOut          0128
-0103: CONOutStat      0132   0105
-0064: ConStatus       010A   0084
-0231: CRT_DataPort    0001   0271
-0233: CRT_InputMask   007F   0273
-0232: CRT_OutputMask  0080   0272
-0230: CRT_StatusPort  0002   0270
-0269: CRT_Table       01A9   0307 0312 0319 0322
-0252: DataPortIndex   0001   0166 0180
-0165: DataRead        0161   0174 0275 0283 0291
-0173: DataReadASCII   016A   0266
-0256: DataReadIndex   0006   0087 0088
-0179: DataWrite       0170   0267 0276 0284 0292
-0257: DataWriteIndex  0008   0106 0107
-0246: DUMMY_DataPort  0010   0295
-0248: DUMMY_InputMask 007F   0297
-0247: DUMMY_OutputMask 00FF   0296
-0245: DUMMY_StatusPort 0011   0294
-0293: DUMMY_Table     01C7   0309 0313 0314 0317 0324
-0203: DUMMYCheck      0186   0298
-0199: DUMMYRead       0184   0299
-0201: DUMMYWrite      0185   0300
-0156: GetInStatus     0157   0068
-0152: GetOutStatus    0152   0104 0142
-0158: GetStatus       015A   0155
-0015: IN_OPCODE       00DB   0168 0193
-0254: InputMaskIndex  0003   0157
-0036: IOBYTE          0109   0065 0100 0136
-0134: LISTST          013E   0032
-0241: LPT_DataPort    0010   0287
-0243: LPT_InputMask   007F   0289
-0242: LPT_OutputMask  00FF   0288
-0240: LPT_StatusPort  0011   0286
-0285: LPT_Table       01BD   0323
-0320: LST_Vector      01E9   0140
-0020: MINUS_ONE       00FF   0204
-0016: OUT_OPCODE      00D3   0183
-0253: OutputMaskIndex 0002   0154
-0315: PUN_Vector      01E1
-0310: RDR_Vector      01D9
-0209: SetDeviceVector 018A   0067 0102 0141
-0022: StackTop        0100   0027
-0026: Start           0100   0034
-0251: StatusPortIndex 0000   0191
-0190: StatusRead      017A   0265 0274 0282 0290
-0255: StatusReadIndex 0004   0159 0160
-0226: TTY_DataPort    00EC   0262
-0228: TTY_InputMask   007F   0264
-0227: TTY_OutputMask  0080   0263
-0225: TTY_StatusPort  00ED   0261
-0260: TTY_Table       019F   0306 0311 0316 0321
+0000: $               024C
+0255: AddressDataIn   0194   0253
+0270: AddressDataOut  01A4   0267
+0280: AddressStatus   01AD   0278
+0021: ASCII_MASK      007F   0261
+0457: BOOT            0236   0031
+0452: BootMessage     021A   0460
+0325: COM_DataPort    00EC   0369
+0327: COM_InputMask   0002   0371
+0326: COM_OutputMask  0001   0370
+0324: COM_StatusPort  00ED   0368
+0367: COM_Table       01DC   0399 0409
+0396: CON_Vector      01FA   0073 0113
+0093: ConIn           011B   0095
+0111: CONOut          0127   0470
+0071: ConStatus       0109   0094
+0429: CR              000D   0455
+0320: CRT_DataPort    0001   0361
+0322: CRT_InputMask   007F   0363
+0321: CRT_OutputMask  0080   0362
+0319: CRT_StatusPort  0002   0360
+0359: CRT_Table       01D2   0398 0403 0410 0413
+0341: DataPortIndex   0001   0252 0266
+0251: DataRead        018D   0260 0365 0373 0381
+0259: DataReadASCII   0196   0356
+0345: DataReadIndex   0006   0097 0098 0193 0194
+0265: DataWrite       019C   0357 0366 0374 0382
+0346: DataWriteIndex  0008   0120 0121
+0464: DisplayMessage  0242   0461 0473
+0335: DUMMY_DataPort  0010   0385
+0337: DUMMY_InputMask 007F   0387
+0336: DUMMY_OutputMask 00FF   0386
+0334: DUMMY_StatusPort 0011   0384
+0383: DUMMY_Table     01F0   0400 0404 0405 0408 0415
+0289: DUMMYCheck      01B2   0388
+0285: DUMMYRead       01B0   0389
+0287: DUMMYWrite      01B1   0390
+0075: GenericInStatus 0110   0190
+0115: GenericOutStatus 012E   0139 0167
+0117: GenericOutStatus1 0131   0119
+0242: GetInStatus     0183   0077
+0238: GetOutStatus    017E   0118 0228
+0244: GetStatus       0186   0241
+0018: IN_OPCODE       00DB   0254 0279
+0343: InputMaskIndex  0003   0243
+0016: IOBYTE          0000   0072 0112 0135 0161 0185 0223 0459
+0428: LF              000A   0455
+0134: LIST            013D
+0221: LISTST          016A
+0330: LPT_DataPort    0010   0377
+0332: LPT_InputMask   007F   0379
+0331: LPT_OutputMask  00FF   0378
+0329: LPT_StatusPort  0011   0376
+0375: LPT_Table       01E6   0412 0414
+0411: LST_Vector      0212   0138 0226
+0023: MINUS_ONE       00FF   0290
+0019: OUT_OPCODE      00D3   0269
+0342: OutputMaskIndex 0002   0240
+0427: Pg0CurentDisk   0004
+0426: Pg0CurentUser   0004   0427
+0406: PUN_Vector      020A   0166
+0160: PUNCH           0148
+0420: RAM             0000   0426
+0401: RDR_Vector      0202   0188
+0184: READER          0155
+0189: READER1         015E   0191
+0295: SetDeviceVector 01B6   0076 0116 0227
+0025: StackTop        0100   0030
+0029: Start           0100   0042
+0340: StatusPortIndex 0000   0277
+0276: StatusRead      01A6   0355 0364 0372 0380
+0344: StatusReadIndex 0004   0245 0246
+0315: TTY_DataPort    00EC   0352
+0317: TTY_InputMask   007F   0354
+0316: TTY_OutputMask  0080   0353
+0314: TTY_StatusPort  00ED   0351
+0350: TTY_Table       01C8   0397 0402 0407

@@ -11,11 +11,14 @@
 ; 2600 Tenth Street
 ; Berkeley, California 94710
 ; U.S.A.
+
+
+IOBYTE:	EQU     03H			  		; All Devices = 00
 		
-IN_OPCODE	EQU		0DBH		; opcode for read
-OUT_OPCODE	EQU		0D3H		; opcode for Write
+IN_OPCODE	EQU		0DBH			; opcode for read
+OUT_OPCODE	EQU		0D3H			; opcode for Write
 ;?END_OF_FILE	EQU		01AH;		; End Of File code
-ASCII_MASK	EQU		07FH		; bits 0-6
+ASCII_MASK	EQU		07FH			; bits 0-6
 ;?DUMMY_VALUE	EQU		00H			; place holder for Dummy Status mask
 MINUS_ONE		EQU		0FFH		; byte size -1		
 ;?		
@@ -25,15 +28,19 @@ StackTop	EQU		0100H
 	ORG   0100H
 Start:	
 	LD	SP,StackTop
+	JP	BOOT
 ;	CALL ConStatus
 ;	CALL	ConIn
 ;	LD		C,045H
 ;	CALL	CONOut
-	CALL	LISTST
+;	CALL	LISTST
+;	LD		C,041H
+;	CALL	LIST
+;	CALL	PUNCH
+;	CALL	READER
 	HALT
 	JR		Start
 	
-IOBYTE:	DB     00000000B  		; LST: device 0
 ;---------------------------------------------------------------------------
 ;				BIOS Character I/O devices
 ;
@@ -42,9 +49,9 @@ IOBYTE:	DB     00000000B  		; LST: device 0
 ;		ConStatus:	02			 	Console Status
 ;		ConIn:		03				Console In 
 ;		CONOut:		04				Console Out
-;					05				List Out
-;					06				Punch Out
-;					07				Reader In 
+;		LIST:		05				List Out
+;		PUNCH:		06				Punch Out
+;		READER:		07				Reader In 
 ;		ListST		0F				List Status 
 
  
@@ -64,6 +71,8 @@ IOBYTE:	DB     00000000B  		; LST: device 0
 ConStatus:
 	LD		A,(IOBYTE)
 	LD		IX,CON_Vector
+	
+GenericInStatus:					; Entry point for generic input status
 	CALL	SetDeviceVector		; IX has the vector for the Physical Device
 	CALL	GetInStatus
 	OR	A
@@ -77,12 +86,13 @@ ConStatus:
 ; until it detects A = OFFH. Only then will it input the data character and mask off
 ; the parity bit. CONIN is called by the CCP and by the BDOS when a program executes a
 ; Read Console Byte function (B$CONIN, code 1).
-
 ; normally this follows a call to CONST ( a blocking call) to indicates a char is ready.
  
+ ; This is a blocking routine
+
  ConIn:
 	CALL	ConStatus
-	JR		Z,ConIn				; loop until there is some
+	JR		Z,ConIn				; loop until there is some data to read
 								; Call to ConStatus Sets up IX with Physical Table
 	LD		L,(IX + DataReadIndex)
 	LD		H,(IX +(DataReadIndex +1 ))
@@ -96,18 +106,95 @@ ConStatus:
 ; device. CONOUT is called by the CCP and by the BDOS when a program executes a
 ; Write Console Byte function (B$CONOUT, code 2).
 
- CONOut:
+; This is a blocking routine
+
+CONOut:
 	LD		A,(IOBYTE)
 	LD		IX,CON_Vector
-	CALL	SetDeviceVector		; IX has the vector for the Physical Device
-CONOutStat:
+	
+GenericOutStatus:					; entry point for standard blocking write
+	CALL	SetDeviceVector			; IX has the vector for the Physical Device
+GenericOutStatus1:
 	CALL	GetOutStatus
-	JR		Z,CONOutStat		; wait until ready
+	JR		Z,GenericOutStatus1		; wait until ready
 	LD		L,(IX +DataWriteIndex)
 	LD		H,(IX +(DataWriteIndex + 1))
 	JP		(HL)
 	
+;---------------------------------------------------------------------------
+;	List output  BIOS 05
+; LIST is similar to CONOUT except that it sends the character in register C to
+; the list device. It too checks first that the list device is ready to receive
+; the character. LIST is called by the CCP in response to the CONTROL-P toggle
+; for printer echo of console output, and by the BDOS when a program makes a
+; Write Printer Byte or Display String call (B$LISTOUT and B$PRINTS, codes 5 and 9).
 
+; This is a blocking routine
+
+ LIST:
+ 	LD		A,(IOBYTE)
+ 	RLCA										; move bits 7,6
+ 	RLCA										; to 1,0
+ 	LD		IX,LST_Vector
+	JR		GenericOutStatus					; go to generic blocking out routine
+ 
+;---------------------------------------------------------------------------
+;	Punch output  BIOS 06	
+;  PUNCH sends the character in register C to the "punch" device. As mentioned
+; earlier, the "punch" is rarely a real paper tape punch. In most BIOS's, the PUNCH
+; entry point either returns immediately and is effectively a null routine, or it outputs
+; the character to a communications device, such as a modem, on your computer.
+; PUNCH must check that the "punch" device is indeed ready to accept another
+; character for output, and must wait if it is not.
+; 
+; Digital Research's documentation states that the character to be output will
+; always have its most significant bit set to O. This is not true. The BDOS simply
+; transfers control over to the PUNCH entry point in the BIOS; the setting of the
+; most significant bit will be determined by the program making the BDOS function
+; request (B$PUNOUT, code 4). This is important because the requirement of a zero
+; would preclude being able to send pure binary data via the BIOS PUNCH
+; function
+
+; This is a blocking routine
+
+PUNCH:				; Punch output
+ 	LD		A,(IOBYTE)
+ 	RRCA
+ 	RRCA
+ 	RRCA										; move bits 5,4
+ 	RRCA										; to 1,0
+  	LD		IX,PUN_Vector
+	JR		GenericOutStatus					; go to generic blocking out routine
+
+;---------------------------------------------------------------------------
+;	Reader input  BIOS 07	-
+; As with the PUNCH entry point, the READER entry point rarely connects to
+; a real paper tape reader.
+; The READER function must return the next character from the reader device
+; in the A register, waiting, if need be, until there is a character.
+; 
+; Digital Research's documentation again says that the most significant bit of
+; the A register must be 0, but this is not the case if you wish to receive pure binary
+; information via this function.
+; READER is called whenever a program makes a Read "Reader" Byte function
+; request (B$READIN, code 3).
+
+; This is a blocking routine
+
+ READER:				; Reader Input
+ 	LD		A,(IOBYTE)
+ 	RRCA
+ 	RRCA										; move bits 3,2  to 1,0
+	LD		IX,RDR_Vector
+READER1:
+	CALL	GenericInStatus
+	JR		Z,READER1							; loop until there is some data to read
+												
+	LD		L,(IX + DataReadIndex)
+	LD		H,(IX +(DataReadIndex +1 ))
+	JP		(HL)
+
+	
 ;---------------------------------------------------------------------------
 ;	List Status:  BIOS 0F
  
@@ -135,9 +222,8 @@ CONOutStat:
 ;?GetLSTStatus:
 	LD		A,(IOBYTE)				; Get Physical device
 	RLCA
-	RLCA							; Move bits 6 & 7 to bits 0 & 1
-	
-	LD		IX,LST_Vector
+	RLCA						; Move bits 6 & 7 to bits 0 & 1
+	LD		IX,LST_Vector		; Set th vector base 
 	CALL	SetDeviceVector		; IX has the vector for the Physical Device
 	CALL	GetOutStatus
 
@@ -163,11 +249,11 @@ GetStatus:
 ;---------------------------------------------------------------------
 
 DataRead:
-	LD	A,(IX + DataPortIndex)
-	LD	(AddressDataIn),A			; modify code with the Data port
-	DB	IN_OPCODE
+	LD		A,(IX + DataPortIndex)
+	LD		(AddressDataIn),A			; modify code with the Data port
+	DB		IN_OPCODE
 AddressDataIn:
-	DB	00							; perform the read
+	DB		00							; perform the read
 	RET
 
 DataReadASCII:
@@ -177,23 +263,23 @@ DataReadASCII:
 
 ; Enter DataWrite the value to be output in C
 DataWrite:
-	LD	A,(IX + DataPortIndex)
-	LD	(AddressDataOut),A			; modify code with the Data port
-	LD	A,C							; get value into ACC
-	DB	OUT_OPCODE
+	LD		A,(IX + DataPortIndex)
+	LD		(AddressDataOut),A			; modify code with the Data port
+	LD		A,C							; get value into ACC
+	DB		OUT_OPCODE
 AddressDataOut:
-	DB	00							; perform the write
+	DB		00							; perform the write
 	RET
 
 	
 ; Enter Status Read with Target mask in D	
 StatusRead:
-	LD	A,(IX + StatusPortIndex)
-	LD	(AddressStatus),A			; modify code with the status port
-	DB	IN_OPCODE
+	LD		A,(IX + StatusPortIndex)
+	LD		(AddressStatus),A			; modify code with the status port
+	DB		IN_OPCODE
 AddressStatus:
-	DB	00
-	AND	D							; Check return vale with the mask
+	DB		00
+	AND		D							; Check return vale with the mask
 	RET
 	
 DUMMYRead:							;        Routine stub
@@ -207,16 +293,18 @@ DUMMYCheck:							;        Routine stub
 
 ;=============================================================================	
 SetDeviceVector:
-	AND	03H					; Get bits 0 & 1;
-	ADD	A,A					; Double for word size index
-	LD	D,00H
-	LD	E,A					; load byte index int DE
-	ADD	IX,DE				; add to the value vector base
-	
-	LD	E,(IX + 0)
-	LD	D,(IX + 1)			; DE now has the Vector for the device
-	LD	IX,0000H
-	ADD	IX,DE				; Move it to IX
+	AND		03H					; Get bits 0 & 1;
+	ADD		A,A					; Double for word size index
+	LD		D,00H
+	LD		E,A					; load byte index int DE
+	ADD		IX,DE				; add to the value vector base
+								; IX points at correct entry in vector
+	LD		E,(IX + 0)
+	LD		D,(IX + 1)			; DE now has the Vector for the device
+;	LD		IX,0000H
+;	ADD		IX,DE				; Move it to IX
+	PUSH	DE
+	POP		IX					; Move it to IX
 	RET
 
 
@@ -321,10 +409,91 @@ PUN_Vector:					; IOBYTE bits 5 & 4
 	DW		COM_Table
 	DW		CRT_Table
 LST_Vector:					; IOBYTE bits 7 & 6
-	DW		TTY_Table
+	DW		LPT_Table
 	DW		CRT_Table
 	DW		LPT_Table
 	DW		DUMMY_Table
  
-
 ;++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+;--------------------------------------------------------------------------------
+;++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+RAM					EQU		0					; Start of RAM ( and the Base page)
+ 
+; WarmBoot			EQU		RAM + 0				; Contains a JMP instruction to warm boot in BIOS
+; BIOSPAGE			EQU		RAM + 2				; BIOS Jump Vector Page
+; IOBYTE				EQU		RAM + 3				; Input/Output redirection byte
+ 
+ Pg0CurentUser		EQU		RAM + 4				; Current user ( bits 7-4)
+ Pg0CurentDisk		EQU		Pg0CurentUser		; Default logical disk (bits 0-3)
+ LF				EQU		0AH			; Line Feed
+ CR				EQU		0DH			; Carriage Return
+
+;?  BOOT:
+;?  EnterCPM:
+;?  	LD		A,0C3H							; JMP op code
+;?  	LD		(0000H),A							; set up the jump in location 0000H
+;?  	LD		(0005H),A							; and at location 0005H
+;?  
+;?  	LD		HL,WarmBootEntry					; get BIOS vector address
+;?  	LD	(0001H),HL							; put address in location 1
+;?  
+;?  	LD		HL,BDOSEntry						; Get BDOS entry point address
+;?  	LD	(0006H),HL							; put address at location 5
+;?  
+;?  	LD		BC,DMABuffer						; DefaultDiskBuffer set disk I/O address to default
+;?  	CALL	SETDMA							; use normal BIOS routine
+;?  
+;?  	EI
+;?  	LD		A,(Pg0CurentDisk)					; DefaultDisk  Transfer current default disk to
+;?  	LD		C,A								; Console Command Processor
+;?  	JP		CCPEntry						; transfer to CCP
+;? 
+
+BootMessage:
+		DB		'CP/M 2.2 '
+		DB		'BootStrap loader'
+		DB		CR,LF,00;
+
+BOOT:
+		DI
+		LD		A,080						
+		LD		(IOBYTE),A						; Set up TTY for CON: and LPT for LST:
+		LD		HL,BootMessage
+		CALL	DisplayMessage
+		XOR		A								; set to 00
+		LD		(pg0CurrentDisk),A				; Set default disk to A:
+		EI										; Enable Interrupts
+		
+EnterCPM:
+		LD		A,0C3H							; JMP op code
+		LD		(0000H),A							; set up the jump in location 0000H
+		LD		(0005H),A							; and at location 0005H
+
+  	LD		HL,WarmBootEntry					; get BIOS vector address
+  	LD	(0001H),HL							; put address in location 1
+  
+;?  	LD		HL,BDOSEntry						; Get BDOS entry point address
+;?  	LD	(0006H),HL							; put address at location 5
+;?  
+;?  	LD		BC,DMABuffer						; DefaultDiskBuffer set disk I/O address to default
+;?  	CALL	SETDMA							; use normal BIOS routine
+;?  
+;?  	EI
+;?  	LD		A,(Pg0CurentDisk)					; DefaultDisk  Transfer current default disk to
+;?  	LD		C,A								; Console Command Processor
+;?  	JP		CCPEntry						; transfer to CCP
+
+		
+DisplayMessage:
+		LD		A,M								; get  character
+		OR		A								; is it NULL
+		RET		Z								; return if it is NULL (00)
+		LD		C,A
+		PUSH	HL								; save the pointer
+		CALL	CONOut							; display at the Console
+		POP		HL								; retrieve the pointer
+		INC		HL								; point at next character
+		JR		DisplayMessage
+		
+		
+		

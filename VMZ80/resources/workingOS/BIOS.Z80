@@ -13,8 +13,8 @@
  	$Include ./diskHeader.Z80
  	
  	
- INopCode	EQU	0DBH
- OUTopCode	EQU	0D3H
+ IN_OPCODE	EQU	0DBH
+ OUT_OPCODE	EQU	0D3H
  
  
  	ORG	BIOSStart							; Assemble code at BIOS address
@@ -52,324 +52,373 @@
  
  ;	ORG AfterDiskBuffer				; reset Location Counter
  
- 
- 
- ;-------------------------------------------------
- 
- TTYStatusPort				EQU		0EDH
- TTYDataPort					EQU		0ECH
- TTYOutputReady				EQU		01H		; Status Mask
- TTYInputReady				EQU		02H		; Status Mask
- 
- CRT_StatusPort				EQU		02H
- CRT_DataPort				EQU		01H
- CRT_OutputReady				EQU		80H		; Status Mask - ready for output
- CRT_InputReady				EQU		07FH	; Status Mask - bytes yet to have been read
- 
- CommunicationStatusPort		EQU		0EDH
- CommunicationDataPort		EQU		0ECH
- CommunicationOutputReady	EQU		01H		; Status Mask
- CommunicationInputReady		EQU		02H		; Status Mask
- 
- PrinterStatusPort			EQU		011H
- PrinterDataPort				EQU		010H
- PrinterOutputReady			EQU		0FFH	; Status Mask - ready for output
- PrinterInputReady			EQU		07FH	; Status Mask - not used
- 
- 
- TTYTable:
- 	DB		TTYStatusPort
- 	DB		TTYDataPort
- 	DB		TTYOutputReady
- 	DB		TTYInputReady
- CRT_Table:
- 	DB		CRT_StatusPort
- 	DB		CRT_DataPort
- 	DB		CRT_OutputReady
- 	DB		CRT_InputReady
- CommunicationTable:
- 	DB		CommunicationStatusPort
- 	DB		CommunicationDataPort
- 	DB		CommunicationOutputReady
- 	DB		CommunicationInputReady
- PrinterTable:
- 	DB		PrinterStatusPort
- 	DB		PrinterDataPort
- 	DB		PrinterOutputReady
- 	DB		PrinterInputReady
- 	
- 
- ;----------------------------------------------------------------------
- 
- ; SelectRoutine. When called, the calling code has a vector table immediately following it.
- ; it is used to get the correct physical routine determined by the IOBYTE bits for the
- ; logical device. (00,01,10,11).
- ; It will transfer control to a specified address following its calling address
- ; according to the values in bits 1, 0 in A.
- 
- SelectRoutine:
- 	AND		03H								; Keep low 2 bits
- 	ADD		A,A								; double for word size add
- 	EX	(SP),HL ; HL-> first word of address after CALL instruction
- 	LD		E,A								; Add on selection value to address table base
- 	LD		D,00H
- 	ADD		HL,DE								; HL-> now has the selected routine
- 	LD		A,(HL)								; LS Byte
- 	INC		HL								; HL-> MS byte
- 	LD		H,(HL)								; MS byte
- 	LD		L,A								; HL->routine
- 	EX	(SP),HL ; top of stack -> routine
- 	RET										; transfer control to the selected routine
- ;----------------------routines called by SelectRoutine----------------------------
- ;----------------------------------------------------------------------------------
- 
- ; ------------ Status In
- TTYInStatus:
- 	LD		HL,TTYTable						; HL-> control table
- 	JP		InputStatus						; use of JMP, InputStatus will execute thr RETurn
- CRT_InStatus:
- 	LD		HL,CRT_Table						; HL-> control table
- 	JP		InputStatus						; use of JMP, InputStatus will execute thr RETurn
- CommunicationInStatus:
- 	LD		HL,CommunicationTable			; HL-> control table
- 	JP		InputStatus						; use of JMP, InputStatus will execute thr RETurn
- DummyInStatus:
- 	LD		A,0FFH							; Dummy always indicates data ready
- 	RET
- 	
- ; ------------ Status Out
- TTYOutStatus:
- 	LD		HL,TTYTable						; HL-> control table
- 	JP		OutputStatus					; use of JMP, OutputStatus will execute thr RETurn
- CRT_OutStatus:
- 	LD		HL,CRT_Table						; HL-> control table
- 	JP		OutputStatus					; use of JMP, OutputStatus will execute thr RETurn
- CommunicationOutStatus:
- 	LD		HL,CommunicationTable			; HL-> control table
- 	JP		OutputStatus					; use of JMP, OutputStatus will execute thr RETurn
- PrinterStatus:
- 	LD		HL,PrinterTable					; HL-> control table
- 	JP		InputStatus						; use of JMP, InputStatus will execute thr RETurn	
- DummyOutStatus:
- 	LD		A,0FFH							; Dummy always indicates ready to output data
- 	RET
- 	
- ; ------------ Data In
- TTYInput:
- 	LD		HL,TTYTable						; HL-> control table
- 	JP		InputData						; use of JMP, InputStatus will execute thr RETurn
- CRT_Input:
- 	LD		HL,CRT_Table						; HL-> control table
- 	CALL	InputData						; ** special **
- 	AND		07FH							; Strip off high order bit
- 	RET
- CommunicationInput:
- 	LD		HL,CommunicationTable			; HL-> control table
- 	JP		InputData						; use of JMP, InputStatus will execute thr RETurn
- DummyInput:
- 	LD		A,END_OF_FILE					; Dummy always returns EOF
- 	RET
- 
- ; ------------ Data Out	
- TTYOutput:
- 	LD		HL,TTYTable						; HL-> control table
- 	JP		OutputData						; use of JMP, InputStatus will execute thr RETurn
- CRT_Output:
- 	LD		HL,CRT_Table						 ;HL-> control table
- 	JP		OutputData						; use of JMP, InputStatus will execute thr RETurn
- CommunicationOutput:
- 	LD		HL,CommunicationTable			; HL-> control table
- 	JP		OutputData						; use of JMP, InputStatus will execute thr RETurn
- PrinterOutput:
- 	LD		HL,PrinterTable					; HL-> control table
- 	JP		OutputData						; use of JMP, InputStatus will execute thr RETurn
- DummyOutput:
- 	RET										; Dummy always discards the data
- ;-----------------------------------		----------------------------------------
- ;---------------------------------------------------------------------------
- InputStatus:								; return- A = 00H no incoming data
- 	LD		A,(HL)								; get status port
- 	LD		(InputStatusPort),A					; ** self modifying code
- 	DB		INopCode						; IN opcode
- InputStatusPort:
- 	DB		00H								; <- set from above
- 	INC		HL								; move HL to point to input data mask
- 	INC		HL
- 	INC		HL
- 	AND		M								; mask with input status
- 	RET										; return with status (00 nothing, FF - data available)
- ;---------------------------------------------------------------------------
- InputData:									; return with next character
- 	PUSH	HL								; save control table pointer
- 	CALL	InputStatus
- 	POP		HL								; restore the control table
- 	JP	Z,InputData						; wait until incoming data
- 	INC		HL								; HL <- data port
- 	LD		A,(HL)								; get data port
- 	LD		(InputDataPort),A					; modify code here
- 	DB		INopCode						; do the actual I/O
- InputDataPort:
- 	DB		00H								; <- set from above
- 	RET										; return with data in A
- ;---------------------------------------------------------------------------
- OutputStatus:								; return - A = 00H not ready
- 	LD		A,(HL)
- 	LD		(OutputStatusPort),A
- 	DB		INopCode						; IN opcode
- OutputStatusPort:
- 	DB		00H								; <- set from above
- 	INC		HL								; HL , Output status mask
- 	INC		HL
- 	AND		M								; mask with output status, 00 = Not ready
- 	RET
- ;---------------------------------------------------------------------------
- OutputData:									; data in Register C is output
- 	PUSH	HL								; save control table pointer
- 	CALL	OutputStatus
- 	POP		HL								; restore table pointer
- 	JP	Z,OutputData						; wait until incoming data
- 	INC		HL								; HL <- data port
- 	LD		A,(HL)								; get data port
- 	LD		(OutputDataPort),A					; store it here Modify the code
- 	LD		A,C								; get the data to output
- 	DB		OUTopCode						; Do the I/O here !!
- OutputDataPort:
- 	DB		00H								; <- set from above
- 	RET
- ;---------------------------------------------------------------------------
- 
+;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  
  ;---------------------------------------------------------------------------
- ;	Console Status  BIOS 02
- ; Entered directly from BIOS JMP vector, returns Register A
- ; 00H -> No data ,  0FFH -> there is data
- ;
+;	Console Status:		BIOS 02
+;  CONST simply returns an indicator showing whether there is an incoming
+; character from the console device. The convention is that A = OFFH if a character
+; is waiting to be processed, A = 0 if one is not. Note that the zero flag need not be set
+; to reflect the contents of the A register - it is the contents that are important.
+; CONST is called by the CCP whenever the CCP is in the middle of an
+; operation that can be interrupted by pressing a keyboard character.
+; 
+; The BDOS will call CONST if a program makes a Read Console Status
+; function call (B$CONST, code 11, OBH). It is also called by the console input BIOS
+; routine, CONIN
+CONST:	
+ConStatus:
+	LD		A,(IOBYTE)
+	LD		IX,CON_Vector
+	
+GenericInStatus:					; Entry point for generic input status
+	CALL	SetDeviceVector		; IX has the vector for the Physical Device
+	CALL	GetInStatus
+	OR	A
+	RET		Z					; 00 => No data pending
+	LD		A,0FFH
+	RET							; OFFH => Data in Buffer
+;---------------------------------------------------------------------
+;	Console In:		BIOS 03
+;  CONIN reads the next character from the console to the A register and sets the
+; most significant (parity) bit to O. ; Normally, CONIN will call the CONST routine
+; until it detects A = OFFH. Only then will it input the data character and mask off
+; the parity bit. CONIN is called by the CCP and by the BDOS when a program executes a
+; Read Console Byte function (B$CONIN, code 1).
+; normally this follows a call to CONST ( a blocking call) to indicates a char is ready.
  
- CONST:
- 	CALL	GetConsoleStatus				; return A= zero or not zero
- 	OR		A
- 	RET	Z; if 0 no returning data
- 	LD		A,0FFH							; else indicate there is data
- 	RET
- ;---------------------------------------------------------------------------
- GetConsoleStatus:
- 	LD		A,(IOBYTE)							; Get IO redirection byte
- 	CALL	SelectRoutine
- 	
- 	DW		TTYInStatus						; 00 TTY
- 	DW		CRT_InStatus					; 01 CRT
- 	DW		CommunicationInStatus			; 10 BAT
- 	DW		DummyInStatus					; 11 UC1
- 
- ;---------------------------------------------------------------------------
- ;	Console In  BIOS 03
- ; Get console Input character entered directly from the BIOS jmp Vector
- ; return the character from the console in the A register.
- ; most significant bit will be 0. except when "reader" (communication)
- ; port has input , all 8 bits are reurned
- ;
- ; normally this follows a call to CONST ( a blocking call) to indicates a char is ready.
- 
- CONIN:
- 	LD		A,(IOBYTE)							; get i/o redirection byte
- 	CALL 	SelectRoutine
- 
- 	DW		TTYInput						; 00 TTY
- 	DW		CRT_Input						; 01 CRT
- 	DW		CommunicationInput				; 10 BAT
- 	DW		DummyInput						; 11 UC1
- 
- ;---------------------------------------------------------------------------
- ;	Console Out  BIOS 04
- ;  entered directly from BIOS JMP Vector. it outputs the
- ; character in the C register to the appropriate device according to
- ; bits 1,0 of IOBYTE
- CONOUT:
- 	LD		A,(IOBYTE)							; get i/o redirection byte
- 	CALL 	SelectRoutine
- 
- 	DW		TTYOutput						; 00 TTY
- 	DW		CRT_Output						; 01 CRT
- 	DW		CommunicationOutput				; 10 BAT
- 	DW		DummyOutput						; 11 UC1
- 
- ;---------------------------------------------------------------------------
- ;	List Status  BIOS 0F
- 
- LISTST:
- ; List Device (output) status entered directly from the BIOS JMP Vector
- ; returns in A the list device status that indicates if the device will
- ; accept another character the IOBYTE's bits 7,6 determin the physical device
- ; A = 00H (zero flag set): cannot accpet data
- ; A = 0FFH ( zero flag cleared): can accept data
- 
- 	CALL	GetListStatus					; return  A = 0 or non-zero
- 	OR		A								; set flags
- 	RET	Z; exit if not ready
- 	LD		A,0FFH							; else set retuen value for ok
- 	RET
- 											; exit
- GetListStatus:
- 	LD		A,(IOBYTE)
- 	RLCA										; move bits 7,6
- 	RLCA										; to 1,0
- 	CALL	SelectRoutine
- 
- 	DW		TTYOutStatus					; 00 TTY
- 	DW		CRT_OutStatus					; 01 CRT
- 	DW		PrinterStatus					; 10 LPT
- 	DW		DummyOutStatus					; 11 UL1
- ;---------------------------------------------------------------------------
- ;	List output  BIOS 05
- ; entered directly from the BIOS JMP Vector
- ; outputs the data in Register C
+ ; This is a blocking routine
+CONIN:
+ ConIn:
+	CALL	ConStatus
+	JR		Z,ConIn				; loop until there is some data to read
+								; Call to ConStatus Sets up IX with Physical Table
+	LD		L,(IX + DataReadIndex)
+	LD		H,(IX +(DataReadIndex +1 ))
+	JP		(HL)
+;---------------------------------------------------------------------------
+;	Console Out:		BIOS 04
+;  CONOUT outputs the character (in ASCII) in register C to the console. The
+; most significant (parity) bit of the character will always be O.
+; CONOUT must first check that the console device is ready to receive more
+; data, delaying if necessary until it is, and only then sending the character to the
+; device. CONOUT is called by the CCP and by the BDOS when a program executes a
+; Write Console Byte function (B$CONOUT, code 2).
+
+; This is a blocking routine
+CONOUT:
+CONOut:
+	LD		A,(IOBYTE)
+	LD		IX,CON_Vector
+	
+GenericOutStatus:					; entry point for standard blocking write
+	CALL	SetDeviceVector			; IX has the vector for the Physical Device
+GenericOutStatus1:
+	CALL	GetOutStatus
+	JR		Z,GenericOutStatus1		; wait until ready
+	LD		L,(IX +DataWriteIndex)
+	LD		H,(IX +(DataWriteIndex + 1))
+	JP		(HL)
+	
+;---------------------------------------------------------------------------
+;	List output  BIOS 05
+; LIST is similar to CONOUT except that it sends the character in register C to
+; the list device. It too checks first that the list device is ready to receive
+; the character. LIST is called by the CCP in response to the CONTROL-P toggle
+; for printer echo of console output, and by the BDOS when a program makes a
+; Write Printer Byte or Display String call (B$LISTOUT and B$PRINTS, codes 5 and 9).
+
+; This is a blocking routine
+
  LIST:
  	LD		A,(IOBYTE)
  	RLCA										; move bits 7,6
  	RLCA										; to 1,0
- 	CALL	SelectRoutine
- 	
- 	DW		TTYOutput						; 00 TTY
- 	DW		CRT_Output						; 01 CRT
- 	DW		PrinterOutput					; 10 LPT
- 	DW		DummyOutput						; 11 UL1
+ 	LD		IX,LST_Vector
+	JR		GenericOutStatus					; go to generic blocking out routine
  
- ;---------------------------------------------------------------------------
- ;	Punch output  BIOS 06	- not tested
- ; entered directly from the BIOS JMP Vector
- ; outputs the data in Register C
- PUNCH:				; Punch output
- 
+;---------------------------------------------------------------------------
+;	Punch output  BIOS 06	
+;  PUNCH sends the character in register C to the "punch" device. As mentioned
+; earlier, the "punch" is rarely a real paper tape punch. In most BIOS's, the PUNCH
+; entry point either returns immediately and is effectively a null routine, or it outputs
+; the character to a communications device, such as a modem, on your computer.
+; PUNCH must check that the "punch" device is indeed ready to accept another
+; character for output, and must wait if it is not.
+; 
+; Digital Research's documentation states that the character to be output will
+; always have its most significant bit set to O. This is not true. The BDOS simply
+; transfers control over to the PUNCH entry point in the BIOS; the setting of the
+; most significant bit will be determined by the program making the BDOS function
+; request (B$PUNOUT, code 4). This is important because the requirement of a zero
+; would preclude being able to send pure binary data via the BIOS PUNCH
+; function
+
+; This is a blocking routine
+
+PUNCH:				; Punch output
  	LD		A,(IOBYTE)
  	RRCA
  	RRCA
  	RRCA										; move bits 5,4
  	RRCA										; to 1,0
- 	CALL	SelectRoutine
- 	
- 	DW		TTYOutput						; 00 TTY
- 	DW		DummyOutput						; 01 PTP
- 	DW		CommunicationOutput				; 10 UP1
- 	DW		CRT_Output						; 11 UP2
- 
- ;---------------------------------------------------------------------------
- ;	Reader input  BIOS 07	- not tested
- ; entered directly from the BIOS JMP Vector
- ; inputs data into the A register
+  	LD		IX,PUN_Vector
+	JR		GenericOutStatus					; go to generic blocking out routine
+
+;---------------------------------------------------------------------------
+;	Reader input  BIOS 07	-
+; As with the PUNCH entry point, the READER entry point rarely connects to
+; a real paper tape reader.
+; The READER function must return the next character from the reader device
+; in the A register, waiting, if need be, until there is a character.
+; 
+; Digital Research's documentation again says that the most significant bit of
+; the A register must be 0, but this is not the case if you wish to receive pure binary
+; information via this function.
+; READER is called whenever a program makes a Read "Reader" Byte function
+; request (B$READIN, code 3).
+
+; This is a blocking routine
+
  READER:				; Reader Input
  	LD		A,(IOBYTE)
  	RRCA
  	RRCA										; move bits 3,2  to 1,0
- 	CALL	SelectRoutine
- 	
- 	DW		TTYOutput						; 00 TTY
- 	DW		DummyOutput						; 01 PTR
- 	DW		CommunicationOutput				; 10 UR1
- 	DW		CRT_Output						; 11 UR2
+	LD		IX,RDR_Vector
+READER1:
+	CALL	GenericInStatus
+	JR		Z,READER1							; loop until there is some data to read
+												
+	LD		L,(IX + DataReadIndex)
+	LD		H,(IX +(DataReadIndex +1 ))
+	JP		(HL)
+
+	
+;---------------------------------------------------------------------------
+;	List Status:  BIOS 0F
  
- ;---------------------------------------------------------------------------
- ;---------------------------------------------------------------------------
- ;	Disk routines
+;  LISTST was added when CP/M was upgraded from version 1.4 to version 2.0.
+; This function returns the current status of the list device, using the IOBYTE if
+; necessary to select the correct physical device. It sets the A register to OFFH if the
+; list device can accept another character for output or to OOH if it is not ready.
+; Digital Research's documentation states that this function is used by the
+; DESPOOL utility program (which allows you to print a file "simultaneously" with
+; other operations) to improve console response during its operation, and that it is
+; acceptable for the routine always to return OOH if you choose not to implement it
+; fully.
+; Unfortunately, this statement is wrong. Many other programs use the LISTST
+; function to "poll" the list device to make sure it is ready, and if it fails to come
+; ready after a predetermined time, to output a message to the console indicating
+; that the printer is not ready. If you ever make a call to the BDOS list output
+; functions, Write Printer Byte and Print String (codes 5 and 9), and the printer is
+; not ready, then CP/M will wait forever-and your program will have lost control
+; so it cannot even detect that the problem has occurred. If LISTST always returns a
+; OOH, then the printer will always appear not to be ready. Not only does this make nonsense
+; out of the LISTST function, but it also causes a stream of false "Printer
+; not Ready" error messages to appear on the console.
+;  
+ LISTST:
+;?GetLSTStatus:
+	LD		A,(IOBYTE)				; Get Physical device
+	RLCA
+	RLCA						; Move bits 6 & 7 to bits 0 & 1
+	LD		IX,LST_Vector		; Set th vector base 
+	CALL	SetDeviceVector		; IX has the vector for the Physical Device
+	CALL	GetOutStatus
+
+	OR	A
+	RET		Z					; 00 => Device Ready
+	LD		A,0FFH
+	RET							; OFFH => Device No Ready
+
+;---------------------------------------------------------------------------
+
+;---------------------------------------------------------------------
+GetOutStatus:
+				; vector to CON Devices
+	LD		D,(IX + OutputMaskIndex)	; setup Output mask	
+	JR		GetStatus
+GetInStatus:
+	LD		D,(IX + InputMaskIndex)		; setup Input mask
+GetStatus:	
+	LD		L,(IX + StatusReadIndex)
+	LD		H,(IX + (StatusReadIndex + 1))	; Load HL with address for Status Read
+	JP		(HL)						; jump to the stats read routine
+	
+;---------------------------------------------------------------------
+
+DataRead:
+	LD		A,(IX + DataPortIndex)
+	LD		(AddressDataIn),A			; modify code with the Data port
+	DB		IN_OPCODE
+AddressDataIn:
+	DB		00							; perform the read
+	RET
+
+DataReadASCII:
+	CALL	DataRead
+	AND		ASCII_MASK				; Strip off MSB
+	RET								; AND		ASCII_MASK
+
+; Enter DataWrite the value to be output in C
+DataWrite:
+	LD		A,(IX + DataPortIndex)
+	LD		(AddressDataOut),A			; modify code with the Data port
+	LD		A,C							; get value into ACC
+	DB		OUT_OPCODE
+AddressDataOut:
+	DB		00							; perform the write
+	RET
+
+	
+; Enter Status Read with Target mask in D	
+StatusRead:
+	LD		A,(IX + StatusPortIndex)
+	LD		(AddressStatus),A			; modify code with the status port
+	DB		IN_OPCODE
+AddressStatus:
+	DB		00
+	AND		D							; Check return vale with the mask
+	RET
+	
+DUMMYRead:
+	RET	
+DUMMYWrite:
+	RET	
+DUMMYCheck:
+	LD		A,0FFH						; Always return 0FFH
+	OR		A							; Set flags
+	RET
+
+;=============================================================================	
+SetDeviceVector:
+	AND		03H					; Get bits 0 & 1;
+	ADD		A,A					; Double for word size index
+	LD		D,00H
+	LD		E,A					; load byte index int DE
+	ADD		IX,DE				; add to the value vector base
+								; IX points at correct entry in vector
+	LD		E,(IX + 0)
+	LD		D,(IX + 1)			; DE now has the Vector for the device
+;	LD		IX,0000H
+;	ADD		IX,DE				; Move it to IX
+	PUSH	DE
+	POP		IX					; Move it to IX
+	RET
+
+
+;++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+; Physical Device Attributes
+
+TTY_StatusPort		EQU		0EDH
+TTY_DataPort		EQU		0ECH
+TTY_OutputMask		EQU		80H		; Status Mask
+TTY_InputMask		EQU		7FH		; Status Mask
+
+CRT_StatusPort		EQU		02H
+CRT_DataPort		EQU		01H
+CRT_OutputMask		EQU		80H		; Status Mask - ready for output
+CRT_InputMask		EQU		07FH	; Status Mask - bytes yet to have been read
+
+COM_StatusPort		EQU		0EDH
+COM_DataPort		EQU		0ECH
+COM_OutputMask		EQU		01H		; Status Mask
+COM_InputMask		EQU		02H		; Status Mask
+
+LPT_StatusPort		EQU		011H
+LPT_DataPort		EQU		010H
+LPT_OutputMask		EQU		0FFH	; Status Mask - ready for output
+LPT_InputMask		EQU		07FH	; Status Mask - not used
+
+DUMMY_StatusPort	EQU		011H
+DUMMY_DataPort		EQU		010H
+DUMMY_OutputMask	EQU		0FFH	; Status Mask - ready for output
+DUMMY_InputMask		EQU		07FH	; Status Mask - not used
+
+; Device Table Control Block Definition
+StatusPortIndex		EQU		0
+DataPortIndex		EQU		1	
+OutputMaskIndex		EQU		2	
+InputMaskIndex		EQU		3		
+StatusReadIndex		EQU		4	
+DataReadIndex		EQU		6	
+DataWriteIndex		EQU		8
+
+;Physical Devices Control Blocks
+
+TTY_Table:
+ 	DB		TTY_StatusPort
+ 	DB		TTY_DataPort
+ 	DB		TTY_OutputMask
+ 	DB		TTY_InputMask
+	DW		StatusRead
+	DW		DataReadASCII
+	DW		DataWrite
+	
+CRT_Table:
+ 	DB		CRT_StatusPort
+ 	DB		CRT_DataPort
+ 	DB		CRT_OutputMask
+ 	DB		CRT_InputMask
+	DW		StatusRead
+	DW		DataRead
+	DW		DataWrite
+COM_Table:
+ 	DB		COM_StatusPort	
+ 	DB		COM_DataPort	
+ 	DB		COM_OutputMask	
+ 	DB		COM_InputMask
+	DW		StatusRead
+	DW		DataRead
+	DW		DataWrite	
+LPT_Table:
+ 	DB		LPT_StatusPort	
+ 	DB		LPT_DataPort	
+ 	DB		LPT_OutputMask	
+ 	DB		LPT_InputMask
+	DW		StatusRead
+	DW		DataRead
+	DW		DataWrite	
+DUMMY_Table:
+ 	DB		DUMMY_StatusPort
+ 	DB		DUMMY_DataPort	
+ 	DB		DUMMY_OutputMask
+ 	DB		DUMMY_InputMask
+	DW		DUMMYCheck
+	DW		DUMMYRead
+	DW		DUMMYWrite
+ 
+;---------------------------------------------------------------------------
+
+; Logical Device Vector, Controlled by IOBYTE
+
+CON_Vector:					; IOBYTE bits 1 & 0
+	DW		TTY_Table
+	DW		CRT_Table
+	DW		COM_Table
+	DW		DUMMY_Table
+RDR_Vector:					; IOBYTE bits 3 & 2
+	DW		TTY_Table
+	DW		CRT_Table
+	DW		DUMMY_Table	
+	DW		DUMMY_Table
+PUN_Vector:					; IOBYTE bits 5 & 4
+	DW		TTY_Table
+	DW		DUMMY_Table
+	DW		COM_Table
+	DW		CRT_Table
+LST_Vector:					; IOBYTE bits 7 & 6
+	DW		LPT_Table
+	DW		CRT_Table
+	DW		LPT_Table
+	DW		DUMMY_Table
+
+;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ 
+ ;-------------------------------------------------
+  ;	Disk routines
  ;---------------------------------------------------------------------------
  ;**********************
  ;	Home Disk	BIOS 08
