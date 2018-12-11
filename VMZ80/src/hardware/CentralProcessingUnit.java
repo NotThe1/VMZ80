@@ -22,7 +22,7 @@ import memory.CpuBuss;
 
 public class CentralProcessingUnit implements Runnable {
 	private static CentralProcessingUnit instance = new CentralProcessingUnit();
-	private CpuBuss cpuBuss = CpuBuss.getInstance();
+	private static CpuBuss cpuBuss = CpuBuss.getInstance();
 	private ConditionCodeRegister ccr = ConditionCodeRegister.getInstance();
 	private WorkingRegisterSet wrs = WorkingRegisterSet.getInstance();
 	private ArithmeticUnit au = ArithmeticUnit.getInstance();

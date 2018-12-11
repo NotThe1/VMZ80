@@ -33,7 +33,7 @@ public class MemoryLoaderFromFile {
 	 * 
 	 * @param sourceFile
 	 *            file that contains the string representation of memory
-	 * @return The name of the file loaded into memory
+	 * @return byte array loaded into memory
 	 */
 
 	static public byte[] loadMemoryImage(BufferedReader bufferedReader, int size) {

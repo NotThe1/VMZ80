@@ -12,54 +12,49 @@
  	$Include ./osHeader.Z80
  	$Include ./diskHeader.Z80
  	
- BOOT_CON_ADDRESS	EQU	0ECH				; tty data address
- IOBYTE_DEFAULT		EQU	080H				; LST:=LPT, rest all = TTY:
+BOOT_CON_ADDRESS	EQU	0ECH	; tty data address
+IOBYTE_DEFAULT		EQU	080H	; LST:=LPT, rest all = TTY:
+
+
+WarmBootEntry		EQU		BIOSStart + 3
+
+					ORG    TPA
+Start:
+ 	LD		SP,Start-1					; stack goes down from here
+ 	CALL	SendBootMessage				; display boot message
+ 	LD		BC,Page0ImageEnd-Page0Image	; Size of code to move
+ 	LD		HL,Page0Image				; Source of page 0 code
+ 	LD		DE,0000						; Location 0, the target
  
- 
- WarmBootEntry		EQU		BIOSStart + 3
- 
- 					ORG    TPA
- Start:
- 	LD		SP,Start-1						; stack goes down from here
- 	CALL	SendBootMessage					; display boot message
- 	LD		BC,Page0ImageEnd-Page0Image		; Size of code to move
- 	LD		HL,Page0Image					; Source of page 0 code
- 	LD		DE,0000							; Location 0, the target
- 
- ; Set up page zero,Move (B) bytes from (HL) to (DE).
- 
-; HL2DE:
-; 	LD		A,(HL)
-; 	LD	(DE),A
-; 	INC		HL
-; 	INC		DE
-; 	DEC		B
-; 	JP	NZ,HL2DE
+; Set up page zero,Move (B) bytes from (HL) to (DE).
 	LDIR
  
- ; Now  start to move data to Disk Control Block
+; Now  start to move data to Disk Control Block
  
  	LD		HL,BootControl
- 	LD	(DiskCommandBlock),HL				; put it into the Command block for drive A:
+ 	LD		(DiskCommandBlock),HL	; put it into the Command block for drive A:
  
  
  	LD		HL,DiskControlByte
- 	LD		(HL),080H							; activate the controller
+ 	LD		(HL),080H				; activate the controller
  
- WaitForBootComplete:
- 	LD		A,(HL)								; Get the control byte
- 	OR		A								; is it set to 0 (Completed operation) ?
- 	JR	NZ,WaitForBootComplete				; if not try again
+WaitForBootComplete:
+ 	LD		A,(HL)					; Get the control byte
+ 	OR		A						; is it set to 0 (Completed operation) ?
+ 	JR	NZ,WaitForBootComplete		; if not try again
  
- 	LD		A,(DiskStatusLocation)				; after operation what's the status?
- 	CP		080H							; any errors ?
- 
- 	JP	NC,0000							; now do a warm boot
- 											; else we have a problem
+ 	LD		A,(DiskStatusLocation)	; after operation what's the status?
+ 	CP		080H					; any errors ?
+	
+	
+ 	JP		NC,BIOSStart			; now do a Cold Boot
+; else we have a problem	
+	LD		HL,FailedBootMessage
+ 	CALL	SendMessage								
  	HALT
  ;---------------------------------------------------
  
- BootControl:
+BootControl:
  	DB		DiskReadCode					; Read function
  	DB		00H								; unit number
  	DB		00H								; head number
@@ -72,39 +67,45 @@
  
  ;---------------------------------------------------
  
- Page0Image:
+Page0Image:
  	JP		WarmBootEntry					; warm start
- ;IOBYTE:
+;IOBYTE:
  	DB		IOBYTE_DEFAULT					; IOBYTE- 
- DefaultDisk:
+DefaultDisk:
  	DB		00H								; Current default drive (A)
  	JP	BDOSEntry							; jump to BDOS entry
  	DS		028H							; interrupt locations 1-5 not used
  	DS		008H							; interrupt location 6 is reserved
  	JP		0000H							; rst 7 used only by DDT & SID programs
- Page0ImageEnd:
+Page0ImageEnd:
  
  ;---------------------------------------------------
  
  
- BootMessage:
+BootMessage:
  	DB		CR,LF
  	DB		'CP/M 2.2 BootStrap'
  	DB		' loader'
- 	DB		CR,LF,
- 	DB		'Build '
- 	DB		'2.0A  : 1.0 - 1.1 - 1.2'
+; 	DB		CR,LF,
+; 	DB		'Build '
+; 	DB		'2.0A  : 1.0 - 1.1 - 1.2'
  	DB		CR,LF,EndOfMessage
- 
- SendBootMessage:
+	
+FailedBootMessage:
+	DB		CR,LF
+	DB		'Boot Unsuccessful - Check for Disk in A:'
+ 	DB		CR,LF,EndOfMessage
+
+SendBootMessage:
  	LD		HL,BootMessage
- SendMessage1:
+	
+SendMessage:
  	LD		A,(HL)
  	OR		A
- 	RET	Z
+ 	RET		Z
  	OUT		(BOOT_CON_ADDRESS),A				; Console address
  	INC		HL
- 	JP		SendMessage1
+ 	JP		SendMessage
  
  
  ;---------------------------------------------------

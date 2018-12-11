@@ -288,96 +288,97 @@
 0288: 0100                        ORG    TPA
 0289: 0100             Start:
 0290: 0100 31 FF 00               LD     SP,Start-1           ; stack goes down from here
-0291: 0103 CD AE 01               CALL   SendBootMessage      ; display boot message
+0291: 0103 CD C2 01               CALL   SendBootMessage      ; display boot message
 0292: 0106 01 3B 00               LD     BC,Page0ImageEnd-Page0Image ; Size of code to move
-0293: 0109 21 36 01               LD     HL,Page0Image        ; Source of page 0 code
+0293: 0109 21 3C 01               LD     HL,Page0Image        ; Source of page 0 code
 0294: 010C 11 00 00               LD     DE,0000              ; Location 0, the target
 0295: 010F
 0296: 010F         ; Set up page zero,Move (B) bytes from (HL) to (DE).
-0297: 010F
-0298: 010F         ; HL2DE:
-0299: 010F         ; 	LD		A,(HL)
-0300: 010F         ; 	LD	(DE),A
-0301: 010F         ; 	INC		HL
-0302: 010F         ; 	INC		DE
-0303: 010F         ; 	DEC		B
-0304: 010F         ; 	JP	NZ,HL2DE
-0305: 010F ED B0                  LDIR
-0306: 0111
-0307: 0111         ; Now  start to move data to Disk Control Block
-0308: 0111
-0309: 0111 21 29 01               LD     HL,BootControl
-0310: 0114 22 46 00               LD     (DiskCommandBlock),HL ; put it into the Command block for drive A:
-0311: 0117
-0312: 0117
-0313: 0117 21 45 00               LD     HL,DiskControlByte
-0314: 011A 36 80                  LD     (HL),080H            ; activate the controller
-0315: 011C
-0316: 011C             WaitForBootComplete:
-0317: 011C 7E                     LD     A,(HL)               ; Get the control byte
-0318: 011D B7                     OR     A                    ; is it set to 0 (Completed operation) ?
-0319: 011E 20 FC                  JR     NZ,WaitForBootComplete ; if not try again
-0320: 0120
-0321: 0120 3A 43 00               LD     A,(DiskStatusLocation) ; after operation what's the status?
-0322: 0123 FE 80                  CP     080H                 ; any errors ?
-0323: 0125
-0324: 0125 D2 00 00               JP     NC,0000              ; now do a warm boot
-0325: 0128         ; else we have a problem
-0326: 0128 76                     HALT
-0327: 0129         ;---------------------------------------------------
-0328: 0129
-0329: 0129             BootControl:
-0330: 0129 01                     DB     DiskReadCode         ; Read function
-0331: 012A 00                     DB     00H                  ; unit number
-0332: 012B 00                     DB     00H                  ; head number
-0333: 012C 00                     DB     00H                  ; track number
-0334: 012D 0D                     DB     0DH                  ; Starting sector number (13)
-0335: 012E 00 0A                  DW     5 * 512              ; Number of bytes to read ( 0A00 All of BIOS)
-0336: 0130 00 F6                  DW     BIOSStart            ; read into this address
-0337: 0132 43 00                  DW     DiskStatusLocation   ; pointer to next block - no linking
-0338: 0134 40 00                  DW     DiskControlTable     ; pointer to next table- no linking
-0339: 0136
-0340: 0136         ;---------------------------------------------------
-0341: 0136
-0342: 0136             Page0Image:
-0343: 0136 C3 03 F6               JP     WarmBootEntry        ; warm start
-0344: 0139         ;IOBYTE:
-0345: 0139 80                     DB     IOBYTE_DEFAULT       ; IOBYTE-
-0346: 013A             DefaultDisk:
-0347: 013A 00                     DB     00H                  ; Current default drive (A)
-0348: 013B C3 06 E8               JP     BDOSEntry            ; jump to BDOS entry
-0349: 013E                        DS     028H                 ; interrupt locations 1-5 not used
-0350: 0166                        DS     008H                 ; interrupt location 6 is reserved
-0351: 016E C3 00 00               JP     0000H                ; rst 7 used only by DDT & SID programs
-0352: 0171             Page0ImageEnd:
-0353: 0171
-0354: 0171         ;---------------------------------------------------
-0355: 0171
-0356: 0171
-0357: 0171             BootMessage:
-0358: 0171 0D 0A                  DB     CR,LF
-0359: 0173 43 50 2F 4D 20 32 2E 32 20 42 6F 6F 74 53 74 72 61 70                DB     'CP/M 2.2 BootStrap'
-0360: 0185 20 6C 6F 61 64 65 72                DB     ' loader'
-0361: 018C 0D 0A                  DB     CR,LF,
-0362: 018E 42 75 69 6C 64 20                DB     'Build '
-0363: 0194 32 2E 30 41 20 20 3A 20 31 2E 30 20 2D 20 31 2E 31 20 2D 20 31 2E 32                DB     '2.0A  : 1.0 - 1.1 - 1.2'
-0364: 01AB 0D 0A 00                DB     CR,LF,EndOfMessage
-0365: 01AE
-0366: 01AE             SendBootMessage:
-0367: 01AE 21 71 01               LD     HL,BootMessage
-0368: 01B1             SendMessage1:
-0369: 01B1 7E                     LD     A,(HL)
-0370: 01B2 B7                     OR     A
-0371: 01B3 C8                     RET    Z
-0372: 01B4 D3 EC                  OUT    (BOOT_CON_ADDRESS),A ; Console address
-0373: 01B6 23                     INC    HL
-0374: 01B7 C3 B1 01               JP     SendMessage1
-0375: 01BA
-0376: 01BA
-0377: 01BA         ;---------------------------------------------------
-0378: 01BA
+0297: 010F ED B0                  LDIR
+0298: 0111
+0299: 0111         ; Now  start to move data to Disk Control Block
+0300: 0111
+0301: 0111 21 2F 01               LD     HL,BootControl
+0302: 0114 22 46 00               LD     (DiskCommandBlock),HL ; put it into the Command block for drive A:
+0303: 0117
+0304: 0117
+0305: 0117 21 45 00               LD     HL,DiskControlByte
+0306: 011A 36 80                  LD     (HL),080H            ; activate the controller
+0307: 011C
+0308: 011C             WaitForBootComplete:
+0309: 011C 7E                     LD     A,(HL)               ; Get the control byte
+0310: 011D B7                     OR     A                    ; is it set to 0 (Completed operation) ?
+0311: 011E 20 FC                  JR     NZ,WaitForBootComplete ; if not try again
+0312: 0120
+0313: 0120 3A 43 00               LD     A,(DiskStatusLocation) ; after operation what's the status?
+0314: 0123 FE 80                  CP     080H                 ; any errors ?
+0315: 0125
+0316: 0125
+0317: 0125 D2 00 F6               JP     NC,BIOSStart         ; now do a Cold Boot
+0318: 0128         ; else we have a problem
+0319: 0128 21 95 01               LD     HL,FailedBootMessage
+0320: 012B CD C5 01               CALL   SendMessage
+0321: 012E 76                     HALT
+0322: 012F         ;---------------------------------------------------
+0323: 012F
+0324: 012F             BootControl:
+0325: 012F 01                     DB     DiskReadCode         ; Read function
+0326: 0130 00                     DB     00H                  ; unit number
+0327: 0131 00                     DB     00H                  ; head number
+0328: 0132 00                     DB     00H                  ; track number
+0329: 0133 0D                     DB     0DH                  ; Starting sector number (13)
+0330: 0134 00 0A                  DW     5 * 512              ; Number of bytes to read ( 0A00 All of BIOS)
+0331: 0136 00 F6                  DW     BIOSStart            ; read into this address
+0332: 0138 43 00                  DW     DiskStatusLocation   ; pointer to next block - no linking
+0333: 013A 40 00                  DW     DiskControlTable     ; pointer to next table- no linking
+0334: 013C
+0335: 013C         ;---------------------------------------------------
+0336: 013C
+0337: 013C             Page0Image:
+0338: 013C C3 03 F6               JP     WarmBootEntry        ; warm start
+0339: 013F         ;IOBYTE:
+0340: 013F 80                     DB     IOBYTE_DEFAULT       ; IOBYTE-
+0341: 0140             DefaultDisk:
+0342: 0140 00                     DB     00H                  ; Current default drive (A)
+0343: 0141 C3 06 E8               JP     BDOSEntry            ; jump to BDOS entry
+0344: 0144                        DS     028H                 ; interrupt locations 1-5 not used
+0345: 016C                        DS     008H                 ; interrupt location 6 is reserved
+0346: 0174 C3 00 00               JP     0000H                ; rst 7 used only by DDT & SID programs
+0347: 0177             Page0ImageEnd:
+0348: 0177
+0349: 0177         ;---------------------------------------------------
+0350: 0177
+0351: 0177
+0352: 0177             BootMessage:
+0353: 0177 0D 0A                  DB     CR,LF
+0354: 0179 43 50 2F 4D 20 32 2E 32 20 42 6F 6F 74 53 74 72 61 70                DB     'CP/M 2.2 BootStrap'
+0355: 018B 20 6C 6F 61 64 65 72                DB     ' loader'
+0356: 0192         ; 	DB		CR,LF,
+0357: 0192         ; 	DB		'Build '
+0358: 0192         ; 	DB		'2.0A  : 1.0 - 1.1 - 1.2'
+0359: 0192 0D 0A 00                DB     CR,LF,EndOfMessage
+0360: 0195
+0361: 0195             FailedBootMessage:
+0362: 0195 0D 0A                  DB     CR,LF
+0363: 0197 42 6F 6F 74 20 55 6E 73 75 63 63 65 73 73 66 75 6C 20 2D 20 43 68 65 63 6B 20 66 6F 72 20 44 69 73 6B 20 69 6E 20 41 3A                DB     'Boot Unsuccessful - Check for Disk in A:'
+0364: 01BF 0D 0A 00                DB     CR,LF,EndOfMessage
+0365: 01C2
+0366: 01C2             SendBootMessage:
+0367: 01C2 21 77 01               LD     HL,BootMessage
+0368: 01C5
+0369: 01C5             SendMessage:
+0370: 01C5 7E                     LD     A,(HL)
+0371: 01C6 B7                     OR     A
+0372: 01C7 C8                     RET    Z
+0373: 01C8 D3 EC                  OUT    (BOOT_CON_ADDRESS),A ; Console address
+0374: 01CA 23                     INC    HL
+0375: 01CB C3 C5 01               JP     SendMessage
+0376: 01CE
+0377: 01CE
+0378: 01CE         ;---------------------------------------------------
+0379: 01CE
            ************************   Xref   ************************
-0000: $               01B7
+0000: $               01CB
 0079: ASCII_A         0041
 0080: ASCII_C         0043
 0081: ASCII_K         004B
@@ -394,17 +395,17 @@
 0060: ASTERISK        002A
 0145: BDOSBase        E800   0146 0148
 0114: BDOSE           0005   0115
-0146: BDOSEntry       E806   0348
+0146: BDOSEntry       E806   0343
 0135: BDOSLength      0E00   0138 0148 0149
 0049: BELL            0007
 0148: BIOSBase        F600
 0136: BIOSLength      0A00   0138
 0108: BIOSPAGE        0002
-0149: BIOSStart       F600   0286 0336
+0149: BIOSStart       F600   0286 0317 0331
 0245: BlockSize       0800   0267
-0282: BOOT_CON_ADDRESS 00EC   0372
-0329: BootControl     0129   0309
-0357: BootMessage     0171   0367
+0282: BOOT_CON_ADDRESS 00EC   0373
+0324: BootControl     012F   0301
+0352: BootMessage     0177   0367
 0027: BYTE            0001
 0087: CARET           005E
 0143: CCPEntry        E000   0145 0149
@@ -415,7 +416,7 @@
 0122: ComTailChars    0082
 0121: ComTailCount    0081   0122
 0222: cpmRecordSize   0080   0224 0227 0229
-0052: CR              000D   0358 0361 0364
+0052: CR              000D   0353 0359 0362 0364
 0035: CTRL_C          0003
 0036: CTRL_E          0005
 0037: CTRL_H          0008
@@ -430,17 +431,17 @@
 0063: DASH            002D
 0256: DataBlocks      02C7   0266
 0255: DataSectors     0B1C   0256
-0346: DefaultDisk     013A
+0341: DefaultDisk     0140
 0227: DirBuffSize     0080
 0242: DirectoryBlockCount 0002   0267
 0229: DirectoryEntryPerRecord 0004   0270
 0226: DirEntrySize    0020   0229 0267
-0214: DiskCommandBlock 0046   0310
-0213: DiskControlByte 0045   0313
-0216: DiskControlTable 0040   0338
-0218: DiskReadCode    0001   0330
+0214: DiskCommandBlock 0046   0302
+0213: DiskControlByte 0045   0305
+0216: DiskControlTable 0040   0333
+0218: DiskReadCode    0001   0325
 0223: diskSectorSize  0200   0224 0245 0253
-0212: DiskStatusLocation 0043   0321 0337
+0212: DiskStatusLocation 0043   0313 0332
 0219: DiskWriteCode   0002
 0125: DMABuffer       0080
 0056: DOLLAR          0024
@@ -456,9 +457,10 @@
 0271: dpb3hdOFF       0001
 0262: dpb3hdSPT       0090
 0129: END_OF_FILE     001A
-0033: EndOfMessage    0000   0364
+0033: EndOfMessage    0000   0359 0364
 0071: EQUAL_SIGN      003D
 0054: EXCLAIM_POINT   0021
+0361: FailedBootMessage 0195   0319
 0022: FALSE           0000
 0117: FCB1            005C   0118
 0118: FCB2            006C
@@ -486,14 +488,14 @@
 0072: GREATER_THAN    003E
 0055: HASH_TAG        0023
 0109: IOBYTE          0003
-0283: IOBYTE_DEFAULT  0080   0345
+0283: IOBYTE_DEFAULT  0080   0340
 0058: L_PAREN         0028
 0075: LEFT_ARROW      005F
 0091: LEFT_CURLY      007B
 0138: LengthInBytes   2000   0139 0143 0253
 0139: LengthInK       0009
 0070: LESS_THAN       003C
-0051: LF              000A   0358 0361 0364
+0051: LF              000A   0353 0359 0362 0364
 0025: LO_NIBBLE_MASK  000F
 0141: MemorySize      0040   0143
 0254: myOffset        0001   0255 0271
@@ -502,8 +504,8 @@
 0235: NumberOfLogicalDisks 0004
 0024: OFF             0000
 0023: ON              FFFF
-0342: Page0Image      0136   0292 0293
-0352: Page0ImageEnd   0171   0292
+0337: Page0Image      013C   0292 0293
+0347: Page0ImageEnd   0177   0292
 0057: PERCENT         0025
 0064: PERIOD          002E
 0112: Pg0CurentDisk   0004
@@ -521,8 +523,8 @@
 0251: SectorsPerCylinder 0024   0254 0255
 0240: SectorsPerTrack 0012   0249 0251 0262
 0069: SEMICOLON       003B
-0366: SendBootMessage 01AE   0291
-0368: SendMessage1    01B1   0374
+0366: SendBootMessage 01C2   0291
+0369: SendMessage     01C5   0320 0375
 0065: SLASH           002F
 0048: SOH             0001
 0053: SPACE           0020
@@ -536,9 +538,9 @@
 0239: TracksPerHead   0050   0249
 0021: TRUE            FFFF
 0074: UNDER_SCORE     005F
-0316: WaitForBootComplete 011C   0319
+0308: WaitForBootComplete 011C   0311
 0107: WarmBoot        0000
-0286: WarmBootEntry   F603   0343
+0286: WarmBootEntry   F603   0338
 0028: WORD            0002
 0187: WriteAllocated  0000
 0188: WriteDirectory  0001

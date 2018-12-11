@@ -1,23 +1,23 @@
 ;     File created by MakeZ80Source on Tue Sep 18 10:06:02 EDT 2018 from:
 ;     C:\Users\admin\Dropbox\Resources\CPM\CurrentOS\8080\ROM.asm
- ; ROM.Z80
- ; Rom for BIOS set up for diskA to be 3.5HD (1.44MB) disk
- 
- ; 2018-11-23 Moved code away from the DiskControlBlock
- ; 2018-11-22  Z80 idiom
- ; 2017-03-02 Refactored the CP/M Suite
+; ROM.Z80
+; Rom for BIOS set up for diskA to be 3.5HD (1.44MB) disk
+
+; 2018-11-23 Moved code away from the DiskControlBlock
+; 2018-11-22  Z80 idiom
+; 2017-03-02 Refactored the CP/M Suite
  
  
   	$Include ./stdHeader.Z80
 ;	$Include ./osHeader.Z80
 ; 	$Include ./diskHeader.Z80
 	
- BOOT_CON_ADDRESS	EQU	0ECH				; tty data address
+BOOT_CON_ADDRESS	EQU	0ECH				; tty data address
  
  
  	ORG		0000
  
- CodeStart:
+CodeStart:
  	LD		HL,ROMControl
  	LD	(DiskCommandBlock),HL				; put it into the Command block for drive A:
  
@@ -25,7 +25,7 @@
  	LD		HL,DiskControlByte
  	LD		(HL),080H							; activate the controller
  
- WaitForBootComplete:
+WaitForBootComplete:
  	LD		A,(HL)								; Get the control byte
  	OR		A								; is it set to 0 (Completed operation) ?
  	JR	NZ,WaitForBootComplete				; if not try again
@@ -41,9 +41,9 @@
 
 	ORG   DMABuffer
  
- NoDisk:
+NoDisk:
  	LD		HL,NoDiskMessage
- SendMessage1:
+SendMessage1:
  	LD		A,(HL)
  	OR		A
  	RET	Z
@@ -55,8 +55,8 @@ NoDiskMessage:
  	DB		CR,LF
  	DB		'No System Disk Mounted'
  	DB		CR,LF,EndOfMessage 
- ;---------------------------------------
- ROMControl:
+;---------------------------------------
+ROMControl:
  	DB		DiskReadCode					; Read function
  	DB		00H								; unit number
  	DB		00H								; head number
@@ -66,6 +66,6 @@ NoDiskMessage:
  	DW		TPA								; read into this address
  	DW		DiskStatusLocation				; pointer to next block - no linking
  	DW		DiskControlTable				; pointer to next table- no linking
-
-  CodeEnd:
+	
+CodeEnd:
  

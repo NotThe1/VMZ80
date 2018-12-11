@@ -2,6 +2,8 @@
 ;     C:\Users\admin\Dropbox\Resources\CPM\CurrentOS\8080\BIOS.asm
  ; BIOS.Z80
  
+ ; 2018 12-11 Adjusted BOOT & WBOOT
+ ; 2018-12-10 Refactored  character device routines;
  ; 2017-03-31 Added List out functionality for List Device
  ; 2017-03-02 Refactored the CP/M Suite
  ; 2017-02-08 All disk drives are 3.5 DH disks (1.44MB)
@@ -15,10 +17,11 @@
  	
  IN_OPCODE	EQU	0DBH
  OUT_OPCODE	EQU	0D3H
+ JP_OPCODE	EQU	0C3H
  
  
- 	ORG	BIOSStart							; Assemble code at BIOS address
- 											; BIOS jum Vector
+ 	ORG		BIOSStart						; Assemble code at BIOS address
+ 											; BIOS jump Vector
  CodeStart:
  
  	JP		BOOT							; 00  Not Yet Checked
@@ -54,9 +57,183 @@
  
 ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
- 
- ;---------------------------------------------------------------------------
+;---------------------------------------------------------------------------
+;	BOOT:  BIOS 00		Hard Boot/Cold Boot
+
+;  The BOOT jump instruction is the first instruction executed in CP/M. The
+; bootstrap sequence must transfer control to the BOOT entry point in order to
+; bring up CP/M. 
+;  This reads in the CP/M loader on the first sector of the physical disk drive
+; chosen to be logical disk A. This CP/M loader program reads the binary image
+; of the CCP, BOOS, and BIOS into memory at some predetermined address. 
+; Then it transfers control to the BOOT entry point in the BIOS jump vector.
+;  This BOOT routine must initialize all of the required computer hardware.
+; 
+; Most BOOT routines sign on by displaying a short message on the console,
+; indicating the current version ofCP/M and the computer hardware that this BIOS
+; can support. The BOOT routine terminates by transferring control to the start of the CCP
+; +6 bytes (the CCP has its own smalljump vector at the beginning). Just before the
+; BOOT routine jumps into the CCP, it sets the C register to 0 to indicate that logical
+; disk A is to be the default disk drive. This is what causes "A>" to be the CCP's
+; initial prompt.
+
+BOOT:
+	LD		HL,BootMessage
+	CALL	DisplayMessage
+	
+	LD		HL,BOOTControl
+	CALL	RawDiskRead
+
+	JP		WBOOT				; do Warm boot if no errors
+	LD		HL,BadBootMessage   
+	CALL	DisplayMessage		; Show Boot failure message
+	HALT
+	
+BOOTControl:
+ 	DB		DiskReadCode					; Read function
+ 	DB		00H								; unit number
+ 	DB		00H								; head number
+ 	DB		00H								; track number
+ 	DB		0DH								; Starting sector number (13)
+ 	DW		5 * 512							; Number of bytes to read ( 0A00 All of BIOS)
+ 	DW		BIOSStart						; read into this address
+ 	DW		DiskStatusLocation				; pointer to next block - no linking
+ 	DW		DiskControlTable				; pointer to next table- no linking
+	
+
+;BOOTControl:
+; 	DB		DiskReadCode		; Read function
+; 	DB		00H					; unit number
+; 	DB		00H					; head number
+; 	DB		00H					; track number
+; 	DB		01H					; Starting sector number ()
+; 	DW		diskSectorSize		; Number of bytes to read ( 1 Sector)
+; 	DW		TPA					; read into this address
+; 	DW		DiskStatusLocation	; pointer to next block - no linking
+; 	DW		DiskControlTable	; pointer to next table- no linking
+
+; Boot Messages and routine
+BootMessage:
+;	DB		'CP/M 2.2 (Z80) '
+;	DB		'BootStrap Loader'
+;	DB		CR,LF
+	DB		'Build 0.A '
+	DB		CR,LF
+	DB		'CCP 0.A |  BDOS 0.A | BIOS 0.B'
+	DB		CR,LF,EndOfMessage
+BadBootMessage:
+	DB		CR,LF
+	DB		'****   Boot Failure'
+	DB		EndOfMessage
+WarmBootErroMessage:
+	DB		CR,LF
+	DB		'Warm Boot -'
+	DB		' Retrying.'
+	DB		CR,LF,EndOfMessage	
+;..................Boot Support....................
+
+; Entered with DiskControlBlock pointer in HL	
+RawDiskRead:
+	LD		(DiskCommandBlock),HL
+	
+	LD		HL,DiskControlByte
+	LD		(HL),080H
+
+; wait for the read to complete
+WaitForReadDone:
+	LD		A,(HL)
+	OR		A
+	JR		NZ,WaitForReadDone
+
+; is it a clean read ?
+	LD		A,(DiskStatusLocation)
+	CP		080H				; any errors NC = good read?
+	RET
+	
+; entered with pointer to message in HL	
+DisplayMessage:                     
+	LD		A,M					; get  character
+	OR		A					; is it NULL
+	RET		Z					; return if it is NULL (00)
+	LD		C,A                 
+	PUSH	HL					; save the pointer
+	OUT		TTY_DataPort	
+	POP		HL					; retrieve the pointer
+	INC		HL					; point at next character
+	JR		DisplayMessage
+	
+;....................................................
+
+;---------------------------------------------------------------------------
+;	WBOOT:  BIOS 01		SoftBoot/Warm Boot
+;
+;  Unlike the "cold" bootstrap entry point, which executes only once, the WBOOT
+; or warm boot routine will be executed every time a program terminates by
+; jumping to location OOOOH, or whenever you type a CONTROL-C on the console as
+; the first character of an input line.
+;  The WBOOT routine is responsible for reloading the CCP into memory.
+; Programs often use all of memory up to the starting point of the BDOS, overwriting
+; the CCP in the process. The underlying philosophy is that while a program is
+; executing, the CCP is not needed, so the program can use the memory previously
+; occupied by the CCP. The CCP occupies 800H (2048) bytes ofmemory-and this
+; is frequently just enough to make the difference between a program that cannot
+; run and one that can.
+; A few programs that are self-contained and do not require the BDOS's
+; facilities will also overwrite the BDOS to get another 1600H (5632) bytes of
+; memory. Therefore, to be really safe, the WBOOT routine should read in both the
+; CCP and the BDOS. It also needs to set up the two JMPs at location OOOOH (to
+; WBOOT itself) and at location 0005H (to the BOOS). Location 0003H should be
+; set to the initial value of the 10BYTE if this is implemented in the BIOS.
+; As its last act, the WBOOT routine sets register C to indicate which logical disk
+; is to be selected (C= 0 for A, I for B, and so on). It then transfers control into the
+; CCP at the first instruction in order to restart the CCP.
+
+WBOOT:
+	LD		SP,CCPEntry-1		; put stack at top of User area
+	LD		HL,WBOOTControl		; get the WBOOT Control Block
+	CALL	RawDiskRead			; read CCP & BDOS
+	JR		NC, LoadPage0		; set up page 0 if good read
+	
+	LD		HL,WarmBootErroMessage
+	CALL	DisplayMessage		; send bad warm boot message
+	JP		WBOOT				; keep trying
+
+
+; Set up page Zero
+LoadPage0:
+	LD		A,JP_OPCODE			; Get JP opCode
+	
+	LD		(WarmBoot),A
+	LD		HL,WarmBootEntry	; Warm Boot entry point
+	LD		(WarmBoot + 1),HL		; Warm Boot Vector
+	
+	LD		(BDOSE),A
+	LD		HL,BDOSEntry		; BDOS entry point
+	LD		(BDOSE + 1),HL		; BDOS Vector
+	
+	LD		BC,DMABuffer		; Default Disk Buffer
+	CALL	SETDMA				; use normal BDOS  routine
+	EI							; Enable interrupts
+	
+	LD		A,(Pg0CurentDisk)	; Let CCP know what disk is current
+	LD		C,A
+	JP		CCPEntry			; transfer control to CCP
+	
+
+WBOOTControl:
+ 	DB		DiskReadCode		; Read function
+ 	DB		00H					; unit number
+ 	DB		00H					; head number
+ 	DB		00H					; track number
+ 	DB		02H					; Starting sector number (skip cold boot sector)
+ 	DW		CCPLength + BDOSLength	; Number of bytes to read ( rest of the head)
+ 	DW		CCPEntry			; read into this address
+ 	DW		DiskStatusLocation	; pointer to next block - no linking
+ 	DW		DiskControlByte		; pointer to next table- no linking
+ 		
+;---------------------------------------------------------------------------
 ;	Console Status:		BIOS 02
+;
 ;  CONST simply returns an indicator showing whether there is an incoming
 ; character from the console device. The convention is that A = OFFH if a character
 ; is waiting to be processed, A = 0 if one is not. Note that the zero flag need not be set
@@ -67,15 +244,16 @@
 ; The BDOS will call CONST if a program makes a Read Console Status
 ; function call (B$CONST, code 11, OBH). It is also called by the console input BIOS
 ; routine, CONIN
+
 CONST:	
 ConStatus:
 	LD		A,(IOBYTE)
 	LD		IX,CON_Vector
 	
-GenericInStatus:					; Entry point for generic input status
+GenericInStatus:				; Entry point for generic input status
 	CALL	SetDeviceVector		; IX has the vector for the Physical Device
 	CALL	GetInStatus
-	OR	A
+	OR		A
 	RET		Z					; 00 => No data pending
 	LD		A,0FFH
 	RET							; OFFH => Data in Buffer
@@ -90,7 +268,7 @@ GenericInStatus:					; Entry point for generic input status
  
  ; This is a blocking routine
 CONIN:
- ConIn:
+ConIn:
 	CALL	ConStatus
 	JR		Z,ConIn				; loop until there is some data to read
 								; Call to ConStatus Sets up IX with Physical Table
@@ -133,10 +311,10 @@ GenericOutStatus1:
 
  LIST:
  	LD		A,(IOBYTE)
- 	RLCA										; move bits 7,6
- 	RLCA										; to 1,0
+ 	RLCA							; move bits 7,6
+ 	RLCA							; to 1,0
  	LD		IX,LST_Vector
-	JR		GenericOutStatus					; go to generic blocking out routine
+	JR		GenericOutStatus		; go to generic blocking out routine
  
 ;---------------------------------------------------------------------------
 ;	Punch output  BIOS 06	
@@ -161,10 +339,10 @@ PUNCH:				; Punch output
  	LD		A,(IOBYTE)
  	RRCA
  	RRCA
- 	RRCA										; move bits 5,4
- 	RRCA										; to 1,0
-  	LD		IX,PUN_Vector
-	JR		GenericOutStatus					; go to generic blocking out routine
+ 	RRCA							; move bits 5,4
+ 	RRCA							; to 1,0
+  	LD		IX,PUN_Vector   
+	JR		GenericOutStatus		; go to generic blocking out routine
 
 ;---------------------------------------------------------------------------
 ;	Reader input  BIOS 07	-
@@ -184,11 +362,11 @@ PUNCH:				; Punch output
  READER:				; Reader Input
  	LD		A,(IOBYTE)
  	RRCA
- 	RRCA										; move bits 3,2  to 1,0
-	LD		IX,RDR_Vector
-READER1:
-	CALL	GenericInStatus
-	JR		Z,READER1							; loop until there is some data to read
+ 	RRCA							; move bits 3,2  to 1,0
+	LD		IX,RDR_Vector           
+READER1:                            
+	CALL	GenericInStatus         
+	JR		Z,READER1				; loop until there is some data to read
 												
 	LD		L,(IX + DataReadIndex)
 	LD		H,(IX +(DataReadIndex +1 ))
@@ -219,18 +397,17 @@ READER1:
 ; not Ready" error messages to appear on the console.
 ;  
  LISTST:
-;?GetLSTStatus:
 	LD		A,(IOBYTE)				; Get Physical device
 	RLCA
-	RLCA						; Move bits 6 & 7 to bits 0 & 1
-	LD		IX,LST_Vector		; Set th vector base 
-	CALL	SetDeviceVector		; IX has the vector for the Physical Device
-	CALL	GetOutStatus
-
-	OR	A
-	RET		Z					; 00 => Device Ready
-	LD		A,0FFH
-	RET							; OFFH => Device No Ready
+	RLCA							; Move bits 6 & 7 to bits 0 & 1
+	LD		IX,LST_Vector			; Set th vector base 
+	CALL	SetDeviceVector			; IX has the vector for the Physical Device
+	CALL	GetOutStatus	
+	
+	OR		A	
+	RET		Z						; 00 => Device Ready
+	LD		A,0FFH	
+	RET								; OFFH => Device No Ready
 
 ;---------------------------------------------------------------------------
 
@@ -250,10 +427,10 @@ GetStatus:
 
 DataRead:
 	LD		A,(IX + DataPortIndex)
-	LD		(AddressDataIn),A			; modify code with the Data port
-	DB		IN_OPCODE
-AddressDataIn:
-	DB		00							; perform the read
+	LD		(AddressDataIn),A		; modify code with the Data port
+	DB		IN_OPCODE               
+AddressDataIn:                      
+	DB		00						; perform the read
 	RET
 
 DataReadASCII:
@@ -264,22 +441,22 @@ DataReadASCII:
 ; Enter DataWrite the value to be output in C
 DataWrite:
 	LD		A,(IX + DataPortIndex)
-	LD		(AddressDataOut),A			; modify code with the Data port
-	LD		A,C							; get value into ACC
-	DB		OUT_OPCODE
-AddressDataOut:
-	DB		00							; perform the write
+	LD		(AddressDataOut),A		; modify code with the Data port
+	LD		A,C						; get value into ACC
+	DB		OUT_OPCODE              
+AddressDataOut:                     
+	DB		00						; perform the write
 	RET
 
 	
 ; Enter Status Read with Target mask in D	
 StatusRead:
 	LD		A,(IX + StatusPortIndex)
-	LD		(AddressStatus),A			; modify code with the status port
+	LD		(AddressStatus),A		; modify code with the status port
 	DB		IN_OPCODE
 AddressStatus:
 	DB		00
-	AND		D							; Check return vale with the mask
+	AND		D						; Check return vale with the mask
 	RET
 	
 DUMMYRead:
@@ -287,24 +464,22 @@ DUMMYRead:
 DUMMYWrite:
 	RET	
 DUMMYCheck:
-	LD		A,0FFH						; Always return 0FFH
-	OR		A							; Set flags
+	LD		A,0FFH					; Always return 0FFH
+	OR		A						; Set flags
 	RET
 
 ;=============================================================================	
 SetDeviceVector:
-	AND		03H					; Get bits 0 & 1;
-	ADD		A,A					; Double for word size index
-	LD		D,00H
-	LD		E,A					; load byte index int DE
-	ADD		IX,DE				; add to the value vector base
-								; IX points at correct entry in vector
-	LD		E,(IX + 0)
-	LD		D,(IX + 1)			; DE now has the Vector for the device
-;	LD		IX,0000H
-;	ADD		IX,DE				; Move it to IX
-	PUSH	DE
-	POP		IX					; Move it to IX
+	AND		03H						; Get bits 0 & 1;
+	ADD		A,A						; Double for word size index
+	LD		D,00H	
+	LD		E,A						; load byte index int DE
+	ADD		IX,DE					; add to the value vector base
+									; IX points at correct entry in vector
+	LD		E,(IX + 0)	
+	LD		D,(IX + 1)				; DE now has the Vector for the device
+	PUSH	DE	
+	POP		IX						; Move it to IX
 	RET
 
 
@@ -1046,17 +1221,17 @@ LST_Vector:					; IOBYTE bits 7 & 6
  ;**********************************************************************************
  ;	Disk Control table image for warm boot
  ;**********************************************************************************
- BootControl:
- 	DB		DiskReadCode					; Read function
- 	DB		00H								; unit number
- 	DB		00H								; head number
- 	DB		00H								; track number
- 	DB		02H								; Starting sector number (skip cold boot sector)
- 	DW		CCPLength + BDOSLength			; Number of bytes to read ( rest of the head)
- 	DW		CCPEntry						; read into this address
- 	DW		DiskStatusLocation				; pointer to next block - no linking
- 	DW		DiskControlByte					; pointer to next table- no linking
- 
+;?  BootControl:
+;?  	DB		DiskReadCode					; Read function
+;?  	DB		00H								; unit number
+;?  	DB		00H								; head number
+;?  	DB		00H								; track number
+;?  	DB		02H								; Starting sector number (skip cold boot sector)
+;?  	DW		CCPLength + BDOSLength			; Number of bytes to read ( rest of the head)
+;?  	DW		CCPEntry						; read into this address
+;?  	DW		DiskStatusLocation				; pointer to next block - no linking
+;?  	DW		DiskControlByte					; pointer to next table- no linking
+;?  
  ;
  ;**********************************************************************************
  ;	Warm Boot
@@ -1064,48 +1239,48 @@ LST_Vector:					; IOBYTE bits 7 & 6
  ; This code is hardware specific to the 3.5 HD controller.
  ;**********************************************************************************
  
- WBOOT:
- 	LD		SP,CCPEntry -1
- 	LD		HL,BootControl					; point at the disk control table
- 	LD	(DiskCommandBlock),HL
- 	
- 	LD		HL,DiskControlByte
- 	LD		(HL),080H							; activate the controller
- 	
- WaitTillDone:
- 	LD		A,(HL)								; Get the control byte
- 	OR		A								; Reset to 0 (Completed operation) ?
- 	JP	NZ,WaitTillDone					; if not try again
- 	
- 	LD		A,(DiskStatusLocation)				; after operation what's the status?
- 	CP		080H							; any errors ?
- 	JP	NC,EnterCPM						; Nope
- 											; yes
- WarmBootError:
- 	LD		HL,WarmBootErroMessage			; point at error message
- 	CALL	DisplayMessage					; sent it. and
- 	JP		WBOOT							; try again.
- 	
- ;---------------------------------------------------------------------------
- DisplayMessage:
- 	LD		A,(HL)								; get next message byte
- 	OR		A								; terminator (a = 0)?
- 	RET	Z; Yes, thes return to caller
- 
- 	LD		C,A								; prepare for output
- 	PUSH	HL								; save message pointer
- 	CALL	CONOUT							; go to main console output routine *******
- 	POP		HL
- 	INC		HL 								; point at next character
- 	JP		DisplayMessage					; loop till done
- 	
- WarmBootErroMessage:
- 	DB		CR,LF
- 	DB		'Warm Boot -'
- 	DB		' Retrying.'
- 	DB		CR,LF
- 	DB		EndOfMessage
- 
+;?WBOOT:
+;?	LD		SP,CCPEntry -1
+;?	LD		HL,BootControl					; point at the disk control table
+;?	LD	(DiskCommandBlock),HL
+;?	
+;?	LD		HL,DiskControlByte
+;?	LD		(HL),080H							; activate the controller
+;?	
+;?WaitTillDone:
+;?	LD		A,(HL)								; Get the control byte
+;?	OR		A								; Reset to 0 (Completed operation) ?
+;?	JP	NZ,WaitTillDone					; if not try again
+;?	
+;?	LD		A,(DiskStatusLocation)				; after operation what's the status?
+;?	CP		080H							; any errors ?
+;?	JP	NC,EnterCPM						; Nope
+;?											; yes
+;?WarmBootError:
+;?	LD		HL,WarmBootErroMessage			; point at error message
+;?	CALL	DisplayMessage					; sent it. and
+;?	JP		WBOOT							; try again.
+;?	
+;?;---------------------------------------------------------------------------
+;?DisplayMessage:
+;?	LD		A,(HL)								; get next message byte
+;?	OR		A								; terminator (a = 0)?
+;?	RET	Z; Yes, thes return to caller
+;?
+;?	LD		C,A								; prepare for output
+;?	PUSH	HL								; save message pointer
+;?	CALL	CONOUT							; go to main console output routine *******
+;?	POP		HL
+;?	INC		HL 								; point at next character
+;?	JP		DisplayMessage					; loop till done
+;?	
+;?WarmBootErroMessage:
+;?	DB		CR,LF
+;?	DB		'Warm Boot -'
+;?	DB		' Retrying.'
+;?	DB		CR,LF
+;?	DB		EndOfMessage
+;?
  ;--------------------BOOT-----------------------------
  
  						; entered directly from the BIOS JMP vector
@@ -1113,25 +1288,25 @@ LST_Vector:					; IOBYTE bits 7 & 6
  						; Sets up Page Zero
  ;---------------End of Cold Boot Initialization Code--------------
  
- BOOT:
- EnterCPM:
- 	LD		A,0C3H							; JMP op code
- 	LD		(0000H),A							; set up the jump in location 0000H
- 	LD		(0005H),A							; and at location 0005H
- 
- 	LD		HL,WarmBootEntry					; get BIOS vector address
- 	LD	(0001H),HL							; put address in location 1
- 
- 	LD		HL,BDOSEntry						; Get BDOS entry point address
- 	LD	(0006H),HL							; put address at location 5
- 
- 	LD		BC,DMABuffer						; DefaultDiskBuffer set disk I/O address to default
- 	CALL	SETDMA							; use normal BIOS routine
- 
- 	EI
- 	LD		A,(Pg0CurentDisk)					; DefaultDisk  Transfer current default disk to
- 	LD		C,A								; Console Command Processor
- 	JP		CCPEntry						; transfer to CCP
+; BOOT:
+; EnterCPM:
+; 	LD		A,0C3H							; JMP op code
+; 	LD		(0000H),A							; set up the jump in location 0000H
+; 	LD		(0005H),A							; and at location 0005H
+; 
+; 	LD		HL,WarmBootEntry					; get BIOS vector address
+; 	LD	(0001H),HL							; put address in location 1
+; 
+; 	LD		HL,BDOSEntry						; Get BDOS entry point address
+; 	LD	(0006H),HL							; put address at location 5
+; 
+; 	LD		BC,DMABuffer						; DefaultDiskBuffer set disk I/O address to default
+; 	CALL	SETDMA							; use normal BIOS routine
+; 
+; 	EI
+; 	LD		A,(Pg0CurentDisk)					; DefaultDisk  Transfer current default disk to
+; 	LD		C,A								; Console Command Processor
+; 	JP		CCPEntry						; transfer to CCP
  
  ;-------------------------------------------------
  
