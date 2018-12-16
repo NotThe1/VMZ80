@@ -3,7 +3,7 @@
 ;	2018-11-30
 ; 2
 NumberOfLogicalDisks	EQU		4
-NumberOfLogicalDisks	EQU		0FC2EH
+;NumberOfLogicalDisks	EQU		0FC2EH
 DiskParameterHeaders	EQU		0FC3DH	
 StackTop	EQU		0100H
 
@@ -11,13 +11,21 @@ StackTop	EQU		0100H
 Start:	
 	LD		SP,StackTop
 	
-	LD		B,07H
-	LD		HL,03H
-L1:
-	ADD		HL,HL
-	DJNZ	L1
+
+	LD		HL,5678H
+	LD		DE,9ABCH
+
+	EX		DE,HL
+	LD		HL,(XX)
+	EX		DE,HL
+	
+	LD		HL,5678H
+	LD		DE,9ABCH
+	LD		DE,(XX);
 	HALT
 
+XX:
+	DW		01234H
 	
 SelectedDisk:	DS	1
 SelectedDskSecsPerHead:	DS	1

@@ -830,9 +830,9 @@ READ:
 ;Write a cpmRecord (128-bytes) from the current DMA address to the previously Selected disk, track, and sector.
 ;
 ; On arrival here, the BDOS will have set register C to indicate whether this write operation is to:
-;	00H [WriteAllocated]	 An already allocated allocation block (which means a pre-read of the sector may be needed),
-;	01H [WriteDirectory]	 To the directory (in which case the data will be written to the disk immediately),
-;	02H	[WriteCleanBuffer]	 To the first cpmRecord of a previously unallocated allocation block (In which case no pre-read is required).
+;	00H [WriteAllocated]	An already allocated allocation block (which means a pre-read of the sector may be needed),
+;	01H [WriteDirectory]	To the directory (in which case the data will be written to the disk immediately),
+;	02H [WriteCleanBuffer]	To the first cpmRecord of a previously unallocated allocation block (In which case no pre-read is required).
 
 ;  WRITE is similar to READ but with the obvious difference that data is transferred from the DMA buffer
 ; to the specified 128-byte sector. Like READ, this function requires that the following function calls 
@@ -883,8 +883,6 @@ WRITE:
 	LD		A,RecordsPerBlock			; Number of records per Block 
 	LD		(ModifiedlRecordsCount),A 	; reset Modified Records Count to RecordsPerBlock
 
-;	LD		DE,HostBufferIOState
-;	CALL	MoveSelectedIOState		; set up for physical read of selected record
 	LD		HL,SelectedIOState
 	LD		DE,HostBufferIOState
 	LD		BC,SelectedDiskStateSize
@@ -930,35 +928,35 @@ RequestPreread:
 ; Common code to execute both reads and writes of 128-byte records
 ;*******************************************************
 PerformReadWrite:
-	XOR		A								; Assume no disk error will occur
-	LD		(DiskErrorFlag),A
-	LD		A,(SelectedRecord)
-	RRA										; Convert selected record
-	RRA										; into physical sector by dividing by 4
-	AND		03FH							; remove unwanted bits
-	LD		(SelectedSector),A
-	LD		HL,DataInDiskBuffer				; see if there is any data here ?
-	LD		A,(HL)
-	LD		(HL),001H						; force there is data here for after the actual read
-	OR		A								; really is there any data here ?
-	JP		Z,ReadSectorIntoBuffer			; NO ?- go read into buffer
+	XOR		A							; Assume no disk error will occur
+	LD		(DiskErrorFlag),A           
+	LD		A,(SelectedRecord)          
+	RRA									; Convert selected record
+	RRA									; into physical sector by dividing by 4
+	AND		03FH						; remove unwanted bits
+	LD		(SelectedSector),A          
+	LD		HL,DataInDiskBuffer			; see if there is any data here ?
+	LD		A,(HL)                      
+	LD		(HL),001H					; force there is data here for after the actual read
+	OR		A							; really is there any data here ?
+	JP		Z,ReadSectorIntoBuffer		; NO ?- go read into buffer
 ;
 ; The buffer does have a physical sector in it, Note: The disk, track, and PHYSICAL sector
 ; in the buffer need to be checked, hence the use of the CompareDkTrk subroutine.
 	LD		DE,InBufferDkTrkSec
-	LD		HL,SelectedIOState				; get the requested sector
-	CALL	CompareDkTrk					; is it in the buffer ?
-	JP		NZ,SectorNotInBuffer				; NO,jump - it must be read
-; Yes, it is in the buffer
-	LD		A,(InBufferSector)					; get the sector
-	LD		HL,SelectedSector
-	CP		M								; Check if correct physical sector
-	JP		Z,SectorInBuffer					; Yes - it is already in memory
+	LD		HL,SelectedIOState			; get the requested sector
+	CALL	CompareDkTrk				; is it in the buffer ?
+	JP		NZ,SectorNotInBuffer		; NO,jump - it must be read
+; Yes, it is in the buffer              
+	LD		A,(InBufferSector)			; get the sector
+	LD		HL,SelectedSector           
+	CP		M							; Check if correct physical sector
+	JP		Z,SectorInBuffer			; Yes - it is already in memory
 ; No, it will have to be read in over current contents of buffer
 SectorNotInBuffer:
 	LD		A,(MustWriteBuffer)
-	OR		A								; do we need to write ?
-	CALL	NZ,WritePhysical					; if yes - write it out
+	OR		A							; do we need to write ?
+	CALL	NZ,WritePhysical			; if yes - write it out
 
 ReadSectorIntoBuffer:
 ; indicate the  selected disk, track, and sector not residing in buffer
@@ -966,101 +964,104 @@ ReadSectorIntoBuffer:
 	LD		(InBufferDisk),A
 	LD		HL,(SelectedTrack)
 	LD		(InBufferTrack),HL
-;	LD		DE,InBufferIOState
-;	CALL	MoveSelectedIOState			; set up HostBuffer state for Physical read
 	
 	LD		A,(SelectedSector)
 	LD		(InBufferSector),A
 
-	LD		A,(PrereadSectorFlag)				; do we need to pre-read
+	LD		A,(PrereadSectorFlag)		; do we need to preread
 	OR		A
-	CALL	NZ,ReadPhysical					; yes - pre-read the sector
+	CALL	NZ,ReadPhysical				; yes - preread the sector
 
 ; At this point the data is in the buffer.
 ; Either it was already here, or we returned from ReadPhysical
 
-	XOR		A								; reset the flag
-	LD		(MustWriteBuffer),A					; and store it away
+	XOR		A							; reset the flag
+	LD		(MustWriteBuffer),A			; and store it away
 
 ; Selected sector on correct track and  disk is already 1n the buffer.
 ; Convert the selected cpmRecord into relative address down the buffer.
 SectorInBuffer:
 	LD		A,(SelectedRecord)
-	AND		SectorMask						; only want the least bits
-	LD		L,A								; to calculate offset into 512 byte buffer
-	LD		H,00H							; Multiply by 128 - cpmRecordSize
-	ADD		HL,HL								; *2
-	ADD		HL,HL								; *4
-	ADD		HL,HL								; *8
-	ADD		HL,HL								; *16
-	ADD		HL,HL								; *32
-	ADD		HL,HL								; *64
-	ADD		HL,HL								; *128
-	LD		DE,DiskBuffer
-	ADD		HL,DE								; HL -> record number start address
-	EX	DE,HL ; DE -> sector in the disk buffer
-	LD	HL,(DMAAddress)						; Get DMA address (set in SETDMA)
-	EX	DE,HL ; assume a read so :
-; DE -> DMA Address & HL -> sector in disk buffer
-	LD		C,cpmRecordSize/8				; 8 bytes per move (loop count)
+	AND		SectorMask					; want relative record number in Sector
+	INC		A							; adjust for DJNZ
+	LD		B,A
+	LD		DE,cpmRecordSize
+	LD		HL,-cpmRecordSize
+SectorInBuffer1:
+	ADD		HL,DE
+	DJNZ	SectorInBuffer1				; recordNumber * recordSize - index into the Sector
+	
+	LD		DE,DiskBuffer				; Start of sector
+	ADD		HL,DE						; HL -> start of record
+	
+
+	LD		DE,(DMAAddress)				; DE has DMA Address
+;;		EX		DE,HL ; DE <--> HL
+
+; DE -> DMA Address & HL -> record in disk buffer
+
+	LD		C,cpmRecordSize/8					; 8 bytes per move (loop count)
 ;
 ;  At this point -
 ;	C	->	loop count
 ;	DE	->	DMA address
 ;	HL	->	sector in disk buffer
 ;
-	LD		A,(ReadWriteFlag)						; Move into or out of buffer /
-	OR		A								; 0 => Write, non Zero => Read
-	JP	NZ,BufferMove						; Move out of buffer
+	LD		A,(ReadWriteFlag)					; Move into or out of buffer /
+	OR		A									; 0 => Write, non Zero => Read
+	JP		NZ,BufferMove						; Move out of buffer
 
-	INC		A								; going to force a write
+	INC		A									; going to force a write
 	LD		(MustWriteBuffer),A
-	EX	DE,HL ; DE <--> HL
+	EX		DE,HL ; DE <--> HL
 
 ;The following move loop moves eight bytes at a time from (HL> to (DE), C contains the loop count
+
 BufferMove:
-	LD		A,(HL)								; Get byte from source
-	LD	(DE),A								; Put into destination
-	INC		DE								; update pointers
-	INC		HL
-
-	LD		A,(HL)
-	LD	(DE),A
-	INC		DE
-	INC		HL
-
-	LD		A,(HL)
-	LD	(DE),A
-	INC		DE
-	INC		HL
-
-	LD		A,(HL)
-	LD	(DE),A
-	INC		DE
-	INC		HL
-
-	LD		A,(HL)
-	LD	(DE),A
-	INC		DE
-	INC		HL
-
-	LD		A,(HL)
-	LD	(DE),A
-	INC		DE
-	INC		HL
-
-	LD		A,(HL)
-	LD	(DE),A
-	INC		DE
-	INC		HL
-
-	LD		A,(HL)
-	LD	(DE),A
-	INC		DE
-	INC		HL
-
-	DEC		C								; count down on loop counter
-	JP	NZ,BufferMove						; repeat till done (CP/M sector moved)
+	LD		BC,cpmRecordSize
+	LDIR
+;	LD		A,(HL)								; Get byte from source
+;	LD	(DE),A								; Put into destination
+;	INC		DE								; update pointers
+;	INC		HL
+;
+;	LD		A,(HL)
+;	LD	(DE),A
+;	INC		DE
+;	INC		HL
+;
+;	LD		A,(HL)
+;	LD	(DE),A
+;	INC		DE
+;	INC		HL
+;
+;	LD		A,(HL)
+;	LD	(DE),A
+;	INC		DE
+;	INC		HL
+;
+;	LD		A,(HL)
+;	LD	(DE),A
+;	INC		DE
+;	INC		HL
+;
+;	LD		A,(HL)
+;	LD	(DE),A
+;	INC		DE
+;	INC		HL
+;
+;	LD		A,(HL)
+;	LD	(DE),A
+;	INC		DE
+;	INC		HL
+;
+;	LD		A,(HL)
+;	LD	(DE),A
+;	INC		DE
+;	INC		HL
+;
+;	DEC		C								; count down on loop counter
+;	JP	NZ,BufferMove						; repeat till done (CP/M sector moved)
 ; end of loop
 
 	LD		A,(WriteType)						; write to directory ?
@@ -1105,14 +1106,6 @@ CompareDkTrkSecLoop:
 ; 	RET		Z; return they match (zero flag set)
 ; 	JP		CompareDkTrkSecLoop				; keep going
 
-;********************************************************************
-; moves the Selected IO state from Selected to contents of DE
-;MoveSelectedIOState:
-;	LD		BC,SelectedDiskStateSize
-;	LD		HL,SelectedIOState
-;	LD		DE,HostBufferIOState
-;	LDIR									; copy Selected State to Host Buffer state
-;	RET
 
 ;Moves the disk, track, and sector variables pointed at by HL to those pointed at by DE
 ; MoveDkTrkSec:

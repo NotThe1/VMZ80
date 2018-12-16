@@ -3,7 +3,7 @@
 0003: 0100         ;	2018-11-30
 0004: 0100         ; 2
 0005: 0100             NumberOfLogicalDisks EQU    4
-0006: 0100             NumberOfLogicalDisks EQU    0FC2EH
+0006: 0100         ;NumberOfLogicalDisks	EQU		0FC2EH
 0007: 0100             DiskParameterHeaders EQU    0FC3DH
 0008: 0100             StackTop   EQU    0100H
 0009: 0100
@@ -11,72 +11,80 @@
 0011: 0100             Start:
 0012: 0100 31 00 01               LD     SP,StackTop
 0013: 0103
-0014: 0103 06 07                  LD     B,07H
-0015: 0105 21 03 00               LD     HL,03H
-0016: 0108             L1:
-0017: 0108 29                     ADD    HL,HL
-0018: 0109 10 FD                  DJNZ   L1
-0019: 010B 76                     HALT
-0020: 010C
-0021: 010C
-0022: 010C             SelectedDisk: DS     1
-0023: 010D             SelectedDskSecsPerHead: DS     1
-0024: 010E
-0025: 010E             SELDSK:
-0026: 010E 21 00 00               LD     HL,00H               ; Assume an error
-0027: 0111 79                     LD     A,C
-0028: 0112 FE 04                  CP     NumberOfLogicalDisks
-0029: 0114 D0                     RET    NC                   ; return if > max number of Disks
-0030: 0115
-0031: 0115 32 0C 01               LD     (SelectedDisk),A     ; save disk number
-0032: 0118
-0033: 0118         ; Compute offset down disk parameter table by multiplying by parameter
-0034: 0118         ; header length (16 bytes)
-0035: 0118
-0036: 0118 07                     RLCA                        ; X2
-0037: 0119 07                     RLCA                        ; X4
-0038: 011A 07                     RLCA                        ; X8
-0039: 011B 07                     RLCA                        ; X16
-0040: 011C 16 00                  LD     D,0                  ; make disk into word number
-0041: 011E 5F                     LD     E,A
-0042: 011F DD 21 3D FC               LD     IX,DiskParameterHeaders ; get DPH address Base
-0043: 0123 DD 19                  ADD    IX,DE                ; get the specific DiskParameterHeader
-0044: 0125 DD E5                  PUSH   IX                   ; save for return in HL
-0045: 0127
-0046: 0127 DD 56 0B               LD     D,(IX+11)            ; LSB
-0047: 012A DD 5E 0A               LD     E,(IX+10)            ; MSB
-0048: 012D
-0049: 012D D5                     PUSH   DE
-0050: 012E DD E1                  POP    IX
-0051: 0130 DD 7E 0F               LD     A,(IX+15)
-0052: 0133 32 0D 01               LD     (SelectedDskSecsPerHead),A
+0014: 0103
+0015: 0103 21 78 56               LD     HL,5678H
+0016: 0106 11 BC 9A               LD     DE,9ABCH
+0017: 0109
+0018: 0109 EB                     EX     DE,HL
+0019: 010A 2A 19 01               LD     HL,(XX)
+0020: 010D EB                     EX     DE,HL
+0021: 010E
+0022: 010E 21 78 56               LD     HL,5678H
+0023: 0111 11 BC 9A               LD     DE,9ABCH
+0024: 0114 ED 5B 19 01               LD     DE,(XX)              ;
+0025: 0118 76                     HALT
+0026: 0119
+0027: 0119             XX:
+0028: 0119 34 12                  DW     01234H
+0029: 011B
+0030: 011B             SelectedDisk: DS     1
+0031: 011C             SelectedDskSecsPerHead: DS     1
+0032: 011D
+0033: 011D             SELDSK:
+0034: 011D 21 00 00               LD     HL,00H               ; Assume an error
+0035: 0120 79                     LD     A,C
+0036: 0121 FE 04                  CP     NumberOfLogicalDisks
+0037: 0123 D0                     RET    NC                   ; return if > max number of Disks
+0038: 0124
+0039: 0124 32 1B 01               LD     (SelectedDisk),A     ; save disk number
+0040: 0127
+0041: 0127         ; Compute offset down disk parameter table by multiplying by parameter
+0042: 0127         ; header length (16 bytes)
+0043: 0127
+0044: 0127 07                     RLCA                        ; X2
+0045: 0128 07                     RLCA                        ; X4
+0046: 0129 07                     RLCA                        ; X8
+0047: 012A 07                     RLCA                        ; X16
+0048: 012B 16 00                  LD     D,0                  ; make disk into word number
+0049: 012D 5F                     LD     E,A
+0050: 012E DD 21 3D FC               LD     IX,DiskParameterHeaders ; get DPH address Base
+0051: 0132 DD 19                  ADD    IX,DE                ; get the specific DiskParameterHeader
+0052: 0134 DD E5                  PUSH   IX                   ; save for return in HL
 0053: 0136
-0054: 0136
-0055: 0136
-0056: 0136
-0057: 0136         ; 	LD		DE,DiskParameterHeaders	; get DPH address
-0058: 0136         ; 	ADD		HL,DE					; DE -> appropriate DPH
-0059: 0136         ; 	PUSH	HL						; Save DPH pointer
-0060: 0136         ; 	LD		DE,10					; DiskParameterBlock Index
-0061: 0136         ; 	ADD		HL,DE					; ????? -> cpmRecords per track
-0062: 0136         ; 	LD		E,(HL)
-0063: 0136         ; 	INC		HL
-0064: 0136         ; 	LD		D,(HL)					; DE has Parameter Block for selected disk
-0065: 0136         ; 	LD		HL,15					; SectorsPerHead Index
-0066: 0136         ; 	ADD		HL,DE					; HL is at SecPerHeadPerTrack
-0067: 0136         ; 	LD		A,(HL)					; get the value and
-0068: 0136         ; 	LD		(SelectedDskSecsPerHead),A; save for actual IO
-0069: 0136         ;
-0070: 0136 E1                     POP    HL                   ; recover DPH pointer
-0071: 0137 C9                     RET
-0072: 0138
+0054: 0136 DD 56 0B               LD     D,(IX+11)            ; LSB
+0055: 0139 DD 5E 0A               LD     E,(IX+10)            ; MSB
+0056: 013C
+0057: 013C D5                     PUSH   DE
+0058: 013D DD E1                  POP    IX
+0059: 013F DD 7E 0F               LD     A,(IX+15)
+0060: 0142 32 1C 01               LD     (SelectedDskSecsPerHead),A
+0061: 0145
+0062: 0145
+0063: 0145
+0064: 0145
+0065: 0145         ; 	LD		DE,DiskParameterHeaders	; get DPH address
+0066: 0145         ; 	ADD		HL,DE					; DE -> appropriate DPH
+0067: 0145         ; 	PUSH	HL						; Save DPH pointer
+0068: 0145         ; 	LD		DE,10					; DiskParameterBlock Index
+0069: 0145         ; 	ADD		HL,DE					; ????? -> cpmRecords per track
+0070: 0145         ; 	LD		E,(HL)
+0071: 0145         ; 	INC		HL
+0072: 0145         ; 	LD		D,(HL)					; DE has Parameter Block for selected disk
+0073: 0145         ; 	LD		HL,15					; SectorsPerHead Index
+0074: 0145         ; 	ADD		HL,DE					; HL is at SecPerHeadPerTrack
+0075: 0145         ; 	LD		A,(HL)					; get the value and
+0076: 0145         ; 	LD		(SelectedDskSecsPerHead),A; save for actual IO
+0077: 0145         ;
+0078: 0145 E1                     POP    HL                   ; recover DPH pointer
+0079: 0146 C9                     RET
+0080: 0147
            ************************   Xref   ************************
-0000: $               0137
-0007: DiskParameterHeaders FC3D   0042
-0016: L1              0108   0018
-0005: NumberOfLogicalDisks 0004   0028
-0025: SELDSK          010E
-0022: SelectedDisk    010C   0031
-0023: SelectedDskSecsPerHead 010D   0052
+0000: $               0146
+0007: DiskParameterHeaders FC3D   0050
+0005: NumberOfLogicalDisks 0004   0036
+0033: SELDSK          011D
+0030: SelectedDisk    011B   0039
+0031: SelectedDskSecsPerHead 011C   0060
 0008: StackTop        0100   0012
 0011: Start           0100
+0027: XX              0119   0019 0024

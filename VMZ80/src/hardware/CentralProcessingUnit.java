@@ -17,6 +17,7 @@ import memory.CpuBuss;
  * @version 1.0.1
  *
  * 2018-12-16   DJNZ logic was backwards
+ * 				LD rr,(nn) Reversed the word order in the double register
  * 2018-12-01   wrapped a try catch around reading byte from IOC. Reported to Application Log.
  *
  */
@@ -160,7 +161,7 @@ public class CentralProcessingUnit implements Runnable {
 				instructionSize = 4;
 
 				if (isBit3Set(insBasePlus1)) {// ED (4B,5B,6B,7B) LD dd,(nn)
-					wrs.setDoubleReg(currentRegister, cpuBuss.read(sourceLocation), cpuBuss.read(sourceLocation + 1));
+					wrs.setDoubleReg(currentRegister, cpuBuss.read(sourceLocation+1), cpuBuss.read(sourceLocation));
 				} else {// ED (43,53,63,73) - LD (nn),dd
 					byte[] valueArray = wrs.getDoubleRegArray(currentRegister);
 					cpuBuss.write(sourceLocation, valueArray[0]);
