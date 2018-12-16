@@ -16,6 +16,7 @@ import memory.CpuBuss;
  * @author Frank Martyn
  * @version 1.0.1
  *
+ * 2018-12-16   DJNZ logic was backwards
  * 2018-12-01   wrapped a try catch around reading byte from IOC. Reported to Application Log.
  *
  */
@@ -841,10 +842,10 @@ public class CentralProcessingUnit implements Runnable {
 				ans = au.decrement(source);
 				wrs.setReg(Register.B, ans);
 				if (au.isZeroFlagSet()) {
+					instructionSize = 2;
+				} else {
 					instructionSize = 0;
 					opCode_Jump(instructionBase + immediateByte + 2);
-				} else {
-					instructionSize = 2;
 				} // if
 				break;
 			case 3: // JR e - 18

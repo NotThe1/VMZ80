@@ -91,6 +91,6 @@
  ;*******************************************************************************
  WriteAllocated		EQU	00H
  WriteDirectory		EQU	01H
- WriteUnallocated	EQU	02H
+ WriteCleanBuffer	EQU	02H
  
  

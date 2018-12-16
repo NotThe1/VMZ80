@@ -1,232 +1,72 @@
 ; A.Z80
 ;
 ;	2018-11-30
-; 1
-
-; BIOS Function Descriptions are from THE PROGRAMMER'S CP/M® HANDBOOK
-; by Andy Johnson-Laird
-; 
-; Published by
-; Osborne/McGraw-Hill
-; 2600 Tenth Street
-; Berkeley, California 94710
-; U.S.A.
-
-
-IOBYTE:	EQU     03H			  		; All Devices = 00
-		
-;?IN_OPCODE	EQU		0DBH			; opcode for read
-;?OUT_OPCODE	EQU		0D3H			; opcode for Write
-;?;?END_OF_FILE	EQU		01AH;		; End Of File code
-;?ASCII_MASK	EQU		07FH			; bits 0-6
-;?;?DUMMY_VALUE	EQU		00H			; place holder for Dummy Status mask
-;?MINUS_ONE		EQU		0FFH		; byte size -1		
-;?		
+; 2
+NumberOfLogicalDisks	EQU		4
+NumberOfLogicalDisks	EQU		0FC2EH
+DiskParameterHeaders	EQU		0FC3DH	
 StackTop	EQU		0100H
-;?
-;?
-	ORG   01000H
+
+	ORG   0100H
 Start:	
-	LD	SP,StackTop
-	JP	BOOT
-;	CALL ConStatus
-;	CALL	ConIn
-;	LD		C,045H
-;	CALL	CONOut
-;	CALL	LISTST
-;	LD		C,041H
-;	CALL	LIST
-;	CALL	PUNCH
-;	CALL	READER
-	HALT
-	JR		Start
+	LD		SP,StackTop
 	
-;++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-RAM					EQU		0					; Start of RAM ( and the Base page)
+	LD		B,07H
+	LD		HL,03H
+L1:
+	ADD		HL,HL
+	DJNZ	L1
+	HALT
+
+	
+SelectedDisk:	DS	1
+SelectedDskSecsPerHead:	DS	1
+	
+SELDSK:
+ 	LD		HL,00H					; Assume an error
+ 	LD		A,C
+ 	CP		NumberOfLogicalDisks
+ 	RET	NC							; return if > max number of Disks
  
-; WarmBoot			EQU		RAM + 0				; Contains a JMP instruction to warm boot in BIOS
-; BIOSPAGE			EQU		RAM + 2				; BIOS Jump Vector Page
-; IOBYTE				EQU		RAM + 3				; Input/Output redirection byte
+ 	LD		(SelectedDisk),A		; save disk number
+	
+ ; Compute offset down disk parameter table by multiplying by parameter
+ ; header length (16 bytes)
  
- Pg0CurentUser		EQU		RAM + 4				; Current user ( bits 7-4)
- Pg0CurentDisk		EQU		Pg0CurentUser		; Default logical disk (bits 0-3)
- LF				EQU		0AH			; Line Feed
- CR				EQU		0DH			; Carriage Return
+	RLCA							; X2
+	RLCA							; X4
+	RLCA							; X8
+	RLCA							; X16
+	LD		D,0						; make disk into word number
+ 	LD		E,A
+	LD		IX,DiskParameterHeaders	; get DPH address Base
+	ADD		IX,DE					; get the specific DiskParameterHeader
+	PUSH	IX						; save for return in HL
+	
+	LD		D,(IX + 11)				; LSB
+	LD		E,(IX + 10)				; MSB
+	
+	PUSH	DE
+	POP		IX
+	LD		A,(IX + 15)
+	LD		(SelectedDskSecsPerHead),A
+	
+	
 
-IOBYTE_DEFAULT EQU    080H 
-TPA				EQU		0100H
-;--------------- CP/M Constants -----------------------------------------
-
-    CCPLength  EQU    0800H                ; Constant
-    BDOSLength EQU    0E00H                ; Constant 0E00H
-    BIOSLength EQU    0A00H                ; Constant 0900H
-
-    LengthInBytes EQU    CCPLength + BDOSLength + BIOSLength
-    LengthInK  EQU    (LengthInBytes/1024) + 1
-
-    MemorySize EQU    64
-
-    CCPEntry   EQU    (MemorySize * 1024) - LengthInBytes
-
-    BDOSBase   EQU    CCPEntry + CCPLength
-    BDOSEntry  EQU    BDOSBase + 6
-
-    BIOSBase   EQU    BDOSBase + BDOSLength
-    BIOSStart  EQU    CCPEntry + CCPLength + BDOSLength
-;----------------------------------------------------------------------- 
+	
+; 	LD		DE,DiskParameterHeaders	; get DPH address
+; 	ADD		HL,DE					; DE -> appropriate DPH
+; 	PUSH	HL						; Save DPH pointer
+; 	LD		DE,10					; DiskParameterBlock Index
+; 	ADD		HL,DE					; ????? -> cpmRecords per track
+; 	LD		E,(HL)
+; 	INC		HL
+; 	LD		D,(HL)					; DE has Parameter Block for selected disk
+; 	LD		HL,15					; SectorsPerHead Index
+; 	ADD		HL,DE					; HL is at SecPerHeadPerTrack
+; 	LD		A,(HL)					; get the value and
+; 	LD		(SelectedDskSecsPerHead),A; save for actual IO
+; 
+ 	POP	HL							; recover DPH pointer
+ 	RET
  
-WarmBootEntry	EQU		0000H
- 
-DiskReadCode 			EQU		01H                  ; Code for Read
-DiskControlTable		EQU		040H
-DiskCommandBlock		EQU		0046H
-DiskControlByte			EQU		0045H
-DiskStatusLocation		EQU		0043H
-diskSectorSize			EQU		512
-TTY_DataPort			EQU		0ECH
-
-
-BOOT:
-		LD		HL,ROMControl
-		LD		(DiskCommandBlock),HL
-		
-		LD		HL,DiskControlByte
-		LD		(HL),080H
-
-; wait for the read to complete
-WaitForReadDone:
-		LD		A,(HL)
-		OR		A
-		JR		NZ,WaitForReadDone
-
-; is it a clean read ?
-		LD		A,(DiskStatusLocation)
-		CP		080H						; any errors?
-		JP		NC,TPA					; do Hard boot if no errors
-		
-		
-;?		LD		HL,BootMessage      
-;?		CALL	DisplayMessage      
-;?
-;?; Set up page 00
-;?		LD		BC,Page0ImageEnd-Page0Image	; size of move
-;?		LD		HL,Page0Image				; source
-;?		LD		DE,0000H					; destination
-;?		LDIR								; do the move
-;?		
-;?; set up disk control block
-;?		LD		HL,BootControl
-;?		LD		(DiskCommandBlock),HL
-;?		
-;?; activate the disk controller
-;?		LD		HL,DiskControlByte
-;?		LD		(HL),080H
-;?		
-;?; wait for the read to complete
-;?WaitForReadDone:
-;?		LD		A,(HL)
-;?		OR		A
-;?		JR		NZ,WaitForReadDone
-;?
-;?; is it a clean read ?
-;?		LD		A,(DiskStatusLocation)
-;?		CP		080H						; any errors?
-;?		JP		NC,TPA					; do Hard boot if no errors
-;?
-;?; report boot failure
-;?		LD		HL,BadBootMessage
-;?		CALL	DisplayMessage
-;?		HALT
-
-		                            
-DisplayMessage:                     
-		LD		A,M					; get  character
-		OR		A					; is it NULL
-		RET		Z					; return if it is NULL (00)
-		LD		C,A                 
-		PUSH	HL					; save the pointer
-;		CALL	CONOut				; display at the Console
-		OUT		TTY_DataPort
-		POP		HL					; retrieve the pointer
-		INC		HL					; point at next character
-		JR		DisplayMessage      
-;----------------------------------------------------
-BootMessage:
-		DB		'CP/M 2.2 (Z80) '
-		DB		'BootStrap Loader'
-		DB		CR,LF
-		DB		'Build 0.A '
-		DB		CR,LF
-		DB		'CCP 0.A |  BDOS 0.A | BIOS 0.B'
-		DB		CR,LF,00
-BadBootMessage:
-		DB		CR,LF
-		DB		'****   Boot Failure'
-		DB		00
- ;---------------------------------------------------
- BootControl:
- 	DB		DiskReadCode					; Read function
- 	DB		00H								; unit number
- 	DB		00H								; head number
- 	DB		00H								; track number
- 	DB		0DH								; Starting sector number (13)
- 	DW		5 * 512							; Number of bytes to read ( 0A00 All of BIOS)
- 	DW		BIOSStart						; read into this address
- 	DW		DiskStatusLocation				; pointer to next block - no linking
- 	DW		DiskControlTable				; pointer to next table- no linking
- 
- ;---------------------------------------------------
-  Set up page 00
-		LD		BC,Page0ImageEnd-Page0Image	; size of move
-		LD		HL,Page0Image				; source
-		LD		DE,0000H					; destination
-		LDIR
-		
- Page0Image:
- 	JP		WarmBootEntry					; warm start
- ;IOBYTE:
- 	DB		IOBYTE_DEFAULT					; IOBYTE- 
- DefaultDisk:
- 	DB		00H								; Current default drive (A)
- 	JP		BDOSEntry						; jump to BDOS entry
- 	DS		028H							; interrupt locations 1-5 not used
- 	DS		008H							; interrupt location 6 is reserved
- 	JP		0000H							; rst 7 used only by DDT & SID programs
- Page0ImageEnd:
- 
- ;---------------------------------------------------		
-
-ROMControl:
- 	DB		DiskReadCode					; Read function
- 	DB		00H								; unit number
- 	DB		00H								; head number
- 	DB		00H								; track number
- 	DB		01H								; Starting sector number ()
- 	DW		diskSectorSize					; Number of bytes to read ( 1 Sector)
- 	DW		TPA								; read into this address
- 	DW		DiskStatusLocation				; pointer to next block - no linking
- 	DW		DiskControlTable				; pointer to next table- no linking
- CodeEnd:
-
-;  Sets up page Zero		  
-;?EnterCPM:                           
-;?		LD		A,0C3H				; JMP op code
-;?		LD		(0000H),A			; set up the vector for Warm Boot
-;?		LD		(0005H),A			; set up the vector for BDOS Entry
-;?                                    
-;?		LD		HL,WarmBootEntry	; get BIOS vector address
-;?		LD		(0001H),HL			; put address in location 1
-;?                                    
-;?		LD		HL,BDOSEntry		; Get BDOS entry point address
-;?		LD		(0006H),HL			; put address at location 5
-;?                                  
-;?		LD		BC,DMABuffer		; DefaultDiskBuffer set disk I/O address to default
-;?		CALL	SETDMA				; use normal BIOS routine
-;?									
-;?		EI                          
-;?		LD		A,(Pg0CurentDisk)	; get current disk and user
-;?		LD		C,A					; for use by CCP
-;?		JP		CCPEntry			; transfer to Console Command Processor
-                                    
- 
-		

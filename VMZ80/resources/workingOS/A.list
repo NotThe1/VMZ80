@@ -1,268 +1,82 @@
-0001: 1000         ; A.Z80
-0002: 1000         ;
-0003: 1000         ;	2018-11-30
-0004: 1000         ; 1
-0005: 1000
-0006: 1000         ; BIOS Function Descriptions are from THE PROGRAMMER'S CP/M® HANDBOOK
-0007: 1000         ; by Andy Johnson-Laird
-0008: 1000         ;
-0009: 1000         ; Published by
-0010: 1000         ; Osborne/McGraw-Hill
-0011: 1000         ; 2600 Tenth Street
-0012: 1000         ; Berkeley, California 94710
-0013: 1000         ; U.S.A.
-0014: 1000
-0015: 1000
-0016: 1000             IOBYTE:    EQU    03H                  ; All Devices = 00
-0017: 1000
-0018: 1000         ;?IN_OPCODE	EQU		0DBH			; opcode for read
-0019: 1000         ;?OUT_OPCODE	EQU		0D3H			; opcode for Write
-0020: 1000         ;?;?END_OF_FILE	EQU		01AH;		; End Of File code
-0021: 1000         ;?ASCII_MASK	EQU		07FH			; bits 0-6
-0022: 1000         ;?;?DUMMY_VALUE	EQU		00H			; place holder for Dummy Status mask
-0023: 1000         ;?MINUS_ONE		EQU		0FFH		; byte size -1
-0024: 1000         ;?
-0025: 1000             StackTop   EQU    0100H
-0026: 1000         ;?
-0027: 1000         ;?
-0028: 1000                        ORG    01000H
-0029: 1000             Start:
-0030: 1000 31 00 01               LD     SP,StackTop
-0031: 1003 C3 09 10               JP     BOOT
-0032: 1006         ;	CALL ConStatus
-0033: 1006         ;	CALL	ConIn
-0034: 1006         ;	LD		C,045H
-0035: 1006         ;	CALL	CONOut
-0036: 1006         ;	CALL	LISTST
-0037: 1006         ;	LD		C,041H
-0038: 1006         ;	CALL	LIST
-0039: 1006         ;	CALL	PUNCH
-0040: 1006         ;	CALL	READER
-0041: 1006 76                     HALT
-0042: 1007 18 F7                  JR     Start
-0043: 1009
-0044: 1009         ;++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-0045: 1009             RAM        EQU    0                    ; Start of RAM ( and the Base page)
-0046: 1009
-0047: 1009         ; WarmBoot			EQU		RAM + 0				; Contains a JMP instruction to warm boot in BIOS
-0048: 1009         ; BIOSPAGE			EQU		RAM + 2				; BIOS Jump Vector Page
-0049: 1009         ; IOBYTE				EQU		RAM + 3				; Input/Output redirection byte
-0050: 1009
-0051: 1009             Pg0CurentUser EQU    RAM + 4              ; Current user ( bits 7-4)
-0052: 1009             Pg0CurentDisk EQU    Pg0CurentUser        ; Default logical disk (bits 0-3)
-0053: 1009             LF         EQU    0AH                  ; Line Feed
-0054: 1009             CR         EQU    0DH                  ; Carriage Return
-0055: 1009
-0056: 1009             IOBYTE_DEFAULT EQU    080H
-0057: 1009             TPA        EQU    0100H
-0058: 1009         ;--------------- CP/M Constants -----------------------------------------
-0059: 1009
-0060: 1009             CCPLength  EQU    0800H                ; Constant
-0061: 1009             BDOSLength EQU    0E00H                ; Constant 0E00H
-0062: 1009             BIOSLength EQU    0A00H                ; Constant 0900H
-0063: 1009
-0064: 1009             LengthInBytes EQU    CCPLength + BDOSLength + BIOSLength
-0065: 1009             LengthInK  EQU    (LengthInBytes/1024) + 1
-0066: 1009
-0067: 1009             MemorySize EQU    64
-0068: 1009
-0069: 1009             CCPEntry   EQU    (MemorySize * 1024) - LengthInBytes
-0070: 1009
-0071: 1009             BDOSBase   EQU    CCPEntry + CCPLength
-0072: 1009             BDOSEntry  EQU    BDOSBase + 6
-0073: 1009
-0074: 1009             BIOSBase   EQU    BDOSBase + BDOSLength
-0075: 1009             BIOSStart  EQU    CCPEntry + CCPLength + BDOSLength
-0076: 1009         ;-----------------------------------------------------------------------
-0077: 1009
-0078: 1009             WarmBootEntry EQU    0000H
-0079: 1009
-0080: 1009             DiskReadCode EQU    01H                  ; Code for Read
-0081: 1009             DiskControlTable EQU    040H
-0082: 1009             DiskCommandBlock EQU    0046H
-0083: 1009             DiskControlByte EQU    0045H
-0084: 1009             DiskStatusLocation EQU    0043H
-0085: 1009             diskSectorSize EQU    512
-0086: 1009             TTY_DataPort EQU    0ECH
-0087: 1009
-0088: 1009
-0089: 1009             BOOT:
-0090: 1009 21 D7 10               LD     HL,ROMControl
-0091: 100C 22 46 00               LD     (DiskCommandBlock),HL
-0092: 100F
-0093: 100F 21 45 00               LD     HL,DiskControlByte
-0094: 1012 36 80                  LD     (HL),080H
-0095: 1014
-0096: 1014         ; wait for the read to complete
-0097: 1014             WaitForReadDone:
-0098: 1014 7E                     LD     A,(HL)
-0099: 1015 B7                     OR     A
-0100: 1016 20 FC                  JR     NZ,WaitForReadDone
-0101: 1018
-0102: 1018         ; is it a clean read ?
-0103: 1018 3A 43 00               LD     A,(DiskStatusLocation)
-0104: 101B FE 80                  CP     080H                 ; any errors?
-0105: 101D D2 00 01               JP     NC,TPA               ; do Hard boot if no errors
-0106: 1020
-0107: 1020
-0108: 1020         ;?		LD		HL,BootMessage
-0109: 1020         ;?		CALL	DisplayMessage
-0110: 1020         ;?
-0111: 1020         ;?; Set up page 00
-0112: 1020         ;?		LD		BC,Page0ImageEnd-Page0Image	; size of move
-0113: 1020         ;?		LD		HL,Page0Image				; source
-0114: 1020         ;?		LD		DE,0000H					; destination
-0115: 1020         ;?		LDIR								; do the move
-0116: 1020         ;?
-0117: 1020         ;?; set up disk control block
-0118: 1020         ;?		LD		HL,BootControl
-0119: 1020         ;?		LD		(DiskCommandBlock),HL
-0120: 1020         ;?
-0121: 1020         ;?; activate the disk controller
-0122: 1020         ;?		LD		HL,DiskControlByte
-0123: 1020         ;?		LD		(HL),080H
-0124: 1020         ;?
-0125: 1020         ;?; wait for the read to complete
-0126: 1020         ;?WaitForReadDone:
-0127: 1020         ;?		LD		A,(HL)
-0128: 1020         ;?		OR		A
-0129: 1020         ;?		JR		NZ,WaitForReadDone
-0130: 1020         ;?
-0131: 1020         ;?; is it a clean read ?
-0132: 1020         ;?		LD		A,(DiskStatusLocation)
-0133: 1020         ;?		CP		080H						; any errors?
-0134: 1020         ;?		JP		NC,TPA					; do Hard boot if no errors
-0135: 1020         ;?
-0136: 1020         ;?; report boot failure
-0137: 1020         ;?		LD		HL,BadBootMessage
-0138: 1020         ;?		CALL	DisplayMessage
-0139: 1020         ;?		HALT
-0140: 1020
-0141: 1020
-0142: 1020             DisplayMessage:
-0143: 1020 7E                     LD     A,M                  ; get  character
-0144: 1021 B7                     OR     A                    ; is it NULL
-0145: 1022 C8                     RET    Z                    ; return if it is NULL (00)
-0146: 1023 4F                     LD     C,A
-0147: 1024 E5                     PUSH   HL                   ; save the pointer
-0148: 1025         ;		CALL	CONOut				; display at the Console
-0149: 1025 D3 EC                  OUT    TTY_DataPort
-0150: 1027 E1                     POP    HL                   ; retrieve the pointer
-0151: 1028 23                     INC    HL                   ; point at next character
-0152: 1029 18 F5                  JR     DisplayMessage
-0153: 102B         ;----------------------------------------------------
-0154: 102B             BootMessage:
-0155: 102B 43 50 2F 4D 20 32 2E 32 20 28 5A 38 30 29 20                DB     'CP/M 2.2 (Z80) '
-0156: 103A 42 6F 6F 74 53 74 72 61 70 20 4C 6F 61 64 65 72                DB     'BootStrap Loader'
-0157: 104A 0D 0A                  DB     CR,LF
-0158: 104C 42 75 69 6C 64 20 30 2E 41 20                DB     'Build 0.A '
-0159: 1056 0D 0A                  DB     CR,LF
-0160: 1058 43 43 50 20 30 2E 41 20 7C 20 20 42 44 4F 53 20 30 2E 41 20 7C 20 42 49 4F 53 20 30 2E 42                DB     'CCP 0.A |  BDOS 0.A | BIOS 0.B'
-0161: 1076 0D 0A 00                DB     CR,LF,00
-0162: 1079             BadBootMessage:
-0163: 1079 0D 0A                  DB     CR,LF
-0164: 107B 2A 2A 2A 2A 20 20 20 42 6F 6F 74 20 46 61 69 6C 75 72 65                DB     '****   Boot Failure'
-0165: 108E 00                     DB     00
-0166: 108F         ;---------------------------------------------------
-0167: 108F             BootControl:
-0168: 108F 01                     DB     DiskReadCode         ; Read function
-0169: 1090 00                     DB     00H                  ; unit number
-0170: 1091 00                     DB     00H                  ; head number
-0171: 1092 00                     DB     00H                  ; track number
-0172: 1093 0D                     DB     0DH                  ; Starting sector number (13)
-0173: 1094 00 0A                  DW     5 * 512              ; Number of bytes to read ( 0A00 All of BIOS)
-0174: 1096 00 F6                  DW     BIOSStart            ; read into this address
-0175: 1098 43 00                  DW     DiskStatusLocation   ; pointer to next block - no linking
-0176: 109A 40 00                  DW     DiskControlTable     ; pointer to next table- no linking
-0177: 109C
-0178: 109C         ;---------------------------------------------------
-0179: 109C             Page0Image:
-0180: 109C C3 00 00               JP     WarmBootEntry        ; warm start
-0181: 109F         ;IOBYTE:
-0182: 109F 80                     DB     IOBYTE_DEFAULT       ; IOBYTE-
-0183: 10A0             DefaultDisk:
-0184: 10A0 00                     DB     00H                  ; Current default drive (A)
-0185: 10A1 C3 06 E8               JP     BDOSEntry            ; jump to BDOS entry
-0186: 10A4                        DS     028H                 ; interrupt locations 1-5 not used
-0187: 10CC                        DS     008H                 ; interrupt location 6 is reserved
-0188: 10D4 C3 00 00               JP     0000H                ; rst 7 used only by DDT & SID programs
-0189: 10D7             Page0ImageEnd:
-0190: 10D7
-0191: 10D7         ;---------------------------------------------------
-0192: 10D7
-0193: 10D7             ROMControl:
-0194: 10D7 01                     DB     DiskReadCode         ; Read function
-0195: 10D8 00                     DB     00H                  ; unit number
-0196: 10D9 00                     DB     00H                  ; head number
-0197: 10DA 00                     DB     00H                  ; track number
-0198: 10DB 01                     DB     01H                  ; Starting sector number ()
-0199: 10DC 00 02                  DW     diskSectorSize       ; Number of bytes to read ( 1 Sector)
-0200: 10DE 00 01                  DW     TPA                  ; read into this address
-0201: 10E0 43 00                  DW     DiskStatusLocation   ; pointer to next block - no linking
-0202: 10E2 40 00                  DW     DiskControlTable     ; pointer to next table- no linking
-0203: 10E4             CodeEnd:
-0204: 10E4
-0205: 10E4         ;  Sets up page Zero
-0206: 10E4         ;?EnterCPM:
-0207: 10E4         ;?		LD		A,0C3H				; JMP op code
-0208: 10E4         ;?		LD		(0000H),A			; set up the vector for Warm Boot
-0209: 10E4         ;?		LD		(0005H),A			; set up the vector for BDOS Entry
-0210: 10E4         ;?
-0211: 10E4         ;?		LD		HL,WarmBootEntry	; get BIOS vector address
-0212: 10E4         ;?		LD		(0001H),HL			; put address in location 1
-0213: 10E4         ;?
-0214: 10E4         ;?		LD		HL,BDOSEntry		; Get BDOS entry point address
-0215: 10E4         ;?		LD		(0006H),HL			; put address at location 5
-0216: 10E4         ;?
-0217: 10E4         ;?		LD		BC,DMABuffer		; DefaultDiskBuffer set disk I/O address to default
-0218: 10E4         ;?		CALL	SETDMA				; use normal BIOS routine
-0219: 10E4         ;?
-0220: 10E4         ;?		EI
-0221: 10E4         ;?		LD		A,(Pg0CurentDisk)	; get current disk and user
-0222: 10E4         ;?		LD		C,A					; for use by CCP
-0223: 10E4         ;?		JP		CCPEntry			; transfer to Console Command Processor
-0224: 10E4
-0225: 10E4
-0226: 10E4
+0001: 0100         ; A.Z80
+0002: 0100         ;
+0003: 0100         ;	2018-11-30
+0004: 0100         ; 2
+0005: 0100             NumberOfLogicalDisks EQU    4
+0006: 0100             NumberOfLogicalDisks EQU    0FC2EH
+0007: 0100             DiskParameterHeaders EQU    0FC3DH
+0008: 0100             StackTop   EQU    0100H
+0009: 0100
+0010: 0100                        ORG    0100H
+0011: 0100             Start:
+0012: 0100 31 00 01               LD     SP,StackTop
+0013: 0103
+0014: 0103 06 07                  LD     B,07H
+0015: 0105 21 03 00               LD     HL,03H
+0016: 0108             L1:
+0017: 0108 29                     ADD    HL,HL
+0018: 0109 10 FD                  DJNZ   L1
+0019: 010B 76                     HALT
+0020: 010C
+0021: 010C
+0022: 010C             SelectedDisk: DS     1
+0023: 010D             SelectedDskSecsPerHead: DS     1
+0024: 010E
+0025: 010E             SELDSK:
+0026: 010E 21 00 00               LD     HL,00H               ; Assume an error
+0027: 0111 79                     LD     A,C
+0028: 0112 FE 04                  CP     NumberOfLogicalDisks
+0029: 0114 D0                     RET    NC                   ; return if > max number of Disks
+0030: 0115
+0031: 0115 32 0C 01               LD     (SelectedDisk),A     ; save disk number
+0032: 0118
+0033: 0118         ; Compute offset down disk parameter table by multiplying by parameter
+0034: 0118         ; header length (16 bytes)
+0035: 0118
+0036: 0118 07                     RLCA                        ; X2
+0037: 0119 07                     RLCA                        ; X4
+0038: 011A 07                     RLCA                        ; X8
+0039: 011B 07                     RLCA                        ; X16
+0040: 011C 16 00                  LD     D,0                  ; make disk into word number
+0041: 011E 5F                     LD     E,A
+0042: 011F DD 21 3D FC               LD     IX,DiskParameterHeaders ; get DPH address Base
+0043: 0123 DD 19                  ADD    IX,DE                ; get the specific DiskParameterHeader
+0044: 0125 DD E5                  PUSH   IX                   ; save for return in HL
+0045: 0127
+0046: 0127 DD 56 0B               LD     D,(IX+11)            ; LSB
+0047: 012A DD 5E 0A               LD     E,(IX+10)            ; MSB
+0048: 012D
+0049: 012D D5                     PUSH   DE
+0050: 012E DD E1                  POP    IX
+0051: 0130 DD 7E 0F               LD     A,(IX+15)
+0052: 0133 32 0D 01               LD     (SelectedDskSecsPerHead),A
+0053: 0136
+0054: 0136
+0055: 0136
+0056: 0136
+0057: 0136         ; 	LD		DE,DiskParameterHeaders	; get DPH address
+0058: 0136         ; 	ADD		HL,DE					; DE -> appropriate DPH
+0059: 0136         ; 	PUSH	HL						; Save DPH pointer
+0060: 0136         ; 	LD		DE,10					; DiskParameterBlock Index
+0061: 0136         ; 	ADD		HL,DE					; ????? -> cpmRecords per track
+0062: 0136         ; 	LD		E,(HL)
+0063: 0136         ; 	INC		HL
+0064: 0136         ; 	LD		D,(HL)					; DE has Parameter Block for selected disk
+0065: 0136         ; 	LD		HL,15					; SectorsPerHead Index
+0066: 0136         ; 	ADD		HL,DE					; HL is at SecPerHeadPerTrack
+0067: 0136         ; 	LD		A,(HL)					; get the value and
+0068: 0136         ; 	LD		(SelectedDskSecsPerHead),A; save for actual IO
+0069: 0136         ;
+0070: 0136 E1                     POP    HL                   ; recover DPH pointer
+0071: 0137 C9                     RET
+0072: 0138
            ************************   Xref   ************************
-0000: $               10E2
-0162: BadBootMessage  1079
-0071: BDOSBase        E800   0072 0074
-0072: BDOSEntry       E806   0185
-0061: BDOSLength      0E00   0064 0074 0075
-0074: BIOSBase        F600
-0062: BIOSLength      0A00   0064
-0075: BIOSStart       F600   0174
-0089: BOOT            1009   0031
-0167: BootControl     108F
-0154: BootMessage     102B
-0069: CCPEntry        E000   0071 0075
-0060: CCPLength       0800   0064 0071 0075
-0203: CodeEnd         10E4
-0054: CR              000D   0157 0159 0161 0163
-0183: DefaultDisk     10A0
-0082: DiskCommandBlock 0046   0091
-0083: DiskControlByte 0045   0093
-0081: DiskControlTable 0040   0176 0202
-0080: DiskReadCode    0001   0168 0194
-0085: diskSectorSize  0200   0199
-0084: DiskStatusLocation 0043   0103 0175 0201
-0142: DisplayMessage  1020   0152
-0016: IOBYTE          0000
-0056: IOBYTE_DEFAULT  0080   0182
-0064: LengthInBytes   2000   0065 0069
-0065: LengthInK       0009
-0053: LF              000A   0157 0159 0161 0163
-0067: MemorySize      0040   0069
-0179: Page0Image      109C
-0189: Page0ImageEnd   10D7
-0052: Pg0CurentDisk   0004
-0051: Pg0CurentUser   0004   0052
-0045: RAM             0000   0051
-0193: ROMControl      10D7   0090
-0025: StackTop        0100   0030
-0029: Start           1000   0042
-0057: TPA             0100   0105 0200
-0086: TTY_DataPort    00EC   0149
-0097: WaitForReadDone 1014   0100
-0078: WarmBootEntry   0000   0180
+0000: $               0137
+0007: DiskParameterHeaders FC3D   0042
+0016: L1              0108   0018
+0005: NumberOfLogicalDisks 0004   0028
+0025: SELDSK          010E
+0022: SelectedDisk    010C   0031
+0023: SelectedDskSecsPerHead 010D   0052
+0008: StackTop        0100   0012
+0011: Start           0100
