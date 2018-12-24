@@ -12,7 +12,7 @@
 
 ; BIOS Function Descriptions are from THE PROGRAMMER'S CP/M® HANDBOOK
 ; by Andy Johnson-Laird
-; 
+;
 ; Published by
 ; Osborne/McGraw-Hill
 ; 2600 Tenth Street
@@ -22,8 +22,8 @@
 	$Include ./stdHeader.Z80
 	$Include ./osHeader.Z80
 	$Include ./diskHeader.Z80
-	
-	
+
+
 IN_OPCODE	EQU	0DBH
 OUT_OPCODE	EQU	0D3H
 JP_OPCODE	EQU	0C3H
@@ -71,13 +71,13 @@ AfterDiskBuffer	EQU	$
 
 ;  The BOOT jump instruction is the first instruction executed in CP/M. The
 ; bootstrap sequence must transfer control to the BOOT entry point in order to
-; bring up CP/M. 
+; bring up CP/M.
 ;  This reads in the CP/M loader on the first sector of the physical disk drive
 ; chosen to be logical disk A. This CP/M loader program reads the binary image
-; of the CCP, BOOS, and BIOS into memory at some predetermined address. 
+; of the CCP, BOOS, and BIOS into memory at some predetermined address.
 ; Then it transfers control to the BOOT entry point in the BIOS jump vector.
 ;  This BOOT routine must initialize all of the required computer hardware.
-; 
+;
 ; Most BOOT routines sign on by displaying a short message on the console,
 ; indicating the current version ofCP/M and the computer hardware that this BIOS
 ; can support. The BOOT routine terminates by transferring control to the start of the CCP
@@ -89,15 +89,15 @@ AfterDiskBuffer	EQU	$
 BOOT:
 	LD		HL,BootMessage
 	CALL	DisplayMessage
-	
+
 	LD		HL,BOOTControl
 	CALL	RawDiskRead
 
 	JP		WBOOT				; do Warm boot if no errors
-	LD		HL,BadBootMessage   
+	LD		HL,BadBootMessage
 	CALL	DisplayMessage		; Show Boot failure message
 	HALT
-	
+
 BOOTControl:
 	DB		DiskReadCode					; Read function
 	DB		00H								; unit number
@@ -108,7 +108,7 @@ BOOTControl:
 	DW		BIOSStart						; read into this address
 	DW		DiskStatusLocation				; pointer to next block - no linking
 	DW		DiskControlTable				; pointer to next table- no linking
-	
+
 
 ;BOOTControl:
 ; 	DB		DiskReadCode		; Read function
@@ -138,13 +138,13 @@ WarmBootErroMessage:
 	DB		CR,LF
 	DB		'Warm Boot -'
 	DB		' Retrying.'
-	DB		CR,LF,EndOfMessage	
+	DB		CR,LF,EndOfMessage
 ;..................Boot Support....................
 
-; Entered with DiskControlBlock pointer in HL	
+; Entered with DiskControlBlock pointer in HL
 RawDiskRead:
 	LD		(DiskCommandBlock),HL
-	
+
 	LD		HL,DiskControlByte
 	LD		(HL),080H
 
@@ -158,19 +158,19 @@ WaitForReadDone:
 	LD		A,(DiskStatusLocation)
 	CP		080H				; any errors NC = good read?
 	RET
-	
-; entered with pointer to message in HL	
-DisplayMessage:                     
+
+; entered with pointer to message in HL
+DisplayMessage:
 	LD		A,M					; get  character
 	OR		A					; is it NULL
 	RET		Z					; return if it is NULL (00)
-	LD		C,A                 
+	LD		C,A
 	PUSH	HL					; save the pointer
-	OUT		TTY_DataPort	
+	OUT		TTY_DataPort
 	POP		HL					; retrieve the pointer
 	INC		HL					; point at next character
 	JR		DisplayMessage
-	
+
 ;....................................................
 
 ;---------------------------------------------------------------------------
@@ -202,7 +202,7 @@ WBOOT:
 	LD		HL,WBOOTControl		; get the WBOOT Control Block
 	CALL	RawDiskRead			; read CCP & BDOS
 	JR		NC, LoadPage0		; set up page 0 if good read
-	
+
 	LD		HL,WarmBootErroMessage
 	CALL	DisplayMessage		; send bad warm boot message
 	JP		WBOOT				; keep trying
@@ -211,23 +211,23 @@ WBOOT:
 ; Set up page Zero
 LoadPage0:
 	LD		A,JP_OPCODE			; Get JP opCode
-	
+
 	LD		(WarmBoot),A
 	LD		HL,WarmBootEntry	; Warm Boot entry point
 	LD		(WarmBoot + 1),HL		; Warm Boot Vector
-	
+
 	LD		(BDOSE),A
 	LD		HL,BDOSEntry		; BDOS entry point
 	LD		(BDOSE + 1),HL		; BDOS Vector
-	
+
 	LD		BC,DMABuffer		; Default Disk Buffer
 	CALL	SETDMA				; use normal BDOS  routine
 	EI							; Enable interrupts
-	
+
 	LD		A,(Pg0CurentDisk)	; Let CCP know what disk is current
 	LD		C,A
 	JP		CCPEntry			; transfer control to CCP
-	
+
 
 WBOOTControl:
 	DB		DiskReadCode		; Read function
@@ -239,7 +239,7 @@ WBOOTControl:
 	DW		CCPEntry			; read into this address
 	DW		DiskStatusLocation	; pointer to next block - no linking
 	DW		DiskControlByte		; pointer to next table- no linking
-		
+	
 ;---------------------------------------------------------------------------
 ;	Console Status:		BIOS 02
 ;
@@ -249,16 +249,16 @@ WBOOTControl:
 ; to reflect the contents of the A register - it is the contents that are important.
 ; CONST is called by the CCP whenever the CCP is in the middle of an
 ; operation that can be interrupted by pressing a keyboard character.
-; 
+;
 ; The BDOS will call CONST if a program makes a Read Console Status
 ; function call (B$CONST, code 11, OBH). It is also called by the console input BIOS
 ; routine, CONIN
 
-CONST:	
+CONST:
 ConStatus:
 	LD		A,(IOBYTE)
 	LD		IX,CON_Vector
-	
+
 GenericInStatus:				; Entry point for generic input status
 	CALL	SetDeviceVector		; IX has the vector for the Physical Device
 	CALL	GetInStatus
@@ -302,7 +302,7 @@ CONOUT:
 CONOut:
 	LD		A,(IOBYTE)
 	LD		IX,CON_Vector
-	
+
 GenericOutStatus:					; entry point for standard blocking write
 	CALL	SetDeviceVector			; IX has the vector for the Physical Device
 GenericOutStatus1:
@@ -311,7 +311,7 @@ GenericOutStatus1:
 	LD		L,(IX +DataWriteIndex)
 	LD		H,(IX +(DataWriteIndex + 1))
 	JP		(HL)
-	
+
 ;---------------------------------------------------------------------------
 ;	List output  BIOS 05
 ;
@@ -332,14 +332,14 @@ LIST:
 
 ;---------------------------------------------------------------------------
 ;	Punch output  BIOS 06
-;	
+;
 ;  PUNCH sends the character in register C to the "punch" device. As mentioned
 ; earlier, the "punch" is rarely a real paper tape punch. In most BIOS's, the PUNCH
 ; entry point either returns immediately and is effectively a null routine, or it outputs
 ; the character to a communications device, such as a modem, on your computer.
 ; PUNCH must check that the "punch" device is indeed ready to accept another
 ; character for output, and must wait if it is not.
-; 
+;
 ; Digital Research's documentation states that the character to be output will
 ; always have its most significant bit set to O. This is not true. The BDOS simply
 ; transfers control over to the PUNCH entry point in the BIOS; the setting of the
@@ -356,7 +356,7 @@ PUNCH:				; Punch output
 	RRCA
 	RRCA							; move bits 5,4
 	RRCA							; to 1,0
-	LD		IX,PUN_Vector   
+	LD		IX,PUN_Vector
 	JR		GenericOutStatus		; go to generic blocking out routine
 
 ;---------------------------------------------------------------------------
@@ -366,7 +366,7 @@ PUNCH:				; Punch output
 ; a real paper tape reader.
 ; The READER function must return the next character from the reader device
 ; in the A register, waiting, if need be, until there is a character.
-; 
+;
 ; Digital Research's documentation again says that the most significant bit of
 ; the A register must be 0, but this is not the case if you wish to receive pure binary
 ; information via this function.
@@ -379,15 +379,15 @@ READER:				; Reader Input
 	LD		A,(IOBYTE)
 	RRCA
 	RRCA							; move bits 3,2  to 1,0
-	LD		IX,RDR_Vector           
-READER1:                            
-	CALL	GenericInStatus         
+	LD		IX,RDR_Vector
+READER1:
+	CALL	GenericInStatus
 	JR		Z,READER1				; loop until there is some data to read
-												
+											
 	LD		L,(IX + DataReadIndex)
 	LD		H,(IX +(DataReadIndex +1 ))
 	JP		(HL)
-	
+
 ;---------------------------------------------------------------------------
 ;	List Status:  BIOS 0F
 
@@ -415,13 +415,13 @@ LISTST:
 	LD		A,(IOBYTE)				; Get Physical device
 	RLCA
 	RLCA							; Move bits 6 & 7 to bits 0 & 1
-	LD		IX,LST_Vector			; Set th vector base 
+	LD		IX,LST_Vector			; Set th vector base
 	CALL	SetDeviceVector			; IX has the vector for the Physical Device
-	CALL	GetOutStatus	
-	
-	OR		A	
+	CALL	GetOutStatus
+
+	OR		A
 	RET		Z						; 00 => Device Ready
-	LD		A,0FFH	
+	LD		A,0FFH
 	RET								; OFFH => Device No Ready
 
 ;---------------------------------------------------------------------------
@@ -429,22 +429,22 @@ LISTST:
 ;---------------------------------------------------------------------
 GetOutStatus:
 				; vector to CON Devices
-	LD		D,(IX + OutputMaskIndex)	; setup Output mask	
+	LD		D,(IX + OutputMaskIndex)	; setup Output mask
 	JR		GetStatus
 GetInStatus:
 	LD		D,(IX + InputMaskIndex)		; setup Input mask
-GetStatus:	
+GetStatus:
 	LD		L,(IX + StatusReadIndex)
 	LD		H,(IX + (StatusReadIndex + 1))	; Load HL with address for Status Read
 	JP		(HL)						; jump to the stats read routine
-	
+
 ;---------------------------------------------------------------------
 
 DataRead:
 	LD		A,(IX + DataPortIndex)
 	LD		(AddressDataIn),A		; modify code with the Data port
-	DB		IN_OPCODE               
-AddressDataIn:                      
+	DB		IN_OPCODE
+AddressDataIn:
 	DB		00						; perform the read
 	RET
 
@@ -458,13 +458,13 @@ DataWrite:
 	LD		A,(IX + DataPortIndex)
 	LD		(AddressDataOut),A		; modify code with the Data port
 	LD		A,C						; get value into ACC
-	DB		OUT_OPCODE              
-AddressDataOut:                     
+	DB		OUT_OPCODE
+AddressDataOut:
 	DB		00						; perform the write
 	RET
 
-	
-; Enter Status Read with Target mask in D	
+
+; Enter Status Read with Target mask in D
 StatusRead:
 	LD		A,(IX + StatusPortIndex)
 	LD		(AddressStatus),A		; modify code with the status port
@@ -473,27 +473,27 @@ AddressStatus:
 	DB		00
 	AND		D						; Check return vale with the mask
 	RET
-	
+
 DUMMYRead:
-	RET	
+	RET
 DUMMYWrite:
-	RET	
+	RET
 DUMMYCheck:
 	LD		A,0FFH					; Always return 0FFH
 	OR		A						; Set flags
 	RET
 
-;=============================================================================	
+;=============================================================================
 SetDeviceVector:
 	AND		03H						; Get bits 0 & 1;
 	ADD		A,A						; Double for word size index
-	LD		D,00H	
+	LD		D,00H
 	LD		E,A						; load byte index int DE
 	ADD		IX,DE					; add to the value vector base
 									; IX points at correct entry in vector
-	LD		E,(IX + 0)	
+	LD		E,(IX + 0)
 	LD		D,(IX + 1)				; DE now has the Vector for the device
-	PUSH	DE	
+	PUSH	DE
 	POP		IX						; Move it to IX
 	RET
 
@@ -528,11 +528,11 @@ DUMMY_InputMask		EQU		07FH	; Status Mask - not used
 
 ; Device Table Control Block Definition
 StatusPortIndex		EQU		0
-DataPortIndex		EQU		1	
-OutputMaskIndex		EQU		2	
-InputMaskIndex		EQU		3		
-StatusReadIndex		EQU		4	
-DataReadIndex		EQU		6	
+DataPortIndex		EQU		1
+OutputMaskIndex		EQU		2
+InputMaskIndex		EQU		3	
+StatusReadIndex		EQU		4
+DataReadIndex		EQU		6
 DataWriteIndex		EQU		8
 
 ;Physical Devices Control Blocks
@@ -545,7 +545,7 @@ TTY_Table:
 	DW		StatusRead
 	DW		DataReadASCII
 	DW		DataWrite
-	
+
 CRT_Table:
 	DB		CRT_StatusPort
 	DB		CRT_DataPort
@@ -555,24 +555,24 @@ CRT_Table:
 	DW		DataRead
 	DW		DataWrite
 COM_Table:
-	DB		COM_StatusPort	
-	DB		COM_DataPort	
-	DB		COM_OutputMask	
+	DB		COM_StatusPort
+	DB		COM_DataPort
+	DB		COM_OutputMask
 	DB		COM_InputMask
 	DW		StatusRead
 	DW		DataRead
-	DW		DataWrite	
+	DW		DataWrite
 LPT_Table:
-	DB		LPT_StatusPort	
-	DB		LPT_DataPort	
-	DB		LPT_OutputMask	
+	DB		LPT_StatusPort
+	DB		LPT_DataPort
+	DB		LPT_OutputMask
 	DB		LPT_InputMask
 	DW		StatusRead
 	DW		DataRead
-	DW		DataWrite	
+	DW		DataWrite
 DUMMY_Table:
 	DB		DUMMY_StatusPort
-	DB		DUMMY_DataPort	
+	DB		DUMMY_DataPort
 	DB		DUMMY_OutputMask
 	DB		DUMMY_InputMask
 	DW		DUMMYCheck
@@ -591,7 +591,7 @@ CON_Vector:					; IOBYTE bits 1 & 0
 RDR_Vector:					; IOBYTE bits 3 & 2
 	DW		TTY_Table
 	DW		CRT_Table
-	DW		DUMMY_Table	
+	DW		DUMMY_Table
 	DW		DUMMY_Table
 PUN_Vector:					; IOBYTE bits 5 & 4
 	DW		TTY_Table
@@ -619,9 +619,9 @@ LST_Vector:					; IOBYTE bits 7 & 6
 ; To handle larger sector sizes, the BIOS has some additional code that makes
 ; the BDOS respond as if it were still handling 128-byte sectors. This code is referred
 ; to as the blocking/deblocking code.
-;  As its name implies, it blocks together several 128-byte "sectors" and only writes 
+;  As its name implies, it blocks together several 128-byte "sectors" and only writes
 ; to the disk when a complete physical sector has been assembled.
-;  When reading, it reads in a physical sector and then deblocks it,handing back 
+;  When reading, it reads in a physical sector and then deblocks it,handing back
 ; several 128-byte "sectors" to the BDOS.
 ;  To do all of this, the blocking/deblocking code uses a special buffer area of the
 ; same size as the physical sectors on the disk. This is known as the host disk buffer
@@ -646,13 +646,13 @@ LST_Vector:					; IOBYTE bits 7 & 6
 ;
 ;  HOME - Home the selected logical disk to track 0. Before doing this, a check
 ; must be made to see if the physical disk buffer has information that must be
-; written out. This is indicated by a flag, MustWriteBuffer,set in the de-blocking code
+; written out. This is indicated by a flag, DirtyBufferFlag,set in the de-blocking code
 
 HOME:
-	LD		A,(MustWriteBuffer)		; check flag
+	LD		A,(DirtyBufferFlag)		; Check for Dirty Buffer
 	OR		A
 	JR		NZ,HomeNoWrite
-	LD		(DataInDiskBuffer),A	; no, clear data in buffer flag
+	LD		(DataInBufferFlag),A	; Clear DataInBufferFlag if Buffer not dirty
 HomeNoWrite:
 	LD		C,00H					; Set to track 0
 	CALL	SETTRK					; no, physical, only logical
@@ -682,7 +682,7 @@ SELDSK:
 	RET	NC							; return if > max number of Disks
 
 	LD		(SelectedDisk),A		; save disk number
-	
+
 	RLCA							; X2
 	RLCA							; X4
 	RLCA							; X8
@@ -692,15 +692,15 @@ SELDSK:
 	LD		IX,DiskParameterHeaders	; get DPH address Base
 	ADD		IX,DE					; get the specific DiskParameterHeader
 	PUSH	IX						; save for return in HL
-	
+
 	LD		D,(IX + 11)				; LSB for Disk Parameter Block
 	LD		E,(IX + 10)				; MSB for Disk Parameter Block
-	
+
 	PUSH	DE
 	POP		IX
-	LD		A,(IX + 15)				; Disk Parameter Block in IY		
-	LD		(SelectedDskSecsPerHead),A  
-	
+	LD		A,(IX + 15)				; Disk Parameter Block in IY	
+	LD		(SelectedDskSecsPerHead),A
+
 	POP	HL							; recover DPH pointer
 	RET
 
@@ -722,9 +722,9 @@ SETTRK:
 ;	LD		H,B								; select track in BC on entry
 ;	LD		L,C
 ;	LD	(SelectedTrack),HL					; save for low level driver
-	LD	(SelectedTrack),BC					; save for low level driver		
+	LD	(SelectedTrack),BC					; save for low level driver	
 	RET
-	
+
 ;---------------------------------------------------------------------------
 ;	Set Sector	BIOS 0B  (Set Record)
 
@@ -744,7 +744,7 @@ SETSEC:						; SETRECORD
 	LD		A,C
 	LD		(SelectedRecord),A					; save for low level driver
 	RET
-	
+
 ;---------------------------------------------------------------------------
 ;	Set Sector	BIOS 0C
 
@@ -766,7 +766,7 @@ SETDMA:
 ; number in the sector translate table for the previously selected (via SELDSK)
 ; logical disk drive. Note that both logical and physical sector numbers are
 ; l28-byte sectors, so if you are working with a hard disk system, it is not
-; too efficient to impose a sector interlace at the l28-byte sector level. 
+; too efficient to impose a sector interlace at the l28-byte sector level.
 ; It is better to impose the sector interlace right inside the hard disk driver,
 ; if at all. In general, hard disks spin so rapidly that CP/M simply cannot take
 ; advantage of sector interlace.
@@ -790,7 +790,7 @@ SECTRAN:
 ; 				- SETDMA	set the DMA address
 ; 				- SETTRK	set the track number
 ; 				- SETSEC	set the sector number.
-; 				
+; 			
 ; Because of the blocking/ deblocking code in the BIOS, there are frequent occasions
 ; when the requested sector will already be in the host buffer (HSTBUF), so that a
 ; physical disk read is not required. All that is then required is for the BIOS to move
@@ -812,18 +812,18 @@ SECTRAN:
 ;  If you are working with a hard disk system, the BIOS driver must also handle the management of
 ; bad sectors. You cannot simply replace a hard disk drive if one or two sectors become unreadable.
 ; This bad sector management normally requires that a directory of "spare" sectors be put on the
-; hard disk before it is used to store data. Then, when a sector is found to be bad, 
+; hard disk before it is used to store data. Then, when a sector is found to be bad,
 ; one of the spare sectors is substituted in its place.
 
 READ:
-	XOR		A							; set record count to 0
-	LD		(ModifiedlRecordsCount),A
+	XOR		A							
+	LD		(ModifiedlRecordsCount),A	; 1. Set ModifiedlRecordsCount to 0
 	INC		A
-	LD		(ReadWriteFlag),A				; Set to Flag to read (non-zero)
-	LD		(PrereadSectorFlag),A		; force preread
-	LD		A,WriteCleanBuffer			; fake Deblocking code into responding as if this
-	LD		(WriteType),A				; is the first write to an unallocated allocation block
-	JP		PerformReadWrite			; use common code to execute read
+	LD		(ReadWriteFlag),A			; 2. Set to Flag to read (non-zero)	
+	LD		(PrereadSectorFlag),A		; 3. Force a preread
+	LD		A,WriteCleanBuffer
+	LD		(WriteType),A				; 4. Fake a clean sector Write type = 02
+	JP		CommonDiskIO				; Use common code to execute read
 ;---------------------------------------------------------------------------
 ;	WRITE			BIOS 0E
 ;
@@ -835,35 +835,35 @@ READ:
 ;	02H [WriteCleanBuffer]	To the first cpmRecord of a previously unallocated allocation block (In which case no pre-read is required).
 
 ;  WRITE is similar to READ but with the obvious difference that data is transferred from the DMA buffer
-; to the specified 128-byte sector. Like READ, this function requires that the following function calls 
+; to the specified 128-byte sector. Like READ, this function requires that the following function calls
 ; have already been made:
 ; 				- SELDSK	"select" the disk
 ; 				- SETDMA	set the DMA address
 ; 				- SETTRK	set the track number
 ; 				- SETSEC	set the sector number.
-; 				
+; 			
 ;  Again, it is only in the WRITE routine that the driver will start to talk directly to the physical hardware,
 ; selecting the disk unit, track, and sector, and transferring the data to the disk. With the blocking/deblocking code,
-; the BDOS optimizes the number of disk writes that are needed by indicating in register C the type of disk write 
+; the BDOS optimizes the number of disk writes that are needed by indicating in register C the type of disk write
 ; that is to be performed:
 ; 				0= normal sector write
 ; 				1= write to file directory sector
 ; 				2 = write to sector of previously unchanged Deblocking Buffer
-; 				
+; 			
 ;  Type 0 occurs whenever the BDOS is writing to a data sector in an already used allocation block.
 ; Under these circumstances, the disk driver must preread the appropriate host sector because there
 ; may be previously stored information on it.
-; 
+;
 ;  Type 1 occurs whenever the BDOS is writing to a file directory sector-in this case, the BIOS must not defer
 ; writing the sector to the disk, as the information is too valuable to hold in memory until the HSTBUF is full.
 ; The longer the information resides in the HSTBUF, the greater the chance of a power failure or glitch,
 ; making file data already physically written to the disk inaccessible because the file directory is out of date.
-; 
-;  Type 2 occurs whenever the BOOS needs to write to the first sector of a previously unused allocation block.
+;
+;  Type 2 occurs whenever the BDOS needs to write to the first sector of a previously unused allocation block.
 ; Unused, in this context, includes an allocation block that has become available as a result of a file being erased.
-; In this case, there is no need for the disk driver to preread an entire host-sized sector into the HSTBUF, 
+; In this case, there is no need for the disk driver to preread an entire host-sized sector into the HSTBUF,
 ; as there is no data of value in the physical sector.
-; 
+;
 ;  As with the READ routine, the WRITE function returns with A set to OOH if the operation has been completed successfully.
 ; If the WRITE function returns with A set to 01H, then the BDOS will display the same message as for READ:
 ; BDOS Err on X: Bad Sector
@@ -875,209 +875,152 @@ WRITE:
 	LD		(ReadWriteFlag),A			; Set to zero to indicate that this is a Write
 	LD		A,C
 	LD		(WriteType),A				; save the BDOS write type (0,1,2)
-	
-	CP		WriteCleanBuffer			; first, is this a clean Host Buffer block ?	
-	JP		NZ,CheckDirtyBuffer			; No
-	
-;Write from a clean Host Buffer
-	LD		A,RecordsPerBlock			; Number of records per Block 
-	LD		(ModifiedlRecordsCount),A 	; reset Modified Records Count to RecordsPerBlock
 
-	LD		HL,SelectedIOState
-	LD		DE,HostBufferIOState
+	CP		WriteCleanBuffer			; first, is this a clean Allocation Buffer block ?
+	JP		NZ,CheckDirtyBuffer			; No
+
+;Write from a clean Host Buffer
+	LD		HL,SelectedState
+	LD		DE,HostBufferState
 	LD		BC,SelectedDiskStateSize
 	LDIR								; copy Selected State to Host Buffer state
 
 CheckDirtyBuffer:
-	LD		A,(ModifiedlRecordsCount)
-	OR		A
-	JP		Z,RequestPreread			;if no modified records, just do a clean preread
-	
-; The Host Buffer is dirty	
-	DEC		A
-	LD		(ModifiedlRecordsCount),A	; decrement records left
-	
-; is the record to write in the Host Buffer?
-	LD		HL,SelectedIOState
-	LD		DE,HostBufferIOState
+
+	LD		HL,SelectedState
+	LD		DE,HostBufferState
 	CALL	CompareDkTrkSec				; is it in Host Buffer?
-	JP		NZ,RequestPreread			; NO - Then we need to load the Host Buffer
+	LD		A,TRUE				;......
+	JP		NZ,SetPreread			; NO - Then we need to load the Host Buffer
 
-; record to be written is in Host Buffer
-	LD		A,(ModifiedlRecordsCount)	
-	CP		SectorsPerTrack				; Sector > maximum on track ?	
-	JP		C,NoTrackChange				; No, then all parameters are set for write
-	
 	XOR		A
-	LD		(ModifiedlRecordsCount),A	; Set value to 0
-	LD		HL,(HostBufferTrack)
-	INC		HL							; set track to next one
-	LD		(HostBufferTrack),HL
-	
-NoTrackChange:
-	XOR		A
+SetPreread:
 	LD		(PrereadSectorFlag),A		; clear preread flag
-	JP		PerformReadWrite
-
-RequestPreread:
-	XOR		A
-	LD		(ModifiedlRecordsCount),A	; not a write into an unallocated block
-	INC		A
-	LD		(PrereadSectorFlag),A		; set preread flag
 ;*******************************************************
 ; Common code to execute both reads and writes of 128-byte records
 ;*******************************************************
-PerformReadWrite:
+CommonDiskIO:
 	XOR		A							; Assume no disk error will occur
-	LD		(DiskErrorFlag),A           
-	LD		A,(SelectedRecord)          
-	RRA									; Convert selected record
-	RRA									; into physical sector by dividing by 4
-	AND		03FH						; remove unwanted bits
-	LD		(SelectedSector),A          
-	LD		HL,DataInDiskBuffer			; see if there is any data here ?
-	LD		A,(HL)                      
-	LD		(HL),001H					; force there is data here for after the actual read
-	OR		A							; really is there any data here ?
-	JP		Z,ReadSectorIntoBuffer		; NO ?- go read into buffer
-;
-; The buffer does have a physical sector in it, Note: The disk, track, and PHYSICAL sector
-; in the buffer need to be checked, hence the use of the CompareDkTrk subroutine.
-	LD		DE,InBufferDkTrkSec
-	LD		HL,SelectedIOState			; get the requested sector
-	CALL	CompareDkTrk				; is it in the buffer ?
-	JP		NZ,SectorNotInBuffer		; NO,jump - it must be read
-; Yes, it is in the buffer              
-	LD		A,(InBufferSector)			; get the sector
-	LD		HL,SelectedSector           
-	CP		M							; Check if correct physical sector
-	JP		Z,SectorInBuffer			; Yes - it is already in memory
-; No, it will have to be read in over current contents of buffer
-SectorNotInBuffer:
-	LD		A,(MustWriteBuffer)
-	OR		A							; do we need to write ?
-	CALL	NZ,WritePhysical			; if yes - write it out
-
-ReadSectorIntoBuffer:
-; indicate the  selected disk, track, and sector not residing in buffer
-	LD		A,(SelectedDisk)
-	LD		(InBufferDisk),A
-	LD		HL,(SelectedTrack)
-	LD		(InBufferTrack),HL
+	LD		(DiskStatus),A
 	
-	LD		A,(SelectedSector)
-	LD		(InBufferSector),A
+;-------------------------Convert selected record into physical sector-----------;
+	LD		A,(SelectedRecord)                                                   ;
+	RRA									; Convert selected record                ;
+	RRA									; into physical sector by dividing by 4  ;
+	AND		03FH						; Remove unwanted bits                   ;
+	LD		(SelectedSector),A                                                   ;
+;-------------------------Convert selected record into physical sector-----------;
 
-	LD		A,(PrereadSectorFlag)		; do we need to preread
-	OR		A
-	CALL	NZ,ReadPhysical				; yes - preread the sector
+;------------------------- Any Data in Buffer -----------------------------------;
+;Flag is ONLY reset by BIOS HOME Function. otherwise it is set by all passes 		 ;
 
-; At this point the data is in the buffer.
-; Either it was already here, or we returned from ReadPhysical
+	LD		HL,DataInBufferFlag			; See if there is any data here ?        ;
+	LD		A,(HL)                                                               ;
+	LD		(HL),TRUE					; Force flag true                        ;
+	OR		A							; Was  any data here ?                   ;
+	JP		Z,SetIOBufferState			; NO ?- go read into buffer              ;
+;------------------------- Any Data in Buffer -----------------------------------;
 
-	XOR		A							; reset the flag
-	LD		(MustWriteBuffer),A			; and store it away
+;-----------------------------test for  the sector in the buffer-----------------;
+	LD		DE,IOBufferState			; get the Buffer Disk and Track          ;
+	LD		HL,SelectedState			; get the requested Disk and Track       ;
+	CALL	CompareDkTrk				; Are they the same ?                    ;
+	JP		NZ,DataNotInBuffer		; NO,jump - it must be read 				 ;
+			                                                                     ;
+; Yes, the disk, track are the same are the sectors the same ?                   ;
+                                                                                 ;
+	LD		A,(IOBufferSector)			; get the sector                         ;
+	LD		HL,SelectedSector                                                    ;
+	CP		M							; Check if correct physical sector       ;
+	JP		Z,DataIsInBuffer			; Yes - it is already in memory          ;
+;-----------------------------test for  the sector in the buffer-----------------;
 
-; Selected sector on correct track and  disk is already 1n the buffer.
-; Convert the selected cpmRecord into relative address down the buffer.
-SectorInBuffer:
-	LD		A,(SelectedRecord)
-	AND		SectorMask					; want relative record number in Sector
-	INC		A							; adjust for DJNZ
-	LD		B,A
-	LD		DE,cpmRecordSize
-	LD		HL,-cpmRecordSize
-SectorInBuffer1:
-	ADD		HL,DE
-	DJNZ	SectorInBuffer1				; recordNumber * recordSize - index into the Sector
-	
-	LD		DE,DiskBuffer				; Start of sector
-	ADD		HL,DE						; HL -> start of record
-	
+;------------------------- Do we have to write out the buffer ?------------------;
+DataNotInBuffer:                                                                 ;
+	LD		A,(DirtyBufferFlag)                                              ;
+	OR		A							; do we need to write ?                  ;
+	CALL	NZ,WritePhysical			; if yes - write it out                  ;
+;------------------------- Do we have to write out the buffer ?------------------;
 
-	LD		DE,(DMAAddress)				; DE has DMA Address
-;;		EX		DE,HL ; DE <--> HL
+;------------------------- prepare for physical IO ------------------------------;
+SetIOBufferState:                                                                ;
+; indicate the  selected disk, track, and sector not residing in buffer          ;
+	LD		A,(SelectedDisk)                                                     ;
+	LD		(IOBufferDisk),A                                                     ;
+	LD		HL,(SelectedTrack)                                                   ;
+	LD		(IOBufferTrack),HL                                                   ;
+                                                                                 ;
+	LD		A,(SelectedSector)                                                   ;
+	LD		(IOBufferSector),A                                                   ;
+;------------------------- prepare for physical IO ------------------------------;
 
-; DE -> DMA Address & HL -> record in disk buffer
+;------------------------- Read the data if needed, or its already in the buffer -;
+	LD		A,(PrereadSectorFlag)		; do we need to preread ?                 ;
+	OR		A                                                                     ;
+	CALL	NZ,ReadPhysical				; yes - preread the sector                ;
+	                                                                              ;
+; At this point the data is in the buffer.                                        ;
+; Either it was already here, or we returned from ReadPhysical                    ;
+                                                                                  ;
+	XOR		A                                                                     ;
+	LD		(DirtyBufferFlag),A		; Reset the DirtyBufferFlag	          ;
+;------------------------- Read the data if needed, or its already in the buffer -;
 
-	LD		C,cpmRecordSize/8					; 8 bytes per move (loop count)
-;
-;  At this point -
-;	C	->	loop count
-;	DE	->	DMA address
-;	HL	->	sector in disk buffer
-;
-	LD		A,(ReadWriteFlag)					; Move into or out of buffer /
-	OR		A									; 0 => Write, non Zero => Read
-	JP		NZ,BufferMove						; Move out of buffer
 
-	INC		A									; going to force a write
-	LD		(MustWriteBuffer),A
-	EX		DE,HL ; DE <--> HL
+; The Buffer now has the data we want to Read/Write
+;-------------------------Calculate the address of the record in the sector ------;
+	                                                                              ;
+DataIsInBuffer:                                                                   ;
+	LD		A,(SelectedRecord)                                                    ;
+	AND		SectorMask					; Want relative record number in Sector   ;
+	INC		A							; Adjust for DJNZ                         ;
+	LD		B,A                                                                   ;
+	LD		DE,cpmRecordSize                                                      ;
+	LD		HL,-cpmRecordSize                                                     ;
+SectorInBuffer1:                                                                  ;
+	ADD		HL,DE						; RecordNumber * recordSize               ;
+	DJNZ	SectorInBuffer1				;  yields index into the Sector           ;
+                                                                                  ;
+	LD		DE,DiskBuffer				; Start of sector                         ;
+	ADD		HL,DE						; HL -> start of record in buffer 		  ;
+	LD		DE,(DMAAddress)				; Callers  DMA Address                    ;
+																				  ;
+;-------------------------Calculate the address of the record in the sector ------;
 
-;The following move loop moves eight bytes at a time from (HL> to (DE), C contains the loop count
+
+;------------------------- Determine if its a Read or Write and set HL & DE ------;
+                                                                                  ;
+	LD		A,(ReadWriteFlag)			; 0 => Write, non Zero => Read            ;
+	OR		A							; Write: move data from DMA to Buffer     ;
+	JP		NZ,BufferMove				; Read : move data from Buffer to DMA     ;
+                                                                                  ;
+	INC		A							; Set the flag to indicate dirty buffer   ;
+	LD		(DirtyBufferFlag),A                                                   ;
+	EX		DE,HL						; Swap source and destination for write   ;
+                                                                                  ;
+;------------------------- Determine if its a Read or Write and set HL & DE ------;
+
 
 BufferMove:
 	LD		BC,cpmRecordSize
-	LDIR
-;	LD		A,(HL)								; Get byte from source
-;	LD	(DE),A								; Put into destination
-;	INC		DE								; update pointers
-;	INC		HL
-;
-;	LD		A,(HL)
-;	LD	(DE),A
-;	INC		DE
-;	INC		HL
-;
-;	LD		A,(HL)
-;	LD	(DE),A
-;	INC		DE
-;	INC		HL
-;
-;	LD		A,(HL)
-;	LD	(DE),A
-;	INC		DE
-;	INC		HL
-;
-;	LD		A,(HL)
-;	LD	(DE),A
-;	INC		DE
-;	INC		HL
-;
-;	LD		A,(HL)
-;	LD	(DE),A
-;	INC		DE
-;	INC		HL
-;
-;	LD		A,(HL)
-;	LD	(DE),A
-;	INC		DE
-;	INC		HL
-;
-;	LD		A,(HL)
-;	LD	(DE),A
-;	INC		DE
-;	INC		HL
-;
-;	DEC		C								; count down on loop counter
-;	JP	NZ,BufferMove						; repeat till done (CP/M sector moved)
-; end of loop
+	LDIR								; Move data to/from Host Buffer
 
-	LD		A,(WriteType)						; write to directory ?
+	LD		A,(WriteType)				; Is this a write to the directory ?
 	CP		WriteDirectory
-	LD		A,(DiskErrorFlag)					; get flag in case of a delayed read or write
-	RET	NZ; return if delayed read or write
+	LD		A,(DiskStatus)				; Set ACC with disk status if an immediate return
+	RET		NZ							; Return if not updating a directory entry
 
-	OR		A								; Any disk errors ?
-	RET	NZ; yes - abandon attempt to write to directory
+	OR		A							; Check for any disk errors ?
+	RET		NZ							; If yes - abandon attempt to write to directory
 
 	XOR		A
-	LD		(MustWriteBuffer),A					; clear flag
-	CALL	WritePhysical
-	LD		A,(DiskErrorFlag)					; return error flag to caller
+	LD		(DirtyBufferFlag),A			; Clear the dirty buffer flag
+	CALL	WritePhysical				; do an immediate update of the directory to disk
+	LD		A,(DiskStatus)				; Set ACC with disk status 
 	RET
 ;********************************************************************
+
+
 ; Compares just the disk and track   pointed to by DE and HL (used for Blocking/Deblocking)
 CompareDkTrk:
 	LD		BC,03H
@@ -1090,34 +1033,8 @@ CompareDkTrkSecLoop:
 	CPI									; does A = (HL)
 	RET		NZ							; Not a match exit
 	JP		PE,CompareDkTrkSecLoop		; Loop if not done
-	RET	
-; CompareDkTrk:
-; 	LD		C,03H							; Disk(1), Track(2)
-; 	JP		CompareDkTrkSecLoop
-; CompareDkTrkSec:							;Compares just the disk and track   pointed to by DE and HL
-; 	LD		C,04H							; Disk(1), Track(2), Sector(1)
-; CompareDkTrkSecLoop:
-; 	LD		A,(DE)
-; 	CP		M
-; 	RET		NZ; Not equal
-; 	INC		DE
-; 	INC		HL
-; 	DEC		C
-; 	RET		Z; return they match (zero flag set)
-; 	JP		CompareDkTrkSecLoop				; keep going
+	RET
 
-
-;Moves the disk, track, and sector variables pointed at by HL to those pointed at by DE
-; MoveDkTrkSec:
-; 	LD		C,04H							; Disk(1), Track(2), Sector(1)
-; MoveDkTrkSecLoop:
-; 	LD		A,(HL)
-; 	LD		(DE),A
-; 	INC		DE
-; 	INC		HL
-; 	DEC		C
-; 	RET	Z
-; 	JP		MoveDkTrkSecLoop
 
 ;************************************************
 ;			Physical Disk IO					*
@@ -1130,17 +1047,17 @@ WritePhysical:
 
 ReadPhysical:
 	LD		A,DiskReadCode				; get read function
-	
-; Set up the Dick Control Table DCT                                       
+
+; Set up the Dick Control Table DCT
 CommonPhysical:
-;Command 
+;Command
 	LD		(DCTCommand),A				; set the command for Read or Write
-;Disk	
-	LD		A,(InBufferDisk)            
+;Disk
+	LD		A,(IOBufferDisk)
 	AND		03H							; only units 0 to 3
 	LD		(DCTDisk),A					; set disk
 ;Track
-	LD		HL,(InBufferTrack)          
+	LD		HL,(IOBufferTrack)
 	LD		A,L							; for this controller it is a byte value
 	LD		(DCTTrack),A				; set track
 ;Head and Track	Calculations
@@ -1150,7 +1067,7 @@ CommonPhysical:
 DetermineHead:
 	LD		B,0							; Start at head 0
 	LD		HL,SelectedDskSecsPerHead	; Point at track counts
-	LD		A,(InBufferSector)			; get target sector
+	LD		A,(IOBufferSector)			; get target sector
 DetermineHead1:
 	CP		M							; Need another Head?
 	JP		C,HeadFound					; nope done with head calculation
@@ -1159,7 +1076,7 @@ DetermineHead1:
 	INC		B							; Increment head
 	JP		DetermineHead1				; loop for next head value
 
-;Sector	
+;Sector
 HeadFound:								; ACC now has Sector MOD SectorsPerHead
 	INC		A							; physical sectors start at 1
 	LD		(DCTSector),A				; set sector
@@ -1182,31 +1099,31 @@ HeadFound:								; ACC now has Sector MOD SectorsPerHead
 	LD		HL,DiskControlByte
 	LD		(DCTNextControlLocation),HL
 
-;Put  DCT pointer in page0 	
+;Put  DCT pointer in page0
 	LD		HL,DCTCommand
 	LD		(DiskCommandBlock),HL
-; Make the IO happen 
+; Make the IO happen
 	LD		HL,DiskControlByte			; activate disk controller
 	LD		(HL),080H
 
-;Wait until Disk Status Block indicates the operation is complete, 
+;Wait until Disk Status Block indicates the operation is complete,
 WaitForDiskComplete:
 	LD		A,(HL)						; get control bytes
-	OR		A                           
+	OR		A
 	JP		NZ,WaitForDiskComplete		; operation not done
-	
-	
-;Check if any errors occurred.                                     
-	LD		A,(DiskStatusLocation)
-	JP		C,DiskError                 
-	XOR		A                           
-	LD		(DiskErrorFlag),A			; clear the flag
-	RET                                 
 
-; set error flag and return 
-DiskError:                             
-	LD		A,1                         
-	LD		(DiskErrorFlag),A			; set the error flag
+
+;Check if any errors occurred.
+	LD		A,(DiskStatusLocation)
+	JP		C,DiskError
+	XOR		A
+	LD		(DiskStatus),A			; clear the flag
+	RET
+
+; set error flag and return
+DiskError:
+	LD		A,1
+	LD		(DiskStatus),A			; set the error flag
 	RET
 
 ;********************************************************************
@@ -1275,13 +1192,12 @@ DCTSize					EQU		DCTEnd-DCTStart
 WriteType:				DB		00H			; The type of write indicated by BDOS
 
 ; variables for physical sector -  These are moved and compared as a group, DO NOT ALTER
-InBufferDkTrkSec:
-InBufferIOState:
-InBufferDisk:			DB		00H
-InBufferTrack:			DW		00H
-InBufferSector:			DB		00H
-DataInDiskBuffer:		DB		00H			; when non-zero, the disk buffer has data from disk
-MustWriteBuffer:		DB		00H			; Non-zero when data has been written into DiskBuffer,
+IOBufferState:
+IOBufferDisk:			DB		00H
+IOBufferTrack:			DW		00H
+IOBufferSector:			DB		00H
+DataInBufferFlag:		DB		00H			; when non-zero, the disk buffer has data from disk
+DirtyBufferFlag:	DB		00H			; Non-zero when data has been written into DiskBuffer,
 											;   but not yet written out to the disk
 ;---------------------------------------------------------------------------
 ;	Disk Storage area
@@ -1289,32 +1205,32 @@ MustWriteBuffer:		DB		00H			; Non-zero when data has been written into DiskBuffe
 ;     variables for selected disk, track and sector
 ; These are moved and compared as a group, DO NOT ALTER
 
-SelectedDskSecsPerHead:		DB		00H			; Sectors / head
+SelectedDskSecsPerHead:	DB		00H			; Sectors / head
 
-SelectedIOState:
-SelectedDisk:				DB		00H
-SelectedTrack:				DW		0000H
-SelectedRecord:				DB		00H
+SelectedState:
+SelectedDisk:			DB		00H
+SelectedTrack:			DW		0000H
+SelectedRecord:			DB		00H
 
 SelectedDiskStateEnd:
-SelectedDiskStateSize		EQU		SelectedDiskStateEnd - SelectedDisk
+SelectedDiskStateSize	EQU		SelectedDiskStateEnd - SelectedDisk
 
-DMAAddress:					DW		0000H			; DMA address
+DMAAddress:				DW		0000H			; DMA address
 
-SelectedSector:				DB	00H
+SelectedSector:			DB		00H
 
-; Parameters for the records in the Deblocking Buffer
+; Parameters for the records in the Fresh Allocation Block
 ; These are moved and compared as a group, DO NOT ALTER
 
-HostBufferIOState:
-HostBufferDisk:			DB	00H
-HostBufferTrack:		DW	0000H
-HostBufferRecord:		DB	00H
-
-ModifiedlRecordsCount:		DB	00H			; Number of unallocated "records"in current previously unallocated allocation block.
-DiskErrorFlag:				DB	00H			; Non-Zero - unrecoverable error output "Bad Sector" message
+HostBufferState:
+HostBufferDisk:			DB		00H
+HostBufferTrack:		DW		0000H
+HostBufferRecord:		DB		00H
+		
+ModifiedlRecordsCount:	DB		00H			; Number of unallocated "records"in current previously unallocated allocation block.
+DiskStatus:				DB		00H			; Non-Zero - unrecoverable error output "Bad Sector" message
 											; Flags used inside the de-blocking code
-PrereadSectorFlag:			DB	00H			; non-zero if physical sector must be read into the disk buffer
+PrereadSectorFlag:		DB		00H			; non-zero if physical sector must be read into the disk buffer
 											; either before a write to a allocated block can occur, or
 											; for a normal cpmRecord read
 ReadWriteFlag:				DB	00H			; 0 => Write-  Non-zero =>read

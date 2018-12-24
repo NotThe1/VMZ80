@@ -1,90 +1,266 @@
 0001: 0100         ; A.Z80
-0002: 0100         ;
-0003: 0100         ;	2018-11-30
-0004: 0100         ; 2
-0005: 0100             NumberOfLogicalDisks EQU    4
-0006: 0100         ;NumberOfLogicalDisks	EQU		0FC2EH
-0007: 0100             DiskParameterHeaders EQU    0FC3DH
-0008: 0100             StackTop   EQU    0100H
+0002: 0100         ; 				wrs.setDoubleReg(getDoubleRegister1_45(instructionBase), getImmediateWord(instructionBase + 1));
+0003: 0100
+0004: 0100         ;	2018-11-30
+0005: 0100         ; 3
+0006: 0100             TRUE       EQU    0FFH                 ;
+0007: 0100             FALSE      EQU    0                    ;
+0008: 0100
 0009: 0100
-0010: 0100                        ORG    0100H
-0011: 0100             Start:
-0012: 0100 31 00 01               LD     SP,StackTop
-0013: 0103
-0014: 0103
-0015: 0103 21 78 56               LD     HL,5678H
-0016: 0106 11 BC 9A               LD     DE,9ABCH
+0010: 0100             StackTop   EQU    0100H
+0011: 0100
+0012: 0100                        ORG    StackTop
+0013: 0100             Start:
+0014: 0100 31 00 01               LD     SP,StackTop
+0015: 0103 CD 11 01               CALL   Init
+0016: 0106 CD 21 01               CALL   CommonDiskIO
 0017: 0109
-0018: 0109 EB                     EX     DE,HL
-0019: 010A 2A 19 01               LD     HL,(XX)
-0020: 010D EB                     EX     DE,HL
-0021: 010E
-0022: 010E 21 78 56               LD     HL,5678H
-0023: 0111 11 BC 9A               LD     DE,9ABCH
-0024: 0114 ED 5B 19 01               LD     DE,(XX)              ;
-0025: 0118 76                     HALT
-0026: 0119
-0027: 0119             XX:
-0028: 0119 34 12                  DW     01234H
-0029: 011B
-0030: 011B             SelectedDisk: DS     1
-0031: 011C             SelectedDskSecsPerHead: DS     1
-0032: 011D
-0033: 011D             SELDSK:
-0034: 011D 21 00 00               LD     HL,00H               ; Assume an error
-0035: 0120 79                     LD     A,C
-0036: 0121 FE 04                  CP     NumberOfLogicalDisks
-0037: 0123 D0                     RET    NC                   ; return if > max number of Disks
-0038: 0124
-0039: 0124 32 1B 01               LD     (SelectedDisk),A     ; save disk number
-0040: 0127
-0041: 0127         ; Compute offset down disk parameter table by multiplying by parameter
-0042: 0127         ; header length (16 bytes)
-0043: 0127
-0044: 0127 07                     RLCA                        ; X2
-0045: 0128 07                     RLCA                        ; X4
-0046: 0129 07                     RLCA                        ; X8
-0047: 012A 07                     RLCA                        ; X16
-0048: 012B 16 00                  LD     D,0                  ; make disk into word number
-0049: 012D 5F                     LD     E,A
-0050: 012E DD 21 3D FC               LD     IX,DiskParameterHeaders ; get DPH address Base
-0051: 0132 DD 19                  ADD    IX,DE                ; get the specific DiskParameterHeader
-0052: 0134 DD E5                  PUSH   IX                   ; save for return in HL
-0053: 0136
-0054: 0136 DD 56 0B               LD     D,(IX+11)            ; LSB
-0055: 0139 DD 5E 0A               LD     E,(IX+10)            ; MSB
-0056: 013C
-0057: 013C D5                     PUSH   DE
-0058: 013D DD E1                  POP    IX
-0059: 013F DD 7E 0F               LD     A,(IX+15)
-0060: 0142 32 1C 01               LD     (SelectedDskSecsPerHead),A
-0061: 0145
-0062: 0145
-0063: 0145
-0064: 0145
-0065: 0145         ; 	LD		DE,DiskParameterHeaders	; get DPH address
-0066: 0145         ; 	ADD		HL,DE					; DE -> appropriate DPH
-0067: 0145         ; 	PUSH	HL						; Save DPH pointer
-0068: 0145         ; 	LD		DE,10					; DiskParameterBlock Index
-0069: 0145         ; 	ADD		HL,DE					; ????? -> cpmRecords per track
-0070: 0145         ; 	LD		E,(HL)
-0071: 0145         ; 	INC		HL
-0072: 0145         ; 	LD		D,(HL)					; DE has Parameter Block for selected disk
-0073: 0145         ; 	LD		HL,15					; SectorsPerHead Index
-0074: 0145         ; 	ADD		HL,DE					; HL is at SecPerHeadPerTrack
-0075: 0145         ; 	LD		A,(HL)					; get the value and
-0076: 0145         ; 	LD		(SelectedDskSecsPerHead),A; save for actual IO
-0077: 0145         ;
-0078: 0145 E1                     POP    HL                   ; recover DPH pointer
-0079: 0146 C9                     RET
-0080: 0147
+0018: 0109 76                     HALT
+0019: 010A
+0020: 010A                        ORG    StackTop + 010H
+0021: 0110
+0022: 0110         ;DataInBufferFlag:	DB		055H
+0023: 0110 55          DataIsMine: DB     055H
+0024: 0111         ;DataIsDirtyFlag:	DB		055H
+0025: 0111
+0026: 0111             Init:
+0027: 0111 3E FF                  LD     A,TRUE               ;FALSE
+0028: 0113 32 75 01               LD     (DataInBufferFlag),A
+0029: 0116 3E FF                  LD     A,TRUE               ;FALSE
+0030: 0118 32 10 01               LD     (DataIsMine),A
+0031: 011B 3E 00                  LD     A,FALSE              ;TRUE ;FALSE
+0032: 011D 32 76 01               LD     (DataIsDirtyFlag),A
+0033: 0120 C9                     RET
+0034: 0121
+0035: 0121
+0036: 0121         ;*******************************************************
+0037: 0121         ; Common code to execute both reads and writes of 128-byte records
+0038: 0121         ;*******************************************************
+0039: 0121             CommonDiskIO:
+0040: 0121 AF                     XOR    A                    ; Assume no disk error will occur
+0041: 0122 32 7F 01               LD     (DiskStatus),A
+0042: 0125
+0043: 0125         ;-------------------------Convert selected record into physical sector-----------;
+0044: 0125 3A 7B 01               LD     A,(SelectedRecord)   ;
+0045: 0128 1F                     RRA                         ; Convert selected record                ;
+0046: 0129 1F                     RRA                         ; into physical sector by dividing by 4  ;
+0047: 012A E6 3F                  AND    03FH                 ; Remove unwanted bits                   ;
+0048: 012C 32 7A 01               LD     (SelectedSector),A   ;
+0049: 012F         ;-------------------------Convert selected record into physical sector-----------;
+0050: 012F
+0051: 012F         ;------------------------- Any Data in Buffer -----------------------------------;
+0052: 012F         ;Flag is ONLY reset by BIOS HOME Function. otherwise it is set by all passes 		 ;
+0053: 012F
+0054: 012F 21 75 01               LD     HL,DataInBufferFlag  ; See if there is any data here ?        ;
+0055: 0132 7E                     LD     A,(HL)               ;
+0056: 0133 36 FF                  LD     (HL),TRUE            ; Force flag true                        ;
+0057: 0135 B7                     OR     A                    ; Was  any data here ?                   ;
+0058: 0136 28 10                  JR     Z,PreRead            ; No, then we need to load data into the buffer
+0059: 0138         ;------------------------- Any Data in Buffer -----------------------------------;
+0060: 0138
+0061: 0138
+0062: 0138 CD 60 01               CALL   IsItMyData
+0063: 013B 28 1C                  JR     Z,DoPart2
+0064: 013D
+0065: 013D
+0066: 013D CD 46 02               CALL   DoIsItDirty
+0067: 0140 28 06                  JR     Z,PreRead
+0068: 0142
+0069: 0142             PreWrite:
+0070: 0142 21 95 01               LD     HL,msgPreWrite
+0071: 0145 CD 7F 02               CALL   DisplayMessage       ; Stub the work
+0072: 0148         ;------------------------- prepare for physical IO ------------------------------;
+0073: 0148         ;
+0074: 0148             PreRead:
+0075: 0148         ; Set IOBuffer to Selected state for physical read
+0076: 0148 21 77 01               LD     HL,SelectedState
+0077: 014B 11 71 01               LD     DE,IOBufferState
+0078: 014E 01 04 00               LD     BC,SelectedStateSize
+0079: 0151 ED B0                  LDIR
+0080: 0153
+0081: 0153 21 80 01               LD     HL,msgPreRead
+0082: 0156 CD 7F 02               CALL   DisplayMessage       ; Stub the work
+0083: 0159
+0084: 0159             DoPart2:
+0085: 0159 21 AB 01               LD     HL,msgPart2
+0086: 015C CD 7F 02               CALL   DisplayMessage
+0087: 015F
+0088: 015F
+0089: 015F
+0090: 015F
+0091: 015F
+0092: 015F C9                     RET
+0093: 0160
+0094: 0160         ;...................
+0095: 0160         ;--------------------------- Is It My Data --------------------------------------;
+0096: 0160             IsItMyData:
+0097: 0160 21 77 01               LD     HL,SelectedState
+0098: 0163 11 71 01               LD     DE,IOBufferState
+0099: 0166 06 04                  LD     B,SelectedStateSize
+0100: 0168             IsItMyData1:
+0101: 0168 1A                     LD     A,(DE)
+0102: 0169 AF                     XOR    A,(HL)               ; (HL) =(DE)
+0103: 016A C0                     RET    NZ                   ; If not we are done
+0104: 016B 13                     INC    DE
+0105: 016C 23                     INC    HL                   ; Lets look at the next bytes
+0106: 016D 10 F9                  DJNZ   IsItMyData1          ; Loop if not exhausted the count
+0107: 016F AF                     XOR    A                    ; Else set the Z flag
+0108: 0170 C9                     RET                         ;  and exit
+0109: 0171
+0110: 0171         ;--------------------------- Is It My Data --------------------------------------;
+0111: 0171         ;==========================================================
+0112: 0171         ; Contains the state used for Physical IO
+0113: 0171
+0114: 0171             IOBufferState:
+0115: 0171 00          IOBufferDisk: DB     00H
+0116: 0172 00 00       IOBufferTrack: DW     0000H
+0117: 0174 00          IOBufferSector: DB     00H
+0118: 0175
+0119: 0175 00          DataInBufferFlag: DB     00H                  ; when non-zero, the disk buffer has data from disk
+0120: 0176 00          DataIsDirtyFlag: DB     00H                  ; Non-zero when data has been written into DiskBuffer,
+0121: 0177         ;..........................................................
+0122: 0177         ;     variables for selected disk, track and sector to be (use for physical IO ?)
+0123: 0177         ; These are moved and compared as a group, DO NOT ALTER
+0124: 0177
+0125: 0177             SelectedState:
+0126: 0177 00          SelectedDisk: DB     00H
+0127: 0178 00 00       SelectedTrack: DW     0000H
+0128: 017A 00          SelectedSector: DB     00H
+0129: 017B             SelectedStateEnd:
+0130: 017B             SelectedStateSize EQU    SelectedStateEnd - SelectedState
+0131: 017B
+0132: 017B 00          SelectedRecord: DB     00H
+0133: 017C
+0134: 017C 00          SelectedDskSecsPerHead: DB     00H                  ; Sectors / head
+0135: 017D
+0136: 017D 00 00       DMAAddress: DW     0000H                ; DMA address
+0137: 017F         ;..........................................................
+0138: 017F 00          DiskStatus: DB     00H                  ; Non-Zero - unrecoverable error output "Bad Sector" message
+0139: 0180
+0140: 0180         ;==========================================================
+0141: 0180
+0142: 0180         ;-----------------------------------------------------------------------
+0143: 0180             msgPreRead:
+0144: 0180 50 72 65 52 65 61 64 20 74 68 65 20 73 65 63 74 6F 72 0D 0A 00                DB     'PreRead the sector',CR,LF,EndOfMessage
+0145: 0195             msgPreWrite:
+0146: 0195 50 72 65 57 72 69 74 65 20 74 68 65 20 73 65 63 74 6F 72 0D 0A 00                DB     'PreWrite the sector',CR,LF,EndOfMessage
+0147: 01AB             msgPart2:
+0148: 01AB 50 61 72 74 32 0D 0A                DB     'Part2',CR,LF,
+0149: 01B2 2D 2D 2D 2D 2D 2D 2D 2D 2D 2D 2D 2D 2D                DB     '-------------'
+0150: 01BF 0D 0A 00                DB     CR,LF,EndOfMessage
+0151: 01C2
+0152: 01C2             DoIsDataInBuffer:
+0153: 01C2 21 D4 01               LD     HL,msgDataInBufferY
+0154: 01C5 3A 75 01               LD     A,(DataInBufferFlag)
+0155: 01C8 B7                     OR     A
+0156: 01C9 F5                     PUSH   AF
+0157: 01CA 20 03                  JR     NZ,DoIsDataInBuffer1
+0158: 01CC 21 F0 01               LD     HL,msgDataInBufferN
+0159: 01CF             DoIsDataInBuffer1:
+0160: 01CF CD 7F 02               CALL   DisplayMessage       ; Stub the work
+0161: 01D2 F1                     POP    AF                   ; return the state of the test
+0162: 01D3 C9                     RET
+0163: 01D4             msgDataInBufferY:
+0164: 01D4 59 45 53 20 44 61 74 61 20 49 73 20 49 6E 20 54 68 65 20 42 75 66 66 65 72 0D 0A 00                DB     'YES Data Is In The Buffer',CR,LF,EndOfMessage
+0165: 01F0             msgDataInBufferN:
+0166: 01F0 4E 4F 20 44 61 74 61 20 49 73 20 4E 4F 54 20 49 6E 20 54 68 65 20 42 75 66 66 65 72 0D 0A 00                DB     'NO Data Is NOT In The Buffer',CR,LF,EndOfMessage
+0167: 020F         ;-----------------------------------------------------------
+0168: 020F             DoIsItMine:
+0169: 020F 21 21 02               LD     HL,msgIsItMineY
+0170: 0212 3A 10 01               LD     A,(DataIsMine)
+0171: 0215 B7                     OR     A
+0172: 0216 F5                     PUSH   AF
+0173: 0217 20 03                  JR     NZ,DoIsItMine1
+0174: 0219 21 32 02               LD     HL,msgIsItMineN
+0175: 021C             DoIsItMine1:
+0176: 021C CD 7F 02               CALL   DisplayMessage       ; Stub the work
+0177: 021F F1                     POP    AF                   ; Restore flags
+0178: 0220 C9                     RET
+0179: 0221             msgIsItMineY:
+0180: 0221 59 45 53 20 49 74 20 49 73 20 4D 69 6E 65 0D 0A 00                DB     'YES It Is Mine',CR,LF,EndOfMessage
+0181: 0232             msgIsItMineN:
+0182: 0232 4E 4F 20 49 74 20 49 73 20 4E 6F 74 20 4D 69 6E 65 0D 0A 00                DB     'NO It Is Not Mine',CR,LF,EndOfMessage
+0183: 0246         ;-----------------------------------------------------------
+0184: 0246             DoIsItDirty:
+0185: 0246 21 58 02               LD     HL,msgIsItDirtyY
+0186: 0249 3A 76 01               LD     A,(DataIsDirtyFlag)
+0187: 024C B7                     OR     A
+0188: 024D F5                     PUSH   AF                   ; Save flags
+0189: 024E 20 03                  JR     NZ,DoIsItDirty1
+0190: 0250 21 6A 02               LD     HL,msgIsItDirtyN
+0191: 0253             DoIsItDirty1:
+0192: 0253 CD 7F 02               CALL   DisplayMessage       ; Stub the work
+0193: 0256 F1                     POP    AF                   ; Restore flags
+0194: 0257 C9                     RET
+0195: 0258             msgIsItDirtyY:
+0196: 0258 59 45 53 20 49 74 20 49 73 20 44 69 72 74 79 0D 0A 00                DB     'YES It Is Dirty',CR,LF,EndOfMessage
+0197: 026A             msgIsItDirtyN:
+0198: 026A 4E 4F 20 49 74 20 49 73 20 4E 6F 74 20 44 69 72 74 79 0D 0A 00                DB     'NO It Is Not Dirty',CR,LF,EndOfMessage
+0199: 027F         ;-----------------------------------------------------------
+0200: 027F             EndOfMessage EQU    00H
+0201: 027F             LF         EQU    0AH                  ; Line Feed
+0202: 027F             CR         EQU    0DH                  ; Carriage Return
+0203: 027F             TTY_DataPort EQU    0ECH
+0204: 027F         ; entered with pointer to message in HL
+0205: 027F             DisplayMessage:
+0206: 027F 7E                     LD     A,M                  ; get  character
+0207: 0280 B7                     OR     A                    ; is it NULL
+0208: 0281 C8                     RET    Z                    ; return if it is NULL (00)
+0209: 0282 4F                     LD     C,A
+0210: 0283 E5                     PUSH   HL                   ; save the pointer
+0211: 0284 D3 EC                  OUT    TTY_DataPort
+0212: 0286 E1                     POP    HL                   ; retrieve the pointer
+0213: 0287 23                     INC    HL                   ; point at next character
+0214: 0288 18 F5                  JR     DisplayMessage
+0215: 028A
+0216: 028A         ;.................................
            ************************   Xref   ************************
-0000: $               0146
-0007: DiskParameterHeaders FC3D   0050
-0005: NumberOfLogicalDisks 0004   0036
-0033: SELDSK          011D
-0030: SelectedDisk    011B   0039
-0031: SelectedDskSecsPerHead 011C   0060
-0008: StackTop        0100   0012
-0011: Start           0100
-0027: XX              0119   0019 0024
+0000: $               0288
+0039: CommonDiskIO    0121   0016
+0202: CR              000D   0144 0146 0148 0150 0164 0166 0180 0182 0196 0198
+0119: DataInBufferFlag 0175   0028 0054 0154
+0120: DataIsDirtyFlag 0176   0032 0186
+0023: DataIsMine      0110   0030 0170
+0138: DiskStatus      017F   0041
+0205: DisplayMessage  027F   0071 0082 0086 0160 0176 0192 0214
+0136: DMAAddress      017D
+0152: DoIsDataInBuffer 01C2
+0159: DoIsDataInBuffer1 01CF   0157
+0184: DoIsItDirty     0246   0066
+0191: DoIsItDirty1    0253   0189
+0168: DoIsItMine      020F
+0175: DoIsItMine1     021C   0173
+0084: DoPart2         0159   0063
+0200: EndOfMessage    0000   0144 0146 0150 0164 0166 0180 0182 0196 0198
+0007: FALSE           0000   0031
+0026: Init            0111   0015
+0115: IOBufferDisk    0171
+0117: IOBufferSector  0174
+0114: IOBufferState   0171   0077 0098
+0116: IOBufferTrack   0172
+0096: IsItMyData      0160   0062
+0100: IsItMyData1     0168   0106
+0201: LF              000A   0144 0146 0148 0150 0164 0166 0180 0182 0196 0198
+0165: msgDataInBufferN 01F0   0158
+0163: msgDataInBufferY 01D4   0153
+0197: msgIsItDirtyN   026A   0190
+0195: msgIsItDirtyY   0258   0185
+0181: msgIsItMineN    0232   0174
+0179: msgIsItMineY    0221   0169
+0147: msgPart2        01AB   0085
+0143: msgPreRead      0180   0081
+0145: msgPreWrite     0195   0070
+0074: PreRead         0148   0058 0067
+0069: PreWrite        0142
+0126: SelectedDisk    0177
+0134: SelectedDskSecsPerHead 017C
+0132: SelectedRecord  017B   0044
+0128: SelectedSector  017A   0048
+0125: SelectedState   0177   0076 0097 0130
+0129: SelectedStateEnd 017B   0130
+0130: SelectedStateSize 0004   0078 0099
+0127: SelectedTrack   0178
+0010: StackTop        0100   0012 0014 0020
+0013: Start           0100
+0006: TRUE            00FF   0027 0029 0056
+0203: TTY_DataPort    00EC   0211

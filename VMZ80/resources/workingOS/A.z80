@@ -1,80 +1,216 @@
 ; A.Z80
-;
+; 				wrs.setDoubleReg(getDoubleRegister1_45(instructionBase), getImmediateWord(instructionBase + 1));
+
 ;	2018-11-30
-; 2
-NumberOfLogicalDisks	EQU		4
-;NumberOfLogicalDisks	EQU		0FC2EH
-DiskParameterHeaders	EQU		0FC3DH	
+; 3
+TRUE	EQU		0FFH;
+FALSE	EQU		0;
+
+
 StackTop	EQU		0100H
 
-	ORG   0100H
+	ORG   StackTop
 Start:	
 	LD		SP,StackTop
-	
+	CALL	Init
+	CALL	CommonDiskIO
 
-	LD		HL,5678H
-	LD		DE,9ABCH
-
-	EX		DE,HL
-	LD		HL,(XX)
-	EX		DE,HL
-	
-	LD		HL,5678H
-	LD		DE,9ABCH
-	LD		DE,(XX);
 	HALT
+	
+	ORG		StackTop + 010H
 
-XX:
-	DW		01234H
+;DataInBufferFlag:	DB		055H
+DataIsMine:		DB		055H
+;DataIsDirtyFlag:	DB		055H
+
+Init:
+	LD		A,TRUE	;FALSE
+	LD		(DataInBufferFlag),A
+	LD		A,TRUE	;FALSE
+	LD		(DataIsMine),A
+	LD		A,FALSE	;TRUE ;FALSE
+	LD		(DataIsDirtyFlag),A
+	RET
+
+
+;*******************************************************
+; Common code to execute both reads and writes of 128-byte records
+;*******************************************************
+CommonDiskIO:
+	XOR		A							; Assume no disk error will occur
+	LD		(DiskStatus),A
 	
-SelectedDisk:	DS	1
-SelectedDskSecsPerHead:	DS	1
+;-------------------------Convert selected record into physical sector-----------;
+	LD		A,(SelectedRecord)                                                   ;
+	RRA									; Convert selected record                ;
+	RRA									; into physical sector by dividing by 4  ;
+	AND		03FH						; Remove unwanted bits                   ;
+	LD		(SelectedSector),A                                                   ;
+;-------------------------Convert selected record into physical sector-----------;
 	
-SELDSK:
- 	LD		HL,00H					; Assume an error
- 	LD		A,C
- 	CP		NumberOfLogicalDisks
- 	RET	NC							; return if > max number of Disks
- 
- 	LD		(SelectedDisk),A		; save disk number
-	
- ; Compute offset down disk parameter table by multiplying by parameter
- ; header length (16 bytes)
- 
-	RLCA							; X2
-	RLCA							; X4
-	RLCA							; X8
-	RLCA							; X16
-	LD		D,0						; make disk into word number
- 	LD		E,A
-	LD		IX,DiskParameterHeaders	; get DPH address Base
-	ADD		IX,DE					; get the specific DiskParameterHeader
-	PUSH	IX						; save for return in HL
-	
-	LD		D,(IX + 11)				; LSB
-	LD		E,(IX + 10)				; MSB
-	
-	PUSH	DE
-	POP		IX
-	LD		A,(IX + 15)
-	LD		(SelectedDskSecsPerHead),A
-	
-	
+;------------------------- Any Data in Buffer -----------------------------------;
+;Flag is ONLY reset by BIOS HOME Function. otherwise it is set by all passes 		 ;
+
+	LD		HL,DataInBufferFlag			; See if there is any data here ?        ;
+	LD		A,(HL)                                                               ;
+	LD		(HL),TRUE					; Force flag true                        ;
+	OR		A							; Was  any data here ?                   ;
+	JR		Z,PreRead					; No, then we need to load data into the buffer
+;------------------------- Any Data in Buffer -----------------------------------;
 
 	
-; 	LD		DE,DiskParameterHeaders	; get DPH address
-; 	ADD		HL,DE					; DE -> appropriate DPH
-; 	PUSH	HL						; Save DPH pointer
-; 	LD		DE,10					; DiskParameterBlock Index
-; 	ADD		HL,DE					; ????? -> cpmRecords per track
-; 	LD		E,(HL)
-; 	INC		HL
-; 	LD		D,(HL)					; DE has Parameter Block for selected disk
-; 	LD		HL,15					; SectorsPerHead Index
-; 	ADD		HL,DE					; HL is at SecPerHeadPerTrack
-; 	LD		A,(HL)					; get the value and
-; 	LD		(SelectedDskSecsPerHead),A; save for actual IO
-; 
- 	POP	HL							; recover DPH pointer
- 	RET
- 
+	CALL	IsItMyData
+	JR		Z,DoPart2
+	
+	
+	CALL	DoIsItDirty
+	JR		Z,PreRead
+	
+PreWrite:
+	LD		HL,msgPreWrite
+	CALL	DisplayMessage	; Stub the work
+;------------------------- prepare for physical IO ------------------------------;
+                                                                ;
+PreRead:
+; Set IOBuffer to Selected state for physical read 
+	LD		HL,SelectedState
+	LD		DE,IOBufferState
+	LD		BC,SelectedStateSize
+	LDIR
+	
+	LD		HL,msgPreRead
+	CALL	DisplayMessage	; Stub the work
+
+DoPart2:
+	LD		HL,msgPart2
+	CALL	DisplayMessage
+	
+	
+	
+	
+	
+	RET
+	
+;...................
+;--------------------------- Is It My Data --------------------------------------;
+IsItMyData:
+	LD		HL,SelectedState
+	LD		DE,IOBufferState
+	LD		B,SelectedStateSize
+IsItMyData1:
+	LD		A,(DE)
+	XOR		A,(HL)							; (HL) =(DE)
+	RET		NZ								; If not we are done
+	INC		DE
+	INC		HL								; Lets look at the next bytes
+	DJNZ	IsItMyData1						; Loop if not exhausted the count
+	XOR		A								; Else set the Z flag
+	RET										;  and exit
+
+;--------------------------- Is It My Data --------------------------------------;	
+;==========================================================
+; Contains the state used for Physical IO
+	
+IOBufferState:
+IOBufferDisk:			DB		00H
+IOBufferTrack:			DW		0000H
+IOBufferSector:			DB		00H
+
+DataInBufferFlag:		DB		00H			; when non-zero, the disk buffer has data from disk
+DataIsDirtyFlag:		DB		00H			; Non-zero when data has been written into DiskBuffer,
+;..........................................................
+;     variables for selected disk, track and sector to be (use for physical IO ?)
+; These are moved and compared as a group, DO NOT ALTER
+
+SelectedState:
+SelectedDisk:			DB		00H
+SelectedTrack:			DW		0000H
+SelectedSector:			DB		00H
+SelectedStateEnd:
+SelectedStateSize	EQU		SelectedStateEnd - SelectedState
+
+SelectedRecord:			DB		00H
+
+SelectedDskSecsPerHead:	DB		00H			; Sectors / head
+
+DMAAddress:				DW		0000H		; DMA address
+;..........................................................
+DiskStatus:				DB		00H			; Non-Zero - unrecoverable error output "Bad Sector" message
+
+;==========================================================	
+
+;-----------------------------------------------------------------------
+msgPreRead:
+		DB	'PreRead the sector',CR,LF,EndOfMessage
+msgPreWrite:
+		DB	'PreWrite the sector',CR,LF,EndOfMessage
+msgPart2:
+		DB	'Part2',CR,LF,
+		DB	'-------------'
+		DB	CR,LF,EndOfMessage
+		
+DoIsDataInBuffer:
+	LD		HL,msgDataInBufferY
+	LD		A,(DataInBufferFlag)
+	OR		A
+	PUSH AF
+	JR		NZ,DoIsDataInBuffer1
+	LD		HL,msgDataInBufferN
+DoIsDataInBuffer1:
+	CALL	DisplayMessage	; Stub the work
+	POP		AF					; return the state of the test
+	RET
+msgDataInBufferY:
+	DB		'YES Data Is In The Buffer',CR,LF,EndOfMessage
+msgDataInBufferN:
+	DB		'NO Data Is NOT In The Buffer',CR,LF,EndOfMessage
+;-----------------------------------------------------------
+DoIsItMine:
+	LD		HL,msgIsItMineY
+	LD		A,(DataIsMine)
+	OR		A
+	PUSH AF
+	JR		NZ,DoIsItMine1
+	LD		HL,msgIsItMineN
+DoIsItMine1:
+	CALL	DisplayMessage	; Stub the work
+	POP		AF				; Restore flags
+	RET
+msgIsItMineY:
+	DB		'YES It Is Mine',CR,LF,EndOfMessage
+msgIsItMineN:
+	DB		'NO It Is Not Mine',CR,LF,EndOfMessage
+;-----------------------------------------------------------
+DoIsItDirty:
+	LD		HL,msgIsItDirtyY
+	LD		A,(DataIsDirtyFlag)
+	OR		A
+	PUSH	AF				; Save flags
+	JR		NZ,DoIsItDirty1
+	LD		HL,msgIsItDirtyN
+DoIsItDirty1:
+	CALL	DisplayMessage	; Stub the work
+	POP		AF				; Restore flags
+	RET
+msgIsItDirtyY:
+	DB		'YES It Is Dirty',CR,LF,EndOfMessage
+msgIsItDirtyN:
+	DB		'NO It Is Not Dirty',CR,LF,EndOfMessage
+;-----------------------------------------------------------
+EndOfMessage EQU    00H
+LF         EQU    0AH                  ; Line Feed
+CR         EQU    0DH                  ; Carriage Return
+TTY_DataPort		EQU		0ECH
+; entered with pointer to message in HL
+DisplayMessage:
+	LD		A,M					; get  character
+	OR		A					; is it NULL
+	RET		Z					; return if it is NULL (00)
+	LD		C,A
+	PUSH	HL					; save the pointer
+	OUT		TTY_DataPort
+	POP		HL					; retrieve the pointer
+	INC		HL					; point at next character
+	JR		DisplayMessage
+
+;.................................
