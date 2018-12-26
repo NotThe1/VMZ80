@@ -19,14 +19,8 @@ BOOT_CON_ADDRESS	EQU	0ECH				; tty data address
  
 CodeStart:
  	LD		HL,ROMControl
- 	CALL	ReadRawDisk
-  	JP		NC,TPA								; now execute the boot loader;
-
-	CALL	NoDisk;
-	HALT
-		
- ReadRawDisk:								; Enter with DiskControlBlock pointer in HL	
- 	LD		(DiskCommandBlock),HL				; put it into the Command block for drive A:
+ 	LD	(DiskCommandBlock),HL				; put it into the Command block for drive A:
+ 
  
  	LD		HL,DiskControlByte
  	LD		(HL),080H							; activate the controller
@@ -38,8 +32,11 @@ WaitForBootComplete:
  
  	LD		A,(DiskStatusLocation)				; after operation what's the status?
  	CP		080H							; any errors ?
- 	RET										; exit with result in the CCs
-
+ 
+ 	JP	NC,TPA								; now execute the boot loader;
+ ;	HALT
+	CALL	NoDisk;
+	HALT
 ;---------------------------------------
 
 	ORG   DMABuffer
