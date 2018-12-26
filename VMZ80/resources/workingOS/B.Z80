@@ -1,0 +1,100 @@
+; B.Z80
+;
+TPA				EQU		0100H			; Transient Program Area
+StackSize		EQU		0100H			; stack allocation
+BDOS			EQU		05H				; Entry to BDOS via CALL
+SystemReset		EQU		00				; BDOS - System Reset
+ConsoleOutput	EQU		02H				; Console Output
+PrintString		EQU		09H				; Print $ terminated String
+GetAllocation	EQU		01BH			; Get Address of Allocation
+GetDPB			EQU		01FH			; Get Disk Parameter Block
+SPT				EQU		00				; Sectors Per Track
+BSH				EQU		2				; BlockShift
+BLM				EQU		3				; Block Mask
+EXM				EQU		4				; Extent Mask
+DSM				EQU		5				; Total number of Blocks - 1
+DRM				EQU		7				; Number of Directory entries -1
+Dabm			EQU		9				; Reserved Blocks for File Directory
+CKS				EQU		11				; Checksum Vector Size
+OFF				EQU		13				; Number of reserved tracks B4 Dir
+EOM				EQU		024H
+
+
+
+				ORG		TPA
+Start:
+		LD		SP,StackTop		
+		CALL	Setup
+		
+		CALL	DoDiskParameterBlock
+		
+		LD		C,SystemReset
+		CALL	BDOS
+		HALT
+		
+DoDiskParameterBlock:
+		LD		C,GetDPB
+		CALL	BDOS
+		PUSH	HL
+		POP		IX						; Move DPB to IX register
+		LD		DE,msgSPT
+		LD		C,PrintString
+		CALL	BDOS
+		LD		A,(IX + SPT)
+		CALL	DisplayByte
+		LD		DE,EndOfMessage
+		LD		C,PrintString
+		CALL	BDOS
+		
+		RET
+		
+msgSPT:		DB		'SPT  : ',EOM
+msgBSH:		DB		'BSH  : ',EOM
+msgBLM:		DB		'BLM  : ',EOM
+msgEXM:		DB		'EXM  : ',EOM
+msgDSM:		DB		'DSM  : ',EOM
+msgDRM:		DB		'DRM  : ',EOM
+msgDabm:	DB		'Dabm  : ',EOM
+msgCKS:		DB		'CKS  : ',EOM
+msgOFF:		DB		'OFF  : ',EOM
+EndOfMessage:	DB		0DH,0AH,EOM
+		
+
+;Value to be displayed is in ACC
+
+DisplayByte:
+		PUSH	AF						; Save the value
+		RRA
+		RRA
+		RRA
+		RRA								; get hi nibble to lo nibble
+		CALL	DoNibble	
+		POP		AF
+		; Fall thru
+DoNibble:		
+		AND		0FH						; Isolate the nibble
+		ADD		A,030H					; Make ASCII
+		CP		39H
+		JR		C,SendNibble			; return its less than 0AH
+		ADD		A,07H
+SendNibble:		
+		LD		E,A
+		LD		C,ConsoleOutput
+		CALL	BDOS
+
+		RET
+
+Setup:
+		LD	H,0002			; Get page where BIOS Starts
+		LD	L,00
+		LD	(StartBIOS),HL
+		LD	H,BDOS + 2			; BDOS start Page
+		LD	(StartBDOS),HL
+		RET
+
+
+StartBIOS:	DW	0000H
+StartBDOS:	DW	0000H
+StackBottom:
+		DS		StackSize
+StackTop:
