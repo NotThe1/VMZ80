@@ -186,7 +186,7 @@
 0186: 0000         ;*******************************************************************************
 0187: 0000             WriteAllocated EQU    00H
 0188: 0000             WriteDirectory EQU    01H
-0189: 0000             WriteUnallocated EQU    02H
+0189: 0000             WriteCleanBuffer EQU    02H
 0190: 0000
 0191: 0000
 0192: 0000         ;<<<<<<<<<<<<<<<<<<<<<<< Include >>>>>>>>>>>>>>>>
@@ -286,56 +286,59 @@
 0286: 0000
 0287: 0000             CodeStart:
 0288: 0000 21 A6 00               LD     HL,ROMControl
-0289: 0003 22 46 00               LD     (DiskCommandBlock),HL ; put it into the Command block for drive A:
-0290: 0006
-0291: 0006
-0292: 0006 21 45 00               LD     HL,DiskControlByte
-0293: 0009 36 80                  LD     (HL),080H            ; activate the controller
-0294: 000B
-0295: 000B             WaitForBootComplete:
-0296: 000B 7E                     LD     A,(HL)               ; Get the control byte
-0297: 000C B7                     OR     A                    ; is it set to 0 (Completed operation) ?
-0298: 000D 20 FC                  JR     NZ,WaitForBootComplete ; if not try again
-0299: 000F
-0300: 000F 3A 43 00               LD     A,(DiskStatusLocation) ; after operation what's the status?
-0301: 0012 FE 80                  CP     080H                 ; any errors ?
-0302: 0014
-0303: 0014 D2 00 01               JP     NC,TPA               ; now execute the boot loader;
-0304: 0017         ;	HALT
-0305: 0017 CD 80 00               CALL   NoDisk               ;
-0306: 001A 76                     HALT
-0307: 001B         ;---------------------------------------
-0308: 001B
-0309: 001B                        ORG    DMABuffer
-0310: 0080
-0311: 0080             NoDisk:
-0312: 0080 21 8B 00               LD     HL,NoDiskMessage
-0313: 0083             SendMessage1:
-0314: 0083 7E                     LD     A,(HL)
-0315: 0084 B7                     OR     A
-0316: 0085 C8                     RET    Z
-0317: 0086 D3 EC                  OUT    (BOOT_CON_ADDRESS),A ; Console address
-0318: 0088 23                     INC    HL
-0319: 0089 18 F8                  JR     SendMessage1
-0320: 008B
-0321: 008B             NoDiskMessage:
-0322: 008B 0D 0A                  DB     CR,LF
-0323: 008D 4E 6F 20 53 79 73 74 65 6D 20 44 69 73 6B 20 4D 6F 75 6E 74 65 64                DB     'No System Disk Mounted'
-0324: 00A3 0D 0A 00                DB     CR,LF,EndOfMessage
-0325: 00A6         ;---------------------------------------
-0326: 00A6             ROMControl:
-0327: 00A6 01                     DB     DiskReadCode         ; Read function
-0328: 00A7 00                     DB     00H                  ; unit number
-0329: 00A8 00                     DB     00H                  ; head number
-0330: 00A9 00                     DB     00H                  ; track number
-0331: 00AA 01                     DB     01H                  ; Starting sector number ()
-0332: 00AB 00 02                  DW     diskSectorSize       ; Number of bytes to read ( 1 Sector)
-0333: 00AD 00 01                  DW     TPA                  ; read into this address
-0334: 00AF 43 00                  DW     DiskStatusLocation   ; pointer to next block - no linking
-0335: 00B1 40 00                  DW     DiskControlTable     ; pointer to next table- no linking
-0336: 00B3
-0337: 00B3             CodeEnd:
-0338: 00B3
+0289: 0003 CD 0D 00               CALL   ReadRawDisk
+0290: 0006 D2 00 01               JP     NC,TPA               ; now execute the boot loader;
+0291: 0009
+0292: 0009 CD 80 00               CALL   NoDisk               ;
+0293: 000C 76                     HALT
+0294: 000D
+0295: 000D             ReadRawDisk:                      ; Enter with DiskControlBlock pointer in HL
+0296: 000D 22 46 00               LD     (DiskCommandBlock),HL ; put it into the Command block for drive A:
+0297: 0010
+0298: 0010 21 45 00               LD     HL,DiskControlByte
+0299: 0013 36 80                  LD     (HL),080H            ; activate the controller
+0300: 0015
+0301: 0015             WaitForBootComplete:
+0302: 0015 7E                     LD     A,(HL)               ; Get the control byte
+0303: 0016 B7                     OR     A                    ; is it set to 0 (Completed operation) ?
+0304: 0017 20 FC                  JR     NZ,WaitForBootComplete ; if not try again
+0305: 0019
+0306: 0019 3A 43 00               LD     A,(DiskStatusLocation) ; after operation what's the status?
+0307: 001C FE 80                  CP     080H                 ; any errors ?
+0308: 001E C9                     RET                         ; exit with result in the CCs
+0309: 001F
+0310: 001F         ;---------------------------------------
+0311: 001F
+0312: 001F                        ORG    DMABuffer
+0313: 0080
+0314: 0080             NoDisk:
+0315: 0080 21 8B 00               LD     HL,NoDiskMessage
+0316: 0083             SendMessage1:
+0317: 0083 7E                     LD     A,(HL)
+0318: 0084 B7                     OR     A
+0319: 0085 C8                     RET    Z
+0320: 0086 D3 EC                  OUT    (BOOT_CON_ADDRESS),A ; Console address
+0321: 0088 23                     INC    HL
+0322: 0089 18 F8                  JR     SendMessage1
+0323: 008B
+0324: 008B             NoDiskMessage:
+0325: 008B 0D 0A                  DB     CR,LF
+0326: 008D 4E 6F 20 53 79 73 74 65 6D 20 44 69 73 6B 20 4D 6F 75 6E 74 65 64                DB     'No System Disk Mounted'
+0327: 00A3 0D 0A 00                DB     CR,LF,EndOfMessage
+0328: 00A6         ;---------------------------------------
+0329: 00A6             ROMControl:
+0330: 00A6 01                     DB     DiskReadCode         ; Read function
+0331: 00A7 00                     DB     00H                  ; unit number
+0332: 00A8 00                     DB     00H                  ; head number
+0333: 00A9 00                     DB     00H                  ; track number
+0334: 00AA 01                     DB     01H                  ; Starting sector number ()
+0335: 00AB 00 02                  DW     diskSectorSize       ; Number of bytes to read ( 1 Sector)
+0336: 00AD 00 01                  DW     TPA                  ; read into this address
+0337: 00AF 43 00                  DW     DiskStatusLocation   ; pointer to next block - no linking
+0338: 00B1 40 00                  DW     DiskControlTable     ; pointer to next table- no linking
+0339: 00B3
+0340: 00B3             CodeEnd:
+0341: 00B3
            ************************   Xref   ************************
 0000: $               00B1
 0079: ASCII_A         0041
@@ -362,12 +365,12 @@
 0108: BIOSPAGE        0002
 0149: BIOSStart       F600
 0245: BlockSize       0800   0267
-0282: BOOT_CON_ADDRESS 00EC   0317
+0282: BOOT_CON_ADDRESS 00EC   0320
 0027: BYTE            0001
 0087: CARET           005E
 0143: CCPEntry        E000   0145 0149
 0134: CCPLength       0800   0138 0145 0149
-0337: CodeEnd         00B3
+0340: CodeEnd         00B3
 0287: CodeStart       0000
 0067: COLON           003A
 0062: COMMA           002C
@@ -375,7 +378,7 @@
 0122: ComTailChars    0082
 0121: ComTailCount    0081   0122
 0222: cpmRecordSize   0080   0224 0227 0229
-0052: CR              000D   0322 0324
+0052: CR              000D   0325 0327
 0035: CTRL_C          0003
 0036: CTRL_E          0005
 0037: CTRL_H          0008
@@ -394,14 +397,14 @@
 0242: DirectoryBlockCount 0002   0267
 0229: DirectoryEntryPerRecord 0004   0270
 0226: DirEntrySize    0020   0229 0267
-0214: DiskCommandBlock 0046   0289
-0213: DiskControlByte 0045   0292
-0216: DiskControlTable 0040   0335
-0218: DiskReadCode    0001   0327
-0223: diskSectorSize  0200   0224 0245 0253 0332
-0212: DiskStatusLocation 0043   0300 0334
+0214: DiskCommandBlock 0046   0296
+0213: DiskControlByte 0045   0298
+0216: DiskControlTable 0040   0338
+0218: DiskReadCode    0001   0330
+0223: diskSectorSize  0200   0224 0245 0253 0335
+0212: DiskStatusLocation 0043   0306 0337
 0219: DiskWriteCode   0002
-0125: DMABuffer       0080   0309
+0125: DMABuffer       0080   0312
 0056: DOLLAR          0024
 0268: dpb3hdAL0       00C0
 0269: dpb3hdAL1       0000
@@ -415,7 +418,7 @@
 0271: dpb3hdOFF       0001
 0262: dpb3hdSPT       0090
 0129: END_OF_FILE     001A
-0033: EndOfMessage    0000   0324
+0033: EndOfMessage    0000   0327
 0071: EQUAL_SIGN      003D
 0054: EXCLAIM_POINT   0021
 0022: FALSE           0000
@@ -451,12 +454,12 @@
 0138: LengthInBytes   2000   0139 0143 0253
 0139: LengthInK       0009
 0070: LESS_THAN       003C
-0051: LF              000A   0322 0324
+0051: LF              000A   0325 0327
 0025: LO_NIBBLE_MASK  000F
 0141: MemorySize      0040   0143
 0254: myOffset        0001   0255 0271
-0311: NoDisk          0080   0305
-0321: NoDiskMessage   008B   0312
+0314: NoDisk          0080   0292
+0324: NoDiskMessage   008B   0315
 0047: NULL            0000
 0238: NumberOfHeads   0002   0249 0251 0262 0272
 0235: NumberOfLogicalDisks 0004
@@ -470,17 +473,18 @@
 0073: QMARK           003F
 0059: R_PAREN         0029
 0105: RAM             0000   0107 0108 0109 0111 0114 0117 0120 0125 0127
+0295: ReadRawDisk     000D   0289
 0247: RecordsPerBlock 0010
 0231: RecordsPerExtent 0080
 0224: recordsPerSector 0004   0247 0262
-0326: ROMControl      00A6   0288
+0329: ROMControl      00A6   0288
 0076: RUBOUT          007F
 0276: SectorMask      0003
 0241: SectorsPerBlock 0004   0245 0247 0250 0256 0276
 0251: SectorsPerCylinder 0024   0254 0255
 0240: SectorsPerTrack 0012   0249 0251 0262
 0069: SEMICOLON       003B
-0313: SendMessage1    0083   0319
+0316: SendMessage1    0083   0322
 0065: SLASH           002F
 0048: SOH             0001
 0053: SPACE           0020
@@ -489,14 +493,14 @@
 0115: TopRAM          0007
 0250: TotalNumberOfBlocks 02D0
 0249: TotalNumberOfSectors 0B40   0250 0255
-0127: TPA             0100   0303 0333
+0127: TPA             0100   0290 0336
 0239: TracksPerHead   0050   0249
 0021: TRUE            FFFF
 0074: UNDER_SCORE     005F
-0295: WaitForBootComplete 000B   0298
+0301: WaitForBootComplete 0015   0304
 0107: WarmBoot        0000
 0028: WORD            0002
 0187: WriteAllocated  0000
+0189: WriteCleanBuffer 0002
 0188: WriteDirectory  0001
-0189: WriteUnallocated 0002
 0032: ZERO            0000

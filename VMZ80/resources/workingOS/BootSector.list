@@ -186,7 +186,7 @@
 0186: 0100         ;*******************************************************************************
 0187: 0100             WriteAllocated EQU    00H
 0188: 0100             WriteDirectory EQU    01H
-0189: 0100             WriteUnallocated EQU    02H
+0189: 0100             WriteCleanBuffer EQU    02H
 0190: 0100
 0191: 0100
 0192: 0100         ;<<<<<<<<<<<<<<<<<<<<<<< Include >>>>>>>>>>>>>>>>
@@ -314,7 +314,7 @@
 0314: 0123 FE 80                  CP     080H                 ; any errors ?
 0315: 0125
 0316: 0125
-0317: 0125 D2 00 F6               JP     NC,BIOSStart         ; now do a Cold Boot
+0317: 0125 D2 00 00               JP     NC,0000              ; now do a Warm Boot
 0318: 0128         ; else we have a problem
 0319: 0128 21 95 01               LD     HL,FailedBootMessage
 0320: 012B CD C5 01               CALL   SendMessage
@@ -401,7 +401,7 @@
 0148: BIOSBase        F600
 0136: BIOSLength      0A00   0138
 0108: BIOSPAGE        0002
-0149: BIOSStart       F600   0286 0317 0331
+0149: BIOSStart       F600   0286 0331
 0245: BlockSize       0800   0267
 0282: BOOT_CON_ADDRESS 00EC   0373
 0324: BootControl     012F   0301
@@ -543,6 +543,6 @@
 0286: WarmBootEntry   F603   0338
 0028: WORD            0002
 0187: WriteAllocated  0000
+0189: WriteCleanBuffer 0002
 0188: WriteDirectory  0001
-0189: WriteUnallocated 0002
 0032: ZERO            0000

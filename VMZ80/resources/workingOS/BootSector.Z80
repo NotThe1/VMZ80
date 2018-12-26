@@ -47,7 +47,7 @@ WaitForBootComplete:
  	CP		080H					; any errors ?
 	
 	
- 	JP		NC,BIOSStart			; now do a Cold Boot
+ 	JP		NC,0000					; now do a Warm Boot
 ; else we have a problem	
 	LD		HL,FailedBootMessage
  	CALL	SendMessage								
