@@ -19,7 +19,7 @@ AL0				EQU		9				; First of 2 bytes of allocation table (DIR)
 AL1				EQU		10				; Second of 2 bytes of allocation table (DIR)
 CKS				EQU		11				; Checksum Vector Size
 OFF				EQU		13				; Number of reserved tracks B4 Dir
-DOLLAR     EQU    24H                  ; Dollar Sign
+DOLLAR			EQU		24H				; Dollar Sign
 CR				EQU		0DH
 LF				EQU		0AH
 

@@ -74,8 +74,7 @@ Init:
 ;*******************************************************
 CommonDiskIO:
 	XOR		A							; Assume no disk error will occur
-	LD		(DiskStatus),A
-	
+	LD		(DiskStatus),A	
 ;-------------------------Convert selected record into physical sector-------;
 	LD		A,(SelectedRecord)                                               ;
 	RRA									; Convert selected record            ;
@@ -135,11 +134,11 @@ PreRead:                                                                    ;
 	LDIR                                                                    ;
 	;                                                                       ;
 ; Do the actual read                                                        ;
-	CALL    PhysicalRead
+	CALL    PhysicalRead                                                    ;
 	LD		A,TRUE                                                          ;
-	LD		(DataInBufferFlag),A			; Set DataInBuffeer Flag        ;
+	LD		(DataInBufferFlag),A		; Set DataInBuffeer Flag			;
 	LD		A,FALSE                                                         ;
-	LD		(DirtyBufferFlag),A				; Reset DataIsDirty Flag        ;
+	LD		(DirtyBufferFlag),A			; Reset DataIsDirty Flag			;
 ;--------------------------------- PreRead ---------------------------------;
 		
 DoPart2:
@@ -171,7 +170,7 @@ SectorInBuffer1:                                                            ;
                                                                             ;
 	LD		A,(DiskCommand)			; 0 => Write, non Zero => Read          ;
 	CP		DISK_READ				                                        ;
-	JP		Z,BufferMove			; Read : move data from Buffer to DMA 	
+	JP		Z,BufferMove			; Read : move data from Buffer to DMA   ; 	
 ;write                              ; Write: move data from DMA to Buffer   ;
 	LD		A,TRUE					; Set the flag to indicate dirty buffer ;
 	LD		(DirtyBufferFlag),A                                             ;
