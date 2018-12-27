@@ -420,13 +420,12 @@ public class Z80Machine {
 	}// setDisplaysEnabled
 
 	private void doBoot() {
-		int numberOfdrives0 = dcu.getMaxNumberOfDrives();
 		Core.getInstance().initialize();
 		loadROM();
 		WorkingRegisterSet.getInstance().initialize();
+		updateDisplaysMaster();		
 		tbRunStop.setSelected(true);
-		int numberOfdrives1 = dcu.getMaxNumberOfDrives();
-		;
+
 		doRunStop();
 	}// boot
 		////////////////////////////////////////////////////////////////////////////////////////

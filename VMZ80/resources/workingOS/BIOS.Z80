@@ -2,7 +2,7 @@
 ;     C:\Users\admin\Dropbox\Resources\CPM\CurrentOS\8080\BIOS.asm
 ; BIOS.Z80
 
-; 2018 12-11 Adjusted BOOT & WBOOT
+; 2018 12-27 Adjusted BOOT & WBOOT
 ; 2018-12-10 Refactored  character device routines;
 ; 2017-03-31 Added List out functionality for List Device
 ; 2017-03-02 Refactored the CP/M Suite
@@ -65,14 +65,14 @@ AfterDiskBuffer	EQU	$
 
 ;	ORG AfterDiskBuffer				; reset Location Counter
 
-;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+;=============================================================================
 ;---------------------------------------------------------------------------
 ;	BOOT:  BIOS 00		Hard Boot/Cold Boot
 
 ;  The BOOT jump instruction is the first instruction executed in CP/M. The
-; bootstrap sequence must transfer control to the BOOT entry point in order to
-; bring up CP/M.
+; bootstrap sequence must transfer control to the BOOT entry point in order
+; to  bring up CP/M.
 ;  This reads in the CP/M loader on the first sector of the physical disk drive
 ; chosen to be logical disk A. This CP/M loader program reads the binary image
 ; of the CCP, BOOS, and BIOS into memory at some predetermined address.
@@ -82,7 +82,7 @@ AfterDiskBuffer	EQU	$
 ; Most BOOT routines sign on by displaying a short message on the console,
 ; indicating the current version ofCP/M and the computer hardware that this BIOS
 ; can support. The BOOT routine terminates by transferring control to the start of the CCP
-; +6 bytes (the CCP has its own smalljump vector at the beginning). Just before the
+; +6 bytes (the CCP has its own small jump vector at the beginning). Just before the
 ; BOOT routine jumps into the CCP, it sets the C register to 0 to indicate that logical
 ; disk A is to be the default disk drive. This is what causes "A>" to be the CCP's
 ; initial prompt.
@@ -90,157 +90,13 @@ AfterDiskBuffer	EQU	$
 BOOT:
 ;CodeStart:
  	LD		HL,ROMControl
- 	CALL	ReadRawDisk					; load the boot sector from the disk
-  	JP		NC,TPA						; now execute the boot loader;
+ 	CALL	ReadRawDisk					; Load the boot sector from the disk
+  	JP		NC,TPA						; Now execute the boot loader;
 
-	CALL	NoDisk;
+	LD		HL,NoDiskMessage			; Else let the user know Disk A does
+	CALL	DisplayMessage				;  not have a system disk in it
 	HALT
 		
-ReadRawDisk:							; Enter with DiskControlBlock pointer in HL	
- 	LD		(DiskCommandBlock),HL		; put it into the Command block for drive A:
- 
- 	LD		HL,DiskControlByte
- 	LD		(HL),080H					; activate the controller
- 
-WaitForBootComplete:
- 	LD		A,(HL)						; Get the control byte
- 	OR		A							; is it set to 0 (Completed operation) ?
- 	JR	NZ,WaitForBootComplete			; if not try again
- 
- 	LD		A,(DiskStatusLocation)		; after operation what's the status?
- 	CP		080H						; any errors ?
- 	RET									; exit with result in the CCs
-
-
-;---------------------------- ROM Disk Control Block -------------------------;
-ROMControl:                                                                   ;
- 	DB		DiskReadCode				; Read function                       ;
- 	DB		00H							; unit number                         ;
- 	DB		00H							; head number                         ;
- 	DB		00H							; track number                        ;
- 	DB		01H							; Starting sector number ()           ;
- 	DW		diskSectorSize				; Number of bytes to read ( 1 Sector) ;
- 	DW		TPA							; read into this address              ;
- 	DW		DiskStatusLocation			; pointer to next block - no linking  ;
- 	DW		DiskControlTable			; pointer to next table- no linking   ;
-;---------------------------- ROM Disk Control Block -------------------------;
-
- 
-NoDisk:
- 	LD		HL,NoDiskMessage
-DisplayMessage:
- 	LD		A,(HL)
- 	OR		A
- 	RET	Z
- 	OUT		(BOOT_CON_ADDRESS),A				; Console address
- 	INC		HL
- 	JR		DisplayMessage
-	
-NoDiskMessage:
- 	DB		CR,LF
- 	DB		'No System Disk Mounted'
- 	DB		CR,LF,EndOfMessage
-WarmBootMessage:
-	DB		'CP/M 2.2 (Z80) '
-;	DB		'BootStrap Loader'
-;	DB		CR,LF
-	DB		'Build 0.A '
-	DB		CR,LF
-	DB		'CCP 0.A |  BDOS 0.A | BIOS 0.B'
-	DB		CR,LF,EndOfMessage	
-	
-WarmBootErroMessage:
-	DB		CR,LF
-	DB		'Warm Boot -'
-	DB		' Retrying.'
-	DB		CR,LF,EndOfMessage
-
-	
-;?	LD		HL,BootMessage
-;?	CALL	DisplayMessage
-;?
-;?	LD		HL,BOOTControl
-;?	CALL	RawDiskRead
-;?
-;?	JP		WBOOT				; do Warm boot if no errors
-;?	LD		HL,BadBootMessage
-;?	CALL	DisplayMessage		; Show Boot failure message
-;?	HALT
-;?
-;?BOOTControl:
-;?	DB		DiskReadCode					; Read function
-;?	DB		00H								; unit number
-;?	DB		00H								; head number
-;?	DB		00H								; track number
-;?	DB		0DH								; Starting sector number (13)
-;?	DW		5 * 512							; Number of bytes to read ( 0A00 All of BIOS)
-;?	DW		BIOSStart						; read into this address
-;?	DW		DiskStatusLocation				; pointer to next block - no linking
-;?	DW		DiskControlTable				; pointer to next table- no linking
-;?
-;?
-;?;BOOTControl:
-;?; 	DB		DiskReadCode		; Read function
-;?; 	DB		00H					; unit number
-;?; 	DB		00H					; head number
-;?; 	DB		00H					; track number
-;?; 	DB		01H					; Starting sector number ()
-;?; 	DW		diskSectorSize		; Number of bytes to read ( 1 Sector)
-;?; 	DW		TPA					; read into this address
-;?; 	DW		DiskStatusLocation	; pointer to next block - no linking
-;?; 	DW		DiskControlTable	; pointer to next table- no linking
-;?
-;?; Boot Messages and routine
-;?BootMessage:
-;?;	DB		'CP/M 2.2 (Z80) '
-;?;	DB		'BootStrap Loader'
-;?;	DB		CR,LF
-;?	DB		'Build 0.A '
-;?	DB		CR,LF
-;?	DB		'CCP 0.A |  BDOS 0.A | BIOS 0.B'
-;?	DB		CR,LF,EndOfMessage
-;?BadBootMessage:
-;?	DB		CR,LF
-;?	DB		'****   Boot Failure'
-;?	DB		EndOfMessage
-;?WarmBootErroMessage:
-;?	DB		CR,LF
-;?	DB		'Warm Boot -'
-;?	DB		' Retrying.'
-;?	DB		CR,LF,EndOfMessage
-;?;..................Boot Support....................
-;?
-;?; Entered with DiskControlBlock pointer in HL
-;?RawDiskRead:
-;?	LD		(DiskCommandBlock),HL
-;?
-;?	LD		HL,DiskControlByte
-;?	LD		(HL),080H
-;?
-;?; wait for the read to complete
-;?WaitForReadDone:
-;?	LD		A,(HL)
-;?	OR		A
-;?	JR		NZ,WaitForReadDone
-;?
-;?; is it a clean read ?
-;?	LD		A,(DiskStatusLocation)
-;?	CP		080H				; any errors NC = good read?
-;?	RET
-;?
-;?; entered with pointer to message in HL
-;?DisplayMessage:
-;?	LD		A,M					; get  character
-;?	OR		A					; is it NULL
-;?	RET		Z					; return if it is NULL (00)
-;?	LD		C,A
-;?	PUSH	HL					; save the pointer
-;?	OUT		TTY_DataPort
-;?	POP		HL					; retrieve the pointer
-;?	INC		HL					; point at next character
-;?	JR		DisplayMessage
-;?
-;....................................................
 
 ;---------------------------------------------------------------------------
 ;	WBOOT:  BIOS 01		SoftBoot/Warm Boot
@@ -267,49 +123,109 @@ WarmBootErroMessage:
 ; CCP at the first instruction in order to restart the CCP.
 
 WBOOT:
-	LD		SP,CCPEntry-1		; put stack at top of User area
-	LD		HL,WBOOTControl		; get the WBOOT Control Block
-	CALL	ReadRawDisk			; read CCP & BDOS
-	LD		HL,WarmBootMessage
-	CALL	DisplayMessage
-	JR		NC, LoadPage0		; set up page 0 if good read
+	LD		SP,CCPEntry-1				; Put stack at top of User area
+	LD		HL,WBOOTControl				; Get the WBOOT Control Block
+	CALL	ReadRawDisk					; Read CCP & BDOS
+	JR		NC, LoadPage0				; Set up page 0 if good read
 
 	LD		HL,WarmBootErroMessage
-	CALL	DisplayMessage		; send bad warm boot message
-	JP		WBOOT				; keep trying
+	CALL	DisplayMessage				; Send bad warm boot message
+	JP		WBOOT						;  Keep trying
 
 
 ; Set up page Zero
 LoadPage0:
-	LD		A,JP_OPCODE			; Get JP opCode
+	LD		A,JP_OPCODE					; Get JP opCode
 
 	LD		(WarmBoot),A
-	LD		HL,WarmBootEntry	; Warm Boot entry point
-	LD		(WarmBoot + 1),HL		; Warm Boot Vector
+	LD		HL,WarmBootEntry			; Warm Boot entry point
+	LD		(WarmBoot + 1),HL			; Warm Boot Vector
 
 	LD		(BDOSE),A
-	LD		HL,BDOSEntry		; BDOS entry point
-	LD		(BDOSE + 1),HL		; BDOS Vector
+	LD		HL,BDOSEntry				; BDOS entry point
+	LD		(BDOSE + 1),HL				; BDOS Vector
+		
+	LD		BC,DMABuffer				; Default Disk Buffer
+	CALL	SETDMA						; use normal BDOS  routine
+	EI									; Enable interrupts
+		
+	LD		A,(Pg0CurentDisk)			; Let CCP know what disk is current
+	LD		C,A		
+	JP		CCPEntry					; Transfer control to CCP
 
-	LD		BC,DMABuffer		; Default Disk Buffer
-	CALL	SETDMA				; use normal BDOS  routine
-	EI							; Enable interrupts
-
-	LD		A,(Pg0CurentDisk)	; Let CCP know what disk is current
-	LD		C,A
-	JP		CCPEntry			; transfer control to CCP
 
 
-WBOOTControl:
-	DB		DiskReadCode		; Read function
-	DB		00H					; unit number
-	DB		00H					; head number
-	DB		00H					; track number
-	DB		02H					; Starting sector number (skip cold boot sector)
-	DW		CCPLength + BDOSLength	; Number of bytes to read ( rest of the head)
-	DW		CCPEntry			; read into this address
-	DW		DiskStatusLocation	; pointer to next block - no linking
-	DW		DiskControlByte		; pointer to next table- no linking
+	
+;=============================================================================
+;---------------------------- Raw Disk Code ---------------------------------;
+;  Enter with DiskControlBlock pointer in HL	                             ;
+ReadRawDisk:                                                                 ;
+ 	LD		(DiskCommandBlock),HL		; Put it into the DCB in page 0      ;
+                                                                             ;
+ 	LD		HL,DiskControlByte                                               ;
+ 	LD		(HL),080H					; Activate the controller            ;
+                                                                             ;
+WaitForBootComplete:                                                         ;
+ 	LD		A,(HL)						; Get the control byte               ;
+ 	OR		A							; Is it completed                    ;
+ 	JR	NZ,WaitForBootComplete			; If not try again                   ;
+                                                                             ;
+ 	LD		A,(DiskStatusLocation)		; What's the status?                 ;
+ 	CP		080H						; Any errors ?                       ;
+ 	RET									; Exit with result in the CCs        ;
+                                                                             ;
+;---------------------------- Raw Disk Code ---------------------------------;
+
+;---------------------------- Raw Message Code ------------------------------;
+DisplayMessage:                                                              ;
+ 	LD		A,(HL)                                                           ;
+ 	OR		A                                                                ;
+ 	RET	Z                                                                    ;
+ 	OUT		(BOOT_CON_ADDRESS),A		; Console address                ;
+ 	INC		HL                                                               ;
+ 	JR		DisplayMessage                                                   ;
+	                                                                         ;
+NoDiskMessage:                                                               ;
+ 	DB		CR,LF                                                            ;
+ 	DB		'No System Disk Mounted'                                         ;
+ 	DB		CR,LF,EndOfMessage                                               ;
+	                                                                         ;
+WarmBootErroMessage:                                                         ;
+	DB		CR,LF                                                            ;
+	DB		'Warm Boot -'                                                    ;
+	DB		' Retrying.'                                                     ;
+	DB		CR,LF,EndOfMessage                                               ;
+;---------------------------- Raw Message Code ------------------------------;
+;---------------------------- WBOOT Disk Control Block ----------------------;
+WBOOTControl:                                                                ;
+	DB		DiskReadCode				; Read function                      ;
+	DB		00H							; unit number                        ;
+	DB		00H							; head number                        ;
+	DB		00H							; track number                       ;
+	DB		02H							; Starting sector number             ;
+										;  (skip cold boot sector)           ;
+	DW		CCPLength + BDOSLength		; Number of bytes to read            ;
+										;  ( rest of the head)               ;
+	DW		CCPEntry					; read into this address             ;
+	DW		DiskStatusLocation			; pointer to next block - no linking ;
+	DW		DiskControlByte				; pointer to next table- no linking  ;
+;---------------------------- WBOOT Disk Control Block ----------------------;
+;---------------------------- ROM Disk Control Block ------------------------;
+ROMControl:                                                                  ;
+ 	DB		DiskReadCode				; Read function                      ;
+ 	DB		00H							; unit number                        ;
+ 	DB		00H							; head number                        ;
+ 	DB		00H							; track number                       ;
+ 	DB		01H							; Starting sector number ()          ;
+ 	DW		diskSectorSize				; Number of bytes to read ( 1 Sector);
+ 	DW		TPA							; read into this address             ;
+ 	DW		DiskStatusLocation			; pointer to next block - no linking ;
+ 	DW		DiskControlTable			; pointer to next table- no linking  ;
+;---------------------------- ROM Disk Control Block ------------------------;
+
+;=============================================================================
+
+
 ;---------------------------------------------------------------------------
 ;	Console Status:		BIOS 02
 ;
@@ -335,8 +251,7 @@ GenericInStatus:				; Entry point for generic input status
 	OR		A
 	RET		Z					; 00 => No data pending
 	LD		A,0FFH
-	RET							; OFFH => Data in Buffer
-;---------------------------------------------------------------------
+	RET							; OFFH => Data in Buffer;---------------------------------------------------------------------
 ;	Console In:		BIOS 03
 ;
 ;  CONIN reads the next character from the console to the A register and sets the
