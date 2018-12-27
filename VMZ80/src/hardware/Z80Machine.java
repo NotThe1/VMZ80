@@ -163,20 +163,19 @@ public class Z80Machine {
 	}// doFileNew
 
 	private void doFileLoadMemory() {
-//		JFileChooser filePicker = FilePicker.getMemories();
-//		// JFileChooser filePicker = FilePicker.getMemoryPicker();
-//		if (filePicker.showOpenDialog(frameBase) != JFileChooser.OPEN_DIALOG) {
-//			log.info("abandoned File Load Memory");
-//			return;
-//		} // if
-//		for (File file : filePicker.getSelectedFiles()) {
-//			log.infof("File chosen is %s%n", file.toString());
-//			MemoryLoaderFromFile.loadMemoryImage(file);
-//			// MemoryLoaderFromFile.loadMemoryImage(new File(filePicker.getSelectedFile().getAbsolutePath()));
-//		} // for each file
-//		updateDisplaysMaster();
-		
-		
+		// JFileChooser filePicker = FilePicker.getMemories();
+		// // JFileChooser filePicker = FilePicker.getMemoryPicker();
+		// if (filePicker.showOpenDialog(frameBase) != JFileChooser.OPEN_DIALOG) {
+		// log.info("abandoned File Load Memory");
+		// return;
+		// } // if
+		// for (File file : filePicker.getSelectedFiles()) {
+		// log.infof("File chosen is %s%n", file.toString());
+		// MemoryLoaderFromFile.loadMemoryImage(file);
+		// // MemoryLoaderFromFile.loadMemoryImage(new File(filePicker.getSelectedFile().getAbsolutePath()));
+		// } // for each file
+		// updateDisplaysMaster();
+
 		JFileChooser filePicker = new JFileChooser("C:\\Users\\admin\\git\\VMZ80\\VMZ80\\resources\\workingOS");
 		if (filePicker.showOpenDialog(frameBase) != JFileChooser.OPEN_DIALOG) {
 			log.info("abandoned File Load Memory");
@@ -205,17 +204,17 @@ public class Z80Machine {
 			fileType = fileTypeMatcher.group(1);
 		} else {
 			Pattern fileTypePattern = Pattern.compile("\\.([^.]+$)");
-			fileTypeMatcher=fileTypePattern.matcher(selectedFilePath);
+			fileTypeMatcher = fileTypePattern.matcher(selectedFilePath);
 			if (fileTypeMatcher.find()) {// has other file type
 				saveFilePath = fileTypeMatcher.replaceFirst(DEFAULT_FILE_TYPE);
 				fileType = DEFAULT_TYPE;
-			}else {// has no file type
+			} else {// has no file type
 				saveFilePath = selectedFilePath + DEFAULT_FILE_TYPE;
 				fileType = DEFAULT_TYPE;
-			}//inner if
+			} // inner if
 		} // if
-	
-		System.out.printf("[Z80Machine.doFileSaveMemory]fileType: %s, saveFilePath: %s%n", fileType,saveFilePath);
+
+		System.out.printf("[Z80Machine.doFileSaveMemory]fileType: %s, saveFilePath: %s%n", fileType, saveFilePath);
 
 	}// doFileSave
 
@@ -423,7 +422,7 @@ public class Z80Machine {
 		Core.getInstance().initialize();
 		loadROM();
 		WorkingRegisterSet.getInstance().initialize();
-		updateDisplaysMaster();		
+		updateDisplaysMaster();
 		tbRunStop.setSelected(true);
 
 		doRunStop();
@@ -488,7 +487,7 @@ public class Z80Machine {
 	 */
 	private void initialize() {
 		frameBase = new JFrame();
-		frameBase.setTitle("Z80 Machine    A.0.3");
+		frameBase.setTitle("Z80 Machine    A.0.4");
 		frameBase.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frameBase.addWindowListener(new WindowAdapter() {
 			@Override

@@ -15,10 +15,13 @@ EXM				EQU		4				; Extent Mask
 DSM				EQU		5				; Total number of Blocks - 1
 DRM				EQU		7				; Number of Directory entries -1
 Dabm			EQU		9				; Reserved Blocks for File Directory
+AL0				EQU		9				; First of 2 bytes of allocation table (DIR)
+AL1				EQU		10				; Second of 2 bytes of allocation table (DIR)
 CKS				EQU		11				; Checksum Vector Size
 OFF				EQU		13				; Number of reserved tracks B4 Dir
-EOM				EQU		024H
-
+DOLLAR     EQU    24H                  ; Dollar Sign
+CR				EQU		0DH
+LF				EQU		0AH
 
 
 				ORG		TPA
@@ -27,41 +30,142 @@ Start:
 		CALL	Setup
 		
 		CALL	DoDiskParameterBlock
-		
-		LD		C,SystemReset
-		CALL	BDOS
+		CALL	DoAllocation
+;		LD		C,SystemReset
+;		CALL	0
 		HALT
-		
+;-----------------------------------------		
+DoAllocation:
+		LD		DE,msgAllocation
+		CALL	DoPrintString
+		LD		C,GetAllocation
+		CALL	BDOS
+		LD		(AllocationAddress),HL
+		CALL	DisplayWord
+		CALL	DisplayEOL
+
+		RET
+AllocationAddress:	DW		0000H		
+msgAllocation:		DB		CR,LF,'Allocation Address: ',DOLLAR
+
+;-----------------------------------------
 DoDiskParameterBlock:
+		LD		DE,msgDPB
+		CALL	DoPrintString
 		LD		C,GetDPB
 		CALL	BDOS
-		PUSH	HL
-		POP		IX						; Move DPB to IX register
+		LD		(DPBaddress),HL
+		LD		IX,(DPBaddress)
+;		PUSH	HL
+;		POP		IX						; Move DPB to IX register
+; SPT
 		LD		DE,msgSPT
-		LD		C,PrintString
-		CALL	BDOS
-		LD		A,(IX + SPT)
-		CALL	DisplayByte
-		LD		DE,EndOfMessage
-		LD		C,PrintString
-		CALL	BDOS
+		LD		L,(IX + SPT)
+		LD		H,(IX + SPT + 1)
+		CALL	ShowWordDPB
+; BSH
+		LD		IX,(DPBaddress)
+		LD		DE,msgBSH
+		LD		A,(IX + BSH)
+		CALL	ShowByteDPB
+; BLM
+		LD		IX,(DPBaddress)
+		LD		DE,msgBLM
+		LD		A,(IX + BLM)
+		CALL	ShowByteDPB
+; EXM
+		LD		IX,(DPBaddress)
+		LD		DE,msgEXM
+		LD		A,(IX + EXM)
+		CALL	ShowByteDPB
+; DSM
+		LD		IX,(DPBaddress)
+		LD		DE,msgDSM
+		LD		L,(IX + DSM)
+		LD		H,(IX + DSM + 1)
+		CALL	ShowWordDPB
+; DRM
+		LD		IX,(DPBaddress)
+		LD		DE,msgDRM
+		LD		L,(IX + DRM)
+		LD		H,(IX + DRM + 1)
+		CALL	ShowWordDPB
+; AL0
+		LD		IX,(DPBaddress)
+		LD		DE,msgAL0
+		LD		A,(IX + AL0)
+		CALL	ShowByteDPB
+; AL1
+		LD		IX,(DPBaddress)
+		LD		DE,msgAL1
+		LD		A,(IX + AL1)
+		CALL	ShowByteDPB
+; CKS
+		LD		IX,(DPBaddress)
+		LD		DE,msgCKS
+		LD		L,(IX + CKS)
+		LD		H,(IX + CKS + 1)
+		CALL	ShowWordDPB
+; OFF
+		LD		IX,(DPBaddress)
+		LD		DE,msgOFF
+		LD		L,(IX + OFF)
+		LD		H,(IX + OFF + 1)
+		CALL	ShowWordDPB
 		
 		RET
 		
-msgSPT:		DB		'SPT  : ',EOM
-msgBSH:		DB		'BSH  : ',EOM
-msgBLM:		DB		'BLM  : ',EOM
-msgEXM:		DB		'EXM  : ',EOM
-msgDSM:		DB		'DSM  : ',EOM
-msgDRM:		DB		'DRM  : ',EOM
-msgDabm:	DB		'Dabm  : ',EOM
-msgCKS:		DB		'CKS  : ',EOM
-msgOFF:		DB		'OFF  : ',EOM
-EndOfMessage:	DB		0DH,0AH,EOM
+;-------------------------------------------------
+DPBaddress:	DW		0000h
+
+msgDPB:		DB		CR,LF,'Disk Parameter Block:',CR,LF,DOLLAR	
+msgSPT:		DB		'SPT  : ',DOLLAR
+msgBSH:		DB		'BSH  : ',DOLLAR
+msgBLM:		DB		'BLM  : ',DOLLAR
+msgEXM:		DB		'EXM  : ',DOLLAR
+msgDSM:		DB		'DSM  : ',DOLLAR
+msgDRM:		DB		'DRM  : ',DOLLAR
+msgDabm:	DB		'Dabm  : ',DOLLAR
+msgAL0:		DB		'AL0  : ',DOLLAR
+msgAL1:		DB		'AL1  : ',DOLLAR
+msgCKS:		DB		'CKS  : ',DOLLAR
+msgOFF:		DB		'OFF  : ',DOLLAR
+EOM:		DB		CR,LF,DOLLAR
+;-----------------------------------------------------
+
+; Called with pointer to string in DE
+DoPrintString:
+		LD		C,PrintString
+		CALL	BDOS					; return to the caller
+		RET
+;-----------------------------------------------------
+; Called with msg in DE, Value in Acc
+ShowByteDPB:
+		PUSH	AF						; Save value
+;		LD		DE,msgSPT
+		CALL	DoPrintString
+		POP		AF						; Get Value
+;		LD		A,(IX + SPT)
+		CALL	DisplayByte
+		LD		DE,EOM
+		CALL	DoPrintString
 		
-
+		RET
+;-----------------------------------------------------
+; Called with msg in DE, Value in HL
+ShowWordDPB:
+		PUSH	HL						; Save value
+;		LD		DE,msgSPT
+		CALL	DoPrintString
+		POP		HL						; Get Value
+;		LD		A,(IX + SPT)
+		CALL	DisplayWord
+		LD		DE,EOM
+		CALL	DoPrintString
+		
+		RET
+;---------------------------------------------------
 ;Value to be displayed is in ACC
-
 DisplayByte:
 		PUSH	AF						; Save the value
 		RRA
@@ -74,7 +178,7 @@ DisplayByte:
 DoNibble:		
 		AND		0FH						; Isolate the nibble
 		ADD		A,030H					; Make ASCII
-		CP		39H
+		CP		3AH
 		JR		C,SendNibble			; return its less than 0AH
 		ADD		A,07H
 SendNibble:		
@@ -83,12 +187,29 @@ SendNibble:
 		CALL	BDOS
 
 		RET
-
+;---------------------------------------------------
+Value to be displayed in HL
+DisplayWord:
+		PUSH	HL						; save Value
+		LD		A,H						; Get Most Significant Byte
+		CALL	DisplayByte
+		POP		HL
+		LD		A,L						; Get Least Significant Byte
+		CALL	DisplayByte
+		RET
+;---------------------------------------------------
+DisplayEOL:
+		LD		DE,msgEOL
+		CALL	DoPrintString
+		RET
+msgEOL: DB		CR,LF,DOLLAR
+;---------------------------------------------------
 Setup:
-		LD	H,0002			; Get page where BIOS Starts
+		LD	HL,(001)			; Get page where BIOS Starts
 		LD	L,00
 		LD	(StartBIOS),HL
-		LD	H,BDOS + 2			; BDOS start Page
+		LD	HL,(BDOS + 1)			; BDOS start Page
+		LD	L,0
 		LD	(StartBDOS),HL
 		RET
 

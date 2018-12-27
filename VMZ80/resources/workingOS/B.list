@@ -15,126 +15,264 @@
 0015: 0100             DSM        EQU    5                    ; Total number of Blocks - 1
 0016: 0100             DRM        EQU    7                    ; Number of Directory entries -1
 0017: 0100             Dabm       EQU    9                    ; Reserved Blocks for File Directory
-0018: 0100             CKS        EQU    11                   ; Checksum Vector Size
-0019: 0100             OFF        EQU    13                   ; Number of reserved tracks B4 Dir
-0020: 0100             EOM        EQU    024H
-0021: 0100
-0022: 0100
-0023: 0100
-0024: 0100                        ORG    TPA
-0025: 0100             Start:
-0026: 0100 31 A5 02               LD     SP,StackTop
-0027: 0103 CD 94 01               CALL   Setup
-0028: 0106
-0029: 0106 CD 0F 01               CALL   DoDiskParameterBlock
-0030: 0109
-0031: 0109 0E 00                  LD     C,SystemReset
-0032: 010B CD 05 00               CALL   BDOS
-0033: 010E 76                     HALT
-0034: 010F
-0035: 010F             DoDiskParameterBlock:
-0036: 010F 0E 1F                  LD     C,GetDPB
-0037: 0111 CD 05 00               CALL   BDOS
-0038: 0114 E5                     PUSH   HL
-0039: 0115 DD E1                  POP    IX                   ; Move DPB to IX register
-0040: 0117 11 2E 01               LD     DE,msgSPT
-0041: 011A 0E 09                  LD     C,PrintString
-0042: 011C CD 05 00               CALL   BDOS
-0043: 011F DD 7E 00               LD     A,(IX+SPT)
-0044: 0122 CD 7A 01               CALL   DisplayByte
-0045: 0125 11 77 01               LD     DE,EndOfMessage
-0046: 0128 0E 09                  LD     C,PrintString
-0047: 012A CD 05 00               CALL   BDOS
-0048: 012D
-0049: 012D C9                     RET
-0050: 012E
-0051: 012E 53 50 54 20 20 3A 20 24     msgSPT:    DB     'SPT  : ',EOM
-0052: 0136 42 53 48 20 20 3A 20 24     msgBSH:    DB     'BSH  : ',EOM
-0053: 013E 42 4C 4D 20 20 3A 20 24     msgBLM:    DB     'BLM  : ',EOM
-0054: 0146 45 58 4D 20 20 3A 20 24     msgEXM:    DB     'EXM  : ',EOM
-0055: 014E 44 53 4D 20 20 3A 20 24     msgDSM:    DB     'DSM  : ',EOM
-0056: 0156 44 52 4D 20 20 3A 20 24     msgDRM:    DB     'DRM  : ',EOM
-0057: 015E 44 61 62 6D 20 20 3A 20 24     msgDabm:   DB     'Dabm  : ',EOM
-0058: 0167 43 4B 53 20 20 3A 20 24     msgCKS:    DB     'CKS  : ',EOM
-0059: 016F 4F 46 46 20 20 3A 20 24     msgOFF:    DB     'OFF  : ',EOM
-0060: 0177 0D 0A 24     EndOfMessage: DB     0DH,0AH,EOM
-0061: 017A
-0062: 017A
-0063: 017A         ;Value to be displayed is in ACC
-0064: 017A
-0065: 017A             DisplayByte:
-0066: 017A F5                     PUSH   AF                   ; Save the value
-0067: 017B 1F                     RRA
-0068: 017C 1F                     RRA
-0069: 017D 1F                     RRA
-0070: 017E 1F                     RRA                         ; get hi nibble to lo nibble
-0071: 017F CD 83 01               CALL   DoNibble
-0072: 0182 F1                     POP    AF
-0073: 0183         ; Fall thru
-0074: 0183             DoNibble:
-0075: 0183 E6 0F                  AND    0FH                  ; Isolate the nibble
-0076: 0185 C6 30                  ADD    A,030H               ; Make ASCII
-0077: 0187 FE 39                  CP     39H
-0078: 0189 38 02                  JR     C,SendNibble         ; return its less than 0AH
-0079: 018B C6 07                  ADD    A,07H
-0080: 018D             SendNibble:
-0081: 018D 5F                     LD     E,A
-0082: 018E 0E 02                  LD     C,ConsoleOutput
-0083: 0190 CD 05 00               CALL   BDOS
-0084: 0193
-0085: 0193 C9                     RET
-0086: 0194
-0087: 0194             Setup:
-0088: 0194 26 02                  LD     H,0002               ; Get page where BIOS Starts
-0089: 0196 2E 00                  LD     L,00
-0090: 0198 22 A1 01               LD     (StartBIOS),HL
-0091: 019B 26 07                  LD     H,BDOS+2             ; BDOS start Page
-0092: 019D 22 A3 01               LD     (StartBDOS),HL
-0093: 01A0 C9                     RET
-0094: 01A1
-0095: 01A1
-0096: 01A1 00 00       StartBIOS: DW     0000H
-0097: 01A3 00 00       StartBDOS: DW     0000H
-0098: 01A5             StackBottom:
-0099: 01A5                        DS     StackSize
-0100: 02A5             StackTop:
+0018: 0100             AL0        EQU    9                    ; First of 2 bytes of allocation table (DIR)
+0019: 0100             AL1        EQU    10                   ; Second of 2 bytes of allocation table (DIR)
+0020: 0100             CKS        EQU    11                   ; Checksum Vector Size
+0021: 0100             OFF        EQU    13                   ; Number of reserved tracks B4 Dir
+0022: 0100             DOLLAR     EQU    24H                  ; Dollar Sign
+0023: 0100             CR         EQU    0DH
+0024: 0100             LF         EQU    0AH
+0025: 0100
+0026: 0100
+0027: 0100                        ORG    TPA
+0028: 0100             Start:
+0029: 0100 31 BB 03               LD     SP,StackTop
+0030: 0103 CD A6 02               CALL   Setup
+0031: 0106
+0032: 0106 CD 3B 01               CALL   DoDiskParameterBlock
+0033: 0109 CD 0D 01               CALL   DoAllocation
+0034: 010C         ;		LD		C,SystemReset
+0035: 010C         ;		CALL	0
+0036: 010C 76                     HALT
+0037: 010D         ;-----------------------------------------
+0038: 010D             DoAllocation:
+0039: 010D 11 24 01               LD     DE,msgAllocation
+0040: 0110 CD 53 02               CALL   DoPrintString
+0041: 0113 0E 1B                  LD     C,GetAllocation
+0042: 0115 CD 05 00               CALL   BDOS
+0043: 0118 22 22 01               LD     (AllocationAddress),HL
+0044: 011B CD 91 02               CALL   DisplayWord
+0045: 011E CD 9C 02               CALL   DisplayEOL
+0046: 0121
+0047: 0121 C9                     RET
+0048: 0122 00 00       AllocationAddress: DW     0000H
+0049: 0124 0D 0A 41 6C 6C 6F 63 61 74 69 6F 6E 20 41 64 64 72 65 73 73 3A 20 24     msgAllocation: DB     CR,LF,'Allocation Address: ',DOLLAR
+0050: 013B
+0051: 013B         ;-----------------------------------------
+0052: 013B             DoDiskParameterBlock:
+0053: 013B 11 DD 01               LD     DE,msgDPB
+0054: 013E CD 53 02               CALL   DoPrintString
+0055: 0141 0E 1F                  LD     C,GetDPB
+0056: 0143 CD 05 00               CALL   BDOS
+0057: 0146 22 DB 01               LD     (DPBaddress),HL
+0058: 0149 DD 2A DB 01               LD     IX,(DPBaddress)
+0059: 014D         ;		PUSH	HL
+0060: 014D         ;		POP		IX						; Move DPB to IX register
+0061: 014D         ; SPT
+0062: 014D 11 F7 01               LD     DE,msgSPT
+0063: 0150 DD 6E 00               LD     L,(IX+SPT)
+0064: 0153 DD 66 01               LD     H,(IX+SPT+1)
+0065: 0156 CD 68 02               CALL   ShowWordDPB
+0066: 0159         ; BSH
+0067: 0159 DD 2A DB 01               LD     IX,(DPBaddress)
+0068: 015D 11 FF 01               LD     DE,msgBSH
+0069: 0160 DD 7E 02               LD     A,(IX+BSH)
+0070: 0163 CD 59 02               CALL   ShowByteDPB
+0071: 0166         ; BLM
+0072: 0166 DD 2A DB 01               LD     IX,(DPBaddress)
+0073: 016A 11 07 02               LD     DE,msgBLM
+0074: 016D DD 7E 03               LD     A,(IX+BLM)
+0075: 0170 CD 59 02               CALL   ShowByteDPB
+0076: 0173         ; EXM
+0077: 0173 DD 2A DB 01               LD     IX,(DPBaddress)
+0078: 0177 11 0F 02               LD     DE,msgEXM
+0079: 017A DD 7E 04               LD     A,(IX+EXM)
+0080: 017D CD 59 02               CALL   ShowByteDPB
+0081: 0180         ; DSM
+0082: 0180 DD 2A DB 01               LD     IX,(DPBaddress)
+0083: 0184 11 17 02               LD     DE,msgDSM
+0084: 0187 DD 6E 05               LD     L,(IX+DSM)
+0085: 018A DD 66 06               LD     H,(IX+DSM+1)
+0086: 018D CD 68 02               CALL   ShowWordDPB
+0087: 0190         ; DRM
+0088: 0190 DD 2A DB 01               LD     IX,(DPBaddress)
+0089: 0194 11 1F 02               LD     DE,msgDRM
+0090: 0197 DD 6E 07               LD     L,(IX+DRM)
+0091: 019A DD 66 08               LD     H,(IX+DRM+1)
+0092: 019D CD 68 02               CALL   ShowWordDPB
+0093: 01A0         ; AL0
+0094: 01A0 DD 2A DB 01               LD     IX,(DPBaddress)
+0095: 01A4 11 30 02               LD     DE,msgAL0
+0096: 01A7 DD 7E 09               LD     A,(IX+AL0)
+0097: 01AA CD 59 02               CALL   ShowByteDPB
+0098: 01AD         ; AL1
+0099: 01AD DD 2A DB 01               LD     IX,(DPBaddress)
+0100: 01B1 11 38 02               LD     DE,msgAL1
+0101: 01B4 DD 7E 0A               LD     A,(IX+AL1)
+0102: 01B7 CD 59 02               CALL   ShowByteDPB
+0103: 01BA         ; CKS
+0104: 01BA DD 2A DB 01               LD     IX,(DPBaddress)
+0105: 01BE 11 40 02               LD     DE,msgCKS
+0106: 01C1 DD 6E 0B               LD     L,(IX+CKS)
+0107: 01C4 DD 66 0C               LD     H,(IX+CKS+1)
+0108: 01C7 CD 68 02               CALL   ShowWordDPB
+0109: 01CA         ; OFF
+0110: 01CA DD 2A DB 01               LD     IX,(DPBaddress)
+0111: 01CE 11 48 02               LD     DE,msgOFF
+0112: 01D1 DD 6E 0D               LD     L,(IX+OFF)
+0113: 01D4 DD 66 0E               LD     H,(IX+OFF+1)
+0114: 01D7 CD 68 02               CALL   ShowWordDPB
+0115: 01DA
+0116: 01DA C9                     RET
+0117: 01DB
+0118: 01DB         ;-------------------------------------------------
+0119: 01DB 00 00       DPBaddress: DW     0000h
+0120: 01DD
+0121: 01DD 0D 0A 44 69 73 6B 20 50 61 72 61 6D 65 74 65 72 20 42 6C 6F 63 6B 3A 0D 0A 24     msgDPB:    DB     CR,LF,'Disk Parameter Block:',CR,LF,DOLLAR
+0122: 01F7 53 50 54 20 20 3A 20 24     msgSPT:    DB     'SPT  : ',DOLLAR
+0123: 01FF 42 53 48 20 20 3A 20 24     msgBSH:    DB     'BSH  : ',DOLLAR
+0124: 0207 42 4C 4D 20 20 3A 20 24     msgBLM:    DB     'BLM  : ',DOLLAR
+0125: 020F 45 58 4D 20 20 3A 20 24     msgEXM:    DB     'EXM  : ',DOLLAR
+0126: 0217 44 53 4D 20 20 3A 20 24     msgDSM:    DB     'DSM  : ',DOLLAR
+0127: 021F 44 52 4D 20 20 3A 20 24     msgDRM:    DB     'DRM  : ',DOLLAR
+0128: 0227 44 61 62 6D 20 20 3A 20 24     msgDabm:   DB     'Dabm  : ',DOLLAR
+0129: 0230 41 4C 30 20 20 3A 20 24     msgAL0:    DB     'AL0  : ',DOLLAR
+0130: 0238 41 4C 31 20 20 3A 20 24     msgAL1:    DB     'AL1  : ',DOLLAR
+0131: 0240 43 4B 53 20 20 3A 20 24     msgCKS:    DB     'CKS  : ',DOLLAR
+0132: 0248 4F 46 46 20 20 3A 20 24     msgOFF:    DB     'OFF  : ',DOLLAR
+0133: 0250 0D 0A 24     EOM:       DB     CR,LF,DOLLAR
+0134: 0253         ;-----------------------------------------------------
+0135: 0253
+0136: 0253         ; Called with pointer to string in DE
+0137: 0253             DoPrintString:
+0138: 0253 0E 09                  LD     C,PrintString
+0139: 0255 CD 05 00               CALL   BDOS                 ; return to the caller
+0140: 0258 C9                     RET
+0141: 0259         ;-----------------------------------------------------
+0142: 0259         ; Called with msg in DE, Value in Acc
+0143: 0259             ShowByteDPB:
+0144: 0259 F5                     PUSH   AF                   ; Save value
+0145: 025A         ;		LD		DE,msgSPT
+0146: 025A CD 53 02               CALL   DoPrintString
+0147: 025D F1                     POP    AF                   ; Get Value
+0148: 025E         ;		LD		A,(IX + SPT)
+0149: 025E CD 77 02               CALL   DisplayByte
+0150: 0261 11 50 02               LD     DE,EOM
+0151: 0264 CD 53 02               CALL   DoPrintString
+0152: 0267
+0153: 0267 C9                     RET
+0154: 0268         ;-----------------------------------------------------
+0155: 0268         ; Called with msg in DE, Value in HL
+0156: 0268             ShowWordDPB:
+0157: 0268 E5                     PUSH   HL                   ; Save value
+0158: 0269         ;		LD		DE,msgSPT
+0159: 0269 CD 53 02               CALL   DoPrintString
+0160: 026C E1                     POP    HL                   ; Get Value
+0161: 026D         ;		LD		A,(IX + SPT)
+0162: 026D CD 91 02               CALL   DisplayWord
+0163: 0270 11 50 02               LD     DE,EOM
+0164: 0273 CD 53 02               CALL   DoPrintString
+0165: 0276
+0166: 0276 C9                     RET
+0167: 0277         ;---------------------------------------------------
+0168: 0277         ;Value to be displayed is in ACC
+0169: 0277             DisplayByte:
+0170: 0277 F5                     PUSH   AF                   ; Save the value
+0171: 0278 1F                     RRA
+0172: 0279 1F                     RRA
+0173: 027A 1F                     RRA
+0174: 027B 1F                     RRA                         ; get hi nibble to lo nibble
+0175: 027C CD 80 02               CALL   DoNibble
+0176: 027F F1                     POP    AF
+0177: 0280         ; Fall thru
+0178: 0280             DoNibble:
+0179: 0280 E6 0F                  AND    0FH                  ; Isolate the nibble
+0180: 0282 C6 30                  ADD    A,030H               ; Make ASCII
+0181: 0284 FE 3A                  CP     3AH
+0182: 0286 38 02                  JR     C,SendNibble         ; return its less than 0AH
+0183: 0288 C6 07                  ADD    A,07H
+0184: 028A             SendNibble:
+0185: 028A 5F                     LD     E,A
+0186: 028B 0E 02                  LD     C,ConsoleOutput
+0187: 028D CD 05 00               CALL   BDOS
+0188: 0290
+0189: 0290 C9                     RET
+0190: 0291         ;---------------------------------------------------
+0191: 0291
+0192: 0291             DisplayWord:
+0193: 0291 E5                     PUSH   HL                   ; save Value
+0194: 0292 7C                     LD     A,H                  ; Get Most Significant Byte
+0195: 0293 CD 77 02               CALL   DisplayByte
+0196: 0296 E1                     POP    HL
+0197: 0297 7D                     LD     A,L                  ; Get Least Significant Byte
+0198: 0298 CD 77 02               CALL   DisplayByte
+0199: 029B C9                     RET
+0200: 029C         ;---------------------------------------------------
+0201: 029C             DisplayEOL:
+0202: 029C 11 A3 02               LD     DE,msgEOL
+0203: 029F CD 53 02               CALL   DoPrintString
+0204: 02A2 C9                     RET
+0205: 02A3 0D 0A 24     msgEOL:    DB     CR,LF,DOLLAR
+0206: 02A6         ;---------------------------------------------------
+0207: 02A6             Setup:
+0208: 02A6 2A 01 00               LD     HL,(001)             ; Get page where BIOS Starts
+0209: 02A9 2E 00                  LD     L,00
+0210: 02AB 22 B7 02               LD     (StartBIOS),HL
+0211: 02AE 2A 06 00               LD     HL,(BDOS+1)          ; BDOS start Page
+0212: 02B1 2E 00                  LD     L,0
+0213: 02B3 22 B9 02               LD     (StartBDOS),HL
+0214: 02B6 C9                     RET
+0215: 02B7
+0216: 02B7
+0217: 02B7 00 00       StartBIOS: DW     0000H
+0218: 02B9 00 00       StartBDOS: DW     0000H
+0219: 02BB             StackBottom:
+0220: 02BB                        DS     StackSize
+0221: 03BB             StackTop:
            ************************   Xref   ************************
-0000: $               01A5
-0005: BDOS            0005   0032 0037 0042 0047 0083 0091
-0013: BLM             0003
-0012: BSH             0002
-0018: CKS             000B
-0007: ConsoleOutput   0002   0082
+0000: $               02BB
+0018: AL0             0009   0096
+0019: AL1             000A   0101
+0048: AllocationAddress 0122   0043
+0005: BDOS            0005   0042 0056 0139 0187 0211
+0013: BLM             0003   0074
+0012: BSH             0002   0069
+0020: CKS             000B   0106 0107
+0007: ConsoleOutput   0002   0186
+0023: CR              000D   0049 0121 0133 0205
 0017: Dabm            0009
-0065: DisplayByte     017A   0044
-0035: DoDiskParameterBlock 010F   0029
-0074: DoNibble        0183   0071
-0016: DRM             0007
-0015: DSM             0005
-0060: EndOfMessage    0177   0045
-0020: EOM             0024   0051 0052 0053 0054 0055 0056 0057 0058 0059 0060
-0014: EXM             0004
-0009: GetAllocation   001B
-0010: GetDPB          001F   0036
-0053: msgBLM          013E
-0052: msgBSH          0136
-0058: msgCKS          0167
-0057: msgDabm         015E
-0056: msgDRM          0156
-0055: msgDSM          014E
-0054: msgEXM          0146
-0059: msgOFF          016F
-0051: msgSPT          012E   0040
-0019: OFF             000D
-0008: PrintString     0009   0041 0046
-0080: SendNibble      018D   0078
-0087: Setup           0194   0027
-0011: SPT             0000   0043
-0098: StackBottom     01A5
-0004: StackSize       0100   0099
-0100: StackTop        02A5   0026
-0025: Start           0100
-0097: StartBDOS       01A3   0092
-0096: StartBIOS       01A1   0090
-0006: SystemReset     0000   0031
-0003: TPA             0100   0024
+0169: DisplayByte     0277   0149 0195 0198
+0201: DisplayEOL      029C   0045
+0192: DisplayWord     0291   0044 0162
+0038: DoAllocation    010D   0033
+0052: DoDiskParameterBlock 013B   0032
+0022: DOLLAR          0024   0049 0121 0122 0123 0124 0125 0126 0127 0128 0129 0130 0131 0132 0133 0205
+0178: DoNibble        0280   0175
+0137: DoPrintString   0253   0040 0054 0146 0151 0159 0164 0203
+0119: DPBaddress      01DB   0057 0058 0067 0072 0077 0082 0088 0094 0099 0104 0110
+0016: DRM             0007   0090 0091
+0015: DSM             0005   0084 0085
+0133: EOM             0250   0150 0163
+0014: EXM             0004   0079
+0009: GetAllocation   001B   0041
+0010: GetDPB          001F   0055
+0024: LF              000A   0049 0121 0133 0205
+0129: msgAL0          0230   0095
+0130: msgAL1          0238   0100
+0049: msgAllocation   0124   0039
+0124: msgBLM          0207   0073
+0123: msgBSH          01FF   0068
+0131: msgCKS          0240   0105
+0128: msgDabm         0227
+0121: msgDPB          01DD   0053
+0127: msgDRM          021F   0089
+0126: msgDSM          0217   0083
+0205: msgEOL          02A3   0202
+0125: msgEXM          020F   0078
+0132: msgOFF          0248   0111
+0122: msgSPT          01F7   0062
+0021: OFF             000D   0112 0113
+0008: PrintString     0009   0138
+0184: SendNibble      028A   0182
+0207: Setup           02A6   0030
+0143: ShowByteDPB     0259   0070 0075 0080 0097 0102
+0156: ShowWordDPB     0268   0065 0086 0092 0108 0114
+0011: SPT             0000   0063 0064
+0219: StackBottom     02BB
+0004: StackSize       0100   0220
+0221: StackTop        03BB   0029
+0028: Start           0100
+0218: StartBDOS       02B9   0213
+0217: StartBIOS       02B7   0210
+0006: SystemReset     0000
+0003: TPA             0100   0027
