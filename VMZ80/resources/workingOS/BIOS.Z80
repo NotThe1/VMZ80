@@ -90,7 +90,7 @@ AfterDiskBuffer	EQU	$
 BOOT:
 ;CodeStart:
  	LD		HL,ROMControl
- 	CALL	ReadRawDisk
+ 	CALL	ReadRawDisk					; load the boot sector from the disk
   	JP		NC,TPA						; now execute the boot loader;
 
 	CALL	NoDisk;
@@ -139,7 +139,16 @@ DisplayMessage:
 NoDiskMessage:
  	DB		CR,LF
  	DB		'No System Disk Mounted'
- 	DB		CR,LF,EndOfMessage 
+ 	DB		CR,LF,EndOfMessage
+WarmBootMessage:
+	DB		'CP/M 2.2 (Z80) '
+;	DB		'BootStrap Loader'
+;	DB		CR,LF
+	DB		'Build 0.A '
+	DB		CR,LF
+	DB		'CCP 0.A |  BDOS 0.A | BIOS 0.B'
+	DB		CR,LF,EndOfMessage	
+	
 WarmBootErroMessage:
 	DB		CR,LF
 	DB		'Warm Boot -'
@@ -261,6 +270,8 @@ WBOOT:
 	LD		SP,CCPEntry-1		; put stack at top of User area
 	LD		HL,WBOOTControl		; get the WBOOT Control Block
 	CALL	ReadRawDisk			; read CCP & BDOS
+	LD		HL,WarmBootMessage
+	CALL	DisplayMessage
 	JR		NC, LoadPage0		; set up page 0 if good read
 
 	LD		HL,WarmBootErroMessage
@@ -299,7 +310,6 @@ WBOOTControl:
 	DW		CCPEntry			; read into this address
 	DW		DiskStatusLocation	; pointer to next block - no linking
 	DW		DiskControlByte		; pointer to next table- no linking
-	
 ;---------------------------------------------------------------------------
 ;	Console Status:		BIOS 02
 ;

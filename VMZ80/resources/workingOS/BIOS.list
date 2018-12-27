@@ -303,22 +303,22 @@
 0303: F600
 0304: F600 C3 40 F8               JP     BOOT                 ; 00 Cold/Hard Boot
 0305: F603             WarmBootEntry:
-0306: F603 C3 AC F8               JP     WBOOT                ; 01 Warm/Soft Boot
-0307: F606 C3 EF F8               JP     CONST                ; 02 Get Console Status - CON:
-0308: F609 C3 01 F9               JP     CONIN                ; 03 Get Character from Console - CON:
-0309: F60C C3 0D F9               JP     CONOUT               ; 04 Send Character to Console - CON:
-0310: F60F C3 23 F9               JP     LIST                 ; 05 Send Character to List device - LST:
-0311: F612 C3 2E F9               JP     PUNCH                ; 06 Send Character to Punch device - PUN:
-0312: F615 C3 3B F9               JP     READER               ; 07 Get Character from Reader - RDR:
-0313: F618 C3 00 FA               JP     HOME                 ; 08 Position the disk to absolute track 00
-0314: F61B C3 0F FA               JP     SELDSK               ; 09 Establish disk to be used by subsequent Read/Write
-0315: F61E C3 39 FA               JP     SETTRK               ; 0A Establish track to be used by subsequent Read/Write
-0316: F621 C3 3E FA               JP     SETSEC               ; 0B Establish sector to be used by subsequent Read/Write
-0317: F624 C3 43 FA               JP     SETDMA               ; 0C Establish buffer location to be used by subsequent Read/Write
-0318: F627 C3 4B FA               JP     READ                 ; 0D Not Yet Checked
-0319: F62A C3 5E FA               JP     WRITE                ; 0E Not Yet Checked
-0320: F62D C3 50 F9               JP     LISTST               ; 0F Get List device Status - LST:
-0321: F630 C3 48 FA               JP     SECTRAN              ; 10 De-skew sector number (null implementation)
+0306: F603 C3 E8 F8               JP     WBOOT                ; 01 Warm/Soft Boot
+0307: F606 C3 31 F9               JP     CONST                ; 02 Get Console Status - CON:
+0308: F609 C3 43 F9               JP     CONIN                ; 03 Get Character from Console - CON:
+0309: F60C C3 4F F9               JP     CONOUT               ; 04 Send Character to Console - CON:
+0310: F60F C3 65 F9               JP     LIST                 ; 05 Send Character to List device - LST:
+0311: F612 C3 70 F9               JP     PUNCH                ; 06 Send Character to Punch device - PUN:
+0312: F615 C3 7D F9               JP     READER               ; 07 Get Character from Reader - RDR:
+0313: F618 C3 42 FA               JP     HOME                 ; 08 Position the disk to absolute track 00
+0314: F61B C3 51 FA               JP     SELDSK               ; 09 Establish disk to be used by subsequent Read/Write
+0315: F61E C3 7B FA               JP     SETTRK               ; 0A Establish track to be used by subsequent Read/Write
+0316: F621 C3 80 FA               JP     SETSEC               ; 0B Establish sector to be used by subsequent Read/Write
+0317: F624 C3 85 FA               JP     SETDMA               ; 0C Establish buffer location to be used by subsequent Read/Write
+0318: F627 C3 8D FA               JP     READ                 ; 0D Not Yet Checked
+0319: F62A C3 A0 FA               JP     WRITE                ; 0E Not Yet Checked
+0320: F62D C3 92 F9               JP     LISTST               ; 0F Get List device Status - LST:
+0321: F630 C3 8A FA               JP     SECTRAN              ; 10 De-skew sector number (null implementation)
 0322: F633
 0323: F633         ;-------------------------------------------------
 0324: F633                        ORG    (($+10H)/10H) * 10H
@@ -357,7 +357,7 @@
 0357: F840             BOOT:
 0358: F840         ;CodeStart:
 0359: F840 21 5F F8               LD     HL,ROMControl
-0360: F843 CD 4D F8               CALL   ReadRawDisk
+0360: F843 CD 4D F8               CALL   ReadRawDisk          ; load the boot sector from the disk
 0361: F846 D2 00 01               JP     NC,TPA               ; now execute the boot loader;
 0362: F849
 0363: F849 CD 6C F8               CALL   NoDisk               ;
@@ -407,1267 +407,1277 @@
 0407: F877 0D 0A                  DB     CR,LF
 0408: F879 4E 6F 20 53 79 73 74 65 6D 20 44 69 73 6B 20 4D 6F 75 6E 74 65 64                DB     'No System Disk Mounted'
 0409: F88F 0D 0A 00                DB     CR,LF,EndOfMessage
-0410: F892             WarmBootErroMessage:
-0411: F892 0D 0A                  DB     CR,LF
-0412: F894 57 61 72 6D 20 42 6F 6F 74 20 2D                DB     'Warm Boot -'
-0413: F89F 20 52 65 74 72 79 69 6E 67 2E                DB     ' Retrying.'
-0414: F8A9 0D 0A 00                DB     CR,LF,EndOfMessage
-0415: F8AC
-0416: F8AC
-0417: F8AC         ;?	LD		HL,BootMessage
-0418: F8AC         ;?	CALL	DisplayMessage
-0419: F8AC         ;?
-0420: F8AC         ;?	LD		HL,BOOTControl
-0421: F8AC         ;?	CALL	RawDiskRead
-0422: F8AC         ;?
-0423: F8AC         ;?	JP		WBOOT				; do Warm boot if no errors
-0424: F8AC         ;?	LD		HL,BadBootMessage
-0425: F8AC         ;?	CALL	DisplayMessage		; Show Boot failure message
-0426: F8AC         ;?	HALT
-0427: F8AC         ;?
-0428: F8AC         ;?BOOTControl:
-0429: F8AC         ;?	DB		DiskReadCode					; Read function
-0430: F8AC         ;?	DB		00H								; unit number
-0431: F8AC         ;?	DB		00H								; head number
-0432: F8AC         ;?	DB		00H								; track number
-0433: F8AC         ;?	DB		0DH								; Starting sector number (13)
-0434: F8AC         ;?	DW		5 * 512							; Number of bytes to read ( 0A00 All of BIOS)
-0435: F8AC         ;?	DW		BIOSStart						; read into this address
-0436: F8AC         ;?	DW		DiskStatusLocation				; pointer to next block - no linking
-0437: F8AC         ;?	DW		DiskControlTable				; pointer to next table- no linking
-0438: F8AC         ;?
-0439: F8AC         ;?
-0440: F8AC         ;?;BOOTControl:
-0441: F8AC         ;?; 	DB		DiskReadCode		; Read function
-0442: F8AC         ;?; 	DB		00H					; unit number
-0443: F8AC         ;?; 	DB		00H					; head number
-0444: F8AC         ;?; 	DB		00H					; track number
-0445: F8AC         ;?; 	DB		01H					; Starting sector number ()
-0446: F8AC         ;?; 	DW		diskSectorSize		; Number of bytes to read ( 1 Sector)
-0447: F8AC         ;?; 	DW		TPA					; read into this address
-0448: F8AC         ;?; 	DW		DiskStatusLocation	; pointer to next block - no linking
-0449: F8AC         ;?; 	DW		DiskControlTable	; pointer to next table- no linking
-0450: F8AC         ;?
-0451: F8AC         ;?; Boot Messages and routine
-0452: F8AC         ;?BootMessage:
-0453: F8AC         ;?;	DB		'CP/M 2.2 (Z80) '
-0454: F8AC         ;?;	DB		'BootStrap Loader'
-0455: F8AC         ;?;	DB		CR,LF
-0456: F8AC         ;?	DB		'Build 0.A '
-0457: F8AC         ;?	DB		CR,LF
-0458: F8AC         ;?	DB		'CCP 0.A |  BDOS 0.A | BIOS 0.B'
-0459: F8AC         ;?	DB		CR,LF,EndOfMessage
-0460: F8AC         ;?BadBootMessage:
-0461: F8AC         ;?	DB		CR,LF
-0462: F8AC         ;?	DB		'****   Boot Failure'
-0463: F8AC         ;?	DB		EndOfMessage
-0464: F8AC         ;?WarmBootErroMessage:
-0465: F8AC         ;?	DB		CR,LF
-0466: F8AC         ;?	DB		'Warm Boot -'
-0467: F8AC         ;?	DB		' Retrying.'
-0468: F8AC         ;?	DB		CR,LF,EndOfMessage
-0469: F8AC         ;?;..................Boot Support....................
-0470: F8AC         ;?
-0471: F8AC         ;?; Entered with DiskControlBlock pointer in HL
-0472: F8AC         ;?RawDiskRead:
-0473: F8AC         ;?	LD		(DiskCommandBlock),HL
-0474: F8AC         ;?
-0475: F8AC         ;?	LD		HL,DiskControlByte
-0476: F8AC         ;?	LD		(HL),080H
-0477: F8AC         ;?
-0478: F8AC         ;?; wait for the read to complete
-0479: F8AC         ;?WaitForReadDone:
-0480: F8AC         ;?	LD		A,(HL)
-0481: F8AC         ;?	OR		A
-0482: F8AC         ;?	JR		NZ,WaitForReadDone
-0483: F8AC         ;?
-0484: F8AC         ;?; is it a clean read ?
-0485: F8AC         ;?	LD		A,(DiskStatusLocation)
-0486: F8AC         ;?	CP		080H				; any errors NC = good read?
-0487: F8AC         ;?	RET
-0488: F8AC         ;?
-0489: F8AC         ;?; entered with pointer to message in HL
-0490: F8AC         ;?DisplayMessage:
-0491: F8AC         ;?	LD		A,M					; get  character
-0492: F8AC         ;?	OR		A					; is it NULL
-0493: F8AC         ;?	RET		Z					; return if it is NULL (00)
-0494: F8AC         ;?	LD		C,A
-0495: F8AC         ;?	PUSH	HL					; save the pointer
-0496: F8AC         ;?	OUT		TTY_DataPort
-0497: F8AC         ;?	POP		HL					; retrieve the pointer
-0498: F8AC         ;?	INC		HL					; point at next character
-0499: F8AC         ;?	JR		DisplayMessage
-0500: F8AC         ;?
-0501: F8AC         ;....................................................
-0502: F8AC
-0503: F8AC         ;---------------------------------------------------------------------------
-0504: F8AC         ;	WBOOT:  BIOS 01		SoftBoot/Warm Boot
-0505: F8AC         ;
-0506: F8AC         ;  Unlike the "cold" bootstrap entry point, which executes only once, the WBOOT
-0507: F8AC         ; or warm boot routine will be executed every time a program terminates by
-0508: F8AC         ; jumping to location OOOOH, or whenever you type a CONTROL-C on the console as
-0509: F8AC         ; the first character of an input line.
-0510: F8AC         ;  The WBOOT routine is responsible for reloading the CCP into memory.
-0511: F8AC         ; Programs often use all of memory up to the starting point of the BDOS, overwriting
-0512: F8AC         ; the CCP in the process. The underlying philosophy is that while a program is
-0513: F8AC         ; executing, the CCP is not needed, so the program can use the memory previously
-0514: F8AC         ; occupied by the CCP. The CCP occupies 800H (2048) bytes ofmemory-and this
-0515: F8AC         ; is frequently just enough to make the difference between a program that cannot
-0516: F8AC         ; run and one that can.
-0517: F8AC         ; A few programs that are self-contained and do not require the BDOS's
-0518: F8AC         ; facilities will also overwrite the BDOS to get another 1600H (5632) bytes of
-0519: F8AC         ; memory. Therefore, to be really safe, the WBOOT routine should read in both the
-0520: F8AC         ; CCP and the BDOS. It also needs to set up the two JMPs at location OOOOH (to
-0521: F8AC         ; WBOOT itself) and at location 0005H (to the BOOS). Location 0003H should be
-0522: F8AC         ; set to the initial value of the 10BYTE if this is implemented in the BIOS.
-0523: F8AC         ; As its last act, the WBOOT routine sets register C to indicate which logical disk
-0524: F8AC         ; is to be selected (C= 0 for A, I for B, and so on). It then transfers control into the
-0525: F8AC         ; CCP at the first instruction in order to restart the CCP.
-0526: F8AC
-0527: F8AC             WBOOT:
-0528: F8AC 31 FF DF               LD     SP,CCPEntry-1        ; put stack at top of User area
-0529: F8AF 21 E2 F8               LD     HL,WBOOTControl      ; get the WBOOT Control Block
-0530: F8B2 CD 4D F8               CALL   ReadRawDisk          ; read CCP & BDOS
-0531: F8B5 30 09                  JR     NC,LoadPage0         ; set up page 0 if good read
-0532: F8B7
-0533: F8B7 21 92 F8               LD     HL,WarmBootErroMessage
-0534: F8BA CD 6F F8               CALL   DisplayMessage       ; send bad warm boot message
-0535: F8BD C3 AC F8               JP     WBOOT                ; keep trying
-0536: F8C0
-0537: F8C0
-0538: F8C0         ; Set up page Zero
-0539: F8C0             LoadPage0:
-0540: F8C0 3E C3                  LD     A,JP_OPCODE          ; Get JP opCode
-0541: F8C2
-0542: F8C2 32 00 00               LD     (WarmBoot),A
-0543: F8C5 21 03 F6               LD     HL,WarmBootEntry     ; Warm Boot entry point
-0544: F8C8 22 01 00               LD     (WarmBoot+1),HL      ; Warm Boot Vector
-0545: F8CB
-0546: F8CB 32 05 00               LD     (BDOSE),A
-0547: F8CE 21 06 E8               LD     HL,BDOSEntry         ; BDOS entry point
-0548: F8D1 22 06 00               LD     (BDOSE+1),HL         ; BDOS Vector
-0549: F8D4
-0550: F8D4 01 80 00               LD     BC,DMABuffer         ; Default Disk Buffer
-0551: F8D7 CD 43 FA               CALL   SETDMA               ; use normal BDOS  routine
-0552: F8DA FB                     EI                          ; Enable interrupts
-0553: F8DB
-0554: F8DB 3A 04 00               LD     A,(Pg0CurentDisk)    ; Let CCP know what disk is current
-0555: F8DE 4F                     LD     C,A
-0556: F8DF C3 00 E0               JP     CCPEntry             ; transfer control to CCP
-0557: F8E2
-0558: F8E2
-0559: F8E2             WBOOTControl:
-0560: F8E2 01                     DB     DiskReadCode         ; Read function
-0561: F8E3 00                     DB     00H                  ; unit number
-0562: F8E4 00                     DB     00H                  ; head number
-0563: F8E5 00                     DB     00H                  ; track number
-0564: F8E6 02                     DB     02H                  ; Starting sector number (skip cold boot sector)
-0565: F8E7 00 16                  DW     CCPLength + BDOSLength ; Number of bytes to read ( rest of the head)
-0566: F8E9 00 E0                  DW     CCPEntry             ; read into this address
-0567: F8EB 43 00                  DW     DiskStatusLocation   ; pointer to next block - no linking
-0568: F8ED 45 00                  DW     DiskControlByte      ; pointer to next table- no linking
-0569: F8EF
-0570: F8EF         ;---------------------------------------------------------------------------
-0571: F8EF         ;	Console Status:		BIOS 02
-0572: F8EF         ;
-0573: F8EF         ;  CONST simply returns an indicator showing whether there is an incoming
-0574: F8EF         ; character from the console device. The convention is that A = OFFH if a character
-0575: F8EF         ; is waiting to be processed, A = 0 if one is not. Note that the zero flag need not be set
-0576: F8EF         ; to reflect the contents of the A register - it is the contents that are important.
-0577: F8EF         ; CONST is called by the CCP whenever the CCP is in the middle of an
-0578: F8EF         ; operation that can be interrupted by pressing a keyboard character.
-0579: F8EF         ;
-0580: F8EF         ; The BDOS will call CONST if a program makes a Read Console Status
-0581: F8EF         ; function call (B$CONST, code 11, OBH). It is also called by the console input BIOS
-0582: F8EF         ; routine, CONIN
-0583: F8EF
-0584: F8EF             CONST:
-0585: F8EF             ConStatus:
-0586: F8EF 3A 03 00               LD     A,(IOBYTE)
-0587: F8F2 DD 21 E0 F9               LD     IX,CON_Vector
-0588: F8F6
-0589: F8F6             GenericInStatus:                      ; Entry point for generic input status
-0590: F8F6 CD 9C F9               CALL   SetDeviceVector      ; IX has the vector for the Physical Device
-0591: F8F9 CD 69 F9               CALL   GetInStatus
-0592: F8FC B7                     OR     A
-0593: F8FD C8                     RET    Z                    ; 00 => No data pending
-0594: F8FE 3E FF                  LD     A,0FFH
-0595: F900 C9                     RET                         ; OFFH => Data in Buffer
-0596: F901         ;---------------------------------------------------------------------
-0597: F901         ;	Console In:		BIOS 03
-0598: F901         ;
-0599: F901         ;  CONIN reads the next character from the console to the A register and sets the
-0600: F901         ; most significant (parity) bit to O. ; Normally, CONIN will call the CONST routine
-0601: F901         ; until it detects A = OFFH. Only then will it input the data character and mask off
-0602: F901         ; the parity bit. CONIN is called by the CCP and by the BDOS when a program executes a
-0603: F901         ; Read Console Byte function (B$CONIN, code 1).
-0604: F901         ; normally this follows a call to CONST ( a blocking call) to indicates a char is ready.
-0605: F901
-0606: F901         ; This is a blocking routine
-0607: F901
-0608: F901             CONIN:
-0609: F901             ConIn:
-0610: F901 CD EF F8               CALL   ConStatus
-0611: F904 28 FB                  JR     Z,ConIn              ; loop until there is some data to read
-0612: F906         ; Call to ConStatus Sets up IX with Physical Table
-0613: F906 DD 6E 06               LD     L,(IX+DataReadIndex)
-0614: F909 DD 66 07               LD     H,(IX+(DataReadIndex+1))
-0615: F90C E9                     JP     (HL)
-0616: F90D         ;---------------------------------------------------------------------------
-0617: F90D         ;	Console Out:		BIOS 04
-0618: F90D         ;
-0619: F90D         ;  CONOUT outputs the character (in ASCII) in register C to the console. The
-0620: F90D         ; most significant (parity) bit of the character will always be O.
-0621: F90D         ; CONOUT must first check that the console device is ready to receive more
-0622: F90D         ; data, delaying if necessary until it is, and only then sending the character to the
-0623: F90D         ; device. CONOUT is called by the CCP and by the BDOS when a program executes a
-0624: F90D         ; Write Console Byte function (B$CONOUT, code 2).
-0625: F90D
-0626: F90D         ; This is a blocking routine
-0627: F90D
-0628: F90D             CONOUT:
-0629: F90D             CONOut:
-0630: F90D 3A 03 00               LD     A,(IOBYTE)
-0631: F910 DD 21 E0 F9               LD     IX,CON_Vector
-0632: F914
-0633: F914             GenericOutStatus:                      ; entry point for standard blocking write
-0634: F914 CD 9C F9               CALL   SetDeviceVector      ; IX has the vector for the Physical Device
-0635: F917             GenericOutStatus1:
-0636: F917 CD 64 F9               CALL   GetOutStatus
-0637: F91A 28 FB                  JR     Z,GenericOutStatus1  ; wait until ready
-0638: F91C DD 6E 08               LD     L,(IX+DataWriteIndex)
-0639: F91F DD 66 09               LD     H,(IX+(DataWriteIndex+1))
-0640: F922 E9                     JP     (HL)
-0641: F923
-0642: F923         ;---------------------------------------------------------------------------
-0643: F923         ;	List output  BIOS 05
-0644: F923         ;
-0645: F923         ; LIST is similar to CONOUT except that it sends the character in register C to
-0646: F923         ; the list device. It too checks first that the list device is ready to receive
-0647: F923         ; the character. LIST is called by the CCP in response to the CONTROL-P toggle
-0648: F923         ; for printer echo of console output, and by the BDOS when a program makes a
-0649: F923         ; Write Printer Byte or Display String call (B$LISTOUT and B$PRINTS, codes 5 and 9).
-0650: F923
-0651: F923         ; This is a blocking routine
-0652: F923
-0653: F923             LIST:
-0654: F923 3A 03 00               LD     A,(IOBYTE)
-0655: F926 07                     RLCA                        ; move bits 7,6
-0656: F927 07                     RLCA                        ; to 1,0
-0657: F928 DD 21 F8 F9               LD     IX,LST_Vector
-0658: F92C 18 E6                  JR     GenericOutStatus     ; go to generic blocking out routine
-0659: F92E
-0660: F92E         ;---------------------------------------------------------------------------
-0661: F92E         ;	Punch output  BIOS 06
-0662: F92E         ;
-0663: F92E         ;  PUNCH sends the character in register C to the "punch" device. As mentioned
-0664: F92E         ; earlier, the "punch" is rarely a real paper tape punch. In most BIOS's, the PUNCH
-0665: F92E         ; entry point either returns immediately and is effectively a null routine, or it outputs
-0666: F92E         ; the character to a communications device, such as a modem, on your computer.
-0667: F92E         ; PUNCH must check that the "punch" device is indeed ready to accept another
-0668: F92E         ; character for output, and must wait if it is not.
-0669: F92E         ;
-0670: F92E         ; Digital Research's documentation states that the character to be output will
-0671: F92E         ; always have its most significant bit set to O. This is not true. The BDOS simply
-0672: F92E         ; transfers control over to the PUNCH entry point in the BIOS; the setting of the
-0673: F92E         ; most significant bit will be determined by the program making the BDOS function
-0674: F92E         ; request (B$PUNOUT, code 4). This is important because the requirement of a zero
-0675: F92E         ; would preclude being able to send pure binary data via the BIOS PUNCH
-0676: F92E         ; function
-0677: F92E
-0678: F92E         ; This is a blocking routine
-0679: F92E
-0680: F92E             PUNCH:                          ; Punch output
-0681: F92E 3A 03 00               LD     A,(IOBYTE)
-0682: F931 0F                     RRCA
-0683: F932 0F                     RRCA
-0684: F933 0F                     RRCA                        ; move bits 5,4
-0685: F934 0F                     RRCA                        ; to 1,0
-0686: F935 DD 21 F0 F9               LD     IX,PUN_Vector
-0687: F939 18 D9                  JR     GenericOutStatus     ; go to generic blocking out routine
-0688: F93B
-0689: F93B         ;---------------------------------------------------------------------------
-0690: F93B         ;	Reader input  BIOS 07
-0691: F93B         ;
-0692: F93B         ; As with the PUNCH entry point, the READER entry point rarely connects to
-0693: F93B         ; a real paper tape reader.
-0694: F93B         ; The READER function must return the next character from the reader device
-0695: F93B         ; in the A register, waiting, if need be, until there is a character.
-0696: F93B         ;
-0697: F93B         ; Digital Research's documentation again says that the most significant bit of
-0698: F93B         ; the A register must be 0, but this is not the case if you wish to receive pure binary
-0699: F93B         ; information via this function.
-0700: F93B         ; READER is called whenever a program makes a Read "Reader" Byte function
-0701: F93B         ; request (B$READIN, code 3).
-0702: F93B
-0703: F93B         ; This is a blocking routine
-0704: F93B
-0705: F93B             READER:                         ; Reader Input
-0706: F93B 3A 03 00               LD     A,(IOBYTE)
-0707: F93E 0F                     RRCA
-0708: F93F 0F                     RRCA                        ; move bits 3,2  to 1,0
-0709: F940 DD 21 E8 F9               LD     IX,RDR_Vector
-0710: F944             READER1:
-0711: F944 CD F6 F8               CALL   GenericInStatus
-0712: F947 28 FB                  JR     Z,READER1            ; loop until there is some data to read
-0713: F949
-0714: F949 DD 6E 06               LD     L,(IX+DataReadIndex)
-0715: F94C DD 66 07               LD     H,(IX+(DataReadIndex+1))
-0716: F94F E9                     JP     (HL)
-0717: F950
-0718: F950         ;---------------------------------------------------------------------------
-0719: F950         ;	List Status:  BIOS 0F
-0720: F950
-0721: F950         ;  LISTST was added when CP/M was upgraded from version 1.4 to version 2.0.
-0722: F950         ; This function returns the current status of the list device, using the IOBYTE if
-0723: F950         ; necessary to select the correct physical device. It sets the A register to OFFH if the
-0724: F950         ; list device can accept another character for output or to OOH if it is not ready.
-0725: F950         ; Digital Research's documentation states that this function is used by the
-0726: F950         ; DESPOOL utility program (which allows you to print a file "simultaneously" with
-0727: F950         ; other operations) to improve console response during its operation, and that it is
-0728: F950         ; acceptable for the routine always to return OOH if you choose not to implement it
-0729: F950         ; fully.
-0730: F950         ; Unfortunately, this statement is wrong. Many other programs use the LISTST
-0731: F950         ; function to "poll" the list device to make sure it is ready, and if it fails to come
-0732: F950         ; ready after a predetermined time, to output a message to the console indicating
-0733: F950         ; that the printer is not ready. If you ever make a call to the BDOS list output
-0734: F950         ; functions, Write Printer Byte and Print String (codes 5 and 9), and the printer is
-0735: F950         ; not ready, then CP/M will wait forever-and your program will have lost control
-0736: F950         ; so it cannot even detect that the problem has occurred. If LISTST always returns a
-0737: F950         ; OOH, then the printer will always appear not to be ready. Not only does this make nonsense
-0738: F950         ; out of the LISTST function, but it also causes a stream of false "Printer
-0739: F950         ; not Ready" error messages to appear on the console.
-0740: F950
-0741: F950             LISTST:
-0742: F950 3A 03 00               LD     A,(IOBYTE)           ; Get Physical device
-0743: F953 07                     RLCA
-0744: F954 07                     RLCA                        ; Move bits 6 & 7 to bits 0 & 1
-0745: F955 DD 21 F8 F9               LD     IX,LST_Vector        ; Set th vector base
-0746: F959 CD 9C F9               CALL   SetDeviceVector      ; IX has the vector for the Physical Device
-0747: F95C CD 64 F9               CALL   GetOutStatus
-0748: F95F
-0749: F95F B7                     OR     A
-0750: F960 C8                     RET    Z                    ; 00 => Device Ready
-0751: F961 3E FF                  LD     A,0FFH
-0752: F963 C9                     RET                         ; OFFH => Device No Ready
-0753: F964
-0754: F964         ;---------------------------------------------------------------------------
-0755: F964
-0756: F964         ;---------------------------------------------------------------------
-0757: F964             GetOutStatus:
-0758: F964         ; vector to CON Devices
-0759: F964 DD 56 02               LD     D,(IX+OutputMaskIndex) ; setup Output mask
-0760: F967 18 03                  JR     GetStatus
-0761: F969             GetInStatus:
-0762: F969 DD 56 03               LD     D,(IX+InputMaskIndex) ; setup Input mask
-0763: F96C             GetStatus:
-0764: F96C DD 6E 04               LD     L,(IX+StatusReadIndex)
-0765: F96F DD 66 05               LD     H,(IX+(StatusReadIndex+1)) ; Load HL with address for Status Read
-0766: F972 E9                     JP     (HL)                 ; jump to the stats read routine
-0767: F973
-0768: F973         ;---------------------------------------------------------------------
-0769: F973
-0770: F973             DataRead:
-0771: F973 DD 7E 01               LD     A,(IX+DataPortIndex)
-0772: F976 32 7A F9               LD     (AddressDataIn),A    ; modify code with the Data port
-0773: F979 DB                     DB     IN_OPCODE
-0774: F97A             AddressDataIn:
-0775: F97A 00                     DB     00                   ; perform the read
-0776: F97B C9                     RET
-0777: F97C
-0778: F97C             DataReadASCII:
-0779: F97C CD 73 F9               CALL   DataRead
-0780: F97F E6 7F                  AND    ASCII_MASK           ; Strip off MSB
-0781: F981 C9                     RET                         ; AND		ASCII_MASK
-0782: F982
-0783: F982         ; Enter DataWrite the value to be output in C
-0784: F982             DataWrite:
-0785: F982 DD 7E 01               LD     A,(IX+DataPortIndex)
-0786: F985 32 8A F9               LD     (AddressDataOut),A   ; modify code with the Data port
-0787: F988 79                     LD     A,C                  ; get value into ACC
-0788: F989 D3                     DB     OUT_OPCODE
-0789: F98A             AddressDataOut:
-0790: F98A 00                     DB     00                   ; perform the write
-0791: F98B C9                     RET
-0792: F98C
-0793: F98C
-0794: F98C         ; Enter Status Read with Target mask in D
-0795: F98C             StatusRead:
-0796: F98C DD 7E 00               LD     A,(IX+StatusPortIndex)
-0797: F98F 32 93 F9               LD     (AddressStatus),A    ; modify code with the status port
-0798: F992 DB                     DB     IN_OPCODE
-0799: F993             AddressStatus:
-0800: F993 00                     DB     00
-0801: F994 A2                     AND    D                    ; Check return vale with the mask
-0802: F995 C9                     RET
-0803: F996
-0804: F996             DUMMYRead:
-0805: F996 C9                     RET
-0806: F997             DUMMYWrite:
-0807: F997 C9                     RET
-0808: F998             DUMMYCheck:
-0809: F998 3E FF                  LD     A,0FFH               ; Always return 0FFH
-0810: F99A B7                     OR     A                    ; Set flags
-0811: F99B C9                     RET
-0812: F99C
-0813: F99C         ;=============================================================================
-0814: F99C             SetDeviceVector:
-0815: F99C E6 03                  AND    03H                  ; Get bits 0 & 1;
-0816: F99E 87                     ADD    A,A                  ; Double for word size index
-0817: F99F 16 00                  LD     D,00H
-0818: F9A1 5F                     LD     E,A                  ; load byte index int DE
-0819: F9A2 DD 19                  ADD    IX,DE                ; add to the value vector base
-0820: F9A4         ; IX points at correct entry in vector
-0821: F9A4 DD 5E 00               LD     E,(IX+0)
-0822: F9A7 DD 56 01               LD     D,(IX+1)             ; DE now has the Vector for the device
-0823: F9AA D5                     PUSH   DE
-0824: F9AB DD E1                  POP    IX                   ; Move it to IX
-0825: F9AD C9                     RET
-0826: F9AE
-0827: F9AE
-0828: F9AE         ;++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-0829: F9AE         ; Physical Device Attributes
-0830: F9AE
-0831: F9AE             TTY_StatusPort EQU    0EDH
-0832: F9AE             TTY_DataPort EQU    0ECH
-0833: F9AE             TTY_OutputMask EQU    80H                  ; Status Mask
-0834: F9AE             TTY_InputMask EQU    7FH                  ; Status Mask
-0835: F9AE
-0836: F9AE             CRT_StatusPort EQU    02H
-0837: F9AE             CRT_DataPort EQU    01H
-0838: F9AE             CRT_OutputMask EQU    80H                  ; Status Mask - ready for output
-0839: F9AE             CRT_InputMask EQU    07FH                 ; Status Mask - bytes yet to have been read
-0840: F9AE
-0841: F9AE             COM_StatusPort EQU    0EDH
-0842: F9AE             COM_DataPort EQU    0ECH
-0843: F9AE             COM_OutputMask EQU    01H                  ; Status Mask
-0844: F9AE             COM_InputMask EQU    02H                  ; Status Mask
-0845: F9AE
-0846: F9AE             LPT_StatusPort EQU    011H
-0847: F9AE             LPT_DataPort EQU    010H
-0848: F9AE             LPT_OutputMask EQU    0FFH                 ; Status Mask - ready for output
-0849: F9AE             LPT_InputMask EQU    07FH                 ; Status Mask - not used
-0850: F9AE
-0851: F9AE             DUMMY_StatusPort EQU    011H
-0852: F9AE             DUMMY_DataPort EQU    010H
-0853: F9AE             DUMMY_OutputMask EQU    0FFH                 ; Status Mask - ready for output
-0854: F9AE             DUMMY_InputMask EQU    07FH                 ; Status Mask - not used
-0855: F9AE
-0856: F9AE         ; Device Table Control Block Definition
-0857: F9AE             StatusPortIndex EQU    0
-0858: F9AE             DataPortIndex EQU    1
-0859: F9AE             OutputMaskIndex EQU    2
-0860: F9AE             InputMaskIndex EQU    3
-0861: F9AE             StatusReadIndex EQU    4
-0862: F9AE             DataReadIndex EQU    6
-0863: F9AE             DataWriteIndex EQU    8
-0864: F9AE
-0865: F9AE         ;Physical Devices Control Blocks
-0866: F9AE
-0867: F9AE             TTY_Table:
-0868: F9AE ED                     DB     TTY_StatusPort
-0869: F9AF EC                     DB     TTY_DataPort
-0870: F9B0 80                     DB     TTY_OutputMask
-0871: F9B1 7F                     DB     TTY_InputMask
-0872: F9B2 8C F9                  DW     StatusRead
-0873: F9B4 7C F9                  DW     DataReadASCII
-0874: F9B6 82 F9                  DW     DataWrite
-0875: F9B8
-0876: F9B8             CRT_Table:
-0877: F9B8 02                     DB     CRT_StatusPort
-0878: F9B9 01                     DB     CRT_DataPort
-0879: F9BA 80                     DB     CRT_OutputMask
-0880: F9BB 7F                     DB     CRT_InputMask
-0881: F9BC 8C F9                  DW     StatusRead
-0882: F9BE 73 F9                  DW     DataRead
-0883: F9C0 82 F9                  DW     DataWrite
-0884: F9C2             COM_Table:
-0885: F9C2 ED                     DB     COM_StatusPort
-0886: F9C3 EC                     DB     COM_DataPort
-0887: F9C4 01                     DB     COM_OutputMask
-0888: F9C5 02                     DB     COM_InputMask
-0889: F9C6 8C F9                  DW     StatusRead
-0890: F9C8 73 F9                  DW     DataRead
-0891: F9CA 82 F9                  DW     DataWrite
-0892: F9CC             LPT_Table:
-0893: F9CC 11                     DB     LPT_StatusPort
-0894: F9CD 10                     DB     LPT_DataPort
-0895: F9CE FF                     DB     LPT_OutputMask
-0896: F9CF 7F                     DB     LPT_InputMask
-0897: F9D0 8C F9                  DW     StatusRead
-0898: F9D2 73 F9                  DW     DataRead
-0899: F9D4 82 F9                  DW     DataWrite
-0900: F9D6             DUMMY_Table:
-0901: F9D6 11                     DB     DUMMY_StatusPort
-0902: F9D7 10                     DB     DUMMY_DataPort
-0903: F9D8 FF                     DB     DUMMY_OutputMask
-0904: F9D9 7F                     DB     DUMMY_InputMask
-0905: F9DA 98 F9                  DW     DUMMYCheck
-0906: F9DC 96 F9                  DW     DUMMYRead
-0907: F9DE 97 F9                  DW     DUMMYWrite
-0908: F9E0
-0909: F9E0         ;---------------------------------------------------------------------------
-0910: F9E0
-0911: F9E0         ; Logical Device Vector, Controlled by IOBYTE
-0912: F9E0
-0913: F9E0             CON_Vector:                      ; IOBYTE bits 1 & 0
-0914: F9E0 AE F9                  DW     TTY_Table
-0915: F9E2 B8 F9                  DW     CRT_Table
-0916: F9E4 C2 F9                  DW     COM_Table
-0917: F9E6 D6 F9                  DW     DUMMY_Table
-0918: F9E8             RDR_Vector:                      ; IOBYTE bits 3 & 2
-0919: F9E8 AE F9                  DW     TTY_Table
-0920: F9EA B8 F9                  DW     CRT_Table
-0921: F9EC D6 F9                  DW     DUMMY_Table
-0922: F9EE D6 F9                  DW     DUMMY_Table
-0923: F9F0             PUN_Vector:                      ; IOBYTE bits 5 & 4
-0924: F9F0 AE F9                  DW     TTY_Table
-0925: F9F2 D6 F9                  DW     DUMMY_Table
-0926: F9F4 C2 F9                  DW     COM_Table
-0927: F9F6 B8 F9                  DW     CRT_Table
-0928: F9F8             LST_Vector:                      ; IOBYTE bits 7 & 6
-0929: F9F8 CC F9                  DW     LPT_Table
-0930: F9FA B8 F9                  DW     CRT_Table
-0931: F9FC CC F9                  DW     LPT_Table
-0932: F9FE D6 F9                  DW     DUMMY_Table
-0933: FA00
-0934: FA00         ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-0935: FA00         ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-0936: FA00
-0937: FA00         ;---------------------------------------------------------------------------
-0938: FA00         ;	Disk routines
-0939: FA00         ;---------------------------------------------------------------------------
-0940: FA00
-0941: FA00         ;  All of the disk functions that follow were originally designed to operate on the
-0942: FA00         ; 128-byte sectors used on single-sided, single-density, 8-inch floppy diskettes that
-0943: FA00         ; were standard in the industry at the time. Now that CP/M runs on many different
-0944: FA00         ; types of disks, some of the BIOS disk functions seem strange because most of the
-0945: FA00         ; new disk drives use sector sizes other than 128 bytes.
-0946: FA00         ; To handle larger sector sizes, the BIOS has some additional code that makes
-0947: FA00         ; the BDOS respond as if it were still handling 128-byte sectors. This code is referred
-0948: FA00         ; to as the blocking/deblocking code.
-0949: FA00         ;  As its name implies, it blocks together several 128-byte "sectors" and only writes
-0950: FA00         ; to the disk when a complete physical sector has been assembled.
-0951: FA00         ;  When reading, it reads in a physical sector and then deblocks it,handing back
-0952: FA00         ; several 128-byte "sectors" to the BDOS.
-0953: FA00         ;  To do all of this, the blocking/deblocking code uses a special buffer area of the
-0954: FA00         ; same size as the physical sectors on the disk. This is known as the host disk buffer
-0955: FA00         ; or HSTBUE Physical sectors are read into this buffer and written to the disk
-0956: FA00         ; from it. In order to optimize this blocking/deblocking routine, the BIOS has code in it
-0957: FA00         ; to reduce the number of times that an actual disk read or write occurs. A side effect
-0958: FA00         ; is that at any given moment, several 128-byte "sectors" may be stored in the
-0959: FA00         ; HSTBUF, waiting to be written out to the disk when HSTBUF becomes full. This
-0960: FA00         ; sometimes complicates the logic of the BIOS disk functions. You cannot simply
-0961: FA00         ; select a new disk drive, for example, when the HSTBUF contains data destined for
-0962: FA00         ; another disk drive. You will see this complication in the BIOS only in the form of
-0963: FA00         ; added logical operations; the BIOS disk functions rarely trigger immediate physical
-0964: FA00         ; operations. It is easier to understand these BIOS functions if you consider that
-0965: FA00         ; they make requests-and that these requests are satisfied only when it makes
-0966: FA00         ; sense to do so, taking into account the blocking/ deblocking logic.
-0967: FA00
-0968: FA00         ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-0969: FA00         ;---------------------------------------------------------------------------
-0970: FA00
-0971: FA00         ;---------------------------------------------------------------------------
-0972: FA00         ;	Home Disk	BIOS 08
-0973: FA00         ;
-0974: FA00         ;  HOME - Home the selected logical disk to track 0. Before doing this, a check
-0975: FA00         ; must be made to see if the physical disk buffer has information that must be
-0976: FA00         ; written out. This is indicated by a flag, DirtyBufferFlag,set in the de-blocking code
-0977: FA00
-0978: FA00             HOME:
-0979: FA00 3A A8 FB               LD     A,(DirtyBufferFlag)  ; Check for Dirty Buffer
-0980: FA03 B7                     OR     A
-0981: FA04 20 03                  JR     NZ,HomeNoWrite
-0982: FA06 32 A7 FB               LD     (DataInBufferFlag),A ; Clear DataInBufferFlag if Buffer not dirty
-0983: FA09             HomeNoWrite:
-0984: FA09 0E 00                  LD     C,00H                ; Set to track 0
-0985: FA0B CD 39 FA               CALL   SETTRK               ; no, physical, only logical
-0986: FA0E C9                     RET
-0987: FA0F
-0988: FA0F         ;---------------------------------------------------------------------------
-0989: FA0F         ;	Select Disk	BIOS 09
-0990: FA0F
-0991: FA0F         ;  SELDSK does not do what its name implies. It does not (and must not)
-0992: FA0F         ; physically select a logical disk. Instead, it returns a pointer in the
-0993: FA0F         ; HL register pair to the disk parameter header for the logical disk specified
-0994: FA0F         ; in register C on entry. C=0 for drive A, 1for drive B, and so on. SELDSK also
-0995: FA0F         ; stores this code for the requested disk to be used later in the READ and WRITE functions.
-0996: FA0F         ; If the logical disk code in register C refers to a nonexistent disk or to one for
-0997: FA0F         ; which no disk parameter header exists, then SELDSK must return with HL set to
-0998: FA0F         ; OOOOH. Then the BDOS will output a message of the form "BDOS Err on XI Select"
-0999: FA0F         ; Note that SELDSK not only does not select the disk, but also does not indicate
-1000: FA0F         ; whether or not the requested disk is physically present -merely whether or not
-1001: FA0F         ; there are disk tables present for the disk.
-1002: FA0F         ;  SELDSK is called by the BDOS either during disk file operations or by a
-1003: FA0F         ; program issuing a Select Disk request (B$SELDSK, code 14).
-1004: FA0F
-1005: FA0F             SELDSK:
-1006: FA0F 21 00 00               LD     HL,00H               ; Assume an error
-1007: FA12 79                     LD     A,C
-1008: FA13 FE 04                  CP     NumberOfLogicalDisks
-1009: FA15 D0                     RET    NC                   ; return if > max number of Disks
-1010: FA16
-1011: FA16 32 AA FB               LD     (SelectedDisk),A     ; save disk number
-1012: FA19
-1013: FA19 07                     RLCA                        ; X2
-1014: FA1A 07                     RLCA                        ; X4
-1015: FA1B 07                     RLCA                        ; X8
-1016: FA1C 07                     RLCA                        ; X16
-1017: FA1D 16 00                  LD     D,0
-1018: FA1F 5F                     LD     E,A                  ; put index int DE
-1019: FA20 DD 21 B9 FB               LD     IX,DiskParameterHeaders ; get DPH address Base
-1020: FA24 DD 19                  ADD    IX,DE                ; get the specific DiskParameterHeader
-1021: FA26 DD E5                  PUSH   IX                   ; save for return in HL
-1022: FA28
-1023: FA28 DD 56 0B               LD     D,(IX+11)            ; LSB for Disk Parameter Block
-1024: FA2B DD 5E 0A               LD     E,(IX+10)            ; MSB for Disk Parameter Block
-1025: FA2E
-1026: FA2E D5                     PUSH   DE
-1027: FA2F DD E1                  POP    IX
-1028: FA31 DD 7E 0F               LD     A,(IX+15)            ; Disk Parameter Block in IY
-1029: FA34 32 A9 FB               LD     (SelectedDskSecsPerHead),A
-1030: FA37
-1031: FA37 E1                     POP    HL                   ; recover DPH pointer
-1032: FA38 C9                     RET
-1033: FA39
-1034: FA39
-1035: FA39
-1036: FA39         ;---------------------------------------------------------------------------
-1037: FA39         ;	Set Track	BIOS 0A
-1038: FA39
-1039: FA39         ;  SETTRK saves the requested disk track that is in the BC register pair when
-1040: FA39         ; SETTRK gets control. Note that this is an absolute track number; that is, the
-1041: FA39         ; number of reserved tracks before the file directory will have been added to the
-1042: FA39         ; track number relative to the start of the logical disk.
-1043: FA39         ;  The number of the requested track will be used in the next BIOS READ or
-1044: FA39         ; WRITE function.
-1045: FA39         ;  SETTRK is called by the BDOS when it needs to read or write a 128-byte
-1046: FA39         ; sector. Legitimate track numbers are from 0 to OFFFFH (65,535).
-1047: FA39
-1048: FA39             SETTRK:
-1049: FA39         ;	LD		H,B								; select track in BC on entry
-1050: FA39         ;	LD		L,C
-1051: FA39         ;	LD	(SelectedTrack),HL					; save for low level driver
-1052: FA39 ED 43 AB FB               LD     (SelectedTrack),BC   ; save for low level driver
-1053: FA3D C9                     RET
-1054: FA3E
-1055: FA3E         ;---------------------------------------------------------------------------
-1056: FA3E         ;	Set Sector	BIOS 0B  (Set Record)
-1057: FA3E
-1058: FA3E         ; Sector  = Record for disk with 128 byte sectors
-1059: FA3E         ; Sector contains 4 records for disks with 512 byte sectors
-1060: FA3E         ; this routine is missed named it should be called Set Record
-1061: FA3E
-1062: FA3E         ;  SETSEC is similar to SETTRK in that it stores the requested Record (sector) number
-1063: FA3E         ; for later use in BIOS READ or WRITE functions. The requested Record (sector) number is
-1064: FA3E         ; handed to SETSEC in the A register; legitimate values are from 0 to OFFH (255).
-1065: FA3E         ; The Record (sector) number is a logical Record (sector) number. It does not take into account any
-1066: FA3E         ; sector skewing that might be used to improve disk performance.
-1067: FA3E         ;  SETSEC is called by the BDOS when it needs to read or write a 128-byte
-1068: FA3E         ; Record (sector).
-1069: FA3E
-1070: FA3E             SETSEC:                         ; SETRECORD
-1071: FA3E 79                     LD     A,C
-1072: FA3F 32 AD FB               LD     (SelectedRecord),A   ; save for low level driver
-1073: FA42 C9                     RET
-1074: FA43
-1075: FA43         ;---------------------------------------------------------------------------
-1076: FA43         ;	Set Sector	BIOS 0C
-1077: FA43
-1078: FA43         ;  SETDMA saves the address in the BC register pair in the requested DMA
-1079: FA43         ; address. The next BIOS READ or WRITE function will use the DMA address as
-1080: FA43         ; a pointer to the 128-byte sector buffer into which data will be read or from which
-1081: FA43         ; data will be written.
-1082: FA43         ;  The default DMA address is 0080H. SETDMA is called by the BDOS when it
-1083: FA43         ; needs to READ or WRITE a 128-byte sector.
-1084: FA43
-1085: FA43             SETDMA:
-1086: FA43 ED 43 AE FB               LD     (DMAAddress),BC      ; save for low level driver
-1087: FA47 C9                     RET
-1088: FA48
-1089: FA48         ;---------------------------------------------------------------------------
-1090: FA48         ;	Sector Translate	BIOS 10
-1091: FA48
-1092: FA48         ;  SECTRAN, given a logical sector number, locates the correct physical sector
-1093: FA48         ; number in the sector translate table for the previously selected (via SELDSK)
-1094: FA48         ; logical disk drive. Note that both logical and physical sector numbers are
-1095: FA48         ; l28-byte sectors, so if you are working with a hard disk system, it is not
-1096: FA48         ; too efficient to impose a sector interlace at the l28-byte sector level.
-1097: FA48         ; It is better to impose the sector interlace right inside the hard disk driver,
-1098: FA48         ; if at all. In general, hard disks spin so rapidly that CP/M simply cannot take
-1099: FA48         ; advantage of sector interlace.
-1100: FA48         ;  The BDOS hands over the logical sector number in the BC register pair, with
-1101: FA48         ; the address of the sector translate table in the DE register pair. SECTRAN must
-1102: FA48         ; return the physical sector number in HL.
-1103: FA48         ;  If SECTRAN is to be a null routine, it must move the contents of BC to HL
-1104: FA48         ; and return.
-1105: FA48
-1106: FA48             SECTRAN:
-1107: FA48 C5                     PUSH   BC
-1108: FA49 E1                     POP    HL                   ; just move the value from BC to HL
-1109: FA4A C9                     RET
-1110: FA4B
-1111: FA4B         ;---------------------------------------------------------------------------
-1112: FA4B         ;	READ			BIOS 0D
-1113: FA4B
-1114: FA4B         ;  READ reads in a 128-byte sector provided that there have been previous BIOS
-1115: FA4B         ; function calls to:
-1116: FA4B         ; 				- SELDSK	"select" the disk
-1117: FA4B         ; 				- SETDMA	set the DMA address
-1118: FA4B         ; 				- SETTRK	set the track number
-1119: FA4B         ; 				- SETSEC	set the sector number.
-1120: FA4B         ;
-1121: FA4B         ; Because of the blocking/ deblocking code in the BIOS, there are frequent occasions
-1122: FA4B         ; when the requested sector will already be in the host buffer (HSTBUF), so that a
-1123: FA4B         ; physical disk read is not required. All that is then required is for the BIOS to move
-1124: FA4B         ; the appropriate 128 bytes from the HSTBUF into the buffer pointed at by the DMA address.
-1125: FA4B         ; Only during the READ function will the BIOS normally communicate with the physical disk
-1126: FA4B         ; drive, selecting it and seeking to read the requested track and sector. During this process,
-1127: FA4B         ; the READ function must also handle any hardware errors that occur, trying an operation again
-1128: FA4B         ; if a "soft," or recoverable, error occurs.
-1129: FA4B         ;  The READ function must return with the A register set to OOH if the read operation has completed
-1130: FA4B         ; successfully. If the READ function returns with the A register set to 01 H, the BDOS will
-1131: FA4B         ; display an error message of the form BDOS Err on X: Bad Sector. Under these circumstances,
-1132: FA4B         ; you have only two choices. You can enter a CARRIAGE RETURN, ignore the fact that there was an
-1133: FA4B         ; error, and attempt to make sense of the data in the DMA buffer. Or you can type a CONTROL-C
-1134: FA4B         ; to abort the operation, perform a warm boot, and return control to the CCP. As you can see,
-1135: FA4B         ; CP/M's error handling is not particularly helpful, so most BIOS writers add more sophisticated
-1136: FA4B         ; error recovery right in the disk driver. This can include some interaction with the console so
-1137: FA4B         ; that a more determined effort can be made to correct errors or, if nothing else, give you more
-1138: FA4B         ; information as to what has gone wrong. Such error handling is discussed in Chapter 9.
-1139: FA4B         ;  If you are working with a hard disk system, the BIOS driver must also handle the management of
-1140: FA4B         ; bad sectors. You cannot simply replace a hard disk drive if one or two sectors become unreadable.
-1141: FA4B         ; This bad sector management normally requires that a directory of "spare" sectors be put on the
-1142: FA4B         ; hard disk before it is used to store data. Then, when a sector is found to be bad,
-1143: FA4B         ; one of the spare sectors is substituted in its place.
-1144: FA4B
-1145: FA4B             READ:
-1146: FA4B AF                     XOR    A
-1147: FA4C 32 B5 FB               LD     (ModifiedlRecordsCount),A ; 1. Set ModifiedlRecordsCount to 0
-1148: FA4F 3C                     INC    A
-1149: FA50 32 B8 FB               LD     (ReadWriteFlag),A    ; 2. Set to Flag to read (non-zero)
-1150: FA53 32 B7 FB               LD     (PrereadSectorFlag),A ; 3. Force a preread
-1151: FA56 3E 02                  LD     A,WriteCleanBuffer
-1152: FA58 32 A2 FB               LD     (WriteType),A        ; 4. Fake a clean sector Write type = 02
-1153: FA5B C3 88 FA               JP     CommonDiskIO         ; Use common code to execute read
-1154: FA5E         ;---------------------------------------------------------------------------
-1155: FA5E         ;	WRITE			BIOS 0E
-1156: FA5E         ;
-1157: FA5E         ;Write a cpmRecord (128-bytes) from the current DMA address to the previously Selected disk, track, and sector.
-1158: FA5E         ;
-1159: FA5E         ; On arrival here, the BDOS will have set register C to indicate whether this write operation is to:
-1160: FA5E         ;	00H [WriteAllocated]	An already allocated allocation block (which means a pre-read of the sector may be needed),
-1161: FA5E         ;	01H [WriteDirectory]	To the directory (in which case the data will be written to the disk immediately),
-1162: FA5E         ;	02H [WriteCleanBuffer]	To the first cpmRecord of a previously unallocated allocation block (In which case no pre-read is required).
-1163: FA5E
-1164: FA5E         ;  WRITE is similar to READ but with the obvious difference that data is transferred from the DMA buffer
-1165: FA5E         ; to the specified 128-byte sector. Like READ, this function requires that the following function calls
-1166: FA5E         ; have already been made:
-1167: FA5E         ; 				- SELDSK	"select" the disk
-1168: FA5E         ; 				- SETDMA	set the DMA address
-1169: FA5E         ; 				- SETTRK	set the track number
-1170: FA5E         ; 				- SETSEC	set the sector number.
-1171: FA5E         ;
-1172: FA5E         ;  Again, it is only in the WRITE routine that the driver will start to talk directly to the physical hardware,
-1173: FA5E         ; selecting the disk unit, track, and sector, and transferring the data to the disk. With the blocking/deblocking code,
-1174: FA5E         ; the BDOS optimizes the number of disk writes that are needed by indicating in register C the type of disk write
-1175: FA5E         ; that is to be performed:
-1176: FA5E         ; 				0= normal sector write
-1177: FA5E         ; 				1= write to file directory sector
-1178: FA5E         ; 				2 = write to sector of previously unchanged Deblocking Buffer
-1179: FA5E         ;
-1180: FA5E         ;  Type 0 occurs whenever the BDOS is writing to a data sector in an already used allocation block.
-1181: FA5E         ; Under these circumstances, the disk driver must preread the appropriate host sector because there
-1182: FA5E         ; may be previously stored information on it.
-1183: FA5E         ;
-1184: FA5E         ;  Type 1 occurs whenever the BDOS is writing to a file directory sector-in this case, the BIOS must not defer
-1185: FA5E         ; writing the sector to the disk, as the information is too valuable to hold in memory until the HSTBUF is full.
-1186: FA5E         ; The longer the information resides in the HSTBUF, the greater the chance of a power failure or glitch,
-1187: FA5E         ; making file data already physically written to the disk inaccessible because the file directory is out of date.
-1188: FA5E         ;
-1189: FA5E         ;  Type 2 occurs whenever the BDOS needs to write to the first sector of a previously unused allocation block.
-1190: FA5E         ; Unused, in this context, includes an allocation block that has become available as a result of a file being erased.
-1191: FA5E         ; In this case, there is no need for the disk driver to preread an entire host-sized sector into the HSTBUF,
-1192: FA5E         ; as there is no data of value in the physical sector.
-1193: FA5E         ;
-1194: FA5E         ;  As with the READ routine, the WRITE function returns with A set to OOH if the operation has been completed successfully.
-1195: FA5E         ; If the WRITE function returns with A set to 01H, then the BDOS will display the same message as for READ:
-1196: FA5E         ; BDOS Err on X: Bad Sector
-1197: FA5E
-1198: FA5E
-1199: FA5E             WRITE:
-1200: FA5E         ; BlockingBuffer I/O
-1201: FA5E AF                     XOR    A
-1202: FA5F 32 B8 FB               LD     (ReadWriteFlag),A    ; Set to zero to indicate that this is a Write
-1203: FA62 79                     LD     A,C
-1204: FA63 32 A2 FB               LD     (WriteType),A        ; save the BDOS write type (0,1,2)
-1205: FA66
-1206: FA66 FE 02                  CP     WriteCleanBuffer     ; first, is this a clean Allocation Buffer block ?
-1207: FA68 C2 76 FA               JP     NZ,CheckDirtyBuffer  ; No
-1208: FA6B
-1209: FA6B         ;Write from a clean Host Buffer
-1210: FA6B 21 AA FB               LD     HL,SelectedState
-1211: FA6E 11 B1 FB               LD     DE,HostBufferState
-1212: FA71 01 04 00               LD     BC,SelectedDiskStateSize
-1213: FA74 ED B0                  LDIR                        ; copy Selected State to Host Buffer state
-1214: FA76
-1215: FA76             CheckDirtyBuffer:
-1216: FA76
-1217: FA76 21 AA FB               LD     HL,SelectedState
-1218: FA79 11 B1 FB               LD     DE,HostBufferState
-1219: FA7C CD 1E FB               CALL   CompareDkTrkSec      ; is it in Host Buffer?
-1220: FA7F 3E FF                  LD     A,TRUE               ;......
-1221: FA81 C2 85 FA               JP     NZ,SetPreread        ; NO - Then we need to load the Host Buffer
-1222: FA84
-1223: FA84 AF                     XOR    A
-1224: FA85             SetPreread:
-1225: FA85 32 B7 FB               LD     (PrereadSectorFlag),A ; clear preread flag
-1226: FA88         ;*******************************************************
-1227: FA88         ; Common code to execute both reads and writes of 128-byte records
-1228: FA88         ;*******************************************************
-1229: FA88             CommonDiskIO:
-1230: FA88 AF                     XOR    A                    ; Assume no disk error will occur
-1231: FA89 32 B6 FB               LD     (DiskStatus),A
-1232: FA8C
-1233: FA8C         ;-------------------------Convert selected record into physical sector-----------;
-1234: FA8C 3A AD FB               LD     A,(SelectedRecord)   ;
-1235: FA8F 1F                     RRA                         ; Convert selected record                ;
-1236: FA90 1F                     RRA                         ; into physical sector by dividing by 4  ;
-1237: FA91 E6 3F                  AND    03FH                 ; Remove unwanted bits                   ;
-1238: FA93 32 B0 FB               LD     (SelectedSector),A   ;
-1239: FA96         ;-------------------------Convert selected record into physical sector-----------;
-1240: FA96
-1241: FA96         ;------------------------- Any Data in Buffer -----------------------------------;
-1242: FA96         ;Flag is ONLY reset by BIOS HOME Function. otherwise it is set by all passes 		 ;
-1243: FA96
-1244: FA96 21 A7 FB               LD     HL,DataInBufferFlag  ; See if there is any data here ?        ;
-1245: FA99 7E                     LD     A,(HL)               ;
-1246: FA9A 36 FF                  LD     (HL),TRUE            ; Force flag true                        ;
-1247: FA9C B7                     OR     A                    ; Was  any data here ?                   ;
-1248: FA9D CA BD FA               JP     Z,SetIOBufferState   ; NO ?- go read into buffer              ;
-1249: FAA0         ;------------------------- Any Data in Buffer -----------------------------------;
-1250: FAA0
-1251: FAA0         ;-----------------------------test for  the sector in the buffer-----------------;
-1252: FAA0 11 A3 FB               LD     DE,IOBufferState     ; get the Buffer Disk and Track          ;
-1253: FAA3 21 AA FB               LD     HL,SelectedState     ; get the requested Disk and Track       ;
-1254: FAA6 CD 19 FB               CALL   CompareDkTrk         ; Are they the same ?                    ;
-1255: FAA9 C2 B6 FA               JP     NZ,DataNotInBuffer   ; NO,jump - it must be read 				 ;
-1256: FAAC         ;
-1257: FAAC         ; Yes, the disk, track are the same are the sectors the same ?                   ;
-1258: FAAC         ;
-1259: FAAC 3A A6 FB               LD     A,(IOBufferSector)   ; get the sector                         ;
-1260: FAAF 21 B0 FB               LD     HL,SelectedSector    ;
-1261: FAB2 BE                     CP     M                    ; Check if correct physical sector       ;
-1262: FAB3 CA DA FA               JP     Z,DataIsInBuffer     ; Yes - it is already in memory          ;
-1263: FAB6         ;-----------------------------test for  the sector in the buffer-----------------;
-1264: FAB6
-1265: FAB6         ;------------------------- Do we have to write out the buffer ?------------------;
-1266: FAB6             DataNotInBuffer:                      ;
-1267: FAB6 3A A8 FB               LD     A,(DirtyBufferFlag)  ;
-1268: FAB9 B7                     OR     A                    ; do we need to write ?                  ;
-1269: FABA C4 2A FB               CALL   NZ,WritePhysical     ; if yes - write it out                  ;
-1270: FABD         ;------------------------- Do we have to write out the buffer ?------------------;
-1271: FABD
-1272: FABD         ;------------------------- prepare for physical IO ------------------------------;
-1273: FABD             SetIOBufferState:                      ;
-1274: FABD         ; indicate the  selected disk, track, and sector not residing in buffer          ;
-1275: FABD 3A AA FB               LD     A,(SelectedDisk)     ;
-1276: FAC0 32 A3 FB               LD     (IOBufferDisk),A     ;
-1277: FAC3 2A AB FB               LD     HL,(SelectedTrack)   ;
-1278: FAC6 22 A4 FB               LD     (IOBufferTrack),HL   ;
-1279: FAC9         ;
-1280: FAC9 3A B0 FB               LD     A,(SelectedSector)   ;
-1281: FACC 32 A6 FB               LD     (IOBufferSector),A   ;
-1282: FACF         ;------------------------- prepare for physical IO ------------------------------;
-1283: FACF
-1284: FACF         ;------------------------- Read the data if needed, or its already in the buffer -;
-1285: FACF 3A B7 FB               LD     A,(PrereadSectorFlag) ; do we need to preread ?                 ;
-1286: FAD2 B7                     OR     A                    ;
-1287: FAD3 C4 2F FB               CALL   NZ,ReadPhysical      ; yes - preread the sector                ;
-1288: FAD6         ;
-1289: FAD6         ; At this point the data is in the buffer.                                        ;
-1290: FAD6         ; Either it was already here, or we returned from ReadPhysical                    ;
-1291: FAD6         ;
-1292: FAD6 AF                     XOR    A                    ;
-1293: FAD7 32 A8 FB               LD     (DirtyBufferFlag),A  ; Reset the DirtyBufferFlag	          ;
-1294: FADA         ;------------------------- Read the data if needed, or its already in the buffer -;
-1295: FADA
-1296: FADA
-1297: FADA         ; The Buffer now has the data we want to Read/Write
-1298: FADA         ;-------------------------Calculate the address of the record in the sector ------;
-1299: FADA         ;
-1300: FADA             DataIsInBuffer:                      ;
-1301: FADA 3A AD FB               LD     A,(SelectedRecord)   ;
-1302: FADD E6 03                  AND    SectorMask           ; Want relative record number in Sector   ;
-1303: FADF 3C                     INC    A                    ; Adjust for DJNZ                         ;
-1304: FAE0 47                     LD     B,A                  ;
-1305: FAE1 11 80 00               LD     DE,cpmRecordSize     ;
-1306: FAE4 21 80 FF               LD     HL,-cpmRecordSize    ;
-1307: FAE7             SectorInBuffer1:                      ;
-1308: FAE7 19                     ADD    HL,DE                ; RecordNumber * recordSize               ;
-1309: FAE8 10 FD                  DJNZ   SectorInBuffer1      ;  yields index into the Sector           ;
-1310: FAEA         ;
-1311: FAEA 11 40 F6               LD     DE,DiskBuffer        ; Start of sector                         ;
-1312: FAED 19                     ADD    HL,DE                ; HL -> start of record in buffer 		  ;
-1313: FAEE ED 5B AE FB               LD     DE,(DMAAddress)      ; Callers  DMA Address                    ;
-1314: FAF2         ;
-1315: FAF2         ;-------------------------Calculate the address of the record in the sector ------;
-1316: FAF2
-1317: FAF2
-1318: FAF2         ;------------------------- Determine if its a Read or Write and set HL & DE ------;
-1319: FAF2         ;
-1320: FAF2 3A B8 FB               LD     A,(ReadWriteFlag)    ; 0 => Write, non Zero => Read            ;
-1321: FAF5 B7                     OR     A                    ; Write: move data from DMA to Buffer     ;
-1322: FAF6 C2 FE FA               JP     NZ,BufferMove        ; Read : move data from Buffer to DMA     ;
-1323: FAF9         ;
-1324: FAF9 3C                     INC    A                    ; Set the flag to indicate dirty buffer   ;
-1325: FAFA 32 A8 FB               LD     (DirtyBufferFlag),A  ;
-1326: FAFD EB                     EX     DE,HL                ; Swap source and destination for write   ;
-1327: FAFE         ;
-1328: FAFE         ;------------------------- Determine if its a Read or Write and set HL & DE ------;
-1329: FAFE
-1330: FAFE
-1331: FAFE             BufferMove:
-1332: FAFE 01 80 00               LD     BC,cpmRecordSize
-1333: FB01 ED B0                  LDIR                        ; Move data to/from Host Buffer
-1334: FB03
-1335: FB03 3A A2 FB               LD     A,(WriteType)        ; Is this a write to the directory ?
-1336: FB06 FE 01                  CP     WriteDirectory
-1337: FB08 3A B6 FB               LD     A,(DiskStatus)       ; Set ACC with disk status if an immediate return
-1338: FB0B C0                     RET    NZ                   ; Return if not updating a directory entry
-1339: FB0C
-1340: FB0C B7                     OR     A                    ; Check for any disk errors ?
-1341: FB0D C0                     RET    NZ                   ; If yes - abandon attempt to write to directory
-1342: FB0E
-1343: FB0E AF                     XOR    A
-1344: FB0F 32 A8 FB               LD     (DirtyBufferFlag),A  ; Clear the dirty buffer flag
-1345: FB12 CD 2A FB               CALL   WritePhysical        ; do an immediate update of the directory to disk
-1346: FB15 3A B6 FB               LD     A,(DiskStatus)       ; Set ACC with disk status
-1347: FB18 C9                     RET
-1348: FB19         ;********************************************************************
-1349: FB19
-1350: FB19
-1351: FB19         ; Compares just the disk and track   pointed to by DE and HL (used for Blocking/Deblocking)
-1352: FB19             CompareDkTrk:
-1353: FB19 01 03 00               LD     BC,03H
-1354: FB1C 18 03                  JR     CompareDkTrkSecLoop
-1355: FB1E             CompareDkTrkSec:
-1356: FB1E 01 04 00               LD     BC,04H
-1357: FB21             CompareDkTrkSecLoop:
-1358: FB21 1A                     LD     A,(DE)               ; Get value
-1359: FB22 13                     INC    DE                   ; anticipate next iteration
-1360: FB23 ED A1                  CPI                         ; does A = (HL)
-1361: FB25 C0                     RET    NZ                   ; Not a match exit
-1362: FB26 EA 21 FB               JP     PE,CompareDkTrkSecLoop ; Loop if not done
-1363: FB29 C9                     RET
-1364: FB2A
-1365: FB2A
-1366: FB2A         ;************************************************
-1367: FB2A         ;			Physical Disk IO					*
-1368: FB2A         ;************************************************
-1369: FB2A
-1370: FB2A         ;Write contents of disk buffer to correct sector
-1371: FB2A             WritePhysical:
-1372: FB2A 3E 02                  LD     A,DiskWriteCode      ; get write function
-1373: FB2C C3 31 FB               JP     CommonPhysical
-1374: FB2F
-1375: FB2F             ReadPhysical:
-1376: FB2F 3E 01                  LD     A,DiskReadCode       ; get read function
-1377: FB31
-1378: FB31         ; Set up the Dick Control Table DCT
-1379: FB31             CommonPhysical:
-1380: FB31         ;Command
-1381: FB31 32 95 FB               LD     (DCTCommand),A       ; set the command for Read or Write
-1382: FB34         ;Disk
-1383: FB34 3A A3 FB               LD     A,(IOBufferDisk)
-1384: FB37 E6 03                  AND    03H                  ; only units 0 to 3
-1385: FB39 32 96 FB               LD     (DCTDisk),A          ; set disk
-1386: FB3C         ;Track
-1387: FB3C 2A A4 FB               LD     HL,(IOBufferTrack)
-1388: FB3F 7D                     LD     A,L                  ; for this controller it is a byte value
-1389: FB40 32 98 FB               LD     (DCTTrack),A         ; set track
-1390: FB43         ;Head and Track	Calculations
-1391: FB43         ; The sector must be converted into a head number and sector number.
-1392: FB43         ;	Head = (int) Sector / SectorsPerHead
-1393: FB43         ;	Sector = Sector MOD SectorsPerHead
-1394: FB43             DetermineHead:
-1395: FB43 06 00                  LD     B,0                  ; Start at head 0
-1396: FB45 21 A9 FB               LD     HL,SelectedDskSecsPerHead ; Point at track counts
-1397: FB48 3A A6 FB               LD     A,(IOBufferSector)   ; get target sector
-1398: FB4B             DetermineHead1:
-1399: FB4B BE                     CP     M                    ; Need another Head?
-1400: FB4C DA 54 FB               JP     C,HeadFound          ; nope done with head calculation
-1401: FB4F
-1402: FB4F 96                     SUB    M                    ; subtract track value
-1403: FB50 04                     INC    B                    ; Increment head
-1404: FB51 C3 4B FB               JP     DetermineHead1       ; loop for next head value
-1405: FB54
-1406: FB54         ;Sector
-1407: FB54             HeadFound:                      ; ACC now has Sector MOD SectorsPerHead
-1408: FB54 3C                     INC    A                    ; physical sectors start at 1
-1409: FB55 32 99 FB               LD     (DCTSector),A        ; set sector
-1410: FB58         ;Head
-1411: FB58 78                     LD     A,B
-1412: FB59 32 97 FB               LD     (DCTHead),A          ; set head number
-1413: FB5C         ;Byte Count
-1414: FB5C 21 00 02               LD     HL,diskSectorSize
-1415: FB5F 22 9A FB               LD     (DCTByteCount),HL    ; set byte count
-1416: FB62         ;DMA
-1417: FB62 21 40 F6               LD     HL,DiskBuffer
-1418: FB65 22 9C FB               LD     (DCTDMAAddress),HL   ; set transfer address
-1419: FB68
-1420: FB68         ; Since only one control table is in use, close the status and busy chain pointers
-1421: FB68         ; back to the main control bytes
-1422: FB68         ;NextStatusBlock
-1423: FB68 21 43 00               LD     HL,DiskStatusLocation
-1424: FB6B 22 9E FB               LD     (DCTNextStatusBlock),HL
-1425: FB6E         ;NextControlLocation
-1426: FB6E 21 45 00               LD     HL,DiskControlByte
-1427: FB71 22 A0 FB               LD     (DCTNextControlLocation),HL
-1428: FB74
-1429: FB74         ;Put  DCT pointer in page0
-1430: FB74 21 95 FB               LD     HL,DCTCommand
-1431: FB77 22 46 00               LD     (DiskCommandBlock),HL
-1432: FB7A         ; Make the IO happen
-1433: FB7A 21 45 00               LD     HL,DiskControlByte   ; activate disk controller
-1434: FB7D 36 80                  LD     (HL),080H
-1435: FB7F
-1436: FB7F         ;Wait until Disk Status Block indicates the operation is complete,
-1437: FB7F             WaitForDiskComplete:
-1438: FB7F 7E                     LD     A,(HL)               ; get control bytes
-1439: FB80 B7                     OR     A
-1440: FB81 C2 7F FB               JP     NZ,WaitForDiskComplete ; operation not done
-1441: FB84
-1442: FB84
-1443: FB84         ;Check if any errors occurred.
-1444: FB84 3A 43 00               LD     A,(DiskStatusLocation)
-1445: FB87 DA 8F FB               JP     C,DiskError
-1446: FB8A AF                     XOR    A
-1447: FB8B 32 B6 FB               LD     (DiskStatus),A       ; clear the flag
-1448: FB8E C9                     RET
-1449: FB8F
-1450: FB8F         ; set error flag and return
-1451: FB8F             DiskError:
-1452: FB8F 3E 01                  LD     A,1
-1453: FB91 32 B6 FB               LD     (DiskStatus),A       ; set the error flag
-1454: FB94 C9                     RET
-1455: FB95
-1456: FB95         ;********************************************************************
-1457: FB95         ;********************************************************************
-1458: FB95         ;********************************************************************
-1459: FB95
-1460: FB95         ;---------------------------------------------------------------------------
-1461: FB95         ;	Disk Data
-1462: FB95         ;---------------------------------------------------------------------------
-1463: FB95         ;	Disk Equates
-1464: FB95         ;---------------------------------------------------------------------------
-1465: FB95         ; Disk Types
-1466: FB95         ;;Floppy5DD	EQU	1 						; 5 1/4" mini floppy
-1467: FB95         ;;Floppy8	EQU	2 						; 8"  floppy (SS SD)
-1468: FB95         ;;HardDisk	EQU	2						; hard disk
-1469: FB95         ;NumberOfLogicalDisks	EQU 4			; max number of disk in this system
-1470: FB95
-1471: FB95
-1472: FB95         ;**************************************************************************************************
-1473: FB95         ;  There id one "smart" disk controllers on this system, for the 3.5 HD drive ( 1.44MB)
-1474: FB95         ;
-1475: FB95         ;  The controller is "hard-wired" to monitor memory locations 0X45 to detect when it is to
-1476: FB95         ; perform some disk operation.  These are called its disk control byte.
-1477: FB95         ; If the most significant bit of  disk control byte is set, the controller will look at the word
-1478: FB95         ; following the respective control bytes. This word must contain the address of  valid disk control
-1479: FB95         ; table that specifies the exact disk operation to be performed.
-1480: FB95         ;
-1481: FB95         ;  Once the operation has been completed. the controller resets its disk control byte to OOH.
-1482: FB95         ; This indicates completion to the disk driver code.
-1483: FB95         ;
-1484: FB95         ;  The controller also sets a return code in a disk status block - location 0X43H.
-1485: FB95         ; If the first byte of this status block is less than 80H. then a disk error
-1486: FB95         ; has occurred. For this simple BIOS. no further details of the status settings are relevant.
-1487: FB95         ; Note that the disk controller has built-in retry logic -- reads and writes are attempted
-1488: FB95         ; ten times before the controller returns an error
-1489: FB95         ;
-1490: FB95         ;  The disk control table layout is shown below. Note that the controller has the capability
-1491: FB95         ; for control tables to be chained together so that a sequence of disk operations can be initiated.
-1492: FB95         ; In this BIOS this feature is not used. However. the controller requires that the chain pointers
-1493: FB95         ; in the disk control tables be pointed back to the main control bytes in order to indicate
-1494: FB95         ; the end of the chain
-1495: FB95         ;**************************************************************************************************
-1496: FB95
-1497: FB95         ;***************************************************************************
-1498: FB95         ;	Disk Control tables
-1499: FB95         ;***************************************************************************
-1500: FB95         ;;DiskControlTable:
-1501: FB95             DCTStart:
-1502: FB95 00          DCTCommand: DB     00H                  ; Command
-1503: FB96 00          DCTDisk:   DB     00H                  ; unit (drive) number = 0 or 1
-1504: FB97 00          DCTHead:   DB     00H                  ; head number = 0 or 1
-1505: FB98 00          DCTTrack:  DB     00H                  ; track number
-1506: FB99 00          DCTSector: DB     00H                  ; sector number
-1507: FB9A 00 00       DCTByteCount: DW     0000H                ; number of bytes to read/write
-1508: FB9C 00 00       DCTDMAAddress: DW     0000H                ; transfer address
-1509: FB9E 00 00       DCTNextStatusBlock: DW     0000H                ; pointer to next status block
-1510: FBA0 00 00       DCTNextControlLocation: DW     0000H                ; pointer to next control byte
-1511: FBA2             DCTEnd:
-1512: FBA2             DCTSize    EQU    DCTEnd-DCTStart
-1513: FBA2         ;-----------------------------------------
-1514: FBA2         ;WriteAllocated		EQU	00H		W_NORMAL
-1515: FBA2         ;WriteDirectory		EQU	01H		W_DIRECTORY
-1516: FBA2         ;WriteCleanBuffer	EQU	02H		W_NEW_BLOCK
-1517: FBA2         ;-----------------------------------------
-1518: FBA2
-1519: FBA2 00          WriteType: DB     00H                  ; The type of write indicated by BDOS
-1520: FBA3
-1521: FBA3         ; variables for physical sector -  These are moved and compared as a group, DO NOT ALTER
-1522: FBA3             IOBufferState:
-1523: FBA3 00          IOBufferDisk: DB     00H
-1524: FBA4 00 00       IOBufferTrack: DW     00H
-1525: FBA6 00          IOBufferSector: DB     00H
-1526: FBA7 00          DataInBufferFlag: DB     00H                  ; when non-zero, the disk buffer has data from disk
-1527: FBA8 00          DirtyBufferFlag: DB     00H                  ; Non-zero when data has been written into DiskBuffer,
-1528: FBA9         ;   but not yet written out to the disk
-1529: FBA9         ;---------------------------------------------------------------------------
-1530: FBA9         ;	Disk Storage area
-1531: FBA9         ;---------------------------------------------------------------------------
-1532: FBA9         ;     variables for selected disk, track and sector
-1533: FBA9         ; These are moved and compared as a group, DO NOT ALTER
-1534: FBA9
-1535: FBA9 00          SelectedDskSecsPerHead: DB     00H                  ; Sectors / head
-1536: FBAA
-1537: FBAA             SelectedState:
-1538: FBAA 00          SelectedDisk: DB     00H
-1539: FBAB 00 00       SelectedTrack: DW     0000H
-1540: FBAD 00          SelectedRecord: DB     00H
-1541: FBAE
-1542: FBAE             SelectedDiskStateEnd:
-1543: FBAE             SelectedDiskStateSize EQU    SelectedDiskStateEnd - SelectedDisk
-1544: FBAE
-1545: FBAE 00 00       DMAAddress: DW     0000H                ; DMA address
-1546: FBB0
-1547: FBB0 00          SelectedSector: DB     00H
-1548: FBB1
-1549: FBB1         ; Parameters for the records in the Fresh Allocation Block
-1550: FBB1         ; These are moved and compared as a group, DO NOT ALTER
-1551: FBB1
-1552: FBB1             HostBufferState:
-1553: FBB1 00          HostBufferDisk: DB     00H
-1554: FBB2 00 00       HostBufferTrack: DW     0000H
-1555: FBB4 00          HostBufferRecord: DB     00H
-1556: FBB5
-1557: FBB5 00          ModifiedlRecordsCount: DB     00H                  ; Number of unallocated "records"in current previously unallocated allocation block.
-1558: FBB6 00          DiskStatus: DB     00H                  ; Non-Zero - unrecoverable error output "Bad Sector" message
-1559: FBB7         ; Flags used inside the de-blocking code
-1560: FBB7 00          PrereadSectorFlag: DB     00H                  ; non-zero if physical sector must be read into the disk buffer
-1561: FBB8         ; either before a write to a allocated block can occur, or
-1562: FBB8         ; for a normal cpmRecord read
-1563: FBB8 00          ReadWriteFlag: DB     00H                  ; 0 => Write-  Non-zero =>read
-1564: FBB9
-1565: FBB9         ;---------------------------------------------------------------------------
-1566: FBB9
-1567: FBB9         ;---------------------------------------------------------------------------
-1568: FBB9         ;	Disk Definition Tables
-1569: FBB9         ; These consists of disk parameter headers, with one entry
-1570: FBB9         ; per logical disk driver, and disk parameter blocks, with
-1571: FBB9         ; either one parameter block per logical disk or the same
-1572: FBB9         ; parameter block for several logical disks.
-1573: FBB9         ;---------------------------------------------------------------------------
-1574: FBB9         ;---------------------------------------------------------------------------
-1575: FBB9             DiskParameterHeaders:
-1576: FBB9
-1577: FBB9         ; Logical Disk A: (3.25" HD 1.44MB Diskette)
-1578: FBB9 00 00                  DW     0000H                ; Floppy5SkewTable  - No Skew table
-1579: FBBB 00 00                  DW     0000H                ; Rel pos for file (0-3)
-1580: FBBD 00 00                  DW     0000H                ; Last Selected Track #
-1581: FBBF 00 00                  DW     0000H                ; Last Selected Sector #
-1582: FBC1 ED FD                  DW     DirectoryBuffer      ; all disks use this buffer
-1583: FBC3 F9 FB                  DW     ParameterBlock3HD    ; specific to disk's parameters
-1584: FBC5 09 FC                  DW     DiskAWorkArea
-1585: FBC7 89 FC                  DW     DiskAAllocationVector
-1586: FBC9
-1587: FBC9         ; Logical Disk B: (3.25" HD 1.44MB Diskette)
-1588: FBC9 00 00                  DW     0000H                ; No Skew table
-1589: FBCB 00 00                  DW     0000H                ; Rel pos for file (0-3)
-1590: FBCD 00 00                  DW     0000H                ; Last Selected Track #
-1591: FBCF 00 00                  DW     0000H                ; Last Selected Sector #
-1592: FBD1 ED FD                  DW     DirectoryBuffer      ; all disks use this buffer
-1593: FBD3 F9 FB                  DW     ParameterBlock3HD    ; specific to disk's parameters
-1594: FBD5 29 FC                  DW     DiskBWorkArea
-1595: FBD7 E2 FC                  DW     DiskBAllocationVector
-1596: FBD9
-1597: FBD9         ; Logical Disk C: (3.25" HD 1.44MB Diskette)
-1598: FBD9 00 00                  DW     0000H                ; No Skew table
-1599: FBDB 00 00                  DW     0000H                ; Rel pos for file (0-3)
-1600: FBDD 00 00                  DW     0000H                ; Last Selected Track #
-1601: FBDF 00 00                  DW     0000H                ; Last Selected Sector #
-1602: FBE1 ED FD                  DW     DirectoryBuffer      ; all disks use this buffer
-1603: FBE3 F9 FB                  DW     ParameterBlock3HD    ; specific to disk's parameters
-1604: FBE5 49 FC                  DW     DiskCWorkArea
-1605: FBE7 3B FD                  DW     DiskCAllocationVector
-1606: FBE9
-1607: FBE9         ; Logical Disk D: (3.25" HD 1.44MB Diskette)
-1608: FBE9 00 00                  DW     0000H                ; No Skew table
-1609: FBEB 00 00                  DW     0000H                ; Rel pos for file (0-3)
-1610: FBED 00 00                  DW     0000H                ; Last Selected Track #
-1611: FBEF 00 00                  DW     0000H                ; Last Selected Sector #
-1612: FBF1 ED FD                  DW     DirectoryBuffer      ; all disks use this buffer
-1613: FBF3 F9 FB                  DW     ParameterBlock3HD    ; specific to disk's parameters
-1614: FBF5 69 FC                  DW     DiskDWorkArea
-1615: FBF7 94 FD                  DW     DiskDAllocationVector
-1616: FBF9
-1617: FBF9
-1618: FBF9         ;-----------------------------------------------------------
-1619: FBF9
-1620: FBF9             ParameterBlock3HD:
-1621: FBF9 90 00                  DW     dpb3hdSPT            ; cpmRecords per track- (144)
-1622: FBFB 04                     DB     dpb3hdBSH            ; Block shift ( 4=> 2K)
-1623: FBFC 0F                     DB     dpb3hdBLM            ; Block mask
-1624: FBFD 00                     DB     dpb3hdEXM            ; Extent mask
-1625: FBFE C6 02                  DW     dpb3hdDSM            ; Maximum allocation block number (710)
-1626: FC00 7F 00                  DW     dpb3hdDRM            ; Number of directory entries - 1 (127)
-1627: FC02 C0                     DB     dpb3hdAL0            ; Bit map for reserving 1 alloc. block
-1628: FC03 00                     DB     dpb3hdAL1            ;  for file directory
-1629: FC04 20 00                  DW     dpb3hdCKS            ; Disk change work area size (32)
-1630: FC06 01 00                  DW     dpb3hdOFF            ; Number of tracks before directory
-1631: FC08
-1632: FC08 12                     DB     (dpb3hdSPT/4)/dpb3hdNOH ; number of Sectors/Head
-1633: FC09
-1634: FC09
-1635: FC09
-1636: FC09         ;---------------------------------------------------------------------------
-1637: FC09         ;	Disk work area
-1638: FC09         ;---------------------------------------------------------------------------
-1639: FC09         ; These are used by the BDOS to detect any unexpected
-1640: FC09         ; change of diskette. The BDOS will automatically set
-1641: FC09         ; such a changed diskette to read-only status.
-1642: FC09
-1643: FC09             DiskAWorkArea: DS     dpb3hdCKS            ; A:  020H
-1644: FC29             DiskBWorkArea: DS     dpb3hdCKS            ; B:  020H
-1645: FC49             DiskCWorkArea: DS     dpb3hdCKS            ; C:  020H
-1646: FC69             DiskDWorkArea: DS     dpb3hdCKS            ; D:  020H
-1647: FC89
-1648: FC89         ;---------------------------------------------------------------------------
-1649: FC89         ;	Disk allocation vectors
-1650: FC89         ;---------------------------------------------------------------------------
-1651: FC89         ; Disk allocation vectors
-1652: FC89         ; These are used by the BDOS to maintain a bit map of
-1653: FC89         ; which allocation blocks are used and which are free.
-1654: FC89         ; One byte is used for eight allocation blocks, hence the
-1655: FC89         ; expression of the form (allocation blocks/8)+1
-1656: FC89
-1657: FC89             DiskAAllocationVector: DS     (dpb3hdDSM/8)+1      ; A:
-1658: FCE2             DiskBAllocationVector: DS     (dpb3hdDSM/8)+1      ; B:
-1659: FD3B
-1660: FD3B             DiskCAllocationVector: DS     (dpb3hdDSM/8)+1      ; C:
-1661: FD94             DiskDAllocationVector: DS     (dpb3hdDSM/8)+1      ; D:
-1662: FDED         ;---------------------------------------------------------------------------
-1663: FDED         ;	Disk Buffer
-1664: FDED         ;---------------------------------------------------------------------------
-1665: FDED             DirectoryBuffer: DS     DirBuffSize
+0410: F892             WarmBootMessage:
+0411: F892 43 50 2F 4D 20 32 2E 32 20 28 5A 38 30 29 20                DB     'CP/M 2.2 (Z80) '
+0412: F8A1         ;	DB		'BootStrap Loader'
+0413: F8A1         ;	DB		CR,LF
+0414: F8A1 42 75 69 6C 64 20 30 2E 41 20                DB     'Build 0.A '
+0415: F8AB 0D 0A                  DB     CR,LF
+0416: F8AD 43 43 50 20 30 2E 41 20 7C 20 20 42 44 4F 53 20 30 2E 41 20 7C 20 42 49 4F 53 20 30 2E 42                DB     'CCP 0.A |  BDOS 0.A | BIOS 0.B'
+0417: F8CB 0D 0A 00                DB     CR,LF,EndOfMessage
+0418: F8CE
+0419: F8CE             WarmBootErroMessage:
+0420: F8CE 0D 0A                  DB     CR,LF
+0421: F8D0 57 61 72 6D 20 42 6F 6F 74 20 2D                DB     'Warm Boot -'
+0422: F8DB 20 52 65 74 72 79 69 6E 67 2E                DB     ' Retrying.'
+0423: F8E5 0D 0A 00                DB     CR,LF,EndOfMessage
+0424: F8E8
+0425: F8E8
+0426: F8E8         ;?	LD		HL,BootMessage
+0427: F8E8         ;?	CALL	DisplayMessage
+0428: F8E8         ;?
+0429: F8E8         ;?	LD		HL,BOOTControl
+0430: F8E8         ;?	CALL	RawDiskRead
+0431: F8E8         ;?
+0432: F8E8         ;?	JP		WBOOT				; do Warm boot if no errors
+0433: F8E8         ;?	LD		HL,BadBootMessage
+0434: F8E8         ;?	CALL	DisplayMessage		; Show Boot failure message
+0435: F8E8         ;?	HALT
+0436: F8E8         ;?
+0437: F8E8         ;?BOOTControl:
+0438: F8E8         ;?	DB		DiskReadCode					; Read function
+0439: F8E8         ;?	DB		00H								; unit number
+0440: F8E8         ;?	DB		00H								; head number
+0441: F8E8         ;?	DB		00H								; track number
+0442: F8E8         ;?	DB		0DH								; Starting sector number (13)
+0443: F8E8         ;?	DW		5 * 512							; Number of bytes to read ( 0A00 All of BIOS)
+0444: F8E8         ;?	DW		BIOSStart						; read into this address
+0445: F8E8         ;?	DW		DiskStatusLocation				; pointer to next block - no linking
+0446: F8E8         ;?	DW		DiskControlTable				; pointer to next table- no linking
+0447: F8E8         ;?
+0448: F8E8         ;?
+0449: F8E8         ;?;BOOTControl:
+0450: F8E8         ;?; 	DB		DiskReadCode		; Read function
+0451: F8E8         ;?; 	DB		00H					; unit number
+0452: F8E8         ;?; 	DB		00H					; head number
+0453: F8E8         ;?; 	DB		00H					; track number
+0454: F8E8         ;?; 	DB		01H					; Starting sector number ()
+0455: F8E8         ;?; 	DW		diskSectorSize		; Number of bytes to read ( 1 Sector)
+0456: F8E8         ;?; 	DW		TPA					; read into this address
+0457: F8E8         ;?; 	DW		DiskStatusLocation	; pointer to next block - no linking
+0458: F8E8         ;?; 	DW		DiskControlTable	; pointer to next table- no linking
+0459: F8E8         ;?
+0460: F8E8         ;?; Boot Messages and routine
+0461: F8E8         ;?BootMessage:
+0462: F8E8         ;?;	DB		'CP/M 2.2 (Z80) '
+0463: F8E8         ;?;	DB		'BootStrap Loader'
+0464: F8E8         ;?;	DB		CR,LF
+0465: F8E8         ;?	DB		'Build 0.A '
+0466: F8E8         ;?	DB		CR,LF
+0467: F8E8         ;?	DB		'CCP 0.A |  BDOS 0.A | BIOS 0.B'
+0468: F8E8         ;?	DB		CR,LF,EndOfMessage
+0469: F8E8         ;?BadBootMessage:
+0470: F8E8         ;?	DB		CR,LF
+0471: F8E8         ;?	DB		'****   Boot Failure'
+0472: F8E8         ;?	DB		EndOfMessage
+0473: F8E8         ;?WarmBootErroMessage:
+0474: F8E8         ;?	DB		CR,LF
+0475: F8E8         ;?	DB		'Warm Boot -'
+0476: F8E8         ;?	DB		' Retrying.'
+0477: F8E8         ;?	DB		CR,LF,EndOfMessage
+0478: F8E8         ;?;..................Boot Support....................
+0479: F8E8         ;?
+0480: F8E8         ;?; Entered with DiskControlBlock pointer in HL
+0481: F8E8         ;?RawDiskRead:
+0482: F8E8         ;?	LD		(DiskCommandBlock),HL
+0483: F8E8         ;?
+0484: F8E8         ;?	LD		HL,DiskControlByte
+0485: F8E8         ;?	LD		(HL),080H
+0486: F8E8         ;?
+0487: F8E8         ;?; wait for the read to complete
+0488: F8E8         ;?WaitForReadDone:
+0489: F8E8         ;?	LD		A,(HL)
+0490: F8E8         ;?	OR		A
+0491: F8E8         ;?	JR		NZ,WaitForReadDone
+0492: F8E8         ;?
+0493: F8E8         ;?; is it a clean read ?
+0494: F8E8         ;?	LD		A,(DiskStatusLocation)
+0495: F8E8         ;?	CP		080H				; any errors NC = good read?
+0496: F8E8         ;?	RET
+0497: F8E8         ;?
+0498: F8E8         ;?; entered with pointer to message in HL
+0499: F8E8         ;?DisplayMessage:
+0500: F8E8         ;?	LD		A,M					; get  character
+0501: F8E8         ;?	OR		A					; is it NULL
+0502: F8E8         ;?	RET		Z					; return if it is NULL (00)
+0503: F8E8         ;?	LD		C,A
+0504: F8E8         ;?	PUSH	HL					; save the pointer
+0505: F8E8         ;?	OUT		TTY_DataPort
+0506: F8E8         ;?	POP		HL					; retrieve the pointer
+0507: F8E8         ;?	INC		HL					; point at next character
+0508: F8E8         ;?	JR		DisplayMessage
+0509: F8E8         ;?
+0510: F8E8         ;....................................................
+0511: F8E8
+0512: F8E8         ;---------------------------------------------------------------------------
+0513: F8E8         ;	WBOOT:  BIOS 01		SoftBoot/Warm Boot
+0514: F8E8         ;
+0515: F8E8         ;  Unlike the "cold" bootstrap entry point, which executes only once, the WBOOT
+0516: F8E8         ; or warm boot routine will be executed every time a program terminates by
+0517: F8E8         ; jumping to location OOOOH, or whenever you type a CONTROL-C on the console as
+0518: F8E8         ; the first character of an input line.
+0519: F8E8         ;  The WBOOT routine is responsible for reloading the CCP into memory.
+0520: F8E8         ; Programs often use all of memory up to the starting point of the BDOS, overwriting
+0521: F8E8         ; the CCP in the process. The underlying philosophy is that while a program is
+0522: F8E8         ; executing, the CCP is not needed, so the program can use the memory previously
+0523: F8E8         ; occupied by the CCP. The CCP occupies 800H (2048) bytes ofmemory-and this
+0524: F8E8         ; is frequently just enough to make the difference between a program that cannot
+0525: F8E8         ; run and one that can.
+0526: F8E8         ; A few programs that are self-contained and do not require the BDOS's
+0527: F8E8         ; facilities will also overwrite the BDOS to get another 1600H (5632) bytes of
+0528: F8E8         ; memory. Therefore, to be really safe, the WBOOT routine should read in both the
+0529: F8E8         ; CCP and the BDOS. It also needs to set up the two JMPs at location OOOOH (to
+0530: F8E8         ; WBOOT itself) and at location 0005H (to the BOOS). Location 0003H should be
+0531: F8E8         ; set to the initial value of the 10BYTE if this is implemented in the BIOS.
+0532: F8E8         ; As its last act, the WBOOT routine sets register C to indicate which logical disk
+0533: F8E8         ; is to be selected (C= 0 for A, I for B, and so on). It then transfers control into the
+0534: F8E8         ; CCP at the first instruction in order to restart the CCP.
+0535: F8E8
+0536: F8E8             WBOOT:
+0537: F8E8 31 FF DF               LD     SP,CCPEntry-1        ; put stack at top of User area
+0538: F8EB 21 24 F9               LD     HL,WBOOTControl      ; get the WBOOT Control Block
+0539: F8EE CD 4D F8               CALL   ReadRawDisk          ; read CCP & BDOS
+0540: F8F1 21 92 F8               LD     HL,WarmBootMessage
+0541: F8F4 CD 6F F8               CALL   DisplayMessage
+0542: F8F7 30 09                  JR     NC,LoadPage0         ; set up page 0 if good read
+0543: F8F9
+0544: F8F9 21 CE F8               LD     HL,WarmBootErroMessage
+0545: F8FC CD 6F F8               CALL   DisplayMessage       ; send bad warm boot message
+0546: F8FF C3 E8 F8               JP     WBOOT                ; keep trying
+0547: F902
+0548: F902
+0549: F902         ; Set up page Zero
+0550: F902             LoadPage0:
+0551: F902 3E C3                  LD     A,JP_OPCODE          ; Get JP opCode
+0552: F904
+0553: F904 32 00 00               LD     (WarmBoot),A
+0554: F907 21 03 F6               LD     HL,WarmBootEntry     ; Warm Boot entry point
+0555: F90A 22 01 00               LD     (WarmBoot+1),HL      ; Warm Boot Vector
+0556: F90D
+0557: F90D 32 05 00               LD     (BDOSE),A
+0558: F910 21 06 E8               LD     HL,BDOSEntry         ; BDOS entry point
+0559: F913 22 06 00               LD     (BDOSE+1),HL         ; BDOS Vector
+0560: F916
+0561: F916 01 80 00               LD     BC,DMABuffer         ; Default Disk Buffer
+0562: F919 CD 85 FA               CALL   SETDMA               ; use normal BDOS  routine
+0563: F91C FB                     EI                          ; Enable interrupts
+0564: F91D
+0565: F91D 3A 04 00               LD     A,(Pg0CurentDisk)    ; Let CCP know what disk is current
+0566: F920 4F                     LD     C,A
+0567: F921 C3 00 E0               JP     CCPEntry             ; transfer control to CCP
+0568: F924
+0569: F924
+0570: F924             WBOOTControl:
+0571: F924 01                     DB     DiskReadCode         ; Read function
+0572: F925 00                     DB     00H                  ; unit number
+0573: F926 00                     DB     00H                  ; head number
+0574: F927 00                     DB     00H                  ; track number
+0575: F928 02                     DB     02H                  ; Starting sector number (skip cold boot sector)
+0576: F929 00 16                  DW     CCPLength + BDOSLength ; Number of bytes to read ( rest of the head)
+0577: F92B 00 E0                  DW     CCPEntry             ; read into this address
+0578: F92D 43 00                  DW     DiskStatusLocation   ; pointer to next block - no linking
+0579: F92F 45 00                  DW     DiskControlByte      ; pointer to next table- no linking
+0580: F931         ;---------------------------------------------------------------------------
+0581: F931         ;	Console Status:		BIOS 02
+0582: F931         ;
+0583: F931         ;  CONST simply returns an indicator showing whether there is an incoming
+0584: F931         ; character from the console device. The convention is that A = OFFH if a character
+0585: F931         ; is waiting to be processed, A = 0 if one is not. Note that the zero flag need not be set
+0586: F931         ; to reflect the contents of the A register - it is the contents that are important.
+0587: F931         ; CONST is called by the CCP whenever the CCP is in the middle of an
+0588: F931         ; operation that can be interrupted by pressing a keyboard character.
+0589: F931         ;
+0590: F931         ; The BDOS will call CONST if a program makes a Read Console Status
+0591: F931         ; function call (B$CONST, code 11, OBH). It is also called by the console input BIOS
+0592: F931         ; routine, CONIN
+0593: F931
+0594: F931             CONST:
+0595: F931             ConStatus:
+0596: F931 3A 03 00               LD     A,(IOBYTE)
+0597: F934 DD 21 22 FA               LD     IX,CON_Vector
+0598: F938
+0599: F938             GenericInStatus:                      ; Entry point for generic input status
+0600: F938 CD DE F9               CALL   SetDeviceVector      ; IX has the vector for the Physical Device
+0601: F93B CD AB F9               CALL   GetInStatus
+0602: F93E B7                     OR     A
+0603: F93F C8                     RET    Z                    ; 00 => No data pending
+0604: F940 3E FF                  LD     A,0FFH
+0605: F942 C9                     RET                         ; OFFH => Data in Buffer
+0606: F943         ;---------------------------------------------------------------------
+0607: F943         ;	Console In:		BIOS 03
+0608: F943         ;
+0609: F943         ;  CONIN reads the next character from the console to the A register and sets the
+0610: F943         ; most significant (parity) bit to O. ; Normally, CONIN will call the CONST routine
+0611: F943         ; until it detects A = OFFH. Only then will it input the data character and mask off
+0612: F943         ; the parity bit. CONIN is called by the CCP and by the BDOS when a program executes a
+0613: F943         ; Read Console Byte function (B$CONIN, code 1).
+0614: F943         ; normally this follows a call to CONST ( a blocking call) to indicates a char is ready.
+0615: F943
+0616: F943         ; This is a blocking routine
+0617: F943
+0618: F943             CONIN:
+0619: F943             ConIn:
+0620: F943 CD 31 F9               CALL   ConStatus
+0621: F946 28 FB                  JR     Z,ConIn              ; loop until there is some data to read
+0622: F948         ; Call to ConStatus Sets up IX with Physical Table
+0623: F948 DD 6E 06               LD     L,(IX+DataReadIndex)
+0624: F94B DD 66 07               LD     H,(IX+(DataReadIndex+1))
+0625: F94E E9                     JP     (HL)
+0626: F94F         ;---------------------------------------------------------------------------
+0627: F94F         ;	Console Out:		BIOS 04
+0628: F94F         ;
+0629: F94F         ;  CONOUT outputs the character (in ASCII) in register C to the console. The
+0630: F94F         ; most significant (parity) bit of the character will always be O.
+0631: F94F         ; CONOUT must first check that the console device is ready to receive more
+0632: F94F         ; data, delaying if necessary until it is, and only then sending the character to the
+0633: F94F         ; device. CONOUT is called by the CCP and by the BDOS when a program executes a
+0634: F94F         ; Write Console Byte function (B$CONOUT, code 2).
+0635: F94F
+0636: F94F         ; This is a blocking routine
+0637: F94F
+0638: F94F             CONOUT:
+0639: F94F             CONOut:
+0640: F94F 3A 03 00               LD     A,(IOBYTE)
+0641: F952 DD 21 22 FA               LD     IX,CON_Vector
+0642: F956
+0643: F956             GenericOutStatus:                      ; entry point for standard blocking write
+0644: F956 CD DE F9               CALL   SetDeviceVector      ; IX has the vector for the Physical Device
+0645: F959             GenericOutStatus1:
+0646: F959 CD A6 F9               CALL   GetOutStatus
+0647: F95C 28 FB                  JR     Z,GenericOutStatus1  ; wait until ready
+0648: F95E DD 6E 08               LD     L,(IX+DataWriteIndex)
+0649: F961 DD 66 09               LD     H,(IX+(DataWriteIndex+1))
+0650: F964 E9                     JP     (HL)
+0651: F965
+0652: F965         ;---------------------------------------------------------------------------
+0653: F965         ;	List output  BIOS 05
+0654: F965         ;
+0655: F965         ; LIST is similar to CONOUT except that it sends the character in register C to
+0656: F965         ; the list device. It too checks first that the list device is ready to receive
+0657: F965         ; the character. LIST is called by the CCP in response to the CONTROL-P toggle
+0658: F965         ; for printer echo of console output, and by the BDOS when a program makes a
+0659: F965         ; Write Printer Byte or Display String call (B$LISTOUT and B$PRINTS, codes 5 and 9).
+0660: F965
+0661: F965         ; This is a blocking routine
+0662: F965
+0663: F965             LIST:
+0664: F965 3A 03 00               LD     A,(IOBYTE)
+0665: F968 07                     RLCA                        ; move bits 7,6
+0666: F969 07                     RLCA                        ; to 1,0
+0667: F96A DD 21 3A FA               LD     IX,LST_Vector
+0668: F96E 18 E6                  JR     GenericOutStatus     ; go to generic blocking out routine
+0669: F970
+0670: F970         ;---------------------------------------------------------------------------
+0671: F970         ;	Punch output  BIOS 06
+0672: F970         ;
+0673: F970         ;  PUNCH sends the character in register C to the "punch" device. As mentioned
+0674: F970         ; earlier, the "punch" is rarely a real paper tape punch. In most BIOS's, the PUNCH
+0675: F970         ; entry point either returns immediately and is effectively a null routine, or it outputs
+0676: F970         ; the character to a communications device, such as a modem, on your computer.
+0677: F970         ; PUNCH must check that the "punch" device is indeed ready to accept another
+0678: F970         ; character for output, and must wait if it is not.
+0679: F970         ;
+0680: F970         ; Digital Research's documentation states that the character to be output will
+0681: F970         ; always have its most significant bit set to O. This is not true. The BDOS simply
+0682: F970         ; transfers control over to the PUNCH entry point in the BIOS; the setting of the
+0683: F970         ; most significant bit will be determined by the program making the BDOS function
+0684: F970         ; request (B$PUNOUT, code 4). This is important because the requirement of a zero
+0685: F970         ; would preclude being able to send pure binary data via the BIOS PUNCH
+0686: F970         ; function
+0687: F970
+0688: F970         ; This is a blocking routine
+0689: F970
+0690: F970             PUNCH:                          ; Punch output
+0691: F970 3A 03 00               LD     A,(IOBYTE)
+0692: F973 0F                     RRCA
+0693: F974 0F                     RRCA
+0694: F975 0F                     RRCA                        ; move bits 5,4
+0695: F976 0F                     RRCA                        ; to 1,0
+0696: F977 DD 21 32 FA               LD     IX,PUN_Vector
+0697: F97B 18 D9                  JR     GenericOutStatus     ; go to generic blocking out routine
+0698: F97D
+0699: F97D         ;---------------------------------------------------------------------------
+0700: F97D         ;	Reader input  BIOS 07
+0701: F97D         ;
+0702: F97D         ; As with the PUNCH entry point, the READER entry point rarely connects to
+0703: F97D         ; a real paper tape reader.
+0704: F97D         ; The READER function must return the next character from the reader device
+0705: F97D         ; in the A register, waiting, if need be, until there is a character.
+0706: F97D         ;
+0707: F97D         ; Digital Research's documentation again says that the most significant bit of
+0708: F97D         ; the A register must be 0, but this is not the case if you wish to receive pure binary
+0709: F97D         ; information via this function.
+0710: F97D         ; READER is called whenever a program makes a Read "Reader" Byte function
+0711: F97D         ; request (B$READIN, code 3).
+0712: F97D
+0713: F97D         ; This is a blocking routine
+0714: F97D
+0715: F97D             READER:                         ; Reader Input
+0716: F97D 3A 03 00               LD     A,(IOBYTE)
+0717: F980 0F                     RRCA
+0718: F981 0F                     RRCA                        ; move bits 3,2  to 1,0
+0719: F982 DD 21 2A FA               LD     IX,RDR_Vector
+0720: F986             READER1:
+0721: F986 CD 38 F9               CALL   GenericInStatus
+0722: F989 28 FB                  JR     Z,READER1            ; loop until there is some data to read
+0723: F98B
+0724: F98B DD 6E 06               LD     L,(IX+DataReadIndex)
+0725: F98E DD 66 07               LD     H,(IX+(DataReadIndex+1))
+0726: F991 E9                     JP     (HL)
+0727: F992
+0728: F992         ;---------------------------------------------------------------------------
+0729: F992         ;	List Status:  BIOS 0F
+0730: F992
+0731: F992         ;  LISTST was added when CP/M was upgraded from version 1.4 to version 2.0.
+0732: F992         ; This function returns the current status of the list device, using the IOBYTE if
+0733: F992         ; necessary to select the correct physical device. It sets the A register to OFFH if the
+0734: F992         ; list device can accept another character for output or to OOH if it is not ready.
+0735: F992         ; Digital Research's documentation states that this function is used by the
+0736: F992         ; DESPOOL utility program (which allows you to print a file "simultaneously" with
+0737: F992         ; other operations) to improve console response during its operation, and that it is
+0738: F992         ; acceptable for the routine always to return OOH if you choose not to implement it
+0739: F992         ; fully.
+0740: F992         ; Unfortunately, this statement is wrong. Many other programs use the LISTST
+0741: F992         ; function to "poll" the list device to make sure it is ready, and if it fails to come
+0742: F992         ; ready after a predetermined time, to output a message to the console indicating
+0743: F992         ; that the printer is not ready. If you ever make a call to the BDOS list output
+0744: F992         ; functions, Write Printer Byte and Print String (codes 5 and 9), and the printer is
+0745: F992         ; not ready, then CP/M will wait forever-and your program will have lost control
+0746: F992         ; so it cannot even detect that the problem has occurred. If LISTST always returns a
+0747: F992         ; OOH, then the printer will always appear not to be ready. Not only does this make nonsense
+0748: F992         ; out of the LISTST function, but it also causes a stream of false "Printer
+0749: F992         ; not Ready" error messages to appear on the console.
+0750: F992
+0751: F992             LISTST:
+0752: F992 3A 03 00               LD     A,(IOBYTE)           ; Get Physical device
+0753: F995 07                     RLCA
+0754: F996 07                     RLCA                        ; Move bits 6 & 7 to bits 0 & 1
+0755: F997 DD 21 3A FA               LD     IX,LST_Vector        ; Set th vector base
+0756: F99B CD DE F9               CALL   SetDeviceVector      ; IX has the vector for the Physical Device
+0757: F99E CD A6 F9               CALL   GetOutStatus
+0758: F9A1
+0759: F9A1 B7                     OR     A
+0760: F9A2 C8                     RET    Z                    ; 00 => Device Ready
+0761: F9A3 3E FF                  LD     A,0FFH
+0762: F9A5 C9                     RET                         ; OFFH => Device No Ready
+0763: F9A6
+0764: F9A6         ;---------------------------------------------------------------------------
+0765: F9A6
+0766: F9A6         ;---------------------------------------------------------------------
+0767: F9A6             GetOutStatus:
+0768: F9A6         ; vector to CON Devices
+0769: F9A6 DD 56 02               LD     D,(IX+OutputMaskIndex) ; setup Output mask
+0770: F9A9 18 03                  JR     GetStatus
+0771: F9AB             GetInStatus:
+0772: F9AB DD 56 03               LD     D,(IX+InputMaskIndex) ; setup Input mask
+0773: F9AE             GetStatus:
+0774: F9AE DD 6E 04               LD     L,(IX+StatusReadIndex)
+0775: F9B1 DD 66 05               LD     H,(IX+(StatusReadIndex+1)) ; Load HL with address for Status Read
+0776: F9B4 E9                     JP     (HL)                 ; jump to the stats read routine
+0777: F9B5
+0778: F9B5         ;---------------------------------------------------------------------
+0779: F9B5
+0780: F9B5             DataRead:
+0781: F9B5 DD 7E 01               LD     A,(IX+DataPortIndex)
+0782: F9B8 32 BC F9               LD     (AddressDataIn),A    ; modify code with the Data port
+0783: F9BB DB                     DB     IN_OPCODE
+0784: F9BC             AddressDataIn:
+0785: F9BC 00                     DB     00                   ; perform the read
+0786: F9BD C9                     RET
+0787: F9BE
+0788: F9BE             DataReadASCII:
+0789: F9BE CD B5 F9               CALL   DataRead
+0790: F9C1 E6 7F                  AND    ASCII_MASK           ; Strip off MSB
+0791: F9C3 C9                     RET                         ; AND		ASCII_MASK
+0792: F9C4
+0793: F9C4         ; Enter DataWrite the value to be output in C
+0794: F9C4             DataWrite:
+0795: F9C4 DD 7E 01               LD     A,(IX+DataPortIndex)
+0796: F9C7 32 CC F9               LD     (AddressDataOut),A   ; modify code with the Data port
+0797: F9CA 79                     LD     A,C                  ; get value into ACC
+0798: F9CB D3                     DB     OUT_OPCODE
+0799: F9CC             AddressDataOut:
+0800: F9CC 00                     DB     00                   ; perform the write
+0801: F9CD C9                     RET
+0802: F9CE
+0803: F9CE
+0804: F9CE         ; Enter Status Read with Target mask in D
+0805: F9CE             StatusRead:
+0806: F9CE DD 7E 00               LD     A,(IX+StatusPortIndex)
+0807: F9D1 32 D5 F9               LD     (AddressStatus),A    ; modify code with the status port
+0808: F9D4 DB                     DB     IN_OPCODE
+0809: F9D5             AddressStatus:
+0810: F9D5 00                     DB     00
+0811: F9D6 A2                     AND    D                    ; Check return vale with the mask
+0812: F9D7 C9                     RET
+0813: F9D8
+0814: F9D8             DUMMYRead:
+0815: F9D8 C9                     RET
+0816: F9D9             DUMMYWrite:
+0817: F9D9 C9                     RET
+0818: F9DA             DUMMYCheck:
+0819: F9DA 3E FF                  LD     A,0FFH               ; Always return 0FFH
+0820: F9DC B7                     OR     A                    ; Set flags
+0821: F9DD C9                     RET
+0822: F9DE
+0823: F9DE         ;=============================================================================
+0824: F9DE             SetDeviceVector:
+0825: F9DE E6 03                  AND    03H                  ; Get bits 0 & 1;
+0826: F9E0 87                     ADD    A,A                  ; Double for word size index
+0827: F9E1 16 00                  LD     D,00H
+0828: F9E3 5F                     LD     E,A                  ; load byte index int DE
+0829: F9E4 DD 19                  ADD    IX,DE                ; add to the value vector base
+0830: F9E6         ; IX points at correct entry in vector
+0831: F9E6 DD 5E 00               LD     E,(IX+0)
+0832: F9E9 DD 56 01               LD     D,(IX+1)             ; DE now has the Vector for the device
+0833: F9EC D5                     PUSH   DE
+0834: F9ED DD E1                  POP    IX                   ; Move it to IX
+0835: F9EF C9                     RET
+0836: F9F0
+0837: F9F0
+0838: F9F0         ;++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+0839: F9F0         ; Physical Device Attributes
+0840: F9F0
+0841: F9F0             TTY_StatusPort EQU    0EDH
+0842: F9F0             TTY_DataPort EQU    0ECH
+0843: F9F0             TTY_OutputMask EQU    80H                  ; Status Mask
+0844: F9F0             TTY_InputMask EQU    7FH                  ; Status Mask
+0845: F9F0
+0846: F9F0             CRT_StatusPort EQU    02H
+0847: F9F0             CRT_DataPort EQU    01H
+0848: F9F0             CRT_OutputMask EQU    80H                  ; Status Mask - ready for output
+0849: F9F0             CRT_InputMask EQU    07FH                 ; Status Mask - bytes yet to have been read
+0850: F9F0
+0851: F9F0             COM_StatusPort EQU    0EDH
+0852: F9F0             COM_DataPort EQU    0ECH
+0853: F9F0             COM_OutputMask EQU    01H                  ; Status Mask
+0854: F9F0             COM_InputMask EQU    02H                  ; Status Mask
+0855: F9F0
+0856: F9F0             LPT_StatusPort EQU    011H
+0857: F9F0             LPT_DataPort EQU    010H
+0858: F9F0             LPT_OutputMask EQU    0FFH                 ; Status Mask - ready for output
+0859: F9F0             LPT_InputMask EQU    07FH                 ; Status Mask - not used
+0860: F9F0
+0861: F9F0             DUMMY_StatusPort EQU    011H
+0862: F9F0             DUMMY_DataPort EQU    010H
+0863: F9F0             DUMMY_OutputMask EQU    0FFH                 ; Status Mask - ready for output
+0864: F9F0             DUMMY_InputMask EQU    07FH                 ; Status Mask - not used
+0865: F9F0
+0866: F9F0         ; Device Table Control Block Definition
+0867: F9F0             StatusPortIndex EQU    0
+0868: F9F0             DataPortIndex EQU    1
+0869: F9F0             OutputMaskIndex EQU    2
+0870: F9F0             InputMaskIndex EQU    3
+0871: F9F0             StatusReadIndex EQU    4
+0872: F9F0             DataReadIndex EQU    6
+0873: F9F0             DataWriteIndex EQU    8
+0874: F9F0
+0875: F9F0         ;Physical Devices Control Blocks
+0876: F9F0
+0877: F9F0             TTY_Table:
+0878: F9F0 ED                     DB     TTY_StatusPort
+0879: F9F1 EC                     DB     TTY_DataPort
+0880: F9F2 80                     DB     TTY_OutputMask
+0881: F9F3 7F                     DB     TTY_InputMask
+0882: F9F4 CE F9                  DW     StatusRead
+0883: F9F6 BE F9                  DW     DataReadASCII
+0884: F9F8 C4 F9                  DW     DataWrite
+0885: F9FA
+0886: F9FA             CRT_Table:
+0887: F9FA 02                     DB     CRT_StatusPort
+0888: F9FB 01                     DB     CRT_DataPort
+0889: F9FC 80                     DB     CRT_OutputMask
+0890: F9FD 7F                     DB     CRT_InputMask
+0891: F9FE CE F9                  DW     StatusRead
+0892: FA00 B5 F9                  DW     DataRead
+0893: FA02 C4 F9                  DW     DataWrite
+0894: FA04             COM_Table:
+0895: FA04 ED                     DB     COM_StatusPort
+0896: FA05 EC                     DB     COM_DataPort
+0897: FA06 01                     DB     COM_OutputMask
+0898: FA07 02                     DB     COM_InputMask
+0899: FA08 CE F9                  DW     StatusRead
+0900: FA0A B5 F9                  DW     DataRead
+0901: FA0C C4 F9                  DW     DataWrite
+0902: FA0E             LPT_Table:
+0903: FA0E 11                     DB     LPT_StatusPort
+0904: FA0F 10                     DB     LPT_DataPort
+0905: FA10 FF                     DB     LPT_OutputMask
+0906: FA11 7F                     DB     LPT_InputMask
+0907: FA12 CE F9                  DW     StatusRead
+0908: FA14 B5 F9                  DW     DataRead
+0909: FA16 C4 F9                  DW     DataWrite
+0910: FA18             DUMMY_Table:
+0911: FA18 11                     DB     DUMMY_StatusPort
+0912: FA19 10                     DB     DUMMY_DataPort
+0913: FA1A FF                     DB     DUMMY_OutputMask
+0914: FA1B 7F                     DB     DUMMY_InputMask
+0915: FA1C DA F9                  DW     DUMMYCheck
+0916: FA1E D8 F9                  DW     DUMMYRead
+0917: FA20 D9 F9                  DW     DUMMYWrite
+0918: FA22
+0919: FA22         ;---------------------------------------------------------------------------
+0920: FA22
+0921: FA22         ; Logical Device Vector, Controlled by IOBYTE
+0922: FA22
+0923: FA22             CON_Vector:                      ; IOBYTE bits 1 & 0
+0924: FA22 F0 F9                  DW     TTY_Table
+0925: FA24 FA F9                  DW     CRT_Table
+0926: FA26 04 FA                  DW     COM_Table
+0927: FA28 18 FA                  DW     DUMMY_Table
+0928: FA2A             RDR_Vector:                      ; IOBYTE bits 3 & 2
+0929: FA2A F0 F9                  DW     TTY_Table
+0930: FA2C FA F9                  DW     CRT_Table
+0931: FA2E 18 FA                  DW     DUMMY_Table
+0932: FA30 18 FA                  DW     DUMMY_Table
+0933: FA32             PUN_Vector:                      ; IOBYTE bits 5 & 4
+0934: FA32 F0 F9                  DW     TTY_Table
+0935: FA34 18 FA                  DW     DUMMY_Table
+0936: FA36 04 FA                  DW     COM_Table
+0937: FA38 FA F9                  DW     CRT_Table
+0938: FA3A             LST_Vector:                      ; IOBYTE bits 7 & 6
+0939: FA3A 0E FA                  DW     LPT_Table
+0940: FA3C FA F9                  DW     CRT_Table
+0941: FA3E 0E FA                  DW     LPT_Table
+0942: FA40 18 FA                  DW     DUMMY_Table
+0943: FA42
+0944: FA42         ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+0945: FA42         ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+0946: FA42
+0947: FA42         ;---------------------------------------------------------------------------
+0948: FA42         ;	Disk routines
+0949: FA42         ;---------------------------------------------------------------------------
+0950: FA42
+0951: FA42         ;  All of the disk functions that follow were originally designed to operate on the
+0952: FA42         ; 128-byte sectors used on single-sided, single-density, 8-inch floppy diskettes that
+0953: FA42         ; were standard in the industry at the time. Now that CP/M runs on many different
+0954: FA42         ; types of disks, some of the BIOS disk functions seem strange because most of the
+0955: FA42         ; new disk drives use sector sizes other than 128 bytes.
+0956: FA42         ; To handle larger sector sizes, the BIOS has some additional code that makes
+0957: FA42         ; the BDOS respond as if it were still handling 128-byte sectors. This code is referred
+0958: FA42         ; to as the blocking/deblocking code.
+0959: FA42         ;  As its name implies, it blocks together several 128-byte "sectors" and only writes
+0960: FA42         ; to the disk when a complete physical sector has been assembled.
+0961: FA42         ;  When reading, it reads in a physical sector and then deblocks it,handing back
+0962: FA42         ; several 128-byte "sectors" to the BDOS.
+0963: FA42         ;  To do all of this, the blocking/deblocking code uses a special buffer area of the
+0964: FA42         ; same size as the physical sectors on the disk. This is known as the host disk buffer
+0965: FA42         ; or HSTBUE Physical sectors are read into this buffer and written to the disk
+0966: FA42         ; from it. In order to optimize this blocking/deblocking routine, the BIOS has code in it
+0967: FA42         ; to reduce the number of times that an actual disk read or write occurs. A side effect
+0968: FA42         ; is that at any given moment, several 128-byte "sectors" may be stored in the
+0969: FA42         ; HSTBUF, waiting to be written out to the disk when HSTBUF becomes full. This
+0970: FA42         ; sometimes complicates the logic of the BIOS disk functions. You cannot simply
+0971: FA42         ; select a new disk drive, for example, when the HSTBUF contains data destined for
+0972: FA42         ; another disk drive. You will see this complication in the BIOS only in the form of
+0973: FA42         ; added logical operations; the BIOS disk functions rarely trigger immediate physical
+0974: FA42         ; operations. It is easier to understand these BIOS functions if you consider that
+0975: FA42         ; they make requests-and that these requests are satisfied only when it makes
+0976: FA42         ; sense to do so, taking into account the blocking/ deblocking logic.
+0977: FA42
+0978: FA42         ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+0979: FA42         ;---------------------------------------------------------------------------
+0980: FA42
+0981: FA42         ;---------------------------------------------------------------------------
+0982: FA42         ;	Home Disk	BIOS 08
+0983: FA42         ;
+0984: FA42         ;  HOME - Home the selected logical disk to track 0. Before doing this, a check
+0985: FA42         ; must be made to see if the physical disk buffer has information that must be
+0986: FA42         ; written out. This is indicated by a flag, DirtyBufferFlag,set in the de-blocking code
+0987: FA42
+0988: FA42             HOME:
+0989: FA42 3A EA FB               LD     A,(DirtyBufferFlag)  ; Check for Dirty Buffer
+0990: FA45 B7                     OR     A
+0991: FA46 20 03                  JR     NZ,HomeNoWrite
+0992: FA48 32 E9 FB               LD     (DataInBufferFlag),A ; Clear DataInBufferFlag if Buffer not dirty
+0993: FA4B             HomeNoWrite:
+0994: FA4B 0E 00                  LD     C,00H                ; Set to track 0
+0995: FA4D CD 7B FA               CALL   SETTRK               ; no, physical, only logical
+0996: FA50 C9                     RET
+0997: FA51
+0998: FA51         ;---------------------------------------------------------------------------
+0999: FA51         ;	Select Disk	BIOS 09
+1000: FA51
+1001: FA51         ;  SELDSK does not do what its name implies. It does not (and must not)
+1002: FA51         ; physically select a logical disk. Instead, it returns a pointer in the
+1003: FA51         ; HL register pair to the disk parameter header for the logical disk specified
+1004: FA51         ; in register C on entry. C=0 for drive A, 1for drive B, and so on. SELDSK also
+1005: FA51         ; stores this code for the requested disk to be used later in the READ and WRITE functions.
+1006: FA51         ; If the logical disk code in register C refers to a nonexistent disk or to one for
+1007: FA51         ; which no disk parameter header exists, then SELDSK must return with HL set to
+1008: FA51         ; OOOOH. Then the BDOS will output a message of the form "BDOS Err on XI Select"
+1009: FA51         ; Note that SELDSK not only does not select the disk, but also does not indicate
+1010: FA51         ; whether or not the requested disk is physically present -merely whether or not
+1011: FA51         ; there are disk tables present for the disk.
+1012: FA51         ;  SELDSK is called by the BDOS either during disk file operations or by a
+1013: FA51         ; program issuing a Select Disk request (B$SELDSK, code 14).
+1014: FA51
+1015: FA51             SELDSK:
+1016: FA51 21 00 00               LD     HL,00H               ; Assume an error
+1017: FA54 79                     LD     A,C
+1018: FA55 FE 04                  CP     NumberOfLogicalDisks
+1019: FA57 D0                     RET    NC                   ; return if > max number of Disks
+1020: FA58
+1021: FA58 32 EC FB               LD     (SelectedDisk),A     ; save disk number
+1022: FA5B
+1023: FA5B 07                     RLCA                        ; X2
+1024: FA5C 07                     RLCA                        ; X4
+1025: FA5D 07                     RLCA                        ; X8
+1026: FA5E 07                     RLCA                        ; X16
+1027: FA5F 16 00                  LD     D,0
+1028: FA61 5F                     LD     E,A                  ; put index int DE
+1029: FA62 DD 21 FB FB               LD     IX,DiskParameterHeaders ; get DPH address Base
+1030: FA66 DD 19                  ADD    IX,DE                ; get the specific DiskParameterHeader
+1031: FA68 DD E5                  PUSH   IX                   ; save for return in HL
+1032: FA6A
+1033: FA6A DD 56 0B               LD     D,(IX+11)            ; LSB for Disk Parameter Block
+1034: FA6D DD 5E 0A               LD     E,(IX+10)            ; MSB for Disk Parameter Block
+1035: FA70
+1036: FA70 D5                     PUSH   DE
+1037: FA71 DD E1                  POP    IX
+1038: FA73 DD 7E 0F               LD     A,(IX+15)            ; Disk Parameter Block in IY
+1039: FA76 32 EB FB               LD     (SelectedDskSecsPerHead),A
+1040: FA79
+1041: FA79 E1                     POP    HL                   ; recover DPH pointer
+1042: FA7A C9                     RET
+1043: FA7B
+1044: FA7B
+1045: FA7B
+1046: FA7B         ;---------------------------------------------------------------------------
+1047: FA7B         ;	Set Track	BIOS 0A
+1048: FA7B
+1049: FA7B         ;  SETTRK saves the requested disk track that is in the BC register pair when
+1050: FA7B         ; SETTRK gets control. Note that this is an absolute track number; that is, the
+1051: FA7B         ; number of reserved tracks before the file directory will have been added to the
+1052: FA7B         ; track number relative to the start of the logical disk.
+1053: FA7B         ;  The number of the requested track will be used in the next BIOS READ or
+1054: FA7B         ; WRITE function.
+1055: FA7B         ;  SETTRK is called by the BDOS when it needs to read or write a 128-byte
+1056: FA7B         ; sector. Legitimate track numbers are from 0 to OFFFFH (65,535).
+1057: FA7B
+1058: FA7B             SETTRK:
+1059: FA7B         ;	LD		H,B								; select track in BC on entry
+1060: FA7B         ;	LD		L,C
+1061: FA7B         ;	LD	(SelectedTrack),HL					; save for low level driver
+1062: FA7B ED 43 ED FB               LD     (SelectedTrack),BC   ; save for low level driver
+1063: FA7F C9                     RET
+1064: FA80
+1065: FA80         ;---------------------------------------------------------------------------
+1066: FA80         ;	Set Sector	BIOS 0B  (Set Record)
+1067: FA80
+1068: FA80         ; Sector  = Record for disk with 128 byte sectors
+1069: FA80         ; Sector contains 4 records for disks with 512 byte sectors
+1070: FA80         ; this routine is missed named it should be called Set Record
+1071: FA80
+1072: FA80         ;  SETSEC is similar to SETTRK in that it stores the requested Record (sector) number
+1073: FA80         ; for later use in BIOS READ or WRITE functions. The requested Record (sector) number is
+1074: FA80         ; handed to SETSEC in the A register; legitimate values are from 0 to OFFH (255).
+1075: FA80         ; The Record (sector) number is a logical Record (sector) number. It does not take into account any
+1076: FA80         ; sector skewing that might be used to improve disk performance.
+1077: FA80         ;  SETSEC is called by the BDOS when it needs to read or write a 128-byte
+1078: FA80         ; Record (sector).
+1079: FA80
+1080: FA80             SETSEC:                         ; SETRECORD
+1081: FA80 79                     LD     A,C
+1082: FA81 32 EF FB               LD     (SelectedRecord),A   ; save for low level driver
+1083: FA84 C9                     RET
+1084: FA85
+1085: FA85         ;---------------------------------------------------------------------------
+1086: FA85         ;	Set Sector	BIOS 0C
+1087: FA85
+1088: FA85         ;  SETDMA saves the address in the BC register pair in the requested DMA
+1089: FA85         ; address. The next BIOS READ or WRITE function will use the DMA address as
+1090: FA85         ; a pointer to the 128-byte sector buffer into which data will be read or from which
+1091: FA85         ; data will be written.
+1092: FA85         ;  The default DMA address is 0080H. SETDMA is called by the BDOS when it
+1093: FA85         ; needs to READ or WRITE a 128-byte sector.
+1094: FA85
+1095: FA85             SETDMA:
+1096: FA85 ED 43 F0 FB               LD     (DMAAddress),BC      ; save for low level driver
+1097: FA89 C9                     RET
+1098: FA8A
+1099: FA8A         ;---------------------------------------------------------------------------
+1100: FA8A         ;	Sector Translate	BIOS 10
+1101: FA8A
+1102: FA8A         ;  SECTRAN, given a logical sector number, locates the correct physical sector
+1103: FA8A         ; number in the sector translate table for the previously selected (via SELDSK)
+1104: FA8A         ; logical disk drive. Note that both logical and physical sector numbers are
+1105: FA8A         ; l28-byte sectors, so if you are working with a hard disk system, it is not
+1106: FA8A         ; too efficient to impose a sector interlace at the l28-byte sector level.
+1107: FA8A         ; It is better to impose the sector interlace right inside the hard disk driver,
+1108: FA8A         ; if at all. In general, hard disks spin so rapidly that CP/M simply cannot take
+1109: FA8A         ; advantage of sector interlace.
+1110: FA8A         ;  The BDOS hands over the logical sector number in the BC register pair, with
+1111: FA8A         ; the address of the sector translate table in the DE register pair. SECTRAN must
+1112: FA8A         ; return the physical sector number in HL.
+1113: FA8A         ;  If SECTRAN is to be a null routine, it must move the contents of BC to HL
+1114: FA8A         ; and return.
+1115: FA8A
+1116: FA8A             SECTRAN:
+1117: FA8A C5                     PUSH   BC
+1118: FA8B E1                     POP    HL                   ; just move the value from BC to HL
+1119: FA8C C9                     RET
+1120: FA8D
+1121: FA8D         ;---------------------------------------------------------------------------
+1122: FA8D         ;	READ			BIOS 0D
+1123: FA8D
+1124: FA8D         ;  READ reads in a 128-byte sector provided that there have been previous BIOS
+1125: FA8D         ; function calls to:
+1126: FA8D         ; 				- SELDSK	"select" the disk
+1127: FA8D         ; 				- SETDMA	set the DMA address
+1128: FA8D         ; 				- SETTRK	set the track number
+1129: FA8D         ; 				- SETSEC	set the sector number.
+1130: FA8D         ;
+1131: FA8D         ; Because of the blocking/ deblocking code in the BIOS, there are frequent occasions
+1132: FA8D         ; when the requested sector will already be in the host buffer (HSTBUF), so that a
+1133: FA8D         ; physical disk read is not required. All that is then required is for the BIOS to move
+1134: FA8D         ; the appropriate 128 bytes from the HSTBUF into the buffer pointed at by the DMA address.
+1135: FA8D         ; Only during the READ function will the BIOS normally communicate with the physical disk
+1136: FA8D         ; drive, selecting it and seeking to read the requested track and sector. During this process,
+1137: FA8D         ; the READ function must also handle any hardware errors that occur, trying an operation again
+1138: FA8D         ; if a "soft," or recoverable, error occurs.
+1139: FA8D         ;  The READ function must return with the A register set to OOH if the read operation has completed
+1140: FA8D         ; successfully. If the READ function returns with the A register set to 01 H, the BDOS will
+1141: FA8D         ; display an error message of the form BDOS Err on X: Bad Sector. Under these circumstances,
+1142: FA8D         ; you have only two choices. You can enter a CARRIAGE RETURN, ignore the fact that there was an
+1143: FA8D         ; error, and attempt to make sense of the data in the DMA buffer. Or you can type a CONTROL-C
+1144: FA8D         ; to abort the operation, perform a warm boot, and return control to the CCP. As you can see,
+1145: FA8D         ; CP/M's error handling is not particularly helpful, so most BIOS writers add more sophisticated
+1146: FA8D         ; error recovery right in the disk driver. This can include some interaction with the console so
+1147: FA8D         ; that a more determined effort can be made to correct errors or, if nothing else, give you more
+1148: FA8D         ; information as to what has gone wrong. Such error handling is discussed in Chapter 9.
+1149: FA8D         ;  If you are working with a hard disk system, the BIOS driver must also handle the management of
+1150: FA8D         ; bad sectors. You cannot simply replace a hard disk drive if one or two sectors become unreadable.
+1151: FA8D         ; This bad sector management normally requires that a directory of "spare" sectors be put on the
+1152: FA8D         ; hard disk before it is used to store data. Then, when a sector is found to be bad,
+1153: FA8D         ; one of the spare sectors is substituted in its place.
+1154: FA8D
+1155: FA8D             READ:
+1156: FA8D AF                     XOR    A
+1157: FA8E 32 F7 FB               LD     (ModifiedlRecordsCount),A ; 1. Set ModifiedlRecordsCount to 0
+1158: FA91 3C                     INC    A
+1159: FA92 32 FA FB               LD     (ReadWriteFlag),A    ; 2. Set to Flag to read (non-zero)
+1160: FA95 32 F9 FB               LD     (PrereadSectorFlag),A ; 3. Force a preread
+1161: FA98 3E 02                  LD     A,WriteCleanBuffer
+1162: FA9A 32 E4 FB               LD     (WriteType),A        ; 4. Fake a clean sector Write type = 02
+1163: FA9D C3 CA FA               JP     CommonDiskIO         ; Use common code to execute read
+1164: FAA0         ;---------------------------------------------------------------------------
+1165: FAA0         ;	WRITE			BIOS 0E
+1166: FAA0         ;
+1167: FAA0         ;Write a cpmRecord (128-bytes) from the current DMA address to the previously Selected disk, track, and sector.
+1168: FAA0         ;
+1169: FAA0         ; On arrival here, the BDOS will have set register C to indicate whether this write operation is to:
+1170: FAA0         ;	00H [WriteAllocated]	An already allocated allocation block (which means a pre-read of the sector may be needed),
+1171: FAA0         ;	01H [WriteDirectory]	To the directory (in which case the data will be written to the disk immediately),
+1172: FAA0         ;	02H [WriteCleanBuffer]	To the first cpmRecord of a previously unallocated allocation block (In which case no pre-read is required).
+1173: FAA0
+1174: FAA0         ;  WRITE is similar to READ but with the obvious difference that data is transferred from the DMA buffer
+1175: FAA0         ; to the specified 128-byte sector. Like READ, this function requires that the following function calls
+1176: FAA0         ; have already been made:
+1177: FAA0         ; 				- SELDSK	"select" the disk
+1178: FAA0         ; 				- SETDMA	set the DMA address
+1179: FAA0         ; 				- SETTRK	set the track number
+1180: FAA0         ; 				- SETSEC	set the sector number.
+1181: FAA0         ;
+1182: FAA0         ;  Again, it is only in the WRITE routine that the driver will start to talk directly to the physical hardware,
+1183: FAA0         ; selecting the disk unit, track, and sector, and transferring the data to the disk. With the blocking/deblocking code,
+1184: FAA0         ; the BDOS optimizes the number of disk writes that are needed by indicating in register C the type of disk write
+1185: FAA0         ; that is to be performed:
+1186: FAA0         ; 				0= normal sector write
+1187: FAA0         ; 				1= write to file directory sector
+1188: FAA0         ; 				2 = write to sector of previously unchanged Deblocking Buffer
+1189: FAA0         ;
+1190: FAA0         ;  Type 0 occurs whenever the BDOS is writing to a data sector in an already used allocation block.
+1191: FAA0         ; Under these circumstances, the disk driver must preread the appropriate host sector because there
+1192: FAA0         ; may be previously stored information on it.
+1193: FAA0         ;
+1194: FAA0         ;  Type 1 occurs whenever the BDOS is writing to a file directory sector-in this case, the BIOS must not defer
+1195: FAA0         ; writing the sector to the disk, as the information is too valuable to hold in memory until the HSTBUF is full.
+1196: FAA0         ; The longer the information resides in the HSTBUF, the greater the chance of a power failure or glitch,
+1197: FAA0         ; making file data already physically written to the disk inaccessible because the file directory is out of date.
+1198: FAA0         ;
+1199: FAA0         ;  Type 2 occurs whenever the BDOS needs to write to the first sector of a previously unused allocation block.
+1200: FAA0         ; Unused, in this context, includes an allocation block that has become available as a result of a file being erased.
+1201: FAA0         ; In this case, there is no need for the disk driver to preread an entire host-sized sector into the HSTBUF,
+1202: FAA0         ; as there is no data of value in the physical sector.
+1203: FAA0         ;
+1204: FAA0         ;  As with the READ routine, the WRITE function returns with A set to OOH if the operation has been completed successfully.
+1205: FAA0         ; If the WRITE function returns with A set to 01H, then the BDOS will display the same message as for READ:
+1206: FAA0         ; BDOS Err on X: Bad Sector
+1207: FAA0
+1208: FAA0
+1209: FAA0             WRITE:
+1210: FAA0         ; BlockingBuffer I/O
+1211: FAA0 AF                     XOR    A
+1212: FAA1 32 FA FB               LD     (ReadWriteFlag),A    ; Set to zero to indicate that this is a Write
+1213: FAA4 79                     LD     A,C
+1214: FAA5 32 E4 FB               LD     (WriteType),A        ; save the BDOS write type (0,1,2)
+1215: FAA8
+1216: FAA8 FE 02                  CP     WriteCleanBuffer     ; first, is this a clean Allocation Buffer block ?
+1217: FAAA C2 B8 FA               JP     NZ,CheckDirtyBuffer  ; No
+1218: FAAD
+1219: FAAD         ;Write from a clean Host Buffer
+1220: FAAD 21 EC FB               LD     HL,SelectedState
+1221: FAB0 11 F3 FB               LD     DE,HostBufferState
+1222: FAB3 01 04 00               LD     BC,SelectedDiskStateSize
+1223: FAB6 ED B0                  LDIR                        ; copy Selected State to Host Buffer state
+1224: FAB8
+1225: FAB8             CheckDirtyBuffer:
+1226: FAB8
+1227: FAB8 21 EC FB               LD     HL,SelectedState
+1228: FABB 11 F3 FB               LD     DE,HostBufferState
+1229: FABE CD 60 FB               CALL   CompareDkTrkSec      ; is it in Host Buffer?
+1230: FAC1 3E FF                  LD     A,TRUE               ;......
+1231: FAC3 C2 C7 FA               JP     NZ,SetPreread        ; NO - Then we need to load the Host Buffer
+1232: FAC6
+1233: FAC6 AF                     XOR    A
+1234: FAC7             SetPreread:
+1235: FAC7 32 F9 FB               LD     (PrereadSectorFlag),A ; clear preread flag
+1236: FACA         ;*******************************************************
+1237: FACA         ; Common code to execute both reads and writes of 128-byte records
+1238: FACA         ;*******************************************************
+1239: FACA             CommonDiskIO:
+1240: FACA AF                     XOR    A                    ; Assume no disk error will occur
+1241: FACB 32 F8 FB               LD     (DiskStatus),A
+1242: FACE
+1243: FACE         ;-------------------------Convert selected record into physical sector-----------;
+1244: FACE 3A EF FB               LD     A,(SelectedRecord)   ;
+1245: FAD1 1F                     RRA                         ; Convert selected record                ;
+1246: FAD2 1F                     RRA                         ; into physical sector by dividing by 4  ;
+1247: FAD3 E6 3F                  AND    03FH                 ; Remove unwanted bits                   ;
+1248: FAD5 32 F2 FB               LD     (SelectedSector),A   ;
+1249: FAD8         ;-------------------------Convert selected record into physical sector-----------;
+1250: FAD8
+1251: FAD8         ;------------------------- Any Data in Buffer -----------------------------------;
+1252: FAD8         ;Flag is ONLY reset by BIOS HOME Function. otherwise it is set by all passes 		 ;
+1253: FAD8
+1254: FAD8 21 E9 FB               LD     HL,DataInBufferFlag  ; See if there is any data here ?        ;
+1255: FADB 7E                     LD     A,(HL)               ;
+1256: FADC 36 FF                  LD     (HL),TRUE            ; Force flag true                        ;
+1257: FADE B7                     OR     A                    ; Was  any data here ?                   ;
+1258: FADF CA FF FA               JP     Z,SetIOBufferState   ; NO ?- go read into buffer              ;
+1259: FAE2         ;------------------------- Any Data in Buffer -----------------------------------;
+1260: FAE2
+1261: FAE2         ;-----------------------------test for  the sector in the buffer-----------------;
+1262: FAE2 11 E5 FB               LD     DE,IOBufferState     ; get the Buffer Disk and Track          ;
+1263: FAE5 21 EC FB               LD     HL,SelectedState     ; get the requested Disk and Track       ;
+1264: FAE8 CD 5B FB               CALL   CompareDkTrk         ; Are they the same ?                    ;
+1265: FAEB C2 F8 FA               JP     NZ,DataNotInBuffer   ; NO,jump - it must be read 				 ;
+1266: FAEE         ;
+1267: FAEE         ; Yes, the disk, track are the same are the sectors the same ?                   ;
+1268: FAEE         ;
+1269: FAEE 3A E8 FB               LD     A,(IOBufferSector)   ; get the sector                         ;
+1270: FAF1 21 F2 FB               LD     HL,SelectedSector    ;
+1271: FAF4 BE                     CP     M                    ; Check if correct physical sector       ;
+1272: FAF5 CA 1C FB               JP     Z,DataIsInBuffer     ; Yes - it is already in memory          ;
+1273: FAF8         ;-----------------------------test for  the sector in the buffer-----------------;
+1274: FAF8
+1275: FAF8         ;------------------------- Do we have to write out the buffer ?------------------;
+1276: FAF8             DataNotInBuffer:                      ;
+1277: FAF8 3A EA FB               LD     A,(DirtyBufferFlag)  ;
+1278: FAFB B7                     OR     A                    ; do we need to write ?                  ;
+1279: FAFC C4 6C FB               CALL   NZ,WritePhysical     ; if yes - write it out                  ;
+1280: FAFF         ;------------------------- Do we have to write out the buffer ?------------------;
+1281: FAFF
+1282: FAFF         ;------------------------- prepare for physical IO ------------------------------;
+1283: FAFF             SetIOBufferState:                      ;
+1284: FAFF         ; indicate the  selected disk, track, and sector not residing in buffer          ;
+1285: FAFF 3A EC FB               LD     A,(SelectedDisk)     ;
+1286: FB02 32 E5 FB               LD     (IOBufferDisk),A     ;
+1287: FB05 2A ED FB               LD     HL,(SelectedTrack)   ;
+1288: FB08 22 E6 FB               LD     (IOBufferTrack),HL   ;
+1289: FB0B         ;
+1290: FB0B 3A F2 FB               LD     A,(SelectedSector)   ;
+1291: FB0E 32 E8 FB               LD     (IOBufferSector),A   ;
+1292: FB11         ;------------------------- prepare for physical IO ------------------------------;
+1293: FB11
+1294: FB11         ;------------------------- Read the data if needed, or its already in the buffer -;
+1295: FB11 3A F9 FB               LD     A,(PrereadSectorFlag) ; do we need to preread ?                 ;
+1296: FB14 B7                     OR     A                    ;
+1297: FB15 C4 71 FB               CALL   NZ,ReadPhysical      ; yes - preread the sector                ;
+1298: FB18         ;
+1299: FB18         ; At this point the data is in the buffer.                                        ;
+1300: FB18         ; Either it was already here, or we returned from ReadPhysical                    ;
+1301: FB18         ;
+1302: FB18 AF                     XOR    A                    ;
+1303: FB19 32 EA FB               LD     (DirtyBufferFlag),A  ; Reset the DirtyBufferFlag	          ;
+1304: FB1C         ;------------------------- Read the data if needed, or its already in the buffer -;
+1305: FB1C
+1306: FB1C
+1307: FB1C         ; The Buffer now has the data we want to Read/Write
+1308: FB1C         ;-------------------------Calculate the address of the record in the sector ------;
+1309: FB1C         ;
+1310: FB1C             DataIsInBuffer:                      ;
+1311: FB1C 3A EF FB               LD     A,(SelectedRecord)   ;
+1312: FB1F E6 03                  AND    SectorMask           ; Want relative record number in Sector   ;
+1313: FB21 3C                     INC    A                    ; Adjust for DJNZ                         ;
+1314: FB22 47                     LD     B,A                  ;
+1315: FB23 11 80 00               LD     DE,cpmRecordSize     ;
+1316: FB26 21 80 FF               LD     HL,-cpmRecordSize    ;
+1317: FB29             SectorInBuffer1:                      ;
+1318: FB29 19                     ADD    HL,DE                ; RecordNumber * recordSize               ;
+1319: FB2A 10 FD                  DJNZ   SectorInBuffer1      ;  yields index into the Sector           ;
+1320: FB2C         ;
+1321: FB2C 11 40 F6               LD     DE,DiskBuffer        ; Start of sector                         ;
+1322: FB2F 19                     ADD    HL,DE                ; HL -> start of record in buffer 		  ;
+1323: FB30 ED 5B F0 FB               LD     DE,(DMAAddress)      ; Callers  DMA Address                    ;
+1324: FB34         ;
+1325: FB34         ;-------------------------Calculate the address of the record in the sector ------;
+1326: FB34
+1327: FB34
+1328: FB34         ;------------------------- Determine if its a Read or Write and set HL & DE ------;
+1329: FB34         ;
+1330: FB34 3A FA FB               LD     A,(ReadWriteFlag)    ; 0 => Write, non Zero => Read            ;
+1331: FB37 B7                     OR     A                    ; Write: move data from DMA to Buffer     ;
+1332: FB38 C2 40 FB               JP     NZ,BufferMove        ; Read : move data from Buffer to DMA     ;
+1333: FB3B         ;
+1334: FB3B 3C                     INC    A                    ; Set the flag to indicate dirty buffer   ;
+1335: FB3C 32 EA FB               LD     (DirtyBufferFlag),A  ;
+1336: FB3F EB                     EX     DE,HL                ; Swap source and destination for write   ;
+1337: FB40         ;
+1338: FB40         ;------------------------- Determine if its a Read or Write and set HL & DE ------;
+1339: FB40
+1340: FB40
+1341: FB40             BufferMove:
+1342: FB40 01 80 00               LD     BC,cpmRecordSize
+1343: FB43 ED B0                  LDIR                        ; Move data to/from Host Buffer
+1344: FB45
+1345: FB45 3A E4 FB               LD     A,(WriteType)        ; Is this a write to the directory ?
+1346: FB48 FE 01                  CP     WriteDirectory
+1347: FB4A 3A F8 FB               LD     A,(DiskStatus)       ; Set ACC with disk status if an immediate return
+1348: FB4D C0                     RET    NZ                   ; Return if not updating a directory entry
+1349: FB4E
+1350: FB4E B7                     OR     A                    ; Check for any disk errors ?
+1351: FB4F C0                     RET    NZ                   ; If yes - abandon attempt to write to directory
+1352: FB50
+1353: FB50 AF                     XOR    A
+1354: FB51 32 EA FB               LD     (DirtyBufferFlag),A  ; Clear the dirty buffer flag
+1355: FB54 CD 6C FB               CALL   WritePhysical        ; do an immediate update of the directory to disk
+1356: FB57 3A F8 FB               LD     A,(DiskStatus)       ; Set ACC with disk status
+1357: FB5A C9                     RET
+1358: FB5B         ;********************************************************************
+1359: FB5B
+1360: FB5B
+1361: FB5B         ; Compares just the disk and track   pointed to by DE and HL (used for Blocking/Deblocking)
+1362: FB5B             CompareDkTrk:
+1363: FB5B 01 03 00               LD     BC,03H
+1364: FB5E 18 03                  JR     CompareDkTrkSecLoop
+1365: FB60             CompareDkTrkSec:
+1366: FB60 01 04 00               LD     BC,04H
+1367: FB63             CompareDkTrkSecLoop:
+1368: FB63 1A                     LD     A,(DE)               ; Get value
+1369: FB64 13                     INC    DE                   ; anticipate next iteration
+1370: FB65 ED A1                  CPI                         ; does A = (HL)
+1371: FB67 C0                     RET    NZ                   ; Not a match exit
+1372: FB68 EA 63 FB               JP     PE,CompareDkTrkSecLoop ; Loop if not done
+1373: FB6B C9                     RET
+1374: FB6C
+1375: FB6C
+1376: FB6C         ;************************************************
+1377: FB6C         ;			Physical Disk IO					*
+1378: FB6C         ;************************************************
+1379: FB6C
+1380: FB6C         ;Write contents of disk buffer to correct sector
+1381: FB6C             WritePhysical:
+1382: FB6C 3E 02                  LD     A,DiskWriteCode      ; get write function
+1383: FB6E C3 73 FB               JP     CommonPhysical
+1384: FB71
+1385: FB71             ReadPhysical:
+1386: FB71 3E 01                  LD     A,DiskReadCode       ; get read function
+1387: FB73
+1388: FB73         ; Set up the Dick Control Table DCT
+1389: FB73             CommonPhysical:
+1390: FB73         ;Command
+1391: FB73 32 D7 FB               LD     (DCTCommand),A       ; set the command for Read or Write
+1392: FB76         ;Disk
+1393: FB76 3A E5 FB               LD     A,(IOBufferDisk)
+1394: FB79 E6 03                  AND    03H                  ; only units 0 to 3
+1395: FB7B 32 D8 FB               LD     (DCTDisk),A          ; set disk
+1396: FB7E         ;Track
+1397: FB7E 2A E6 FB               LD     HL,(IOBufferTrack)
+1398: FB81 7D                     LD     A,L                  ; for this controller it is a byte value
+1399: FB82 32 DA FB               LD     (DCTTrack),A         ; set track
+1400: FB85         ;Head and Track	Calculations
+1401: FB85         ; The sector must be converted into a head number and sector number.
+1402: FB85         ;	Head = (int) Sector / SectorsPerHead
+1403: FB85         ;	Sector = Sector MOD SectorsPerHead
+1404: FB85             DetermineHead:
+1405: FB85 06 00                  LD     B,0                  ; Start at head 0
+1406: FB87 21 EB FB               LD     HL,SelectedDskSecsPerHead ; Point at track counts
+1407: FB8A 3A E8 FB               LD     A,(IOBufferSector)   ; get target sector
+1408: FB8D             DetermineHead1:
+1409: FB8D BE                     CP     M                    ; Need another Head?
+1410: FB8E DA 96 FB               JP     C,HeadFound          ; nope done with head calculation
+1411: FB91
+1412: FB91 96                     SUB    M                    ; subtract track value
+1413: FB92 04                     INC    B                    ; Increment head
+1414: FB93 C3 8D FB               JP     DetermineHead1       ; loop for next head value
+1415: FB96
+1416: FB96         ;Sector
+1417: FB96             HeadFound:                      ; ACC now has Sector MOD SectorsPerHead
+1418: FB96 3C                     INC    A                    ; physical sectors start at 1
+1419: FB97 32 DB FB               LD     (DCTSector),A        ; set sector
+1420: FB9A         ;Head
+1421: FB9A 78                     LD     A,B
+1422: FB9B 32 D9 FB               LD     (DCTHead),A          ; set head number
+1423: FB9E         ;Byte Count
+1424: FB9E 21 00 02               LD     HL,diskSectorSize
+1425: FBA1 22 DC FB               LD     (DCTByteCount),HL    ; set byte count
+1426: FBA4         ;DMA
+1427: FBA4 21 40 F6               LD     HL,DiskBuffer
+1428: FBA7 22 DE FB               LD     (DCTDMAAddress),HL   ; set transfer address
+1429: FBAA
+1430: FBAA         ; Since only one control table is in use, close the status and busy chain pointers
+1431: FBAA         ; back to the main control bytes
+1432: FBAA         ;NextStatusBlock
+1433: FBAA 21 43 00               LD     HL,DiskStatusLocation
+1434: FBAD 22 E0 FB               LD     (DCTNextStatusBlock),HL
+1435: FBB0         ;NextControlLocation
+1436: FBB0 21 45 00               LD     HL,DiskControlByte
+1437: FBB3 22 E2 FB               LD     (DCTNextControlLocation),HL
+1438: FBB6
+1439: FBB6         ;Put  DCT pointer in page0
+1440: FBB6 21 D7 FB               LD     HL,DCTCommand
+1441: FBB9 22 46 00               LD     (DiskCommandBlock),HL
+1442: FBBC         ; Make the IO happen
+1443: FBBC 21 45 00               LD     HL,DiskControlByte   ; activate disk controller
+1444: FBBF 36 80                  LD     (HL),080H
+1445: FBC1
+1446: FBC1         ;Wait until Disk Status Block indicates the operation is complete,
+1447: FBC1             WaitForDiskComplete:
+1448: FBC1 7E                     LD     A,(HL)               ; get control bytes
+1449: FBC2 B7                     OR     A
+1450: FBC3 C2 C1 FB               JP     NZ,WaitForDiskComplete ; operation not done
+1451: FBC6
+1452: FBC6
+1453: FBC6         ;Check if any errors occurred.
+1454: FBC6 3A 43 00               LD     A,(DiskStatusLocation)
+1455: FBC9 DA D1 FB               JP     C,DiskError
+1456: FBCC AF                     XOR    A
+1457: FBCD 32 F8 FB               LD     (DiskStatus),A       ; clear the flag
+1458: FBD0 C9                     RET
+1459: FBD1
+1460: FBD1         ; set error flag and return
+1461: FBD1             DiskError:
+1462: FBD1 3E 01                  LD     A,1
+1463: FBD3 32 F8 FB               LD     (DiskStatus),A       ; set the error flag
+1464: FBD6 C9                     RET
+1465: FBD7
+1466: FBD7         ;********************************************************************
+1467: FBD7         ;********************************************************************
+1468: FBD7         ;********************************************************************
+1469: FBD7
+1470: FBD7         ;---------------------------------------------------------------------------
+1471: FBD7         ;	Disk Data
+1472: FBD7         ;---------------------------------------------------------------------------
+1473: FBD7         ;	Disk Equates
+1474: FBD7         ;---------------------------------------------------------------------------
+1475: FBD7         ; Disk Types
+1476: FBD7         ;;Floppy5DD	EQU	1 						; 5 1/4" mini floppy
+1477: FBD7         ;;Floppy8	EQU	2 						; 8"  floppy (SS SD)
+1478: FBD7         ;;HardDisk	EQU	2						; hard disk
+1479: FBD7         ;NumberOfLogicalDisks	EQU 4			; max number of disk in this system
+1480: FBD7
+1481: FBD7
+1482: FBD7         ;**************************************************************************************************
+1483: FBD7         ;  There id one "smart" disk controllers on this system, for the 3.5 HD drive ( 1.44MB)
+1484: FBD7         ;
+1485: FBD7         ;  The controller is "hard-wired" to monitor memory locations 0X45 to detect when it is to
+1486: FBD7         ; perform some disk operation.  These are called its disk control byte.
+1487: FBD7         ; If the most significant bit of  disk control byte is set, the controller will look at the word
+1488: FBD7         ; following the respective control bytes. This word must contain the address of  valid disk control
+1489: FBD7         ; table that specifies the exact disk operation to be performed.
+1490: FBD7         ;
+1491: FBD7         ;  Once the operation has been completed. the controller resets its disk control byte to OOH.
+1492: FBD7         ; This indicates completion to the disk driver code.
+1493: FBD7         ;
+1494: FBD7         ;  The controller also sets a return code in a disk status block - location 0X43H.
+1495: FBD7         ; If the first byte of this status block is less than 80H. then a disk error
+1496: FBD7         ; has occurred. For this simple BIOS. no further details of the status settings are relevant.
+1497: FBD7         ; Note that the disk controller has built-in retry logic -- reads and writes are attempted
+1498: FBD7         ; ten times before the controller returns an error
+1499: FBD7         ;
+1500: FBD7         ;  The disk control table layout is shown below. Note that the controller has the capability
+1501: FBD7         ; for control tables to be chained together so that a sequence of disk operations can be initiated.
+1502: FBD7         ; In this BIOS this feature is not used. However. the controller requires that the chain pointers
+1503: FBD7         ; in the disk control tables be pointed back to the main control bytes in order to indicate
+1504: FBD7         ; the end of the chain
+1505: FBD7         ;**************************************************************************************************
+1506: FBD7
+1507: FBD7         ;***************************************************************************
+1508: FBD7         ;	Disk Control tables
+1509: FBD7         ;***************************************************************************
+1510: FBD7         ;;DiskControlTable:
+1511: FBD7             DCTStart:
+1512: FBD7 00          DCTCommand: DB     00H                  ; Command
+1513: FBD8 00          DCTDisk:   DB     00H                  ; unit (drive) number = 0 or 1
+1514: FBD9 00          DCTHead:   DB     00H                  ; head number = 0 or 1
+1515: FBDA 00          DCTTrack:  DB     00H                  ; track number
+1516: FBDB 00          DCTSector: DB     00H                  ; sector number
+1517: FBDC 00 00       DCTByteCount: DW     0000H                ; number of bytes to read/write
+1518: FBDE 00 00       DCTDMAAddress: DW     0000H                ; transfer address
+1519: FBE0 00 00       DCTNextStatusBlock: DW     0000H                ; pointer to next status block
+1520: FBE2 00 00       DCTNextControlLocation: DW     0000H                ; pointer to next control byte
+1521: FBE4             DCTEnd:
+1522: FBE4             DCTSize    EQU    DCTEnd-DCTStart
+1523: FBE4         ;-----------------------------------------
+1524: FBE4         ;WriteAllocated		EQU	00H		W_NORMAL
+1525: FBE4         ;WriteDirectory		EQU	01H		W_DIRECTORY
+1526: FBE4         ;WriteCleanBuffer	EQU	02H		W_NEW_BLOCK
+1527: FBE4         ;-----------------------------------------
+1528: FBE4
+1529: FBE4 00          WriteType: DB     00H                  ; The type of write indicated by BDOS
+1530: FBE5
+1531: FBE5         ; variables for physical sector -  These are moved and compared as a group, DO NOT ALTER
+1532: FBE5             IOBufferState:
+1533: FBE5 00          IOBufferDisk: DB     00H
+1534: FBE6 00 00       IOBufferTrack: DW     00H
+1535: FBE8 00          IOBufferSector: DB     00H
+1536: FBE9 00          DataInBufferFlag: DB     00H                  ; when non-zero, the disk buffer has data from disk
+1537: FBEA 00          DirtyBufferFlag: DB     00H                  ; Non-zero when data has been written into DiskBuffer,
+1538: FBEB         ;   but not yet written out to the disk
+1539: FBEB         ;---------------------------------------------------------------------------
+1540: FBEB         ;	Disk Storage area
+1541: FBEB         ;---------------------------------------------------------------------------
+1542: FBEB         ;     variables for selected disk, track and sector
+1543: FBEB         ; These are moved and compared as a group, DO NOT ALTER
+1544: FBEB
+1545: FBEB 00          SelectedDskSecsPerHead: DB     00H                  ; Sectors / head
+1546: FBEC
+1547: FBEC             SelectedState:
+1548: FBEC 00          SelectedDisk: DB     00H
+1549: FBED 00 00       SelectedTrack: DW     0000H
+1550: FBEF 00          SelectedRecord: DB     00H
+1551: FBF0
+1552: FBF0             SelectedDiskStateEnd:
+1553: FBF0             SelectedDiskStateSize EQU    SelectedDiskStateEnd - SelectedDisk
+1554: FBF0
+1555: FBF0 00 00       DMAAddress: DW     0000H                ; DMA address
+1556: FBF2
+1557: FBF2 00          SelectedSector: DB     00H
+1558: FBF3
+1559: FBF3         ; Parameters for the records in the Fresh Allocation Block
+1560: FBF3         ; These are moved and compared as a group, DO NOT ALTER
+1561: FBF3
+1562: FBF3             HostBufferState:
+1563: FBF3 00          HostBufferDisk: DB     00H
+1564: FBF4 00 00       HostBufferTrack: DW     0000H
+1565: FBF6 00          HostBufferRecord: DB     00H
+1566: FBF7
+1567: FBF7 00          ModifiedlRecordsCount: DB     00H                  ; Number of unallocated "records"in current previously unallocated allocation block.
+1568: FBF8 00          DiskStatus: DB     00H                  ; Non-Zero - unrecoverable error output "Bad Sector" message
+1569: FBF9         ; Flags used inside the de-blocking code
+1570: FBF9 00          PrereadSectorFlag: DB     00H                  ; non-zero if physical sector must be read into the disk buffer
+1571: FBFA         ; either before a write to a allocated block can occur, or
+1572: FBFA         ; for a normal cpmRecord read
+1573: FBFA 00          ReadWriteFlag: DB     00H                  ; 0 => Write-  Non-zero =>read
+1574: FBFB
+1575: FBFB         ;---------------------------------------------------------------------------
+1576: FBFB
+1577: FBFB         ;---------------------------------------------------------------------------
+1578: FBFB         ;	Disk Definition Tables
+1579: FBFB         ; These consists of disk parameter headers, with one entry
+1580: FBFB         ; per logical disk driver, and disk parameter blocks, with
+1581: FBFB         ; either one parameter block per logical disk or the same
+1582: FBFB         ; parameter block for several logical disks.
+1583: FBFB         ;---------------------------------------------------------------------------
+1584: FBFB         ;---------------------------------------------------------------------------
+1585: FBFB             DiskParameterHeaders:
+1586: FBFB
+1587: FBFB         ; Logical Disk A: (3.25" HD 1.44MB Diskette)
+1588: FBFB 00 00                  DW     0000H                ; Floppy5SkewTable  - No Skew table
+1589: FBFD 00 00                  DW     0000H                ; Rel pos for file (0-3)
+1590: FBFF 00 00                  DW     0000H                ; Last Selected Track #
+1591: FC01 00 00                  DW     0000H                ; Last Selected Sector #
+1592: FC03 2F FE                  DW     DirectoryBuffer      ; all disks use this buffer
+1593: FC05 3B FC                  DW     ParameterBlock3HD    ; specific to disk's parameters
+1594: FC07 4B FC                  DW     DiskAWorkArea
+1595: FC09 CB FC                  DW     DiskAAllocationVector
+1596: FC0B
+1597: FC0B         ; Logical Disk B: (3.25" HD 1.44MB Diskette)
+1598: FC0B 00 00                  DW     0000H                ; No Skew table
+1599: FC0D 00 00                  DW     0000H                ; Rel pos for file (0-3)
+1600: FC0F 00 00                  DW     0000H                ; Last Selected Track #
+1601: FC11 00 00                  DW     0000H                ; Last Selected Sector #
+1602: FC13 2F FE                  DW     DirectoryBuffer      ; all disks use this buffer
+1603: FC15 3B FC                  DW     ParameterBlock3HD    ; specific to disk's parameters
+1604: FC17 6B FC                  DW     DiskBWorkArea
+1605: FC19 24 FD                  DW     DiskBAllocationVector
+1606: FC1B
+1607: FC1B         ; Logical Disk C: (3.25" HD 1.44MB Diskette)
+1608: FC1B 00 00                  DW     0000H                ; No Skew table
+1609: FC1D 00 00                  DW     0000H                ; Rel pos for file (0-3)
+1610: FC1F 00 00                  DW     0000H                ; Last Selected Track #
+1611: FC21 00 00                  DW     0000H                ; Last Selected Sector #
+1612: FC23 2F FE                  DW     DirectoryBuffer      ; all disks use this buffer
+1613: FC25 3B FC                  DW     ParameterBlock3HD    ; specific to disk's parameters
+1614: FC27 8B FC                  DW     DiskCWorkArea
+1615: FC29 7D FD                  DW     DiskCAllocationVector
+1616: FC2B
+1617: FC2B         ; Logical Disk D: (3.25" HD 1.44MB Diskette)
+1618: FC2B 00 00                  DW     0000H                ; No Skew table
+1619: FC2D 00 00                  DW     0000H                ; Rel pos for file (0-3)
+1620: FC2F 00 00                  DW     0000H                ; Last Selected Track #
+1621: FC31 00 00                  DW     0000H                ; Last Selected Sector #
+1622: FC33 2F FE                  DW     DirectoryBuffer      ; all disks use this buffer
+1623: FC35 3B FC                  DW     ParameterBlock3HD    ; specific to disk's parameters
+1624: FC37 AB FC                  DW     DiskDWorkArea
+1625: FC39 D6 FD                  DW     DiskDAllocationVector
+1626: FC3B
+1627: FC3B
+1628: FC3B         ;-----------------------------------------------------------
+1629: FC3B
+1630: FC3B             ParameterBlock3HD:
+1631: FC3B 90 00                  DW     dpb3hdSPT            ; cpmRecords per track- (144)
+1632: FC3D 04                     DB     dpb3hdBSH            ; Block shift ( 4=> 2K)
+1633: FC3E 0F                     DB     dpb3hdBLM            ; Block mask
+1634: FC3F 00                     DB     dpb3hdEXM            ; Extent mask
+1635: FC40 C6 02                  DW     dpb3hdDSM            ; Maximum allocation block number (710)
+1636: FC42 7F 00                  DW     dpb3hdDRM            ; Number of directory entries - 1 (127)
+1637: FC44 C0                     DB     dpb3hdAL0            ; Bit map for reserving 1 alloc. block
+1638: FC45 00                     DB     dpb3hdAL1            ;  for file directory
+1639: FC46 20 00                  DW     dpb3hdCKS            ; Disk change work area size (32)
+1640: FC48 01 00                  DW     dpb3hdOFF            ; Number of tracks before directory
+1641: FC4A
+1642: FC4A 12                     DB     (dpb3hdSPT/4)/dpb3hdNOH ; number of Sectors/Head
+1643: FC4B
+1644: FC4B
+1645: FC4B
+1646: FC4B         ;---------------------------------------------------------------------------
+1647: FC4B         ;	Disk work area
+1648: FC4B         ;---------------------------------------------------------------------------
+1649: FC4B         ; These are used by the BDOS to detect any unexpected
+1650: FC4B         ; change of diskette. The BDOS will automatically set
+1651: FC4B         ; such a changed diskette to read-only status.
+1652: FC4B
+1653: FC4B             DiskAWorkArea: DS     dpb3hdCKS            ; A:  020H
+1654: FC6B             DiskBWorkArea: DS     dpb3hdCKS            ; B:  020H
+1655: FC8B             DiskCWorkArea: DS     dpb3hdCKS            ; C:  020H
+1656: FCAB             DiskDWorkArea: DS     dpb3hdCKS            ; D:  020H
+1657: FCCB
+1658: FCCB         ;---------------------------------------------------------------------------
+1659: FCCB         ;	Disk allocation vectors
+1660: FCCB         ;---------------------------------------------------------------------------
+1661: FCCB         ; Disk allocation vectors
+1662: FCCB         ; These are used by the BDOS to maintain a bit map of
+1663: FCCB         ; which allocation blocks are used and which are free.
+1664: FCCB         ; One byte is used for eight allocation blocks, hence the
+1665: FCCB         ; expression of the form (allocation blocks/8)+1
+1666: FCCB
+1667: FCCB             DiskAAllocationVector: DS     (dpb3hdDSM/8)+1      ; A:
+1668: FD24             DiskBAllocationVector: DS     (dpb3hdDSM/8)+1      ; B:
+1669: FD7D
+1670: FD7D             DiskCAllocationVector: DS     (dpb3hdDSM/8)+1      ; C:
+1671: FDD6             DiskDAllocationVector: DS     (dpb3hdDSM/8)+1      ; D:
+1672: FE2F         ;---------------------------------------------------------------------------
+1673: FE2F         ;	Disk Buffer
+1674: FE2F         ;---------------------------------------------------------------------------
+1675: FE2F             DirectoryBuffer: DS     DirBuffSize
            ************************   Xref   ************************
-0000: $               FDED   0324
-0774: AddressDataIn   F97A   0772
-0789: AddressDataOut  F98A   0786
-0799: AddressStatus   F993   0797
+0000: $               FE2F   0324
+0784: AddressDataIn   F9BC   0782
+0799: AddressDataOut  F9CC   0796
+0809: AddressStatus   F9D5   0807
 0328: AfterDiskBuffer F840
 0090: ASCII_A         0041
 0091: ASCII_C         0043
@@ -1675,7 +1685,7 @@
 0099: ASCII_LO_A      0061
 0100: ASCII_LO_K      006B
 0101: ASCII_LO_P      0070
-0042: ASCII_MASK      007F   0780
+0042: ASCII_MASK      007F   0790
 0093: ASCII_N         004E
 0094: ASCII_Q         0051
 0095: ASCII_R         0052
@@ -1684,9 +1694,9 @@
 0077: ASCII_ZERO      0030
 0071: ASTERISK        002A
 0156: BDOSBase        E800   0157 0159
-0125: BDOSE           0005   0126 0546 0548
-0157: BDOSEntry       E806   0547
-0146: BDOSLength      0E00   0149 0159 0160 0565
+0125: BDOSE           0005   0126 0557 0559
+0157: BDOSEntry       E806   0558
+0146: BDOSLength      0E00   0149 0159 0160 0576
 0060: BELL            0007
 0159: BIOSBase        F600
 0147: BIOSLength      0A00   0149
@@ -1695,42 +1705,42 @@
 0256: BlockSize       0800   0278
 0357: BOOT            F840   0304
 0293: BOOT_CON_ADDRESS 00EC   0402
-1331: BufferMove      FAFE   1322
+1341: BufferMove      FB40   1332
 0038: BYTE            0001
 0098: CARET           005E
-0154: CCPEntry        E000   0156 0160 0528 0556 0566
-0145: CCPLength       0800   0149 0156 0160 0565
-1215: CheckDirtyBuffer FA76   1207
+0154: CCPEntry        E000   0156 0160 0537 0567 0577
+0145: CCPLength       0800   0149 0156 0160 0576
+1225: CheckDirtyBuffer FAB8   1217
 0302: CodeStart       F600
 0078: COLON           003A
-0842: COM_DataPort    00EC   0886
-0844: COM_InputMask   0002   0888
-0843: COM_OutputMask  0001   0887
-0841: COM_StatusPort  00ED   0885
-0884: COM_Table       F9C2   0916 0926
+0852: COM_DataPort    00EC   0896
+0854: COM_InputMask   0002   0898
+0853: COM_OutputMask  0001   0897
+0851: COM_StatusPort  00ED   0895
+0894: COM_Table       FA04   0926 0936
 0073: COMMA           002C
-1229: CommonDiskIO    FA88   1153
-1379: CommonPhysical  FB31   1373
-1352: CompareDkTrk    FB19   1254
-1355: CompareDkTrkSec FB1E   1219
-1357: CompareDkTrkSecLoop FB21   1354 1362
+1239: CommonDiskIO    FACA   1163
+1389: CommonPhysical  FB73   1383
+1362: CompareDkTrk    FB5B   1264
+1365: CompareDkTrkSec FB60   1229
+1367: CompareDkTrkSecLoop FB63   1364 1372
 0131: ComTail         0080   0132
 0133: ComTailChars    0082
 0132: ComTailCount    0081   0133
-0913: CON_Vector      F9E0   0587 0631
-0609: ConIn           F901   0611
-0608: CONIN           F901   0308
-0628: CONOUT          F90D   0309
-0629: CONOut          F90D
-0584: CONST           F8EF   0307
-0585: ConStatus       F8EF   0610
-0233: cpmRecordSize   0080   0235 0238 0240 1305 1306 1332
-0063: CR              000D   0407 0409 0411 0414
-0837: CRT_DataPort    0001   0878
-0839: CRT_InputMask   007F   0880
-0838: CRT_OutputMask  0080   0879
-0836: CRT_StatusPort  0002   0877
-0876: CRT_Table       F9B8   0915 0920 0927 0930
+0923: CON_Vector      FA22   0597 0641
+0619: ConIn           F943   0621
+0618: CONIN           F943   0308
+0638: CONOUT          F94F   0309
+0639: CONOut          F94F
+0594: CONST           F931   0307
+0595: ConStatus       F931   0620
+0233: cpmRecordSize   0080   0235 0238 0240 1315 1316 1342
+0063: CR              000D   0407 0409 0415 0417 0420 0423
+0847: CRT_DataPort    0001   0888
+0849: CRT_InputMask   007F   0890
+0848: CRT_OutputMask  0080   0889
+0846: CRT_StatusPort  0002   0887
+0886: CRT_Table       F9FA   0925 0930 0937 0940
 0046: CTRL_C          0003
 0047: CTRL_E          0005
 0048: CTRL_H          0008
@@ -1744,80 +1754,80 @@
 0056: CTRL_Z          001A
 0074: DASH            002D
 0267: DataBlocks      02C7   0277
-1526: DataInBufferFlag FBA7   0982 1244
-1300: DataIsInBuffer  FADA   1262
-1266: DataNotInBuffer FAB6   1255
-0858: DataPortIndex   0001   0771 0785
-0770: DataRead        F973   0779 0882 0890 0898
-0778: DataReadASCII   F97C   0873
-0862: DataReadIndex   0006   0613 0614 0714 0715
+1536: DataInBufferFlag FBE9   0992 1254
+1310: DataIsInBuffer  FB1C   1272
+1276: DataNotInBuffer FAF8   1265
+0868: DataPortIndex   0001   0781 0795
+0780: DataRead        F9B5   0789 0892 0900 0908
+0788: DataReadASCII   F9BE   0883
+0872: DataReadIndex   0006   0623 0624 0724 0725
 0266: DataSectors     0B1C   0267
-0784: DataWrite       F982   0874 0883 0891 0899
-0863: DataWriteIndex  0008   0638 0639
-1507: DCTByteCount    FB9A   1415
-1502: DCTCommand      FB95   1381 1430
-1503: DCTDisk         FB96   1385
-1508: DCTDMAAddress   FB9C   1418
-1511: DCTEnd          FBA2   1512
-1504: DCTHead         FB97   1412
-1510: DCTNextControlLocation FBA0   1427
-1509: DCTNextStatusBlock FB9E   1424
-1506: DCTSector       FB99   1409
-1512: DCTSize         000D
-1501: DCTStart        FB95   1512
-1505: DCTTrack        FB98   1389
-1394: DetermineHead   FB43
-1398: DetermineHead1  FB4B   1404
-0238: DirBuffSize     0080   1665
+0794: DataWrite       F9C4   0884 0893 0901 0909
+0873: DataWriteIndex  0008   0648 0649
+1517: DCTByteCount    FBDC   1425
+1512: DCTCommand      FBD7   1391 1440
+1513: DCTDisk         FBD8   1395
+1518: DCTDMAAddress   FBDE   1428
+1521: DCTEnd          FBE4   1522
+1514: DCTHead         FBD9   1422
+1520: DCTNextControlLocation FBE2   1437
+1519: DCTNextStatusBlock FBE0   1434
+1516: DCTSector       FBDB   1419
+1522: DCTSize         000D
+1511: DCTStart        FBD7   1522
+1515: DCTTrack        FBDA   1399
+1404: DetermineHead   FB85
+1408: DetermineHead1  FB8D   1414
+0238: DirBuffSize     0080   1675
 0253: DirectoryBlockCount 0002   0278
-1665: DirectoryBuffer FDED   1582 1592 1602 1612
+1675: DirectoryBuffer FE2F   1592 1602 1612 1622
 0240: DirectoryEntryPerRecord 0004   0281
 0237: DirEntrySize    0020   0240 0278
-1527: DirtyBufferFlag FBA8   0979 1267 1293 1325 1344
-1657: DiskAAllocationVector FC89   1585
-1643: DiskAWorkArea   FC09   1584
-1658: DiskBAllocationVector FCE2   1595
-0326: DiskBuffer      F640   1311 1417
-1644: DiskBWorkArea   FC29   1594
-1660: DiskCAllocationVector FD3B   1605
-0225: DiskCommandBlock 0046   0367 1431
-0224: DiskControlByte 0045   0369 0568 1426 1433
+1537: DirtyBufferFlag FBEA   0989 1277 1303 1335 1354
+1667: DiskAAllocationVector FCCB   1595
+1653: DiskAWorkArea   FC4B   1594
+1668: DiskBAllocationVector FD24   1605
+0326: DiskBuffer      F640   1321 1427
+1654: DiskBWorkArea   FC6B   1604
+1670: DiskCAllocationVector FD7D   1615
+0225: DiskCommandBlock 0046   0367 1441
+0224: DiskControlByte 0045   0369 0579 1436 1443
 0227: DiskControlTable 0040   0392
-1645: DiskCWorkArea   FC49   1604
-1661: DiskDAllocationVector FD94   1615
-1646: DiskDWorkArea   FC69   1614
-1451: DiskError       FB8F   1445
-1575: DiskParameterHeaders FBB9   1019
-0229: DiskReadCode    0001   0384 0560 1376
-0234: diskSectorSize  0200   0235 0256 0264 0327 0389 1414
-1558: DiskStatus      FBB6   1231 1337 1346 1447 1453
-0223: DiskStatusLocation 0043   0377 0391 0567 1423 1444
-0230: DiskWriteCode   0002   1372
-0398: DisplayMessage  F86F   0404 0534
-1545: DMAAddress      FBAE   1086 1313
-0136: DMABuffer       0080   0550
+1655: DiskCWorkArea   FC8B   1614
+1671: DiskDAllocationVector FDD6   1625
+1656: DiskDWorkArea   FCAB   1624
+1461: DiskError       FBD1   1455
+1585: DiskParameterHeaders FBFB   1029
+0229: DiskReadCode    0001   0384 0571 1386
+0234: diskSectorSize  0200   0235 0256 0264 0327 0389 1424
+1568: DiskStatus      FBF8   1241 1347 1356 1457 1463
+0223: DiskStatusLocation 0043   0377 0391 0578 1433 1454
+0230: DiskWriteCode   0002   1382
+0398: DisplayMessage  F86F   0404 0541 0545
+1555: DMAAddress      FBF0   1096 1323
+0136: DMABuffer       0080   0561
 0067: DOLLAR          0024
-0279: dpb3hdAL0       00C0   1627
-0280: dpb3hdAL1       0000   1628
-0275: dpb3hdBLM       000F   1623
-0274: dpb3hdBSH       0004   1622
-0281: dpb3hdCKS       0020   1629 1643 1644 1645 1646
-0278: dpb3hdDRM       007F   0281 1626
-0277: dpb3hdDSM       02C6   1625 1657 1658 1660 1661
-0276: dpb3hdEXM       0000   1624
-0283: dpb3hdNOH       0002   1632
-0282: dpb3hdOFF       0001   1630
-0273: dpb3hdSPT       0090   1621 1632
-0852: DUMMY_DataPort  0010   0902
-0854: DUMMY_InputMask 007F   0904
-0853: DUMMY_OutputMask 00FF   0903
-0851: DUMMY_StatusPort 0011   0901
-0900: DUMMY_Table     F9D6   0917 0921 0922 0925 0932
-0808: DUMMYCheck      F998   0905
-0804: DUMMYRead       F996   0906
-0806: DUMMYWrite      F997   0907
+0279: dpb3hdAL0       00C0   1637
+0280: dpb3hdAL1       0000   1638
+0275: dpb3hdBLM       000F   1633
+0274: dpb3hdBSH       0004   1632
+0281: dpb3hdCKS       0020   1639 1653 1654 1655 1656
+0278: dpb3hdDRM       007F   0281 1636
+0277: dpb3hdDSM       02C6   1635 1667 1668 1670 1671
+0276: dpb3hdEXM       0000   1634
+0283: dpb3hdNOH       0002   1642
+0282: dpb3hdOFF       0001   1640
+0273: dpb3hdSPT       0090   1631 1642
+0862: DUMMY_DataPort  0010   0912
+0864: DUMMY_InputMask 007F   0914
+0863: DUMMY_OutputMask 00FF   0913
+0861: DUMMY_StatusPort 0011   0911
+0910: DUMMY_Table     FA18   0927 0931 0932 0935 0942
+0818: DUMMYCheck      F9DA   0915
+0814: DUMMYRead       F9D8   0916
+0816: DUMMYWrite      F9D9   0917
 0140: END_OF_FILE     001A
-0044: EndOfMessage    0000   0409 0414
+0044: EndOfMessage    0000   0409 0417 0423
 0082: EQUAL_SIGN      003D
 0065: EXCLAIM_POINT   0021
 0033: FALSE           0000
@@ -1844,110 +1854,110 @@
 0171: fSelectDisk     000E
 0183: fSetDMA         001A
 0178: fWriteSeq       0015
-0589: GenericInStatus F8F6   0711
-0633: GenericOutStatus F914   0658 0687
-0635: GenericOutStatus1 F917   0637
-0761: GetInStatus     F969   0591
-0757: GetOutStatus    F964   0636 0747
-0763: GetStatus       F96C   0760
+0599: GenericInStatus F938   0721
+0643: GenericOutStatus F956   0668 0697
+0645: GenericOutStatus1 F959   0647
+0771: GetInStatus     F9AB   0601
+0767: GetOutStatus    F9A6   0646 0757
+0773: GetStatus       F9AE   0770
 0083: GREATER_THAN    003E
 0066: HASH_TAG        0023
-1407: HeadFound       FB54   1400
-0978: HOME            FA00   0313
-0983: HomeNoWrite     FA09   0981
-1553: HostBufferDisk  FBB1
-1555: HostBufferRecord FBB4
-1552: HostBufferState FBB1   1211 1218
-1554: HostBufferTrack FBB2
-0295: IN_OPCODE       00DB   0773 0798
-0860: InputMaskIndex  0003   0762
-1523: IOBufferDisk    FBA3   1276 1383
-1525: IOBufferSector  FBA6   1259 1281 1397
-1522: IOBufferState   FBA3   1252
-1524: IOBufferTrack   FBA4   1278 1387
-0120: IOBYTE          0003   0586 0630 0654 0681 0706 0742
-0297: JP_OPCODE       00C3   0540
+1417: HeadFound       FB96   1410
+0988: HOME            FA42   0313
+0993: HomeNoWrite     FA4B   0991
+1563: HostBufferDisk  FBF3
+1565: HostBufferRecord FBF6
+1562: HostBufferState FBF3   1221 1228
+1564: HostBufferTrack FBF4
+0295: IN_OPCODE       00DB   0783 0808
+0870: InputMaskIndex  0003   0772
+1533: IOBufferDisk    FBE5   1286 1393
+1535: IOBufferSector  FBE8   1269 1291 1407
+1532: IOBufferState   FBE5   1262
+1534: IOBufferTrack   FBE6   1288 1397
+0120: IOBYTE          0003   0596 0640 0664 0691 0716 0752
+0297: JP_OPCODE       00C3   0551
 0069: L_PAREN         0028
 0086: LEFT_ARROW      005F
 0102: LEFT_CURLY      007B
 0149: LengthInBytes   2000   0150 0154 0264
 0150: LengthInK       0009
 0081: LESS_THAN       003C
-0062: LF              000A   0407 0409 0411 0414
-0653: LIST            F923   0310
-0741: LISTST          F950   0320
+0062: LF              000A   0407 0409 0415 0417 0420 0423
+0663: LIST            F965   0310
+0751: LISTST          F992   0320
 0036: LO_NIBBLE_MASK  000F
-0539: LoadPage0       F8C0   0531
-0847: LPT_DataPort    0010   0894
-0849: LPT_InputMask   007F   0896
-0848: LPT_OutputMask  00FF   0895
-0846: LPT_StatusPort  0011   0893
-0892: LPT_Table       F9CC   0929 0931
-0928: LST_Vector      F9F8   0657 0745
+0550: LoadPage0       F902   0542
+0857: LPT_DataPort    0010   0904
+0859: LPT_InputMask   007F   0906
+0858: LPT_OutputMask  00FF   0905
+0856: LPT_StatusPort  0011   0903
+0902: LPT_Table       FA0E   0939 0941
+0938: LST_Vector      FA3A   0667 0755
 0152: MemorySize      0040   0154
-1557: ModifiedlRecordsCount FBB5   1147
+1567: ModifiedlRecordsCount FBF7   1157
 0265: myOffset        0001   0266 0282
 0396: NoDisk          F86C   0363
 0406: NoDiskMessage   F877   0397
 0058: NULL            0000
 0249: NumberOfHeads   0002   0260 0262 0273 0283
-0246: NumberOfLogicalDisks 0004   1008
+0246: NumberOfLogicalDisks 0004   1018
 0035: OFF             0000
 0034: ON              FFFF
-0296: OUT_OPCODE      00D3   0788
-0859: OutputMaskIndex 0002   0759
-1620: ParameterBlock3HD FBF9   1583 1593 1603 1613
+0296: OUT_OPCODE      00D3   0798
+0869: OutputMaskIndex 0002   0769
+1630: ParameterBlock3HD FC3B   1593 1603 1613 1623
 0068: PERCENT         0025
 0075: PERIOD          002E
-0123: Pg0CurentDisk   0004   0554
+0123: Pg0CurentDisk   0004   0565
 0122: Pg0CurentUser   0004   0123
 0072: PLUS_SIGN       002B
-1560: PrereadSectorFlag FBB7   1150 1225 1285
-0923: PUN_Vector      F9F0   0686
-0680: PUNCH           F92E   0311
+1570: PrereadSectorFlag FBF9   1160 1235 1295
+0933: PUN_Vector      FA32   0696
+0690: PUNCH           F970   0311
 0084: QMARK           003F
 0070: R_PAREN         0029
 0116: RAM             0000   0118 0119 0120 0122 0125 0128 0131 0136 0138
-0918: RDR_Vector      F9E8   0709
-1145: READ            FA4B   0318
-0705: READER          F93B   0312
-0710: READER1         F944   0712
-1375: ReadPhysical    FB2F   1287
-0366: ReadRawDisk     F84D   0360 0530
-1563: ReadWriteFlag   FBB8   1149 1202 1320
+0928: RDR_Vector      FA2A   0719
+1155: READ            FA8D   0318
+0715: READER          F97D   0312
+0720: READER1         F986   0722
+1385: ReadPhysical    FB71   1297
+0366: ReadRawDisk     F84D   0360 0539
+1573: ReadWriteFlag   FBFA   1159 1212 1330
 0258: RecordsPerBlock 0010
 0242: RecordsPerExtent 0080
 0235: recordsPerSector 0004   0258 0273
 0383: ROMControl      F85F   0359
 0087: RUBOUT          007F
-1307: SectorInBuffer1 FAE7   1309
-0287: SectorMask      0003   1302
+1317: SectorInBuffer1 FB29   1319
+0287: SectorMask      0003   1312
 0252: SectorsPerBlock 0004   0256 0258 0261 0267 0287
 0262: SectorsPerCylinder 0024   0265 0266
 0251: SectorsPerTrack 0012   0260 0262 0273
-1106: SECTRAN         FA48   0321
-1005: SELDSK          FA0F   0314
-1538: SelectedDisk    FBAA   1011 1275 1543
-1542: SelectedDiskStateEnd FBAE   1543
-1543: SelectedDiskStateSize 0004   1212
-1535: SelectedDskSecsPerHead FBA9   1029 1396
-1540: SelectedRecord  FBAD   1072 1234 1301
-1547: SelectedSector  FBB0   1238 1260 1280
-1537: SelectedState   FBAA   1210 1217 1253
-1539: SelectedTrack   FBAB   1052 1277
+1116: SECTRAN         FA8A   0321
+1015: SELDSK          FA51   0314
+1548: SelectedDisk    FBEC   1021 1285 1553
+1552: SelectedDiskStateEnd FBF0   1553
+1553: SelectedDiskStateSize 0004   1222
+1545: SelectedDskSecsPerHead FBEB   1039 1406
+1550: SelectedRecord  FBEF   1082 1244 1311
+1557: SelectedSector  FBF2   1248 1270 1290
+1547: SelectedState   FBEC   1220 1227 1263
+1549: SelectedTrack   FBED   1062 1287
 0080: SEMICOLON       003B
-0814: SetDeviceVector F99C   0590 0634 0746
-1085: SETDMA          FA43   0317 0551
-1273: SetIOBufferState FABD   1248
-1224: SetPreread      FA85   1221
-1070: SETSEC          FA3E   0316
-1048: SETTRK          FA39   0315 0985
+0824: SetDeviceVector F9DE   0600 0644 0756
+1095: SETDMA          FA85   0317 0562
+1283: SetIOBufferState FAFF   1258
+1234: SetPreread      FAC7   1231
+1080: SETSEC          FA80   0316
+1058: SETTRK          FA7B   0315 0995
 0076: SLASH           002F
 0059: SOH             0001
 0064: SPACE           0020
-0857: StatusPortIndex 0000   0796
-0795: StatusRead      F98C   0872 0881 0889 0897
-0861: StatusReadIndex 0004   0764 0765
+0867: StatusPortIndex 0000   0806
+0805: StatusRead      F9CE   0882 0891 0899 0907
+0871: StatusReadIndex 0004   0774 0775
 0264: SystemSectors   0011   0265
 0061: TAB             0009
 0126: TopRAM          0007
@@ -1955,25 +1965,26 @@
 0260: TotalNumberOfSectors 0B40   0261 0266
 0138: TPA             0100   0361 0390
 0250: TracksPerHead   0050   0260
-0032: TRUE            FFFF   1220 1246
-0832: TTY_DataPort    00EC   0869
-0834: TTY_InputMask   007F   0871
-0833: TTY_OutputMask  0080   0870
-0831: TTY_StatusPort  00ED   0868
-0867: TTY_Table       F9AE   0914 0919 0924
+0032: TRUE            FFFF   1230 1256
+0842: TTY_DataPort    00EC   0879
+0844: TTY_InputMask   007F   0881
+0843: TTY_OutputMask  0080   0880
+0841: TTY_StatusPort  00ED   0878
+0877: TTY_Table       F9F0   0924 0929 0934
 0085: UNDER_SCORE     005F
 0372: WaitForBootComplete F855   0375
-1437: WaitForDiskComplete FB7F   1440
-0118: WarmBoot        0000   0542 0544
-0305: WarmBootEntry   F603   0543
-0410: WarmBootErroMessage F892   0533
-0527: WBOOT           F8AC   0306 0535
-0559: WBOOTControl    F8E2   0529
+1447: WaitForDiskComplete FBC1   1450
+0118: WarmBoot        0000   0553 0555
+0305: WarmBootEntry   F603   0554
+0419: WarmBootErroMessage F8CE   0544
+0410: WarmBootMessage F892   0540
+0536: WBOOT           F8E8   0306 0546
+0570: WBOOTControl    F924   0538
 0039: WORD            0002
-1199: WRITE           FA5E   0319
+1209: WRITE           FAA0   0319
 0198: WriteAllocated  0000
-0200: WriteCleanBuffer 0002   1151 1206
-0199: WriteDirectory  0001   1336
-1371: WritePhysical   FB2A   1269 1345
-1519: WriteType       FBA2   1152 1204 1335
+0200: WriteCleanBuffer 0002   1161 1216
+0199: WriteDirectory  0001   1346
+1381: WritePhysical   FB6C   1279 1355
+1529: WriteType       FBE4   1162 1214 1345
 0043: ZERO            0000
