@@ -487,7 +487,7 @@ public class Z80Machine {
 	 */
 	private void initialize() {
 		frameBase = new JFrame();
-		frameBase.setTitle("Z80 Machine    A.0.4");
+		frameBase.setTitle("Z80 Machine    A.0.5");
 		frameBase.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frameBase.addWindowListener(new WindowAdapter() {
 			@Override
