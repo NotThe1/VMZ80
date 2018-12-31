@@ -3,497 +3,119 @@
 0003: 0100
 0004: 0100         ;	2018-11-30
 0005: 0100         ; 4
-0006: 0100             WriteAllocated EQU    00H
-0007: 0100             WriteDirectory EQU    01H
-0008: 0100             WriteCleanBuffer EQU    02H
-0009: 0100             SectorMask EQU    3
-0010: 0100             cpmRecordSize EQU    128
-0011: 0100             diskSectorSize EQU    512
-0012: 0100             DiskReadCode EQU    01H                  ; Code for Read
-0013: 0100             DiskWriteCode EQU    02H                  ; Code for Write
-0014: 0100             DiskStatusLocation EQU    043H                 ; status after disk I/O placed here
-0015: 0100             DiskControlByte EQU    045H                 ; control byte for disk I/O
-0016: 0100             DiskCommandBlock EQU    046H                 ; Control Table Pointer
-0017: 0100
-0018: 0100             DiskControlTable EQU    0040H
-0019: 0100
-0020: 0100
-0021: 0100
-0022: 0100
-0023: 0100             TRUE       EQU    0FFH                 ;
-0024: 0100             FALSE      EQU    0                    ;
-0025: 0100             DISK_READ  EQU    0FFH
-0026: 0100             DISK_WRITE EQU    000H
-0027: 0100
-0028: 0100             StackTop   EQU    0100H
-0029: 0100
-0030: 0100                        ORG    StackTop
-0031: 0100             Start:
-0032: 0100 31 00 01               LD     SP,StackTop
-0033: 0103 CD 15 01               CALL   Init
-0034: 0106             Read:
-0035: 0106 3E FF                  LD     A,DISK_READ
-0036: 0108 32 6B 02               LD     (DiskCommand),A      ; Set disk command to read
-0037: 010B 3E 02                  LD     A,WriteCleanBuffer   ; Do not want to treat as
-0038: 010D 32 6C 02               LD     (WriteType),A        ;   a write to Directory later
-0039: 0110
-0040: 0110 CD 3B 01               CALL   CommonDiskIO
-0041: 0113
-0042: 0113 76                     HALT
-0043: 0114
-0044: 0114         ;	ORG		StackTop + 010H
-0045: 0114
-0046: 0114         ;DataInBufferFlag:	DB		055H
-0047: 0114 55          DataIsMine: DB     055H
-0048: 0115         ;DirtyBufferFlag:	DB		055H
-0049: 0115
-0050: 0115             Init:
-0051: 0115 3E FF                  LD     A,TRUE               ;FALSE ;
-0052: 0117 32 60 02               LD     (DataInBufferFlag),A
-0053: 011A
-0054: 011A 3E FF                  LD     A,TRUE               ;FALSE ;
-0055: 011C 32 61 02               LD     (DirtyBufferFlag),A
-0056: 011F
-0057: 011F 3E 00                  LD     A,0
-0058: 0121 32 62 02               LD     (SelectedDisk),A
-0059: 0124 21 00 00               LD     HL,0
-0060: 0127 22 63 02               LD     (SelectedTrack),HL
-0061: 012A 3E 00                  LD     A,0
-0062: 012C 32 66 02               LD     (SelectedRecord),A
-0063: 012F 3E 12                  LD     A,12H
-0064: 0131 32 67 02               LD     (SelectedDskSecsPerHead),A
-0065: 0134
-0066: 0134 21 00 10               LD     HL,1000H
-0067: 0137 22 68 02               LD     (DMAAddress),HL
-0068: 013A
-0069: 013A C9                     RET
-0070: 013B
-0071: 013B
-0072: 013B         ;*******************************************************
-0073: 013B         ; Common code to execute both reads and writes of 128-byte records
-0074: 013B         ;*******************************************************
-0075: 013B             CommonDiskIO:
-0076: 013B AF                     XOR    A                    ; Assume no disk error will occur
-0077: 013C 32 6A 02               LD     (DiskStatus),A
-0078: 013F
-0079: 013F         ;-------------------------Convert selected record into physical sector-------;
-0080: 013F 3A 66 02               LD     A,(SelectedRecord)   ;
-0081: 0142 1F                     RRA                         ; Convert selected record            ;
-0082: 0143 1F                     RRA                         ; into physical sector by dividing by;
-0083: 0144 E6 3F                  AND    03FH                 ; Remove unwanted bits               ;
-0084: 0146 32 65 02               LD     (SelectedSector),A   ;
-0085: 0149         ;-------------------------Convert selected record into physical sector-------;
-0086: 0149
-0087: 0149 21 88 02               LD     HL,msgIsItInBuffer
-0088: 014C         ;	CALL	DisplayMessage
-0089: 014C
-0090: 014C         ;------------------------- Any Data in Buffer -------------------------------;
-0091: 014C         ;Flag is ONLY reset by BIOS HOME Function. otherwise it is set by all passes ;
-0092: 014C         ;
-0093: 014C 21 60 02               LD     HL,DataInBufferFlag  ; See if there is any data here ?    ;
-0094: 014F 7E                     LD     A,(HL)               ;
-0095: 0150 36 FF                  LD     (HL),TRUE            ; Force flag true                    ;
-0096: 0152 FE FF                  CP     TRUE                 ; Was  any data here ?               ;
-0097: 0154 20 15                  JR     NZ,PreRead           ; No, then we need to load data      ;
-0098: 0156         ;------------------------- Any Data in Buffer -------------------------------;
-0099: 0156
-0100: 0156
-0101: 0156         ;--------------------------- Is This My Data --------------------------------;
-0102: 0156 CD CB 01               CALL   IsItMyData           ;
-0103: 0159 28 2B                  JR     Z,DoPart2            ;
-0104: 015B         ;--------------------------- Is This My Data --------------------------------;
-0105: 015B
-0106: 015B         ;--------------------------- Is The Data Dirty -----------------------------;
-0107: 015B 21 7A 02               LD     HL,msgIsItDirty      ;
-0108: 015E         ;	CALL	DisplayMessage	                                                ;
-0109: 015E         ;
-0110: 015E 3A 61 02               LD     A,(DirtyBufferFlag)  ;
-0111: 0161         ;
-0112: 0161 FE FF                  CP     TRUE                 ;
-0113: 0163 20 06                  JR     NZ,PreRead           ;
-0114: 0165         ;--------------------------- Is The Data Dirty -----------------------------;
-0115: 0165
-0116: 0165         ;-------------------------------- PreWrite ---------------------------------;
-0117: 0165             PreWrite:                       ;
-0118: 0165         ; Do the actual Write                                                       ;
-0119: 0165 21 AF 02               LD     HL,msgPreWrite       ;
-0120: 0168         ;	CALL	DisplayMessage	; Stub the work                                 ;
-0121: 0168 CD E2 01               CALL   PhysicalWrite
-0122: 016B         ;-------------------------------- PreWrite ---------------------------------;
-0123: 016B
-0124: 016B         ;--------------------------------- PreRead ---------------------------------;
-0125: 016B         ;
-0126: 016B         ;
-0127: 016B         ;     prepare for physical IO                                               ;
-0128: 016B             PreRead:                        ;
-0129: 016B 21 9A 02               LD     HL,msgPreRead        ;
-0130: 016E         ;	CALL	DisplayMessage	; Stub the work                                 ;
-0131: 016E         ; Set IOBuffer to Selected state for physical read                          ;
-0132: 016E 21 62 02               LD     HL,SelectedState     ;
-0133: 0171 11 5C 02               LD     DE,IOBufferState     ;
-0134: 0174 01 04 00               LD     BC,SelectedStateSize ;
-0135: 0177 ED B0                  LDIR                        ;
-0136: 0179         ;                                                                       ;
-0137: 0179         ; Do the actual read                                                        ;
-0138: 0179 CD E7 01               CALL   PhysicalRead
-0139: 017C 3E FF                  LD     A,TRUE               ;
-0140: 017E 32 60 02               LD     (DataInBufferFlag),A ; Set DataInBuffeer Flag        ;
-0141: 0181 3E 00                  LD     A,FALSE              ;
-0142: 0183 32 61 02               LD     (DirtyBufferFlag),A  ; Reset DataIsDirty Flag        ;
-0143: 0186         ;--------------------------------- PreRead ---------------------------------;
-0144: 0186
-0145: 0186             DoPart2:
-0146: 0186 21 C5 02               LD     HL,msgPart2
-0147: 0189         ;	CALL	DisplayMessage
-0148: 0189         ; The Buffer now has the data we want to Read/Write
-0149: 0189
-0150: 0189
-0151: 0189         ;-------------------Calculate the address of the record in the sector ------;
-0152: 0189         ;
-0153: 0189             DataIsInBuffer:                      ;
-0154: 0189 3A 66 02               LD     A,(SelectedRecord)   ;
-0155: 018C E6 03                  AND    SectorMask           ; Want relative record              ;
-0156: 018E 3C                     INC    A                    ; Adjust for DJNZ                   ;
-0157: 018F 47                     LD     B,A                  ;
-0158: 0190 11 80 00               LD     DE,cpmRecordSize     ;
-0159: 0193 21 80 FF               LD     HL,-cpmRecordSize    ;
-0160: 0196             SectorInBuffer1:                      ;
-0161: 0196 19                     ADD    HL,DE                ; RecordNumber * recordSize         ;
-0162: 0197 10 FD                  DJNZ   SectorInBuffer1      ;  yields index into the Sector     ;
-0163: 0199         ;
-0164: 0199 11 F0 02               LD     DE,DiskBuffer        ; Start of sector                   ;
-0165: 019C 19                     ADD    HL,DE                ; HL -> start of record in buffer	;
-0166: 019D ED 5B 68 02               LD     DE,(DMAAddress)      ; Callers  DMA Address              ;
-0167: 01A1         ;
-0168: 01A1         ;-------------------Calculate the address of the record in the sector ------;
-0169: 01A1
-0170: 01A1         ;------------------------- Determine if its a Read or Write and set HL & DE ;
-0171: 01A1         ;
-0172: 01A1 3A 6B 02               LD     A,(DiskCommand)      ; 0 => Write, non Zero => Read          ;
-0173: 01A4 FE FF                  CP     DISK_READ            ;
-0174: 01A6 CA AF 01               JP     Z,BufferMove         ; Read : move data from Buffer to DMA
-0175: 01A9         ;write                              ; Write: move data from DMA to Buffer   ;
-0176: 01A9 3E FF                  LD     A,TRUE               ; Set the flag to indicate dirty buffer ;
-0177: 01AB 32 61 02               LD     (DirtyBufferFlag),A  ;
-0178: 01AE EB                     EX     DE,HL                ; Swap source and destination for Write ;
-0179: 01AF         ;------------------------- Determine if its a Read or Write and set HL & DE ;
-0180: 01AF
-0181: 01AF         ;----------------------  Move the Data between Buffer and DMA location   ---;
-0182: 01AF             BufferMove:                      ;
-0183: 01AF 01 80 00               LD     BC,cpmRecordSize     ;
-0184: 01B2 ED B0                  LDIR                        ;
-0185: 01B4         ;----------------------  Move the Data between Buffer and DMA location   ---;
-0186: 01B4
-0187: 01B4
-0188: 01B4 3A 6C 02               LD     A,(WriteType)        ; Is this a write to the directory ?
-0189: 01B7 FE 01                  CP     WriteDirectory
-0190: 01B9 3A 6A 02               LD     A,(DiskStatus)       ; Get disk status if an immediate return
-0191: 01BC C0                     RET    NZ                   ; Return if not a directory entry
-0192: 01BD
-0193: 01BD B7                     OR     A                    ; Check for any disk errors ?
-0194: 01BE C0                     RET    NZ                   ; If yes - abandon do not write to dir
-0195: 01BF
-0196: 01BF 3E 00                  LD     A,FALSE
-0197: 01C1 32 61 02               LD     (DirtyBufferFlag),A  ; Clear the dirty buffer flag
-0198: 01C4 CD E2 01               CALL   PhysicalWrite        ; Immediate update of the directory
-0199: 01C7 3A 6A 02               LD     A,(DiskStatus)       ; Set ACC with disk status
-0200: 01CA C9                     RET
-0201: 01CB
-0202: 01CB         ;...................
-0203: 01CB
-0204: 01CB
-0205: 01CB
-0206: 01CB
-0207: 01CB         ;--------------------------- Is It My Data ---------------------------------;
-0208: 01CB             IsItMyData:                      ;
-0209: 01CB 21 6D 02               LD     HL,msgIsItMine       ;
-0210: 01CE CD DC 02               CALL   DisplayMessage       ; Stub the work                                 ;
-0211: 01D1         ;
-0212: 01D1         ;
-0213: 01D1 21 62 02               LD     HL,SelectedState     ;
-0214: 01D4 11 5C 02               LD     DE,IOBufferState     ;
-0215: 01D7 06 04                  LD     B,SelectedStateSize  ;
-0216: 01D9             IsItMyData1:                      ;
-0217: 01D9 1A                     LD     A,(DE)               ;
-0218: 01DA AE                     XOR    (HL)                 ; (HL) =(DE)                        ;
-0219: 01DB C0                     RET    NZ                   ; If not we are done                ;
-0220: 01DC 13                     INC    DE                   ;
-0221: 01DD 23                     INC    HL                   ; Lets look at the next bytes       ;
-0222: 01DE 10 F9                  DJNZ   IsItMyData1          ; Loop if not exhausted the count   ;
-0223: 01E0 AF                     XOR    A                    ; Else set the Z flag               ;
-0224: 01E1 C9                     RET                         ;  and exit                         ;
-0225: 01E2
-0226: 01E2         ;--------------------------- Is It My Data ---------------------------------;
-0227: 01E2
-0228: 01E2         ;***********************************************;
-0229: 01E2         ;			      Physical Disk IO				  ;
-0230: 01E2         ;***********************************************;
-0231: 01E2
-0232: 01E2         ;Write contents of disk buffer to correct sector
-0233: 01E2             PhysicalWrite:
-0234: 01E2 3E 02                  LD     A,DiskWriteCode      ; get write function
-0235: 01E4 C3 E9 01               JP     CommonPhysical
-0236: 01E7
-0237: 01E7             PhysicalRead:
-0238: 01E7 3E 01                  LD     A,DiskReadCode       ; get read function
-0239: 01E9
-0240: 01E9
-0241: 01E9             CommonPhysical:
-0242: 01E9         ;--------------------------- Setup Disk Control Table  ---------------------;
-0243: 01E9         ;                                     ;
-0244: 01E9         ;Command                                                                    ;
-0245: 01E9 32 4F 02               LD     (DCTCommand),A       ; set the command for Read or Write ;
-0246: 01EC         ;Disk                                                                       ;
-0247: 01EC 3A 5C 02               LD     A,(IOBufferDisk)     ;
-0248: 01EF E6 03                  AND    03H                  ; only units 0 to 3                 ;
-0249: 01F1 32 50 02               LD     (DCTDisk),A          ; set disk                          ;
-0250: 01F4         ;Track                                                                      ;
-0251: 01F4 2A 5D 02               LD     HL,(IOBufferTrack)   ;
-0252: 01F7 7D                     LD     A,L                  ;                                   ;
-0253: 01F8 32 52 02               LD     (DCTTrack),A         ; set track	                        ;
-0254: 01FB         ;
-0255: 01FB         ;Head and Track	Calculations                                                ;
-0256: 01FB         ; The sector must be converted into a head number and sector number.        ;
-0257: 01FB         ;	Head = (int) Sector / SectorsPerHead                                    ;
-0258: 01FB         ;	Sector = Sector MOD SectorsPerHead                                      ;
-0259: 01FB             DetermineHead:                      ;
-0260: 01FB 06 00                  LD     B,0                  ; Start at head 0                   ;
-0261: 01FD 21 67 02               LD     HL,SelectedDskSecsPerHead ; Point at track counts             ;
-0262: 0200 3A 5F 02               LD     A,(IOBufferSector)   ; get target sector                 ;
-0263: 0203             DetermineHead1:                      ;
-0264: 0203 BE                     CP     M                    ; Need another Head?                ;
-0265: 0204 DA 0C 02               JP     C,HeadFound          ; nope done with head calculation   ;
-0266: 0207         ;
-0267: 0207 96                     SUB    M                    ; subtract track value              ;
-0268: 0208 04                     INC    B                    ; Increment head                    ;
-0269: 0209 C3 03 02               JP     DetermineHead1       ; loop for next head value          ;
-0270: 020C         ;Sector                                                                     ;
-0271: 020C             HeadFound:                      ; Sector MOD SectorsPerHead         ;
-0272: 020C 3C                     INC    A                    ; physical sectors start at 1       ;
-0273: 020D 32 53 02               LD     (DCTSector),A        ; set sector                        ;
-0274: 0210         ;Head                                                                       ;
-0275: 0210 78                     LD     A,B                  ;
-0276: 0211 32 51 02               LD     (DCTHead),A          ; set head number                   ;
-0277: 0214         ;Byte Count                                                                 ;
-0278: 0214 21 00 02               LD     HL,diskSectorSize    ;
-0279: 0217 22 54 02               LD     (DCTByteCount),HL    ; set byte count                    ;
-0280: 021A         ;DMA                                                                        ;
-0281: 021A 21 F0 02               LD     HL,DiskBuffer        ;
-0282: 021D 22 56 02               LD     (DCTDMAAddress),HL   ; set transfer address              ;
-0283: 0220         ;
-0284: 0220         ; Since only one control table is in use, close the status and              ;
-0285: 0220         ; busy chain pointers ; back to the main control bytes.                     ;
-0286: 0220         ;
-0287: 0220         ;NextStatusBlock                                                            ;
-0288: 0220 21 43 00               LD     HL,DiskStatusLocation ;
-0289: 0223 22 58 02               LD     (DCTNextStatusBlock),HL ;
-0290: 0226         ;NextControlLocation                                                        ;
-0291: 0226 21 45 00               LD     HL,DiskControlByte   ;
-0292: 0229 22 5A 02               LD     (DCTNextControlLocation),HL ;
-0293: 022C         ;                                                                       ;
-0294: 022C         ;Put  DCT pointer in page0                                                  ;
-0295: 022C 21 4F 02               LD     HL,DCTCommand        ;
-0296: 022F 22 46 00               LD     (DiskCommandBlock),HL ;
-0297: 0232         ;--------------------------- Setup Disk Control Table  ---------------------;
-0298: 0232
-0299: 0232         ; Make the IO happen
-0300: 0232 21 45 00               LD     HL,DiskControlByte   ; Activate disk controller
-0301: 0235 36 80                  LD     (HL),080H
-0302: 0237
-0303: 0237             WaitForDiskComplete:
-0304: 0237 7E                     LD     A,(HL)               ; Get control bytes
-0305: 0238 B7                     OR     A
-0306: 0239 C2 37 02               JP     NZ,WaitForDiskComplete ; Operation not done
-0307: 023C
-0308: 023C         ;Check if any errors occurred.
-0309: 023C 3A 43 00               LD     A,(DiskStatusLocation)
-0310: 023F FE 80                  CP     080H                 ; Any errors NC = good read?
-0311: 0241 DA 49 02               JP     C,DiskError
-0312: 0244 AF                     XOR    A
-0313: 0245 32 6A 02               LD     (DiskStatus),A       ; Clear the flag
-0314: 0248 C9                     RET                         ; Clean read, return to caller
-0315: 0249
-0316: 0249         ; set error flag and return
-0317: 0249             DiskError:
-0318: 0249 3E 01                  LD     A,1
-0319: 024B 32 6A 02               LD     (DiskStatus),A       ; Set the error flag
-0320: 024E C9                     RET
-0321: 024F
-0322: 024F
-0323: 024F         ;==========================================================
-0324: 024F         ;
-0325: 024F         ;**************************** Disk ControlTable ****************************;
-0326: 024F             DCTStart:                       ;
-0327: 024F 00          DCTCommand: DB     00H                  ; Command	                        ;
-0328: 0250 00          DCTDisk:   DB     00H                  ; unit (drive) number = 0 or 1   	;
-0329: 0251 00          DCTHead:   DB     00H                  ; head number = 0 or 1           	;
-0330: 0252 00          DCTTrack:  DB     00H                  ; track number                   	;
-0331: 0253 00          DCTSector: DB     00H                  ; sector number                  	;
-0332: 0254 00 00       DCTByteCount: DW     0000H                ; number of bytes to read/write  	;
-0333: 0256 00 00       DCTDMAAddress: DW     0000H                ; transfer address               	;
-0334: 0258 00 00       DCTNextStatusBlock: DW     0000H                ; pointer to next status block   	;
-0335: 025A 00 00       DCTNextControlLocation: DW     0000H                ; pointer to next control byte   	;
-0336: 025C             DCTEnd:                         ;
-0337: 025C             DCTSize    EQU    DCTEnd-DCTStart      ;
-0338: 025C         ;**************************** Disk ControlTable ****************************;
-0339: 025C
-0340: 025C         ;**************************** Physical IO State ****************************;
-0341: 025C             IOBufferState:                      ;
-0342: 025C 00          IOBufferDisk: DB     00H                  ;
-0343: 025D 00 00       IOBufferTrack: DW     0000H                ;
-0344: 025F 10          IOBufferSector: DB     010H                 ;
-0345: 0260         ;**************************** Physical IO State ****************************;
-0346: 0260
-0347: 0260         ;**************************** Buffer State *********************************;
-0348: 0260 00          DataInBufferFlag: DB     00H                  ;
-0349: 0261 00          DirtyBufferFlag: DB     00H                  ;
-0350: 0262         ;**************************** Buffer State *********************************;
-0351: 0262
-0352: 0262         ;**************************** Selected Record State ************************;
-0353: 0262         ;     variables for selected disk, track and sector                         ;
-0354: 0262         ;These are moved and compared as a group with Physical IO State. DO NOT ALTER;
-0355: 0262         ;
-0356: 0262             SelectedState:                      ;
-0357: 0262 00          SelectedDisk: DB     00H                  ;
-0358: 0263 00 00       SelectedTrack: DW     0000H                ;
-0359: 0265 00          SelectedSector: DB     00H                  ; (SelectedRecord/RecordsPerSector) ;
-0360: 0266             SelectedStateEnd:                      ;
-0361: 0266             SelectedStateSize EQU    SelectedStateEnd - SelectedState ;
-0362: 0266         ;
-0363: 0266 00          SelectedRecord: DB     00H                  ;
-0364: 0267         ;
-0365: 0267 00          SelectedDskSecsPerHead: DB     00H                  ; Sectors / head	                ;
-0366: 0268         ;**************************** Selected Record State ************************;
-0367: 0268
-0368: 0268
-0369: 0268
-0370: 0268 00 00       DMAAddress: DW     0000H                ; Callers DMA address
-0371: 026A 00          DiskStatus: DB     00H                  ; Non-Zero - unrecoverable error
-0372: 026B 00          DiskCommand: DB     00H                  ; holds the disk command
-0373: 026C 00          WriteType: DB     00H                  ; The type of write set by BDOS
-0374: 026D
-0375: 026D         ;============================================================================
-0376: 026D             msgIsItMine:
-0377: 026D 49 73 20 49 74 20 4D 69 6E 65 0D 0A 00                DB     'Is It Mine',CR,LF,EndOfMessage
-0378: 027A             msgIsItDirty:
-0379: 027A 49 73 20 49 74 20 44 69 72 74 79 0D 0A 00                DB     'Is It Dirty',CR,LF,EndOfMessage
-0380: 0288             msgIsItInBuffer:
-0381: 0288 49 73 20 49 74 20 49 6E 20 42 75 66 66 65 72 0D 0A 00                DB     'Is It In Buffer',CR,LF,EndOfMessage
-0382: 029A             msgPreRead:
-0383: 029A 50 72 65 52 65 61 64 20 74 68 65 20 73 65 63 74 6F 72 0D 0A 00                DB     'PreRead the sector',CR,LF,EndOfMessage
-0384: 02AF             msgPreWrite:
-0385: 02AF 50 72 65 57 72 69 74 65 20 74 68 65 20 73 65 63 74 6F 72 0D 0A 00                DB     'PreWrite the sector',CR,LF,EndOfMessage
-0386: 02C5             msgPart2:
-0387: 02C5 50 61 72 74 32 0D 0A                DB     'Part2',CR,LF,
-0388: 02CC 2D 2D 2D 2D 2D 2D 2D 2D 2D 2D 2D 2D 2D                DB     '-------------'
-0389: 02D9 0D 0A 00                DB     CR,LF,EndOfMessage
-0390: 02DC         ;----------------------------------------------------------------------------
-0391: 02DC
-0392: 02DC         ;----------------------------------------------------------------------------
-0393: 02DC
-0394: 02DC             EndOfMessage EQU    00H
-0395: 02DC             LF         EQU    0AH                  ; Line Feed
-0396: 02DC             CR         EQU    0DH                  ; Carriage Return
-0397: 02DC             TTY_DataPort EQU    0ECH
-0398: 02DC         ; entered with pointer to message in HL
-0399: 02DC             DisplayMessage:
-0400: 02DC 7E                     LD     A,M                  ; get  character
-0401: 02DD B7                     OR     A                    ; is it NULL
-0402: 02DE C8                     RET    Z                    ; return if it is NULL (00)
-0403: 02DF 4F                     LD     C,A
-0404: 02E0 E5                     PUSH   HL                   ; save the pointer
-0405: 02E1 D3 EC                  OUT    TTY_DataPort
-0406: 02E3 E1                     POP    HL                   ; retrieve the pointer
-0407: 02E4 23                     INC    HL                   ; point at next character
-0408: 02E5 18 F5                  JR     DisplayMessage
-0409: 02E7
-0410: 02E7         ;----------------------------------------------------------------------------
-0411: 02E7
-0412: 02E7                        ORG    (($+10H)/10H) * 10H
-0413: 02F0
-0414: 02F0             DiskBuffer:
-0415: 02F0                        DS     512
-0416: 04F0             AfterDiskBuffer EQU    $
+0006: 0100             BDOS       EQU    05H
+0007: 0100             TRUE       EQU    0FFH
+0008: 0100             FALSE      EQU    000H
+0009: 0100             CR         EQU    00AH
+0010: 0100             LF         EQU    00DH
+0011: 0100             TPA        EQU    0100H
+0012: 0100             PrintString EQU    09H
+0013: 0100
+0014: 0100
+0015: 0100                        ORG    TPA
+0016: 0100             Start:
+0017: 0100 11 09 01               LD     DE,Message
+0018: 0103 0E 09                  LD     C,PrintString
+0019: 0105 CD 05 00               CALL   BDOS
+0020: 0108 76                     HALT
+0021: 0109
+0022: 0109
+0023: 0109
+0024: 0109             Message:
+0025: 0109 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 0A 0D                DB     '0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0',CR,LF
+0026: 0129 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31 0A 0D                DB     '1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1',CR,LF
+0027: 0149 32 32 32 32 32 32 32 32 32 32 32 32 32 32 32 32 32 32 32 32 32 32 32 32 32 32 32 32 32 32 0A 0D                DB     '2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2',CR,LF
+0028: 0169 33 33 33 33 33 33 33 33 33 33 33 33 33 33 33 33 33 33 33 33 33 33 33 33 33 33 33 33 33 33 0A 0D                DB     '3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3',CR,LF
+0029: 0189 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 0A 0D                DB     '4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4',CR,LF
+0030: 01A9 35 35 35 35 35 35 35 35 35 35 35 35 35 35 35 35 35 35 35 35 35 35 35 35 35 35 35 35 35 35 0A 0D                DB     '5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5',CR,LF
+0031: 01C9 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 0A 0D                DB     '6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6',CR,LF
+0032: 01E9 37 37 37 37 37 37 37 37 37 37 37 37 37 37 37 37 37 37 37 37 37 37 37 37 37 37 37 37 37 37 0A 0D                DB     '7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7',CR,LF
+0033: 0209 38 38 38 38 38 38 38 38 38 38 38 38 38 38 38 38 38 38 38 38 38 38 38 38 38 38 38 38 38 38 0A 0D                DB     '8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8',CR,LF
+0034: 0229 39 39 39 39 39 39 39 39 39 39 39 39 39 39 39 39 39 39 39 39 39 39 39 39 39 39 39 39 39 39 0A 0D                DB     '9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9',CR,LF
+0035: 0249 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 0A 0D                DB     'A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A',CR,LF
+0036: 0269 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 0A 0D                DB     'B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B',CR,LF
+0037: 0289 43 43 43 43 43 43 43 43 43 43 43 43 43 43 43 43 43 43 43 43 43 43 43 43 43 43 43 43 43 43 0A 0D                DB     'C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C',CR,LF
+0038: 02A9 44 44 44 44 44 44 44 44 44 44 44 44 44 44 44 44 44 44 44 44 44 44 44 44 44 44 44 44 44 44 0A 0D                DB     'D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D',CR,LF
+0039: 02C9 45 45 45 45 45 45 45 45 45 45 45 45 45 45 45 45 45 45 45 45 45 45 45 45 45 45 45 45 45 45 0A 0D                DB     'E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E',CR,LF
+0040: 02E9 46 46 46 46 46 46 46 46 46 46 46 46 46 46 46 46 46 46 46 46 46 46 46 46 46 46 46 46 46 46 0A 0D                DB     'F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F',CR,LF
+0041: 0309 0A 0D                  DB     CR,LF
+0042: 030B 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 0A 0D                DB     '0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0',CR,LF
+0043: 032B 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31 0A 0D                DB     '1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1',CR,LF
+0044: 034B 32 32 32 32 32 32 32 32 32 32 32 32 32 32 32 32 32 32 32 32 32 32 32 32 32 32 32 32 32 32 0A 0D                DB     '2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2',CR,LF
+0045: 036B 33 33 33 33 33 33 33 33 33 33 33 33 33 33 33 33 33 33 33 33 33 33 33 33 33 33 33 33 33 33 0A 0D                DB     '3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3',CR,LF
+0046: 038B 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 0A 0D                DB     '4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4',CR,LF
+0047: 03AB 35 35 35 35 35 35 35 35 35 35 35 35 35 35 35 35 35 35 35 35 35 35 35 35 35 35 35 35 35 35 0A 0D                DB     '5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5',CR,LF
+0048: 03CB 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 0A 0D                DB     '6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6',CR,LF
+0049: 03EB 37 37 37 37 37 37 37 37 37 37 37 37 37 37 37 37 37 37 37 37 37 37 37 37 37 37 37 37 37 37 0A 0D                DB     '7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7',CR,LF
+0050: 040B 38 38 38 38 38 38 38 38 38 38 38 38 38 38 38 38 38 38 38 38 38 38 38 38 38 38 38 38 38 38 0A 0D                DB     '8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8',CR,LF
+0051: 042B 39 39 39 39 39 39 39 39 39 39 39 39 39 39 39 39 39 39 39 39 39 39 39 39 39 39 39 39 39 39 0A 0D                DB     '9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9',CR,LF
+0052: 044B 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 0A 0D                DB     'A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A',CR,LF
+0053: 046B 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 0A 0D                DB     'B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B',CR,LF
+0054: 048B 43 43 43 43 43 43 43 43 43 43 43 43 43 43 43 43 43 43 43 43 43 43 43 43 43 43 43 43 43 43 0A 0D                DB     'C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C',CR,LF
+0055: 04AB 44 44 44 44 44 44 44 44 44 44 44 44 44 44 44 44 44 44 44 44 44 44 44 44 44 44 44 44 44 44 0A 0D                DB     'D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D',CR,LF
+0056: 04CB 45 45 45 45 45 45 45 45 45 45 45 45 45 45 45 45 45 45 45 45 45 45 45 45 45 45 45 45 45 45 0A 0D                DB     'E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E',CR,LF
+0057: 04EB 46 46 46 46 46 46 46 46 46 46 46 46 46 46 46 46 46 46 46 46 46 46 46 46 46 46 46 46 46 46 0A 0D                DB     'F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F',CR,LF
+0058: 050B 0A 0D                  DB     CR,LF
+0059: 050D 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 0A 0D                DB     '0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0',CR,LF
+0060: 052D 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31 0A 0D                DB     '1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1',CR,LF
+0061: 054D 32 32 32 32 32 32 32 32 32 32 32 32 32 32 32 32 32 32 32 32 32 32 32 32 32 32 32 32 32 32 0A 0D                DB     '2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2',CR,LF
+0062: 056D 33 33 33 33 33 33 33 33 33 33 33 33 33 33 33 33 33 33 33 33 33 33 33 33 33 33 33 33 33 33 0A 0D                DB     '3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3',CR,LF
+0063: 058D 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 0A 0D                DB     '4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4',CR,LF
+0064: 05AD 35 35 35 35 35 35 35 35 35 35 35 35 35 35 35 35 35 35 35 35 35 35 35 35 35 35 35 35 35 35 0A 0D                DB     '5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5',CR,LF
+0065: 05CD 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 0A 0D                DB     '6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6',CR,LF
+0066: 05ED 37 37 37 37 37 37 37 37 37 37 37 37 37 37 37 37 37 37 37 37 37 37 37 37 37 37 37 37 37 37 0A 0D                DB     '7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7',CR,LF
+0067: 060D 38 38 38 38 38 38 38 38 38 38 38 38 38 38 38 38 38 38 38 38 38 38 38 38 38 38 38 38 38 38 0A 0D                DB     '8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8',CR,LF
+0068: 062D 39 39 39 39 39 39 39 39 39 39 39 39 39 39 39 39 39 39 39 39 39 39 39 39 39 39 39 39 39 39 0A 0D                DB     '9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9',CR,LF
+0069: 064D 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 0A 0D                DB     'A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A',CR,LF
+0070: 066D 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 0A 0D                DB     'B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B',CR,LF
+0071: 068D 43 43 43 43 43 43 43 43 43 43 43 43 43 43 43 43 43 43 43 43 43 43 43 43 43 43 43 43 43 43 0A 0D                DB     'C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C',CR,LF
+0072: 06AD 44 44 44 44 44 44 44 44 44 44 44 44 44 44 44 44 44 44 44 44 44 44 44 44 44 44 44 44 44 44 0A 0D                DB     'D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D',CR,LF
+0073: 06CD 45 45 45 45 45 45 45 45 45 45 45 45 45 45 45 45 45 45 45 45 45 45 45 45 45 45 45 45 45 45 0A 0D                DB     'E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E',CR,LF
+0074: 06ED 46 46 46 46 46 46 46 46 46 46 46 46 46 46 46 46 46 46 46 46 46 46 46 46 46 46 46 46 46 46 0A 0D                DB     'F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F',CR,LF
+0075: 070D 0A 0D                  DB     CR,LF
+0076: 070F 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 0A 0D                DB     '0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0',CR,LF
+0077: 072F 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31 0A 0D                DB     '1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1',CR,LF
+0078: 074F 32 32 32 32 32 32 32 32 32 32 32 32 32 32 32 32 32 32 32 32 32 32 32 32 32 32 32 32 32 32 0A 0D                DB     '2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2',CR,LF
+0079: 076F 33 33 33 33 33 33 33 33 33 33 33 33 33 33 33 33 33 33 33 33 33 33 33 33 33 33 33 33 33 33 0A 0D                DB     '3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3',CR,LF
+0080: 078F 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 0A 0D                DB     '4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4',CR,LF
+0081: 07AF 35 35 35 35 35 35 35 35 35 35 35 35 35 35 35 35 35 35 35 35 35 35 35 35 35 35 35 35 35 35 0A 0D                DB     '5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5',CR,LF
+0082: 07CF 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 0A 0D                DB     '6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6',CR,LF
+0083: 07EF 37 37 37 37 37 37 37 37 37 37 37 37 37 37 37 37 37 37 37 37 37 37 37 37 37 37 37 37 37 37 0A 0D                DB     '7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7',CR,LF
+0084: 080F 38 38 38 38 38 38 38 38 38 38 38 38 38 38 38 38 38 38 38 38 38 38 38 38 38 38 38 38 38 38 0A 0D                DB     '8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8',CR,LF
+0085: 082F 39 39 39 39 39 39 39 39 39 39 39 39 39 39 39 39 39 39 39 39 39 39 39 39 39 39 39 39 39 39 0A 0D                DB     '9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9',CR,LF
+0086: 084F 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 0A 0D                DB     'A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A',CR,LF
+0087: 086F 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 0A 0D                DB     'B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B',CR,LF
+0088: 088F 43 43 43 43 43 43 43 43 43 43 43 43 43 43 43 43 43 43 43 43 43 43 43 43 43 43 43 43 43 43 0A 0D                DB     'C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C',CR,LF
+0089: 08AF 44 44 44 44 44 44 44 44 44 44 44 44 44 44 44 44 44 44 44 44 44 44 44 44 44 44 44 44 44 44 0A 0D                DB     'D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D',CR,LF
+0090: 08CF 45 45 45 45 45 45 45 45 45 45 45 45 45 45 45 45 45 45 45 45 45 45 45 45 45 45 45 45 45 45 0A 0D                DB     'E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E',CR,LF
+0091: 08EF 46 46 46 46 46 46 46 46 46 46 46 46 46 46 46 46 46 46 46 46 46 46 46 46 46 46 46 46 46 46 0A 0D                DB     'F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F',CR,LF
+0092: 090F 0A 0D                  DB     CR,LF
+0093: 0911 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 0A 0D                DB     '0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0',CR,LF
+0094: 0931 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31 0A 0D                DB     '1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1',CR,LF
+0095: 0951 32 32 32 32 32 32 32 32 32 32 32 32 32 32 32 32 32 32 32 32 32 32 32 32 32 32 32 32 32 32 0A 0D                DB     '2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2',CR,LF
+0096: 0971 33 33 33 33 33 33 33 33 33 33 33 33 33 33 33 33 33 33 33 33 33 33 33 33 33 33 33 33 33 33 0A 0D                DB     '3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3',CR,LF
+0097: 0991 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 0A 0D                DB     '4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4',CR,LF
+0098: 09B1 35 35 35 35 35 35 35 35 35 35 35 35 35 35 35 35 35 35 35 35 35 35 35 35 35 35 35 35 35 35 0A 0D                DB     '5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5',CR,LF
+0099: 09D1 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 0A 0D                DB     '6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6',CR,LF
+0100: 09F1 37 37 37 37 37 37 37 37 37 37 37 37 37 37 37 37 37 37 37 37 37 37 37 37 37 37 37 37 37 37 0A 0D                DB     '7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7',CR,LF
+0101: 0A11 38 38 38 38 38 38 38 38 38 38 38 38 38 38 38 38 38 38 38 38 38 38 38 38 38 38 38 38 38 38 0A 0D                DB     '8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8',CR,LF
+0102: 0A31 39 39 39 39 39 39 39 39 39 39 39 39 39 39 39 39 39 39 39 39 39 39 39 39 39 39 39 39 39 39 0A 0D                DB     '9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9',CR,LF
+0103: 0A51 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 0A 0D                DB     'A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A',CR,LF
+0104: 0A71 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 0A 0D                DB     'B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B',CR,LF
+0105: 0A91 43 43 43 43 43 43 43 43 43 43 43 43 43 43 43 43 43 43 43 43 43 43 43 43 43 43 43 43 43 43 0A 0D                DB     'C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C',CR,LF
+0106: 0AB1 44 44 44 44 44 44 44 44 44 44 44 44 44 44 44 44 44 44 44 44 44 44 44 44 44 44 44 44 44 44 0A 0D                DB     'D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D',CR,LF
+0107: 0AD1 45 45 45 45 45 45 45 45 45 45 45 45 45 45 45 45 45 45 45 45 45 45 45 45 45 45 45 45 45 45 0A 0D                DB     'E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E',CR,LF
+0108: 0AF1 46 46 46 46 46 46 46 46 46 46 46 46 46 46 46 46 46 46 46 46 46 46 46 46 46 46 46 46 46 46 0A 0D                DB     'F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F',CR,LF
+0109: 0B11 0A 0D                  DB     CR,LF
+0110: 0B13 24                     DB     '$'
            ************************   Xref   ************************
-0000: $               04F0   0412
-0416: AfterDiskBuffer 04F0
-0182: BufferMove      01AF   0174
-0075: CommonDiskIO    013B   0040
-0241: CommonPhysical  01E9   0235
-0010: cpmRecordSize   0080   0158 0159 0183
-0396: CR              000D   0377 0379 0381 0383 0385 0387 0389
-0348: DataInBufferFlag 0260   0052 0093 0140
-0153: DataIsInBuffer  0189
-0047: DataIsMine      0114
-0332: DCTByteCount    0254   0279
-0327: DCTCommand      024F   0245 0295
-0328: DCTDisk         0250   0249
-0333: DCTDMAAddress   0256   0282
-0336: DCTEnd          025C   0337
-0329: DCTHead         0251   0276
-0335: DCTNextControlLocation 025A   0292
-0334: DCTNextStatusBlock 0258   0289
-0331: DCTSector       0253   0273
-0337: DCTSize         000D
-0326: DCTStart        024F   0337
-0330: DCTTrack        0252   0253
-0259: DetermineHead   01FB
-0263: DetermineHead1  0203   0269
-0349: DirtyBufferFlag 0261   0055 0110 0142 0177 0197
-0025: DISK_READ       00FF   0035 0173
-0026: DISK_WRITE      0000
-0414: DiskBuffer      02F0   0164 0281
-0372: DiskCommand     026B   0036 0172
-0016: DiskCommandBlock 0046   0296
-0015: DiskControlByte 0045   0291 0300
-0018: DiskControlTable 0040
-0317: DiskError       0249   0311
-0012: DiskReadCode    0001   0238
-0011: diskSectorSize  0200   0278
-0371: DiskStatus      026A   0077 0190 0199 0313 0319
-0014: DiskStatusLocation 0043   0288 0309
-0013: DiskWriteCode   0002   0234
-0399: DisplayMessage  02DC   0210 0408
-0370: DMAAddress      0268   0067 0166
-0145: DoPart2         0186   0103
-0394: EndOfMessage    0000   0377 0379 0381 0383 0385 0389
-0024: FALSE           0000   0141 0196
-0271: HeadFound       020C   0265
-0050: Init            0115   0033
-0342: IOBufferDisk    025C   0247
-0344: IOBufferSector  025F   0262
-0341: IOBufferState   025C   0133 0214
-0343: IOBufferTrack   025D   0251
-0208: IsItMyData      01CB   0102
-0216: IsItMyData1     01D9   0222
-0395: LF              000A   0377 0379 0381 0383 0385 0387 0389
-0378: msgIsItDirty    027A   0107
-0380: msgIsItInBuffer 0288   0087
-0376: msgIsItMine     026D   0209
-0386: msgPart2        02C5   0146
-0382: msgPreRead      029A   0129
-0384: msgPreWrite     02AF   0119
-0237: PhysicalRead    01E7   0138
-0233: PhysicalWrite   01E2   0121 0198
-0128: PreRead         016B   0097 0113
-0117: PreWrite        0165
-0034: Read            0106
-0160: SectorInBuffer1 0196   0162
-0009: SectorMask      0003   0155
-0357: SelectedDisk    0262   0058
-0365: SelectedDskSecsPerHead 0267   0064 0261
-0363: SelectedRecord  0266   0062 0080 0154
-0359: SelectedSector  0265   0084
-0356: SelectedState   0262   0132 0213 0361
-0360: SelectedStateEnd 0266   0361
-0361: SelectedStateSize 0004   0134 0215
-0358: SelectedTrack   0263   0060
-0028: StackTop        0100   0030 0032
-0031: Start           0100
-0023: TRUE            00FF   0051 0054 0095 0096 0112 0139 0176
-0397: TTY_DataPort    00EC   0405
-0303: WaitForDiskComplete 0237   0306
-0006: WriteAllocated  0000
-0008: WriteCleanBuffer 0002   0037
-0007: WriteDirectory  0001   0189
-0373: WriteType       026C   0038 0188
+0000: $               0B13
+0006: BDOS            0005   0019
+0009: CR              000A   0025 0026 0027 0028 0029 0030 0031 0032 0033 0034 0035 0036 0037 0038 0039 0040 0041 0042 0043 0044 0045 0046 0047 0048 0049 0050 0051 0052 0053 0054 0055 0056 0057 0058 0059 0060 0061 0062 0063 0064 0065 0066 0067 0068 0069 0070 0071 0072 0073 0074 0075 0076 0077 0078 0079 0080 0081 0082 0083 0084 0085 0086 0087 0088 0089 0090 0091 0092 0093 0094 0095 0096 0097 0098 0099 0100 0101 0102 0103 0104 0105 0106 0107 0108 0109
+0008: FALSE           0000
+0010: LF              000D   0025 0026 0027 0028 0029 0030 0031 0032 0033 0034 0035 0036 0037 0038 0039 0040 0041 0042 0043 0044 0045 0046 0047 0048 0049 0050 0051 0052 0053 0054 0055 0056 0057 0058 0059 0060 0061 0062 0063 0064 0065 0066 0067 0068 0069 0070 0071 0072 0073 0074 0075 0076 0077 0078 0079 0080 0081 0082 0083 0084 0085 0086 0087 0088 0089 0090 0091 0092 0093 0094 0095 0096 0097 0098 0099 0100 0101 0102 0103 0104 0105 0106 0107 0108 0109
+0024: Message         0109   0017
+0012: PrintString     0009   0018
+0016: Start           0100
+0011: TPA             0100   0015
+0007: TRUE            00FF

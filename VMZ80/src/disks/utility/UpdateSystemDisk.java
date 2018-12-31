@@ -51,8 +51,8 @@ public class UpdateSystemDisk {
 			byte[] dataCCP = MemoryLoaderFromFile.loadMemoryImage(reader, 0x0800);
 			disk.put(dataCCP);
 
-			in = thisClass.getClass().getResourceAsStream("/Z80Code/BDOS.mem");
-//			in = thisClass.getClass().getResourceAsStream("/workingOS/BDOS.mem");
+//			in = thisClass.getClass().getResourceAsStream("/Z80Code/BDOS.mem");
+			in = thisClass.getClass().getResourceAsStream("/workingOS/BDOS.mem");
 			reader = new BufferedReader(new InputStreamReader(in));
 			byte[] dataBDOS = MemoryLoaderFromFile.loadMemoryImage(reader, 0x0E00);
 			disk.put(dataBDOS);

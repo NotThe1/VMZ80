@@ -1,7 +1,7 @@
 ;     File created by MakeZ80Source on Tue Sep 18 10:01:22 EDT 2018 from:
 ;     C:\Users\admin\Dropbox\Resources\CPM\CurrentOS\8080\BootSector.asm
  ; BootSector.Z80 
- ; Build 2.0A
+ ; Build 2.01
  
  ; 2018-11-22 begin  Z80 idiom update
  ; 2017-04-07 Added equates for message IO : BOOT_CON_ADDRESS
@@ -41,7 +41,7 @@ Start:
 WaitForBootComplete:
  	LD		A,(HL)						; Get the control byte
  	OR		A							; 0 = Completed operation
- 	JR		NZ,WaitForBootComplete			;  if not try again
+ 	JR		NZ,WaitForBootComplete		;  if not try again
  
  	LD		A,(DiskStatusLocation)		; What's the status after operation
  	CP		080H						; Any errors ?
@@ -105,7 +105,7 @@ SendMessage:                                                                  ;
  	LD		A,(HL)                                                            ;
  	OR		A                                                                 ;
  	RET		Z                                                                 ;
- 	OUT		(BOOT_CON_ADDRESS),A				; Console address             ;
+ 	OUT		(BOOT_CON_ADDRESS),A		; Console address		              ;
  	INC		HL                                                                ;
  	JP		SendMessage                                                       ;
 ;---------------------------------- Messages ---------------------------------;

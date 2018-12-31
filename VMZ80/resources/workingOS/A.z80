@@ -3,413 +3,108 @@
 
 ;	2018-11-30
 ; 4
-WriteAllocated		EQU		00H
-WriteDirectory		EQU		01H
-WriteCleanBuffer	EQU		02H
-SectorMask			EQU		3
-cpmRecordSize		EQU		128
-diskSectorSize		EQU		512
-DiskReadCode		EQU		01H         ; Code for Read
-DiskWriteCode		EQU		02H         ; Code for Write
-DiskStatusLocation	EQU    043H         ; status after disk I/O placed here
-DiskControlByte		EQU    045H         ; control byte for disk I/O
-DiskCommandBlock	EQU    046H         ; Control Table Pointer
-
-DiskControlTable	EQU    0040H
+BDOS		EQU		05H
+TRUE		EQU		0FFH
+FALSE		EQU		000H
+CR			EQU		00AH
+LF			EQU		00DH
+TPA			EQU		0100H
+PrintString	EQU		09H
 
 
-
-
-TRUE	EQU		0FFH;
-FALSE	EQU		0;
-DISK_READ	EQU		0FFH
-DISK_WRITE	EQU		000H
-
-StackTop	EQU		0100H
-
-	ORG   StackTop
-Start:	
-	LD		SP,StackTop
-	CALL	Init
-Read:
-	LD		A,DISK_READ
-	LD		(DiskCommand),A				; Set disk command to read
-	LD		A,WriteCleanBuffer			; Do not want to treat as
-	LD		(WriteType),A				;   a write to Directory later
-	
-	CALL	CommonDiskIO
-
-	HALT
-	
-;	ORG		StackTop + 010H
-
-;DataInBufferFlag:	DB		055H
-DataIsMine:		DB		055H
-;DirtyBufferFlag:	DB		055H
-
-Init:
-	LD		A,TRUE		;FALSE ;
-	LD		(DataInBufferFlag),A
-
-	LD		A,TRUE ;FALSE ;
-	LD		(DirtyBufferFlag),A
-	
-	LD		A,0
-	LD		(SelectedDisk),A
-	LD		HL,0
-	LD		(SelectedTrack),HL
-	LD		A,0
-	LD		(SelectedRecord),A
-	LD		A,12H
-	LD		(SelectedDskSecsPerHead),A
-	
-	LD		HL,1000H
-	LD		(DMAAddress),HL
-	
-	RET
-
-
-;*******************************************************
-; Common code to execute both reads and writes of 128-byte records
-;*******************************************************
-CommonDiskIO:
-	XOR		A							; Assume no disk error will occur
-	LD		(DiskStatus),A	
-;-------------------------Convert selected record into physical sector-------;
-	LD		A,(SelectedRecord)                                               ;
-	RRA									; Convert selected record            ;
-	RRA									; into physical sector by dividing by;
-	AND		03FH						; Remove unwanted bits               ;
-	LD		(SelectedSector),A                                               ;
-;-------------------------Convert selected record into physical sector-------;
-
-	LD		HL,msgIsItInBuffer
-;	CALL	DisplayMessage	
-	
-;------------------------- Any Data in Buffer -------------------------------;
-;Flag is ONLY reset by BIOS HOME Function. otherwise it is set by all passes ;
-                                                                             ;
-	LD		HL,DataInBufferFlag			; See if there is any data here ?    ;
-	LD		A,(HL)                                                           ;
-	LD		(HL),TRUE					; Force flag true                    ;
-	CP		TRUE						; Was  any data here ?               ;
-	JR		NZ,PreRead					; No, then we need to load data      ;
-;------------------------- Any Data in Buffer -------------------------------;
-
-	
-;--------------------------- Is This My Data --------------------------------;
-	CALL	IsItMyData                                                       ;
-	JR		Z,DoPart2                                                        ;
-;--------------------------- Is This My Data --------------------------------;
-	
-;--------------------------- Is The Data Dirty -----------------------------;
-	LD		HL,msgIsItDirty                                                 ;
-;	CALL	DisplayMessage	                                                ;
-	                                                                        ;
-	LD		A,(DirtyBufferFlag)                                             ;
-	                                                                        ;
-	CP		TRUE                                                            ;
-	JR		NZ,PreRead                                                      ;
-;--------------------------- Is The Data Dirty -----------------------------;
-	
-;-------------------------------- PreWrite ---------------------------------;
-PreWrite:                                                                   ;
-; Do the actual Write                                                       ;
-	LD		HL,msgPreWrite                                                  ;
-;	CALL	DisplayMessage	; Stub the work                                 ;
-	CALL	PhysicalWrite
-;-------------------------------- PreWrite ---------------------------------;
-
-;--------------------------------- PreRead ---------------------------------;
-                                                                            ;
-                                                                            ;
-;     prepare for physical IO                                               ;
-PreRead:                                                                    ;
-	LD		HL,msgPreRead                                                   ;
-;	CALL	DisplayMessage	; Stub the work                                 ;
-; Set IOBuffer to Selected state for physical read                          ;
-	LD		HL,SelectedState                                                ;
-	LD		DE,IOBufferState                                                ;
-	LD		BC,SelectedStateSize                                            ;
-	LDIR                                                                    ;
-	;                                                                       ;
-; Do the actual read                                                        ;
-	CALL    PhysicalRead                                                    ;
-	LD		A,TRUE                                                          ;
-	LD		(DataInBufferFlag),A		; Set DataInBuffeer Flag			;
-	LD		A,FALSE                                                         ;
-	LD		(DirtyBufferFlag),A			; Reset DataIsDirty Flag			;
-;--------------------------------- PreRead ---------------------------------;
-		
-DoPart2:
-	LD		HL,msgPart2
-;	CALL	DisplayMessage
-; The Buffer now has the data we want to Read/Write
-
-
-;-------------------Calculate the address of the record in the sector ------;
-	                                                                        ;
-DataIsInBuffer:                                                             ;
-	LD		A,(SelectedRecord)                                              ;
-	AND		SectorMask					; Want relative record              ;
-	INC		A							; Adjust for DJNZ                   ;
-	LD		B,A                                                             ;
-	LD		DE,cpmRecordSize                                                ;
-	LD		HL,-cpmRecordSize                                               ;
-SectorInBuffer1:                                                            ;
-	ADD		HL,DE						; RecordNumber * recordSize         ;
-	DJNZ	SectorInBuffer1				;  yields index into the Sector     ;
-                                                                            ;
-	LD		DE,DiskBuffer				; Start of sector                   ;
-	ADD		HL,DE						; HL -> start of record in buffer	;
-	LD		DE,(DMAAddress)				; Callers  DMA Address              ;
-																		    ;
-;-------------------Calculate the address of the record in the sector ------;
-	
-;------------------------- Determine if its a Read or Write and set HL & DE ;
-                                                                            ;
-	LD		A,(DiskCommand)			; 0 => Write, non Zero => Read          ;
-	CP		DISK_READ				                                        ;
-	JP		Z,BufferMove			; Read : move data from Buffer to DMA   ; 	
-;write                              ; Write: move data from DMA to Buffer   ;
-	LD		A,TRUE					; Set the flag to indicate dirty buffer ;
-	LD		(DirtyBufferFlag),A                                             ;
-	EX		DE,HL					; Swap source and destination for Write ;
-;------------------------- Determine if its a Read or Write and set HL & DE ;
-
-;----------------------  Move the Data between Buffer and DMA location   ---;
-BufferMove:                                                                 ;
-	LD		BC,cpmRecordSize                                                ;
-	LDIR								                                    ;
-;----------------------  Move the Data between Buffer and DMA location   ---;
-
-
-	LD		A,(WriteType)			; Is this a write to the directory ?
-	CP		WriteDirectory
-	LD		A,(DiskStatus)			; Get disk status if an immediate return
-	RET		NZ						; Return if not a directory entry
-
-	OR		A						; Check for any disk errors ?
-	RET		NZ						; If yes - abandon do not write to dir
-
-	LD		A,FALSE
-	LD		(DirtyBufferFlag),A		; Clear the dirty buffer flag
-	CALL	PhysicalWrite			; Immediate update of the directory
-	LD		A,(DiskStatus)			; Set ACC with disk status 
-	RET	
-	
-;...................
+			ORG		TPA
+Start:
+		LD		DE,Message
+		LD		C,PrintString
+		CALL	BDOS
+		HALT
 
 
 
-
-;--------------------------- Is It My Data ---------------------------------;
-IsItMyData:                                                                 ;
-	LD		HL,msgIsItMine                                                  ;
-	CALL	DisplayMessage	; Stub the work                                 ;
-                                                                            ;
-                                                                            ;
-	LD		HL,SelectedState                                                ;
-	LD		DE,IOBufferState                                                ;
-	LD		B,SelectedStateSize                                             ;
-IsItMyData1:                                                                ;
-	LD		A,(DE)                                                          ;
-	XOR		(HL)						; (HL) =(DE)                        ;
-	RET		NZ							; If not we are done                ;
-	INC		DE                                                              ;
-	INC		HL							; Lets look at the next bytes       ;
-	DJNZ	IsItMyData1					; Loop if not exhausted the count   ;
-	XOR		A							; Else set the Z flag               ;
-	RET									;  and exit                         ;
-
-;--------------------------- Is It My Data ---------------------------------;
-
-          ;***********************************************;
-          ;			      Physical Disk IO				  ;
-          ;***********************************************;
-
-;Write contents of disk buffer to correct sector
-PhysicalWrite:
-	LD		A,DiskWriteCode				; get write function
-	JP		CommonPhysical
-
-PhysicalRead:
-	LD		A,DiskReadCode				; get read function
-
-
-CommonPhysical:
-;--------------------------- Setup Disk Control Table  ---------------------;
-                                                                            ;                                     ;
-;Command                                                                    ;
-	LD		(DCTCommand),A				; set the command for Read or Write ;
-;Disk                                                                       ;
-	LD		A,(IOBufferDisk)                                                ;
-	AND		03H							; only units 0 to 3                 ;
-	LD		(DCTDisk),A					; set disk                          ;
-;Track                                                                      ;
-	LD		HL,(IOBufferTrack)                                              ;
-	LD		A,L							;                                   ;
-	LD		(DCTTrack),A				; set track	                        ;
-                                                                            ;
-;Head and Track	Calculations                                                ;
-; The sector must be converted into a head number and sector number.        ;
-;	Head = (int) Sector / SectorsPerHead                                    ;
-;	Sector = Sector MOD SectorsPerHead                                      ;
-DetermineHead:                                                              ;
-	LD		B,0							; Start at head 0                   ;
-	LD		HL,SelectedDskSecsPerHead	; Point at track counts             ;
-	LD		A,(IOBufferSector)			; get target sector                 ;
-DetermineHead1:                                                             ;
-	CP		M							; Need another Head?                ;
-	JP		C,HeadFound					; nope done with head calculation   ;
-                                                                            ;
-	SUB		M							; subtract track value              ;
-	INC		B							; Increment head                    ;
-	JP		DetermineHead1				; loop for next head value          ;
-;Sector                                                                     ;
-HeadFound:								; Sector MOD SectorsPerHead         ;
-	INC		A							; physical sectors start at 1       ;
-	LD		(DCTSector),A				; set sector                        ;
-;Head                                                                       ;
-	LD		A,B                                                             ;
-	LD		(DCTHead),A					; set head number                   ;
-;Byte Count                                                                 ;
-	LD		HL,diskSectorSize                                               ;
-	LD		(DCTByteCount),HL			; set byte count                    ;
-;DMA                                                                        ;
-	LD		HL,DiskBuffer                                                   ;
-	LD		(DCTDMAAddress),HL			; set transfer address              ;
-	                                                                        ;
-; Since only one control table is in use, close the status and              ;
-; busy chain pointers ; back to the main control bytes.                     ;
-                                                                            ;
-;NextStatusBlock                                                            ;
-	LD		HL,DiskStatusLocation                                           ;
-	LD		(DCTNextStatusBlock),HL                                         ;
-;NextControlLocation                                                        ;
-	LD		HL,DiskControlByte                                              ;
-	LD		(DCTNextControlLocation),HL                                     ;
-	;                                                                       ;
-;Put  DCT pointer in page0                                                  ;
-	LD		HL,DCTCommand                                                   ;
-	LD		(DiskCommandBlock),HL                                           ;
-;--------------------------- Setup Disk Control Table  ---------------------;
-
-; Make the IO happen
-	LD		HL,DiskControlByte			; Activate disk controller
-	LD		(HL),080H
-
-WaitForDiskComplete:
-	LD		A,(HL)						; Get control bytes
-	OR		A
-	JP		NZ,WaitForDiskComplete		; Operation not done
-
-;Check if any errors occurred.
-	LD		A,(DiskStatusLocation)
-	CP		080H						; Any errors NC = good read?	
-	JP		C,DiskError
-	XOR		A
-	LD		(DiskStatus),A				; Clear the flag
-	RET									; Clean read, return to caller
-
-; set error flag and return
-DiskError:
-	LD		A,1
-	LD		(DiskStatus),A				; Set the error flag
-	RET
-
-
-;==========================================================
-                                                ;
-;**************************** Disk ControlTable ****************************;
-DCTStart:                                                                   ;
-DCTCommand:				DB		00H		; Command	                        ;
-DCTDisk:				DB		00H		; unit (drive) number = 0 or 1   	;
-DCTHead:				DB		00H		; head number = 0 or 1           	;
-DCTTrack:				DB		00H		; track number                   	;
-DCTSector:				DB		00H		; sector number                  	;
-DCTByteCount:			DW		0000H	; number of bytes to read/write  	;
-DCTDMAAddress:			DW		0000H	; transfer address               	;
-DCTNextStatusBlock:		DW		0000H	; pointer to next status block   	;
-DCTNextControlLocation:	DW		0000H	; pointer to next control byte   	;
-DCTEnd:                                                                     ;
-DCTSize					EQU		DCTEnd-DCTStart                             ;
-;**************************** Disk ControlTable ****************************;
-
-;**************************** Physical IO State ****************************;
-IOBufferState:                                                              ;
-IOBufferDisk:			DB		00H                                         ;
-IOBufferTrack:			DW		0000H                                       ;
-IOBufferSector:			DB		010H                                        ;
-;**************************** Physical IO State ****************************;
-
-;**************************** Buffer State *********************************;
-DataInBufferFlag:		DB		00H                                         ;
-DirtyBufferFlag:		DB		00H                                         ;
-;**************************** Buffer State *********************************;
-
-;**************************** Selected Record State ************************;
-;     variables for selected disk, track and sector                         ;
-;These are moved and compared as a group with Physical IO State. DO NOT ALTER;
-                                                                            ;
-SelectedState:                                                              ;
-SelectedDisk:			DB		00H                                         ;
-SelectedTrack:			DW		0000H                                       ;
-SelectedSector:			DB		00H		; (SelectedRecord/RecordsPerSector) ;
-SelectedStateEnd:                                                           ;
-SelectedStateSize		EQU		SelectedStateEnd - SelectedState            ;
-                                                                            ;
-SelectedRecord:			DB		00H                                         ;
-                                                                            ;
-SelectedDskSecsPerHead:	DB		00H		; Sectors / head	                ;
-;**************************** Selected Record State ************************;
-
-
-
-DMAAddress:				DW		0000H	; Callers DMA address
-DiskStatus:				DB		00H		; Non-Zero - unrecoverable error
-DiskCommand:			DB		00H		; holds the disk command
-WriteType:				DB		00H		; The type of write set by BDOS
-
-;============================================================================
-msgIsItMine:
-	DB		'Is It Mine',CR,LF,EndOfMessage
-msgIsItDirty:
-	DB		'Is It Dirty',CR,LF,EndOfMessage
-msgIsItInBuffer:
-	DB		'Is It In Buffer',CR,LF,EndOfMessage
-msgPreRead:
-		DB	'PreRead the sector',CR,LF,EndOfMessage
-msgPreWrite:
-		DB	'PreWrite the sector',CR,LF,EndOfMessage
-msgPart2:
-		DB	'Part2',CR,LF,
-		DB	'-------------'
-		DB	CR,LF,EndOfMessage
-;----------------------------------------------------------------------------
-
-;----------------------------------------------------------------------------
-
-EndOfMessage EQU    00H
-LF         EQU    0AH                  ; Line Feed
-CR         EQU    0DH                  ; Carriage Return
-TTY_DataPort		EQU		0ECH
-; entered with pointer to message in HL
-DisplayMessage:
-	LD		A,M					; get  character
-	OR		A					; is it NULL
-	RET		Z					; return if it is NULL (00)
-	LD		C,A
-	PUSH	HL					; save the pointer
-	OUT		TTY_DataPort
-	POP		HL					; retrieve the pointer
-	INC		HL					; point at next character
-	JR		DisplayMessage
-
-;----------------------------------------------------------------------------
-
-	ORG		(($+10H)/10H) * 10H
-
-DiskBuffer:
-	DS		512
-AfterDiskBuffer	EQU	$
+Message:
+		DB '0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0',CR,LF
+		DB '1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1',CR,LF
+		DB '2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2',CR,LF
+		DB '3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3',CR,LF
+		DB '4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4',CR,LF
+		DB '5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5',CR,LF
+		DB '6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6',CR,LF
+		DB '7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7',CR,LF
+		DB '8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8',CR,LF
+		DB '9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9',CR,LF
+		DB 'A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A',CR,LF
+		DB 'B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B',CR,LF
+		DB 'C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C',CR,LF
+		DB 'D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D',CR,LF
+		DB 'E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E',CR,LF
+		DB 'F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F',CR,LF
+		DB	CR,LF
+		DB '0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0',CR,LF
+		DB '1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1',CR,LF
+		DB '2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2',CR,LF
+		DB '3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3',CR,LF
+		DB '4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4',CR,LF
+		DB '5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5',CR,LF
+		DB '6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6',CR,LF
+		DB '7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7',CR,LF
+		DB '8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8',CR,LF
+		DB '9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9',CR,LF
+		DB 'A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A',CR,LF
+		DB 'B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B',CR,LF
+		DB 'C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C',CR,LF
+		DB 'D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D',CR,LF
+		DB 'E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E',CR,LF
+		DB 'F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F',CR,LF
+		DB	CR,LF
+		DB '0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0',CR,LF
+		DB '1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1',CR,LF
+		DB '2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2',CR,LF
+		DB '3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3',CR,LF
+		DB '4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4',CR,LF
+		DB '5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5',CR,LF
+		DB '6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6',CR,LF
+		DB '7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7',CR,LF
+		DB '8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8',CR,LF
+		DB '9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9',CR,LF
+		DB 'A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A',CR,LF
+		DB 'B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B',CR,LF
+		DB 'C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C',CR,LF
+		DB 'D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D',CR,LF
+		DB 'E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E',CR,LF
+		DB 'F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F',CR,LF
+		DB	CR,LF
+		DB '0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0',CR,LF
+		DB '1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1',CR,LF
+		DB '2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2',CR,LF
+		DB '3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3',CR,LF
+		DB '4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4',CR,LF
+		DB '5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5',CR,LF
+		DB '6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6',CR,LF
+		DB '7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7',CR,LF
+		DB '8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8',CR,LF
+		DB '9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9',CR,LF
+		DB 'A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A',CR,LF
+		DB 'B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B',CR,LF
+		DB 'C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C',CR,LF
+		DB 'D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D',CR,LF
+		DB 'E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E',CR,LF
+		DB 'F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F',CR,LF
+		DB	CR,LF
+		DB '0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0',CR,LF
+		DB '1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1',CR,LF
+		DB '2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2',CR,LF
+		DB '3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3',CR,LF
+		DB '4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4','4',CR,LF
+		DB '5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5','5',CR,LF
+		DB '6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6','6',CR,LF
+		DB '7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7','7',CR,LF
+		DB '8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8','8',CR,LF
+		DB '9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9','9',CR,LF
+		DB 'A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A',CR,LF
+		DB 'B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B','B',CR,LF
+		DB 'C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C','C',CR,LF
+		DB 'D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D','D',CR,LF
+		DB 'E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E','E',CR,LF
+		DB 'F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F','F',CR,LF
+		DB	CR,LF
+		DB	'$'
