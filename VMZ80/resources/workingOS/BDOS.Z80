@@ -481,6 +481,36 @@ isPrintableASCII:                                                            ;
  	CP	SPACE						; Reset Carry if ASCII printable         ;
  	RET								                                         ;
 ;----------- Is the Character ASCII printable, CR,LF,TAB,BACKSPACE ----------;
+
+;------------------ Print character from (BC) until  $ found ----------------;
+ Print:                                                                      ;
+ 	LD		A,(BC)						; Get the next character             ;
+ 	CP		DOLLAR						; Is it the end ?                    ;
+ 	RET	Z								;  exit if yes                       ;
+ 	INC		BC							; Update the pointer                 ;
+ 	PUSH	BC							; Save it                            ;
+ 	LD		C,A							; Does Byte require                  ;
+ 	CALL	TabOut						;  special attention - check         ;
+ 	POP		BC							; Retrieve the pointer				 ;		
+ 	JP		Print						; Loop back                          ;
+;------------------ Print character from (BC) until  $ found ----------------;
+
+;-- Send printable character to console. Precede with Caret if needed -------;
+; character is in Reg C                                                      ;
+ CaretCout:                                                                  ;
+ 	LD		A,C                                                              ;
+ 	CALL	isPrintableASCII                                                 ;
+ 	JP		NC,TabOut					; Skip if Caret not needed           ;
+; send preceding up arrow                                                    ;
+ 	PUSH	AF							; Save the character                 ;
+ 	LD		C,CARET                                                          ;
+ 	CALL	ConsoleOut					; Send Caret to Console              ;
+ 	POP		AF							; Get the character                  ;
+ 	OR		40H							; Make the graphic a letter          ;
+ 	LD		C,A							; Set up to print                    ;
+; fall thru to TabbOut                                                       ;
+;-- Send printable character to console. Precede with Caret if needed -------;
+
 ;------------- Send printable character to console. Expand if TAB -----------;
 ; character is in Reg C                                                      ;
  TabOut:                                                                     ;
@@ -497,38 +527,6 @@ isPrintableASCII:                                                            ;
  	JP		NZ,TabOut0					; Do again if not                    ;
  	RET                                                                      ;
 ;------------- Send printable character to console. Expand if TAB -----------;
-
-;--------------------  Check for Status and Control S or C ------------------;
-;  Returns:																	 ;
-;			ACC = 0FFH if Saved keyboard byte or CNTL_S entered from console ;
-;			ACC = 00   No data Pending										 ;
-;			DOES NOT RETURN if CTRL_C is entered from the keyboard           ;
-;                                                                            ;
- ConBreak:                                                                   ;
- 	LD		A,(keyboardByte)                                                 ;
- 	OR		A                                                                ;
- 	JP		NZ,ConBreak1 				; Return with FF in ACC              ;
-	                                                                         ;
- 	CALL	bcConst						; Get status                         ;
-	CP		00H							; If 00 => No data pending	         ;
- 	RET		Z							; Return 00 No data pending          ;
-	                                                                         ;
- 	CALL	bcConin						; Read the byte                      ;
- 	CP		CTRL_S						; If it is not Stop Screen, save     ;
- 	JP		NZ,ConBreak0				;   and and return 0FFH              ;
-	                                                                         ;
- 	CALL	bcConin						; Else Read next byte                ;
- 	CP		CTRL_C                                                           ;
- 	JP		Z,WarmBoot					; do WarmBoot if  CTRL_C             ;
-                                                                             ;
- 	XOR		A                                                                ;
- 	RET									; Set ACC = 0 and return             ;
- ConBreak0:                                                                  ;
- 	LD		(keyboardByte),A			; save the byte                      ;
- ConBreak1:                                                                  ;
- 	LD		A,TRUE						; return with true set in ACC        ;
- 	RET                                                                      ;
-;--------------------  Check for Status and Control S or C ------------------;
 
 ;------------- Send character to console. Manage Column Positions -----------;
 ConsoleOut:                                                                  ;                                                                           ;
@@ -584,17 +582,287 @@ ConsoleOut1:                                                                 ;
  	RET									; and exit                           ;
 ;------------- Send character to console. Manage Column Positions -----------;
 
+;--------------------  Check for Status and Control S or C ------------------;
+;  Returns:																	 ;
+;			ACC = 0FFH if Saved keyboard byte or CNTL_S entered from console ;
+;			ACC = 00   No data Pending										 ;
+;			DOES NOT RETURN if CTRL_C is entered from the keyboard           ;
+;                                                                            ;
+ ConBreak:                                                                   ;
+ 	LD		A,(keyboardByte)                                                 ;
+ 	OR		A                                                                ;
+ 	JP		NZ,ConBreak1 				; Return with FF in ACC              ;
+	                                                                         ;
+ 	CALL	bcConst						; Get status                         ;
+	CP		00H							; If 00 => No data pending	         ;
+ 	RET		Z							; Return 00 No data pending          ;
+	                                                                         ;
+ 	CALL	bcConin						; Read the byte                      ;
+	                                                                         ;
+;<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>            ;
+	CP		CTRL_P                                                           ;
+	JR		NZ,CheckCTL_S                                                    ;
+	LD		HL,printEchoFlag                                                 ;
+	LD		A,TRUE                                                           ;
+	CP		(HL)                                                             ;
+	JR		NZ,ToggleFlag1                                                   ;
+	LD		A,FALSE                                                          ;
+ToggleFlag1:                                                                 ;
+	LD		(HL),A                                                           ;
+	JR		NothingWaiting                                                   ;
+CheckCTL_S:		                                                             ;
+ ;<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>           ;
+	CP		CTRL_S						; If it is not Stop Screen, save     ;
+ 	JP		NZ,ConBreak0				;   and and return 0FFH              ;
+                                                                             ;
+ 	CALL	bcConin						; Else Read next byte                ;
+ 	CP		CTRL_C                                                           ;
+ 	JP		Z,WarmBoot					; do WarmBoot if  CTRL_C             ;
+ NothingWaiting:                                                             ;              ;
+ 	XOR		A                                                                ;
+ 	RET									; Set ACC = 0 and return             ;
+ ConBreak0:                                                                  ;
+ 	LD		(keyboardByte),A			; save the byte                      ;
+ ConBreak1:                                                                  ;
+ 	LD		A,TRUE						; return with true set in ACC        ;
+ 	RET                                                                      ;
+;--------------------  Check for Status and Control S or C ------------------;
+
+;------------------------  Console Output Utilities -------------------------;
+showHashCRLF:                                                                ;
+ 	LD		C,HASH_TAG                                                       ;
+ 	CALL	ConsoleOut					; Send # to console                  ;
+;Send the Carriage Return Line Feed sequence                                 ;
+showCRLF:                                                                    ;
+ 	LD		C,CR                                                             ;
+ 	CALL	ConsoleOut                                                       ;
+ 	LD		C,LF                                                             ;
+ 	JP		ConsoleOut					; exit via ConsoleOuts RET           ;
+                                                                             ;
+;------------------------  Console Output Utilities -------------------------;
+
+;------------------------- Read a $ terminated String -----------------------;
+ ;read to paramDE address (max length, current length, buffer)               ;
+ ReadString:                                                                 ;
+ 	LD		A,(columnPosition)                                               ;
+ 	LD		(startingColumn),A			; Save start for CTRL_X and CTRL_R   ;
+ 	LD		HL,(paramDE)				; Get the start of the String        ;
+ 	LD		C,(HL)						; Set character for later BIOS Call  ;
+ 	INC		HL                                                               ;
+ 	PUSH	HL							; Save the pointer                   ;
+ 	LD		B,0							; Initialize buffer length           ;
+ ; B = current buffer length,                                                ;
+ ; C = maximum buffer length,                                                ;
+ ; HL= next to fill - 1                                                      ;
+                                                                             ;
+ ; read next character, BC, HL active                                        ;
+ ReadNext:                                                                   ;
+ 	PUSH	BC							; Save Current Index and Max Count   ;
+ 	PUSH	HL							; Save pointer                       ;
+ ReadNext0:                                                                  ;
+ 	CALL	ConIn						; Get the next Character             ;
+ 	AND		ASCII_MASK					; Mask parity bit                    ;
+ 	POP		HL							; Restore Pointer					 ;
+ 	POP		BC							; Restore Current Index and Max Count;
+;Is It Carriage Return                                                       ;
+ 	CP		CR                                                               ;
+ 	JP		Z,EndRead					; End the read if yes                ;
+ 	CP		LF                                                               ;
+;Is It Linefeed                                                              ;
+ 	JP		Z,EndRead					; End the read if yes                ;
+;Is It BackSpace                                                             ;
+ 	CP		CTRL_H                                                           ;
+ 	JP		NZ,IsItRubout				; Skip if not Backspace              ;
+;Do we have any characters to back over?                                     ;
+ 	LD		A,B							; B has the current Column           ;
+ 	OR		A                                                                ;
+ 	JP		Z,ReadNext					; Just go read next if at start      ;
+;Characters remain in buffer, backup one                                     ;
+ 	DEC		B							; Decrement the Index                ;
+ 	LD		A,(columnPosition)			; Update the current Column Position ;
+	DEC		HL							; Decrement the pointer				 ;
+ 	LD		(manageColPosFlag),A		; Set the manage Column Pos Flag     ;
+; temp_ColumnPosition > 0 marks repeat as length compute                     ;
+ 	JP		LineLengthOrRepeat			; uses same code as repeat     		 ;
+	                                                                         ;
+IsItRubout:                                                                  ;
+ 	CP		RUBOUT						; Non destructive delete             ;
+ 	JP		NZ,IsPhysicalEOL			; Skip if not Rubout                 ;
+; RUBOUT if possible                                                         ;
+ 	LD		A,B							; Are we at the start of the line    ;
+ 	OR		A                                                                ;
+ 	JP		Z,ReadNext					; then ignore and go for next char   ;
+;adjust pointers back one                                                    ;
+ 	LD		A,(HL)                      ; ACC = current character            ;
+ 	DEC		B							; Adjust the index			    	 ;                                                                ;
+ 	DEC		HL							; Adjust the pointer                 ;
+	JP		ReadEcho					; Echo back - Full Duplex            ;
+                                                                             ;
+IsPhysicalEOL:                                                               ;
+ 	CP		CTRL_E                                                           ;
+ 	JP		NZ,IsItPrintToggle			; Skip if not physical end line?     ;
+ 	PUSH	BC							; Save Current Index and Max Count   ;
+ 	PUSH	HL							; Save pointer                       ;
+ 	CALL	showCRLF					; Make new line                      ;
+ 	XOR		A                                                                ;
+ 	LD		(startingColumn),A			; Set start column to 00             ;
+ 	JP		ReadNext0					;   and go for next char   			 ;
+	                                                                         ;
+IsItPrintToggle:                                                             ;
+ 	CP		CTRL_P                                                           ;
+ 	JP		NZ,IsItDeleteTheLineX		; Skip if not CTRL_P	             ;
+ 	PUSH	HL							; Save pointer                       ;
+; Toggle the printEcho Flag                                                  ;
+	LD		HL,printEchoFlag			; Point at the flag                  ;
+	LD		A,TRUE						; Load ACC with TRUE                 ;
+	CP		(HL)						; Is the flag true?                  ;
+	JR		NZ,IsItPrintToggle1			; Skip if not                        ;
+	LD		A,FALSE						;   else. load ACC with FALSE        ;
+IsItPrintToggle1:                                                            ;
+	LD		(HL),A						; Set the Flags new Value	         ;
+ 	POP		HL							; Restore pointer                    ;
+ 	JP		ReadNext					;   and for another char             ;
+	                                                                         ;
+IsItDeleteTheLineX:                                                          ;
+ 	CP		CTRL_X                                                           ;
+ 	JP		Z,DeleteTheLine				; If CTRL_X go delete the line       ;
+IsItDeleteTheLineU:                                                          ;
+	CP		CTRL_U                                                           ;
+	JP		Z,DeleteTheLine				; If CTRL_U go delete the line       ;
+                                                                             ;
+  ;	CP		CTRL_R                                                           ;
+ 	;JP		ReadEcho					; display char, no more CTRL chars   ;
+                                                                             ;
+;Retype the line ?                                                           ;
+ 	CP		CTRL_R                                                           ;
+ 	JP		NZ,ReadEcho1				; No control chars, so echo it       ;
+	                                                                         ;
+LineLengthOrRepeat:                                                          ;
+; repeat line, or compute line len (CTRL_H) if temp_ColumnPosition > 0       ;
+ 	PUSH	BC							; Save Current Index and Max Count   ;
+ 	CALL	showHashCRLF				; Display Hash, new Line			 ;
+ 	POP		HL							; Restore Pointer					 ;
+ 	POP		BC							; Restore Character and Length       ;
+ 	PUSH	BC							; Save Current Index and Max Count   ;
+ 	PUSH	HL							; Save pointer                       ;
+Repeat:                                                                      ;
+ 	LD		A,B                                                              ;
+ 	OR		A							; Index at the Start?				 ;
+ 	JP		Z,Repeat1					;   get out if yes                   ;
+ 	INC		HL                                                               ;
+ 	LD		C,(HL)						; Get the current char               ;
+ 	DEC		B							; Decrement the Index                ;
+ 	PUSH	BC							; Save Current Index and Max Count   ;
+ 	PUSH	HL							; Save pointer                       ;
+ 	CALL	CaretCout					; Character to be echoed             ;
+ 	POP		HL							; Restore Pointer					 ;
+ 	POP		BC							; Restore Character and Length       ;
+ 	JP		Repeat						; Loop                               ;
+Repeat1:									; rep1:                          ;
+; end of repeat, recall lengths original BC still remains pushed             ;
+ 	PUSH	HL							; Save the Pointer                   ;
+ 	LD		A,(manageColPosFlag)		; See if we are managing             ;
+ 	OR		A							;  the columns.                      ;
+ 	JP		Z,ReadNext0					; If not then go fro next input      ;
+; columnPosition position computed for CTRL_H                                ;
+ 	LD		HL,columnPosition                                                ;
+ 	SUB		M							; Decrement the Pointer              ;
+ 	LD		(manageColPosFlag),A		; Save as Set manage Column flag     ;
+; move back temp_ColumnPosition-columnPosition spaces                        ;
+DeleteTheLine:                                                               ;
+ 	POP		HL							; Adjust Stack                       ;
+; loop while columnPosition > startingColumn                                 ;
+DeleteTheLine1:                                                              ;
+ 	LD		A,(startingColumn)                                               ;
+ 	LD		HL,columnPosition                                                ;
+ 	CP		M							; Start of line ?                    ;
+ 	JP		NC,ReadString				;  If yes get out and go for more    ;
+ 	DEC		M							; Adjust the ColumnPosition          ;
+ 	CALL	BackUp						; Clear 1 column                     ;
+ 	JP		DeleteTheLine1				; Loop for more                      ;
+                                                                             ;
+;.......................... move back one more space  .......................;	
+BackSpace:                                                                   ;
+ 	CALL	BackUp							; one space                      ;
+ 	LD		HL,manageColPosFlag                                              ;
+ 	DEC		M                                                                ;
+ 	JP		NZ,BackSpace                                                     ;
+ 	JP		ReadNext0						; for next character	         ;
+;.......................... move back one more space  .......................;	
+	
+;....................... Echo input back to the Console  ....................;
+; Full Duplex								                                 ;
+	                                                                         ; 
+; B = current buffer length, (index)                                         ;
+; C = maximum buffer length,                                                 ;
+; HL= next to fill - 1 (Pointer)                                             ;
+ReadEcho1:
+	INC		HL							; Advance the Pointer                ;
+	LD		(HL),A						; Get the current char               ;
+	INC		B							; Increment the command length       ;
+																			 ;
+ReadEcho:                                                                    ;
+  	PUSH	BC							; Save index and length              ;
+ 	PUSH	HL							; Save the Pointer                   ;
+ 	LD		C,A							; Get char                           ;
+ 	CALL	CaretCout					; Output to Console (^ if needed)    ;
+ 	POP		HL							; Restore the Pointer                ;
+ 	POP		BC							; Restore index and length           ;
+ 	LD		A,(HL)						; Recall char                        ;
+; check for Warm Boot                                                        ;
+ 	CP		CTRL_C                                                           ;
+ 	LD		A,B							; Get Line position                  ;
+ 	JP		NZ,AreWeAtEndOfBuffer		; Skip if not CTRL_C                 ;
+ 	CP		1							; Beginning of the Line?             ;
+ 	JP		Z,WarmBoot					;   if yes do the Boot               ;
+; Check to see if we are at the end of the buffer                            ;
+AreWeAtEndOfBuffer:                                                          ;
+ 	CP		C							; Over Max ?					     ;
+ 	JP		C,ReadNext					;  no, Go for more				     ;
+                                                                             ;
+; At the end of read                                  					     ;
+EndRead:                                                                     ;
+ 	POP		HL                                                               ;
+ 	LD		(HL),B						; Actual length at Pos 0 of Buffer   ;
+ 	LD		C,CR                                                             ;
+ 	JP		ConsoleOut					; Send CR to the Console			 ;
+;....................... Echo input back to the Console  ....................;
+;------------------------- Read a $ terminated String -----------------------;
+
+;------------------------ Back-up one screen position -----------------------;
+BackUp:                                                                     ;
+  	CALL	BackUp1						; Send Backspace                     ;
+ 	LD		C,SPACE						; Overwrite with SPACE               ;
+ 	CALL	bcConout					; Overwrite with SPACE				 ;
+;does not affect column count                                                ;
+BackUp1:                                                                     ;
+ 	LD		C,CTRL_H                                                         ;
+ 	JP		bcConout					; Send Backspace                     ;
+;------------------------ Back-up one screen position -----------------------;
+
+;****************************************************************************
+;                           DATA AREA                                       *
+;****************************************************************************
+
 ;------------------------------Non Disk Data Area ---------------------------;
-usersStack:			DS	2				; entry stack pointer
-keyboardByte:		DB	00				; Saved keyboard character
-printEchoFlag:		DB	00			; Controlled by ^P
-
-; FunctionValue:DB	00H					; Reg C on BDOS Entry
-manageColPosFlag:	DB	0				; true if managing column position
-startingColumn:		DB	0					; strtcol starting column position after read
-columnPosition:		DB	0					; column column position
-
-;------------------------------------ Data Area ------------------------------;
+usersStack:			DS	2				; entry stack pointer                ;
+                                                                             ;
+keyboardByte:		DB	00				; Saved keyboard character           ;
+                                                                             ;
+printEchoFlag:		DB	00				; Controlled by ^P                   ;
+                                                                             ;
+; FunctionValue:DB	00H					; Reg C on BDOS Entry                ;
+manageColPosFlag:	DB	0				; Non-Zero if managing col pos       ;
+startingColumn:		DB	0				; Starting col pos after read        ;
+columnPosition:		DB	0				; Current Column position            ;
+                                                                             ;
+paramE:				DS	BYTE			; Byte Argument for BDOS Call        ;
+paramDE:			DS	WORD				; Word Argument for BDOS Call    ;
+exitParameterByte:						; Byte returned Value                ;
+exitParameterWord:	DS	WORD				; Word                           ;
+                                                                             ;
+                                                                             ;
+;------------------------------------ Data Area -----------------------------;
 
 
 	
@@ -893,227 +1161,34 @@ columnPosition:		DB	0					; column column position
  ;*****************************************************************
  
  
- ;read to paramDE address (max length, current length, buffer)
- ReadString:
- 	LD		A,(columnPosition)
- 	LD		(startingColumn),A				; save start for ctl-x, ctl-h
- 	LD	HL,(paramDE)
- 	LD		C,(HL)
- 	INC		HL
- 	PUSH	HL
- 	LD		B,0
- ; B = current buffer length,
- ; C = maximum buffer length,
- ; HL= next to fill - 1
- 
- ; read next character, BC, HL active
- ReadNext:
- 	PUSH	BC
- 	PUSH	HL								; blen, cmax, HL saved
- ReadNext0:
- 	CALL	ConIn							; next char in A
- 	AND		ASCII_MASK						; mask parity bit
- 	POP		HL
- 	POP		BC								; reactivate counters
- 	CP		CR
- 	JP	Z,EndRead							; end of line?
- 	CP		LF
- 	JP	Z,EndRead							; also end of line
- 	CP		CTRL_H
- 	JP	NZ,NotCtntl_H						; backspace?
- ; do we have any characters to back over?
- 	LD		A,B
- 	OR		A
- 	JP	Z,ReadNext
- ; characters remain in buffer, backup one
- 	DEC		B								; remove one character
- 	LD		A,(columnPosition)
- 	LD		(manageColPosFlag),A							; col > 0
- ; temp_ColumnPosition > 0 marks repeat as length compute
- 	JP		LineLengthOrRepeat				; uses same code as repeat
- ; not a backspace
- NotCtntl_H:
- 	CP		RUBOUT
- 	JP	NZ,NotRubout						; RUBOUT char?
- ; RUBOUT encountered, RUBOUT if possible
- 	LD		A,B
- 	OR		A
- 	JP	Z,ReadNext						; skip if len=0
- ; buffer has characters, resend last char
- 	LD		A,(HL)
- 	DEC		B
- 	DEC		HL								; A = LAST CHAR
- ; BLEN=BLEN-1, NEXT TO FILL - 1 DECREMENTED
- 	JP		ReadEcho1						; act like this is an echo
- ;
- ; not a RUBOUT character, check end line
- NotRubout:
- 	CP		CTRL_E
- 	JP	NZ,NotCtntl_E						; physical end line?
- ; yes, save active counters and force eol
- 	PUSH	BC
- 	PUSH	HL
- 	CALL	showCRLF
- 	XOR		A
- 	LD		(startingColumn),A					; start position = 00
- 	JP		ReadNext0						; for another character
- NotCtntl_E:
- ; not end of line, list toggle?
- 	CP		CTRL_P
- 	JP	NZ,NotCtntl_P						; skip if not CTRL_P
-	
-TogglePrintEchoFlag: 
- 	PUSH	HL								; save next to fill - 1
-; Toggle the printEcho Flag
-
- 	LD		HL,printEchoFlag
- 	LD		A,1
- 	SUB		M							; True-printEcho Flag
- 	LD		(HL),A						; printEcho Flag = not printEcho Flag
-
-
-;	LD		HL,printEchoFlag
-;	LD		A,TRUE
-;	CP		(HL)
-;	JR		NZ,TogglePrintEchoFlag1
-;	LD		A,FALSE
-;TogglePrintEchoFlag1:
-;	LD		(HL),A
-	
- 	POP		HL
- 	JP		ReadNext						; for another char
-	
- ; not a CTRL_P, line delete?
- NotCtntl_P:
- 	CP		CTRL_X
- 	JP	NZ,NotCtntl_X
- 	POP		HL								; discard start position
- ; loop while columnPosition > startingColumn
- GoBack:
- 	LD		A,(startingColumn)
- 	LD		HL,columnPosition
- 	CP		M
- 	JP	NC,ReadString						; start again
- 	DEC		M								; columnPosition = columnPosition - 1
- 	CALL	BackUp							; one position
- 	JP		GoBack
- 
- ; not a control X, control U?
- NotCtntl_X:
- 	CP		CTRL_U
- 	JP	NZ,NotCtntl_U						; skip if not
- ; delete line (CTRL_U)
- 	CALL	showHashCRLF					; physical eol
- 	POP		HL								; discard starting position
- 	JP		ReadString						; to start all over
- NotCtntl_U:
- ; not line delete, repeat line?
- 	CP		CTRL_R
- 	JP	NZ,NotCtntl_R
- LineLengthOrRepeat:
- ; repeat line, or compute line len (CTRL_H) if temp_ColumnPosition > 0
- 	PUSH	BC
- 	CALL	showHashCRLF					; save line length
- 	POP		BC
- 	POP		HL
- 	PUSH	HL
- 	PUSH	BC
- ; bcur, cmax active, beginning buff at HL
- Repeat:
- 	LD		A,B
- 	OR		A
- 	JP	Z,Repeat1							; count len to 00
- 	INC		HL
- 	LD		C,(HL)								; next to print
- 	DEC		B
- 	PUSH	BC
- 	PUSH	HL								; count length down
- 	CALL	CaretCout						; character echoed
- 	POP		HL
- 	POP		BC								; recall remaining count
- 	JP		Repeat							; for the next character
- Repeat1:									; rep1:
- ; end of repeat, recall lengths original BC still remains pushed
- 	PUSH	HL								; save next to fill
- 	LD		A,(manageColPosFlag)
- 	OR		A								; >0 if computing length
- 	JP	Z,ReadNext0				; for another char if so
- ; columnPosition position computed for CTRL_H
- 	LD		HL,columnPosition
- 	SUB		M								; diff > 0
- 	LD		(manageColPosFlag),A							; count down below
- ; move back temp_ColumnPosition-columnPosition spaces
- 
- ; move back one more space
- BackSpace:
- 	CALL	BackUp							; one space
- 	LD		HL,manageColPosFlag
- 	DEC		M
- 	JP	NZ,BackSpace
- 	JP		ReadNext0						; for next character
- 
- ; not a CTRL_R, place into buffer
- NotCtntl_R:
- 
- ReadEcho:
- 	INC		HL
- 	LD		(HL),A								; character filled to mem
- 	INC		B								; blen = blen + 1
- ReadEcho1:
- 											; look for a random control character
- 	PUSH	BC
- 	PUSH	HL								; active values saved
- 	LD		C,A								; ready to print
- 	CALL	CaretCout						; may be up-arrow C
- 	POP		HL
- 	POP		BC
- 	LD		A,(HL)								; recall char
- 	CP		CTRL_C							; set flags for reboot test
- 	LD		A,B								; move length to A
- 	JP	NZ,NotCtntl_C						; skip if not a control c
- 	CP	1									; control C, must be length 1
- 	JP	Z,WarmBoot						; reboot if blen = 1
- ; length not one, so skip reboot
- NotCtntl_C:
- ; not reboot, are we at end of buffer?
- 	CP		C
- 	JP	C,ReadNext						; go for another if not paramDE
- 
- ; end of read operation, store blen
- EndRead:
- 	POP		HL
- 	LD		(HL),B								; M(current len) = B
- 	LD		C,CR
- 	JP		ConsoleOut						; return carriage
- 
- ;------------------
- ;back-up one screen position
- BackUp:
-  	CALL	PutCntl_H
- 	LD		C,SPACE
- 	CALL	bcConout
- ;send CTRL_H to console without affecting column count
- PutCntl_H:
- 	LD		C,CTRL_H
- 	JP		bcConout
- 	;ret
+;? ;------------------
+;? ;back-up one screen position
+;? BackUp:
+;?  	CALL	PutCntl_H
+;? 	LD		C,SPACE
+;? 	CALL	bcConout
+;? ;send CTRL_H to console without affecting column count
+;? PutCntl_H:
+;? 	LD		C,CTRL_H
+;? 	JP		bcConout
+;? 	;ret
  ;----------------------------------------------------------------
  ;
  
  
  ;------------------
- ;send C character with possible preceding up-arrow
- CaretCout:
- 	LD		A,C
- 	CALL	isPrintableASCII			; cy if not graphic (or special case)
- 	JP	NC,TabOut							; skip if graphic, TAB, CR, LF, or CTRL_H
- ; send preceding up arrow
- 	PUSH	AF
- 	LD		C,CARET
- 	CALL	ConsoleOut						; up arrow
- 	POP		AF
- 	OR		40H								; becomes graphic letter
- 	LD		C,A								; ready to print
+;? ;send C character with possible preceding up-arrow
+;? CaretCout:
+;? 	LD		A,C
+;? 	CALL	isPrintableASCII			; cy if not graphic (or special case)
+;? 	JP	NC,TabOut							; skip if graphic, TAB, CR, LF, or CTRL_H
+;? ; send preceding up arrow
+;? 	PUSH	AF
+;? 	LD		C,CARET
+;? 	CALL	ConsoleOut						; up arrow
+;? 	POP		AF
+;? 	OR		40H								; becomes graphic letter
+;? 	LD		C,A								; ready to print
  
 
  
@@ -2904,43 +2979,6 @@ TogglePrintEchoFlag:
 
 
 
- ;
- ;display #, CR, LF for CTRL_X, CTRL_U, CTRL_R functions
- ;then move to startingColumn (starting columnPosition)
- showHashCRLF:
- 	LD		C,HASH_TAG
- 	CALL	ConsoleOut
- 	CALL	showCRLF
- ; columnPosition = 0, move to position startingColumn
- showHashCRLF0:
- 	LD		A,(columnPosition)
- 	LD		HL,startingColumn
- 	CP		M
- 	RET	NC; stop when columnPosition reaches startingColumn
- 	LD		C,SPACE
- 	CALL	ConsoleOut						; display blank
- 	JP		showHashCRLF0
- ;
- ;carriage return line feed sequence
- showCRLF:
- 	LD		C,CR
- 	CALL	ConsoleOut
- 	LD		C,LF
- 	JP		ConsoleOut
- 
- ;-------------
-;------------------ Print character from (BC) until  $ found ----------------;
- Print:
- 	LD		A,(BC)						; Get the next character
- 	CP		DOLLAR						; Is it the end ?
- 	RET	Z								;  exit if yes
- 	INC		BC							; Update the pointer
- 	PUSH	BC							; Save it
- 	LD		C,A							; Does Byte require 
- 	CALL	TabOut						;  special attention - check
- 	POP		BC							; Retrieve the pointer							
- 	JP		Print						; Loop back
-;------------------ Print character from (BC) until  $ found ----------------;
 
 
  ;********************************************************
@@ -3111,7 +3149,6 @@ TogglePrintEchoFlag:
  
  ;     ************************
  
- paramE:				DS	BYTE				; ParamE low(info)
  caSkewTable:		DW	0000H				; tranv address of translate vector
  fcbCopiedFlag:		DB	00H					; fcb$copied set true if CopyFCB called
  readModeFlag:		DB	00H					; rmf read mode flag for OpenNextExt
@@ -3140,7 +3177,8 @@ TogglePrintEchoFlag:
  
 ;---------------------------------- Stack Area--------------------------------;
 stackBottom:		DS	STACK_SIZE * 2	; stack size                      ;
-bdosStack:                                                                    ;
+bdosStack:
+                                                                    ;
 ;---------------------------------- Stack Area--------------------------------;
  ;	end of Basic I/O System
  ;-----------------------------------------------------------------;
