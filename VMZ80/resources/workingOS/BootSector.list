@@ -356,9 +356,9 @@
 0356: 0179 42 6F 6F 74 53 74 72 61 70 20 6C 6F 61 64 65 72 20                DB     'BootStrap loader '  ;
 0357: 018A 43 50 2F 4D 20 32 2E 32 20 28 5A 38 30 29 20                DB     'CP/M 2.2 (Z80) '    ;
 0358: 0199 0D 0A                  DB     CR,LF                ;
-0359: 019B 42 75 69 6C 64 20 30 2E 42 20                DB     'Build 0.B '         ;
+0359: 019B 42 75 69 6C 64 20 30 2E 43 20                DB     'Build 0.C '         ;
 0360: 01A5 0D 0A                  DB     CR,LF                ;
-0361: 01A7 43 43 50 20 30 2E 41 20 7C 20 20 42 44 4F 53 20 30 2E 41 20 7C 20 42 49 4F 53 20 31 2E 30                DB     'CCP 0.A |  BDOS 0.A | BIOS 1.0' ;
+0361: 01A7 43 43 50 20 30 2E 41 20 7C 20 20 42 44 4F 53 20 30 2E 42 20 7C 20 42 49 4F 53 20 31 2E 30                DB     'CCP 0.A |  BDOS 0.B | BIOS 1.0' ;
 0362: 01C5 0D 0A 0D 0A 00                DB     CR,LF,CR,LF,EndOfMessage ;
 0363: 01CA         ;
 0364: 01CA             FailedBootMessage:                      ;
