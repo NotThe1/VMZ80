@@ -322,35 +322,35 @@
 0322: 012E 76                     HALT
 0323: 012F
 0324: 012F
-0325: 012F         ;---------------------------- ROM Disk Control Block -------------------------;
+0325: 012F         ;---------------------------- ROM Disk Control Block ------------------------;
 0326: 012F             BootControl:                      ;
-0327: 012F 01                     DB     DiskReadCode         ; Read function                   	  ;
-0328: 0130 00                     DB     00H                  ; unit number                     	  ;
-0329: 0131 00                     DB     00H                  ; head number                     	  ;
-0330: 0132 00                     DB     00H                  ; track number                    	  ;
-0331: 0133 0D                     DB     0DH                  ; Starting sector number (13)     	  ;
-0332: 0134 00 0A                  DW     5 * 512              ; Number of bytes to read         	  ;
-0333: 0136         ;	( 0A00 All of BIOS)           	  ;
-0334: 0136 00 F6                  DW     BIOSStart            ; read into this address          	  ;
-0335: 0138 43 00                  DW     DiskStatusLocation   ; next block - no linking         	  ;
-0336: 013A 40 00                  DW     DiskControlTable     ; next table- no linking          	  ;
-0337: 013C         ;---------------------------- ROM Disk Control Block -------------------------;
+0327: 012F 01                     DB     DiskReadCode         ; Read function                   	 ;
+0328: 0130 00                     DB     00H                  ; unit number                     	 ;
+0329: 0131 00                     DB     00H                  ; head number                     	 ;
+0330: 0132 00                     DB     00H                  ; track number                    	 ;
+0331: 0133 0D                     DB     0DH                  ; Starting sector number (13)     	 ;
+0332: 0134 00 0A                  DW     5 * 512              ; Number of bytes to read         	 ;
+0333: 0136         ;	( 0A00 All of BIOS)           	 ;
+0334: 0136 00 F6                  DW     BIOSStart            ; read into this address          	 ;
+0335: 0138 43 00                  DW     DiskStatusLocation   ; next block - no linking         	 ;
+0336: 013A 40 00                  DW     DiskControlTable     ; next table- no linking          	 ;
+0337: 013C         ;---------------------------- ROM Disk Control Block ------------------------;
 0338: 013C
-0339: 013C         ;------------------------------------ Page 0 ---------------------------------;
+0339: 013C         ;------------------------------------ Page 0 --------------------------------;
 0340: 013C             Page0Image:                      ;
-0341: 013C C3 03 F6               JP     WarmBootEntry        ; warm start                          ;
-0342: 013F         ;IOBYTE:                                                                      ;
-0343: 013F 80                     DB     IOBYTE_DEFAULT       ; IOBYTE-                             ;
+0341: 013C C3 03 F6               JP     WarmBootEntry        ; warm start                         ;
+0342: 013F         ;IOBYTE:                                                                     ;
+0343: 013F 80                     DB     IOBYTE_DEFAULT       ; IOBYTE-                            ;
 0344: 0140             DefaultDisk:                      ;
-0345: 0140 00                     DB     00H                  ; Current default drive (A)           ;
-0346: 0141 C3 00 E8               JP     BDOSEntry            ; jump to BDOS entry                  ;
-0347: 0144                        DS     028H                 ; interrupt locations 1-5 not used    ;
-0348: 016C                        DS     008H                 ; interrupt location 6 is reserved    ;
-0349: 0174 C3 00 00               JP     0000H                ; RST 7 used only by DDT & SID        ;
+0345: 0140 00                     DB     00H                  ; Current default drive (A)          ;
+0346: 0141 C3 00 E8               JP     BDOSEntry            ; jump to BDOS entry                 ;
+0347: 0144                        DS     028H                 ; interrupt locations 1-5 not used   ;
+0348: 016C                        DS     008H                 ; interrupt location 6 is reserved   ;
+0349: 0174 C3 00 00               JP     0000H                ; RST 7 used only by DDT & SID       ;
 0350: 0177             Page0ImageEnd:                      ;
-0351: 0177         ;------------------------------------ Page 0 ---------------------------------;
+0351: 0177         ;------------------------------------ Page 0 --------------------------------;
 0352: 0177
-0353: 0177         ;---------------------------------- Messages ---------------------------------;
+0353: 0177         ;---------------------------------- Messages --------------------------------;
 0354: 0177             BootMessage:                      ;
 0355: 0177 0D 0A                  DB     CR,LF                ;
 0356: 0179 42 6F 6F 74 53 74 72 61 70 20 6C 6F 61 64 65 72 20                DB     'BootStrap loader '  ;
@@ -373,13 +373,14 @@
 0373: 01FA 7E                     LD     A,(HL)               ;
 0374: 01FB B7                     OR     A                    ;
 0375: 01FC C8                     RET    Z                    ;
-0376: 01FD D3 EC                  OUT    (BOOT_CON_ADDRESS),A ; Console address		              ;
+0376: 01FD D3 EC                  OUT    (BOOT_CON_ADDRESS),A ; Console address		             ;
 0377: 01FF 23                     INC    HL                   ;
 0378: 0200 C3 FA 01               JP     SendMessage          ;
-0379: 0203         ;---------------------------------- Messages ---------------------------------;
-0380: 0203
+0379: 0203         ;---------------------------------- Messages --------------------------------;
+0380: 0203             Z_HighestLocation:
+0381: 0203             Z_MemoryLeft EQU    0512H - Z_HighestLocation
            ************************   Xref   ************************
-0000: $               0200
+0000: $               0203
 0079: ASCII_A         0041
 0080: ASCII_C         0043
 0081: ASCII_K         004B
@@ -546,4 +547,6 @@
 0188: WriteAllocated  0000
 0190: WriteCleanBuffer 0002
 0189: WriteDirectory  0001
+0380: Z_HighestLocation 0203   0381
+0381: Z_MemoryLeft    030F
 0032: ZERO            0000

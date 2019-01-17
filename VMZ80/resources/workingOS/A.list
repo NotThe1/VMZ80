@@ -18,40 +18,115 @@
 0018: 0100             Buffer     EQU    080H
 0019: 0100             Max        EQU    10H
 0020: 0100
-0021: 0100                        ORG    TPA
-0022: 0100             Start:
-0023: 0100 0E 09                  LD     C,PrintString
-0024: 0102 11 18 01               LD     DE,Stuff
-0025: 0105 CD 05 00               CALL   BDOS
-0026: 0108
-0027: 0108
-0028: 0108 0E 08                  LD     C,BS
-0029: 010A CD 0C F6               CALL   bcConOut
-0030: 010D 0E 20                  LD     C,SPACE
-0031: 010F CD 0C F6               CALL   bcConOut
-0032: 0112 0E 08                  LD     C,BS
-0033: 0114 CD 0C F6               CALL   bcConOut
-0034: 0117
-0035: 0117
-0036: 0117 76                     HALT
-0037: 0118
-0038: 0118             Stuff:
-0039: 0118 41 42 43 44 45 46 2E 2E 2E 58 59 5A 24                DB     'ABCDEF...XYZ$'
+0021: 0100
+0022: 0100                        ORG    TPA
+0023: 0100             Start:
+0024: 0100 31 00 01               LD     SP,TPA
+0025: 0103 DD 21 43 01               LD     IX,Disk
+0026: 0107 AF                     XOR    A
+0027: 0108 32 43 01               LD     (Disk),A
+0028: 010B
+0029: 010B             Loop0:
+0030: 010B DD 46 00               LD     B,(IX+0)
+0031: 010E 2A 44 01               LD     HL,(Data)
+0032: 0111 CD 1E 01               CALL   SetMapBit
+0033: 0114         ;		CALL	IsBitSet
+0034: 0114 DD 46 00               LD     B,(IX+0)
+0035: 0117 00                     NOP
+0036: 0118 DD 34 00               INC    (IX+0)
+0037: 011B 18 EE                  JR     Loop0
+0038: 011D
+0039: 011D 76                     HALT
+0040: 011E         ;---------------------------------- Set Map Bit -----------------------------;
+0041: 011E         ; Enter  HL  contains the bit map                                             ;
+0042: 011E         ;        B   Has the bit number (0...F)                                       ;
+0043: 011E         ; Return HL  Contains the modified bit map
+0044: 011E             SetMapBit:
+0045: 011E C5                     PUSH   BC                   ; Save the Bit Number
+0046: 011F CD 33 01               CALL   IsBitSet             ; Put the bit in the LSBit
+0047: 0122
+0048: 0122 C1                     POP    BC                   ; Get the bit position
+0049: 0123 CB FC                  SET    7,H
+0050: 0125
+0051: 0125             ReAlignMap:
+0052: 0125 04                     INC    B
+0053: 0126             ReAlignMapLoop:
+0054: 0126 37                     SCF                         ; Set carry flag, expect LSBit = 1   ;
+0055: 0127 CB 7C                  BIT    7,H                  ; is LSB set?                        ;
+0056: 0129 20 01                  JR     NZ,ReAlignMap1       ; Skip if LSB set                    ;
+0057: 012B 3F                     CCF                         ; else Clear Carry flag              ;
+0058: 012C             ReAlignMap1:                      ;
+0059: 012C CB 15                  RL     L                    ; Shift thru CY                      ;
+0060: 012E CB 14                  RL     H                    ; ditto                              ;
+0061: 0130 10 F4                  DJNZ   ReAlignMapLoop
+0062: 0132 C9                     RET                         ;
+0063: 0133         ;---------------------------------- Set Map Bit -----------------------------;
+0064: 0133
+0065: 0133         ;------------------------------ ReAlign Map ---------------------------------;
+0066: 0133         ; Enter HL  contains the bit map                                             ;
+0067: 0133         ;       B   Has the bit number (0...F)                                       ;
+0068: 0133         ;ReAlignMap:																	 ;
+0069: 0133
+0070: 0133         ;------------------------------ ReAlign Map ---------------------------------;
+0071: 0133
+0072: 0133         ;---------------------------------- Is Bit Set ------------------------------;
+0073: 0133         ; Enter HL  contains the bit map                                             ;
+0074: 0133         ;       B   Has the bit number (0...F)                                       ;
+0075: 0133         ; Return ZFlag = 1 if bit is reset (0)                                       ;
+0076: 0133         ;              = 0 if bit is set (1)                                         ;
+0077: 0133             IsBitSet:                       ;
+0078: 0133 04                     INC    B                    ;
+0079: 0134             IsBitSetLoop:
+0080: 0134 37                     SCF                         ; Set carry flag, expect LSBit = 1   ;
+0081: 0135 CB 45                  BIT    0,L                  ; is LSB set?                        ;
+0082: 0137 20 01                  JR     NZ,IsBitSet1         ; Skip if LSB set                    ;
+0083: 0139 3F                     CCF                         ; else Clear Carry flag              ;
+0084: 013A             IsBitSet1:                      ;
+0085: 013A CB 1C                  RR     H                    ; Shift thru CY                      ;
+0086: 013C CB 1D                  RR     L                    ; ditto                              ;
+0087: 013E 10 F4                  DJNZ   IsBitSetLoop
+0088: 0140 CB 7C                  BIT    7,H                  ; Bit moved from L LSBit to H MSBit	 ;
+0089: 0142 C9                     RET                         ;
+0090: 0143         ;---------------------------------- Is Bit Set ------------------------------;
+0091: 0143             Disk:
+0092: 0143         ;		DB		0
+0093: 0143 08                     DB     08H
+0094: 0144
+0095: 0144         ;			ORG		TPA
+0096: 0144             Data:
+0097: 0144         ;			DW		0A55AH
+0098: 0144         ;			DW		1111111100000000B	; FF00H
+0099: 0144         ;			DW		00FFH
+0100: 0144 00 00                  DW     0000H
+0101: 0146 02                     DB     02H
+0102: 0147                        DS     13
+0103: 0154 A5 5A                  DW     05AA5H
+0104: 0156 12                     DB     12H
+0105: 0157
            ************************   Xref   ************************
-0000: $               0118
-0014: bcConOut        F60C   0029 0031 0033
-0006: BDOS            0005   0025
-0012: BS              0008   0028 0032
+0000: $               0156
+0014: bcConOut        F60C
+0006: BDOS            0005
+0012: BS              0008
 0018: Buffer          0080
 0015: ConIn           E91C
 0009: CR              000A
+0096: Data            0144   0031
+0091: Disk            0143   0025 0027
 0008: FALSE           0000
+0077: IsBitSet        0133   0046
+0084: IsBitSet1       013A   0082
+0079: IsBitSetLoop    0134   0087
 0010: LF              000D
+0029: Loop0           010B   0037
 0019: Max             0010
-0016: PrintString     0009   0023
+0016: PrintString     0009
 0017: ReadConsole     000A
-0013: SPACE           0020   0030
-0022: Start           0100
-0038: Stuff           0118   0024
-0011: TPA             0100   0021
+0051: ReAlignMap      0125
+0058: ReAlignMap1     012C   0056
+0053: ReAlignMapLoop  0126   0061
+0044: SetMapBit       011E   0032
+0013: SPACE           0020
+0023: Start           0100
+0011: TPA             0100   0022 0024
 0007: TRUE            00FF
