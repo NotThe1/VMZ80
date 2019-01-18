@@ -1131,13 +1131,13 @@ vGetDiskParamBlock:							; func31 (31 - 1F)
  ;OUT - Random Record Field is set
  vSetRandomRecord:							; func36 (36 - 24) Set random Record
 	JP		SetRandomRecord
- ;*****************************************************************
- ;Reset Drive
- ;IN  - (DE) Drive Vector
- ;OUT - (A) 00
- vResetDrive:								; func37 (37 - 25) Reset Drive
- ; Not Yet Implemented   **************
-	RET
+;? ;*****************************************************************
+;? ;Reset Drive
+;? ;IN  - (DE) Drive Vector
+;? ;OUT - (A) 00
+;? vResetDrive:								; func37 (37 - 25) Reset Drive
+;? ; Not Yet Implemented   **************
+;?	RET
  ;*****************************************************************
  ;*****************************************************************
  ;Write Random With Zero Fill
@@ -1405,39 +1405,23 @@ vGetDiskParamBlock:							; func31 (31 - 1F)
 	JP	Select
  ;*****************************************************************
 ;--------------------------- Select Login Drive -----------------------------;
- ; select Login Drive
-Select:
- 	CALL	SelectDisk					; Select the Disk
-	CALL	Z,errSelect
-	LD		HL,(loggedDisks)			; Load Logged Disk MAP
-	LD		B,(currentDisk)				; Get Current Disk
-	CALL	IsBitSet
-	RET		NZ							; Exit if already logged in
-;
- 
- 
-;	LD		HL,(loggedDisks)			; Point at Logged in Disks
-;	LD		A,(currentDisk)				; Get Current Disk
-;	LD		C,A
-;	CALL	ShiftRightHLbyC				; see if we already have drive logged in
-;	PUSH	HL							; save result
-;;	EX		DE,HL						 ; send to seldsk
-;	CALL	SelectDisk
-;	POP		HL								; get back logged disk vector
-;	CALL	Z,errSelect
-;	LD		A,L								; get logged disks
-;	RRA
-;	RET	C; exit if the disk already logged in
-
-	LD		HL,(loggedDisks)			; else log in a different disk
-	
-LD		B,(currentDisk)				; Get Current Disk
-CALL	SetMapBit
-;?	LD		C,L
-;?	LD		B,H								; BC has logged disk
-;?	CALL	SetCurrentDiskBit
-	LD		(loggedDisks),HL						; save result
-	JP		InitDisk
+ ; select Login Drive                                                        ;
+Select:                                                                      ;
+ 	CALL	SelectDisk					; Select the Disk                    ;
+	CALL	Z,errSelect                                                      ;
+	LD		HL,currentDisk													 ;
+	LD		B,(HL)						; Get Current Disk                   ;
+	LD		HL,(loggedDisks)			; Load Logged Disk MAP               ;
+	CALL	IsBitSet                                                         ;
+	RET		NZ							; Exit if already logged in          ;
+;                                                                            ;
+	LD		HL,currentDisk													 ;
+	LD		B,(HL)						; Get Current Disk                   ;
+	LD		HL,(loggedDisks)			; else log in a different disk	     ;
+	CALL	SetMapBit                                                        ;
+	LD		(loggedDisks),HL			; Update the Map                     ;
+	                                                                         ;
+	JP		InitDisk                                                         ;
 ;--------------------------- Select Login Drive -----------------------------;
 
 ;--------------------------- Select Disk ------------------------------------;
@@ -1492,7 +1476,36 @@ SelectDisk:                                                                  ;
 	OR	A								                                     ;
 	RET                                                                      ;
 ;--------------------------- Select Disk ------------------------------------;
- 
+;--------------------------- Initialize Disk --------------------------------;
+ InitDisk1:
+	LD		C,TRUE
+	CALL	ReadDirectory
+	CALL	EndOfDirectory
+	RET	Z; return if end of directory
+ ; not end of directory, valid entry?
+	CALL	GetDirElementAddress			; HL = caDirectoryDMA + dirBlockIndex
+	LD		A,emptyDir
+	CP		M
+	JP	Z,InitDisk1						; go get another item
+ ; not emptyDir, user code the same?
+	LD		A,(currentUserNumber)
+	CP		M
+	JP	NZ,InitDisk2
+ ; same user code, check for '$' submit
+	INC		HL
+	LD		A,(HL)								; first character
+	SUB		DOLLAR							; dollar file?
+	JP	NZ,InitDisk2
+ ; dollar file found, mark in exitParameterByte
+	DEC		A
+	LD		(exitParameterByte),A					; exitParameterByte = 255
+ InitDisk2:
+ ; now scan the disk map for allocated blocks
+	LD		C,1								; set to allocated
+	CALL	ScanDiskMap
+	CALL	SetDirectoryEntry				; set DirMaxVAlue to dirEntryIndex
+	JP		InitDisk1						; for another entry
+;--------------------------- Initialize Disk --------------------------------;
  ;---------------
  ; set a "1" value in currentDisk position of BC
  ; return in HL
@@ -1566,34 +1579,34 @@ SelectDisk:                                                                  ;
 
 	CALL	SetEndDirectory					; dirEntryIndex = EOD
  ; read directory entries and check for allocated storage
- InitDisk1:
-	LD		C,TRUE
-	CALL	ReadDirectory
-	CALL	EndOfDirectory
-	RET	Z; return if end of directory
- ; not end of directory, valid entry?
-	CALL	GetDirElementAddress			; HL = caDirectoryDMA + dirBlockIndex
-	LD		A,emptyDir
-	CP		M
-	JP	Z,InitDisk1						; go get another item
- ; not emptyDir, user code the same?
-	LD		A,(currentUserNumber)
-	CP		M
-	JP	NZ,InitDisk2
- ; same user code, check for '$' submit
-	INC		HL
-	LD		A,(HL)								; first character
-	SUB		DOLLAR							; dollar file?
-	JP	NZ,InitDisk2
- ; dollar file found, mark in exitParameterByte
-	DEC		A
-	LD		(exitParameterByte),A					; exitParameterByte = 255
- InitDisk2:
- ; now scan the disk map for allocated blocks
-	LD		C,1								; set to allocated
-	CALL	ScanDiskMap
-	CALL	SetDirectoryEntry				; set DirMaxVAlue to dirEntryIndex
-	JP		InitDisk1						; for another entry
+;? InitDisk1:
+;?	LD		C,TRUE
+;?	CALL	ReadDirectory
+;?	CALL	EndOfDirectory
+;?	RET	Z; return if end of directory
+;? ; not end of directory, valid entry?
+;?	CALL	GetDirElementAddress			; HL = caDirectoryDMA + dirBlockIndex
+;?	LD		A,emptyDir
+;?	CP		M
+;?	JP	Z,InitDisk1						; go get another item
+;? ; not emptyDir, user code the same?
+;?	LD		A,(currentUserNumber)
+;?	CP		M
+;?	JP	NZ,InitDisk2
+;? ; same user code, check for '$' submit
+;?	INC		HL
+;?	LD		A,(HL)								; first character
+;?	SUB		DOLLAR							; dollar file?
+;?	JP	NZ,InitDisk2
+;? ; dollar file found, mark in exitParameterByte
+;?	DEC		A
+;?	LD		(exitParameterByte),A					; exitParameterByte = 255
+;? InitDisk2:
+;? ; now scan the disk map for allocated blocks
+;?	LD		C,1								; set to allocated
+;?	CALL	ScanDiskMap
+;?	CALL	SetDirectoryEntry				; set DirMaxVAlue to dirEntryIndex
+;?	JP		InitDisk1						; for another entry
  ;
  ;-------------Scan the disk map for unallocated entry-----------------------------------
  ; scan the disk map addressed by dptr for non-zero entries.  The allocation
@@ -1765,18 +1778,21 @@ SelectDisk:                                                                  ;
 	INC		A								; 0ffh becomes 00 if so
 	RET
  ;---------------
- ; read a directory entry into the directory buffer
+;--------------------------- Read Directory Record --------------------------;
+; read a directory entry into the directory buffer
  ReadDirRecord:
-	CALL	SetDirDMA						; directory dma
+	CALL	SetDirDMA					; System Assigned Buffer
 	CALL	ReadBuffer						; directory record loaded
      JP		SetDataDMA						; to data dma address
 	;ret
- ;---------------
+;--------------------------- Read Directory Record --------------------------;
+
+;--------------------------- Read Directory ---------------------------------;
  ; read next directory entry, with C=true if initializing
  ReadDirectory:
-	LD	HL,(dpbDRM)
-	EX	DE,HL ; determine number of directory entries
-	LD	HL,(dirEntryIndex)					; index into directory
+	LD		HL,(dpbDRM)						; Number of Dir Entries-1
+	EX		DE,HL							; determine number of directory entries
+	LD		HL,(dirEntryIndex)					; index into directory
 	INC		HL
 	LD	(dirEntryIndex),HL					; initialize directory index
  ; continue while dpbDRM >= dirEntryIndex (dpbDRM-dirEntryIndex no cy)
@@ -1805,6 +1821,7 @@ SelectDisk:                                                                  ;
 	POP		BC								; recall initialization flag
 	JP		CalculateCheckSum				; checksum the directory elt
  ;---------
+;--------------------------- Read Directory ---------------------------------;
  ;seek the record containing the current dir entry
  SeekDir:
 	LD	HL,(dirEntryIndex)					; directory counter to HL
@@ -3148,7 +3165,7 @@ SetMapBit:                                                                  ;;
 ; Enter  HL  contains the bit map                                           ;;
 ;        B   Has the bit number (0...F)                                     ;;
 ; Return HL  Contains the modified bit map                                  ;;
-SetMapBit:                                                                  ;;
+ResetMapBit:                                                                  ;;
 		PUSH	BC						; Save the Bit Number               ;;
 		CALL	IsBitSet				; Put the bit in the LSBit          ;;
                                                                             ;;
@@ -3174,12 +3191,12 @@ ReAlignMap1:                                                                 ;
 ;============================ Set/Reset Map Bit =============================;		
 
 
- ;********************************************************
- ;return version number
- vGetVersion:								; func12 (12 - 0C)	 Get Verson
-	LD		A,VERSION
-	LD		(exitParameterByte),A 				;exitParameterByte = VERSION (high = 00)
-	RET
+;? ;********************************************************
+;? ;return version number
+;? vGetVersion:								; func12 (12 - 0C)	 Get Verson
+;?	LD		A,VERSION
+;?	LD		(exitParameterByte),A 				;exitParameterByte = VERSION (high = 00)
+;?	RET
  ;************Error message World*************************
  errSelect:
 	LD		HL,evSelection
