@@ -21,96 +21,13 @@ Max			EQU		10H
 
 			ORG		TPA			
 Start:
-		LD		BC,Loop0
 		LD		SP,TPA
-		LD		IX,Disk
+L123:
+		LD		DE,007FH
+		LD		HL,0000
 		XOR		A
-		LD		(Disk),A
-
-Loop0:
-		LD		B,(IX +0)
-		LD		HL,(Data)
-		CALL	SetMapBit
-;		CALL	IsBitSet
-		LD		B,(IX +0)
+		SBC		HL,DE
 		NOP
-		INC		(IX+0)
-		JR		Loop0
-
-		HALT
-;============================ Set/Reset Map Bit =============================;		
-;---------------------------------- Set Map Bit ----------------------------;;		
-; Enter  HL  contains the bit map                                           ;;
-;        B   Has the bit number (0...F)                                     ;;
-; Return HL  Contains the modified bit map                                  ;;
-SetMapBit:                                                                  ;;
-		PUSH	BC						; Save the Bit Number               ;;
-		CALL	IsBitSet				; Put the bit in the LSBit          ;;
-                                                                            ;;
-		POP		BC						; Get the bit position              ;;
-		SET		7,H                                                         ;;
-		JR		ReAlignMap				;                                    ;
-;---------------------------------- Set Map Bit ----------------------------;;
-;---------------------------------- Reset Map Bit --------------------------;;		
-; Enter  HL  contains the bit map                                           ;;
-;        B   Has the bit number (0...F)                                     ;;
-; Return HL  Contains the modified bit map                                  ;;
-SetMapBit:                                                                  ;;
-		PUSH	BC						; Save the Bit Number               ;;
-		CALL	IsBitSet				; Put the bit in the LSBit          ;;
-                                                                            ;;
-		POP		BC						; Get the bit position              ;;
-		RES		7,H                                                         ;;
-; Fall thru to ReAlignMap                                                    ;
-;---------------------------------- Reset Map Bit --------------------------;;		
-;---------------------------------- Set Map Bit ----------------------------;;
-; Adjusts the HL register to its Original Alignment after IsBitSet           ;
-		                                                                     ;
-ReAlignMap:                                                                  ;
-		INC		B                                                            ;
-ReAlignMapLoop:                                                              ;
- 		SCF								; Set carry flag, expect LSBit = 1   ;
-		BIT		7,H						; is LSB set?                        ;
-		JR		NZ, ReAlignMap1				; Skip if LSB set                ;
-		CCF								; else Clear Carry flag              ;
-ReAlignMap1:                                                                 ;
-		RL		L						; Shift thru CY                      ;
-		RL		H						; ditto                              ;
-		DJNZ	ReAlignMapLoop                                               ;
-		RET                                                                  ;
-;============================ Set/Reset Map Bit =============================;		
-
-;---------------------------------- Is Bit Set ------------------------------;
-; Enter HL  contains the bit map                                             ;
-;       B   Has the bit number (0...F)                                       ;
-; Return ZFlag = 1 if bit is reset (0)                                       ;
-;              = 0 if bit is set (1)                                         ;
-IsBitSet:																	 ;
-		INC		B                                                            ;
-IsBitSetLoop:
- 		SCF								; Set carry flag, expect LSBit = 1   ;
-		BIT		0,L						; is LSB set?                        ;
-		JR		NZ, IsBitSet1				; Skip if LSB set                    ;
-		CCF								; else Clear Carry flag              ;
-IsBitSet1:                                                                      ;
-		RR		H						; Shift thru CY                      ;
-		RR		L						; ditto                              ;
-		DJNZ	IsBitSetLoop 
-		BIT		7,H						; Bit moved from L LSBit to H MSBit	 ;
-		RET                                                                  ;
-;---------------------------------- Is Bit Set ------------------------------;
-Disk:
-;		DB		0
-		DB		08H
-
-;			ORG		TPA	
-Data:
-;			DW		0A55AH
-;			DW		1111111100000000B	; FF00H
-;			DW		00FFH
-			DW		0000H
-			DB		02H
-			DS		13
-			DW		05AA5H
-			DB		12H
+		JR		L123
 		
+		HALT

@@ -154,6 +154,8 @@ public class CentralProcessingUnit implements Runnable {
 					ansWord = au.subWordWithCarry(destinationWord, sourceWord, ccr.isCarryFlagSet());
 				} // if bit 3
 				wrs.setDoubleReg(Register.HL, ansWord);
+				ccr.setSignFlag(au.isSignFlagSet());
+				ccr.setZeroFlag(au.isZeroFlagSet());
 				break;
 			case 3:// ED (43,53,63,73) - LD (nn),dd | ED (4B,5B,6B,7B) LD dd,(nn)
 				currentRegister = getDoubleRegister1_45(insBasePlus1);

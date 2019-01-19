@@ -1502,21 +1502,20 @@ InitDiskLoop1:
 	LD		(HL),D						; Put reserved blocks in Vector	
 ; home disk, and set current track and sector to 00
 	CALL	Home
- 
 	LD		HL,(caDirMaxValue)
 	LD		(HL),3
 	INC		HL
 	LD		(HL),0						; Current Max Dir Value = 0003
-
 	CALL	SetEndDirectory				; dirEntryIndex = EOD (-1)
 
  InitDisk1:
-	LD		C,TRUE
+; Process the directory for 
+	LD		C,TRUE						; Set flag for setting CheckSum	
 	CALL	ReadDirectory
 	CALL	EndOfDirectory
-	RET	Z								; Return if end of directory
- ; not end of directory, valid entry?
-	CALL	GetDirElementAddress			; HL = caDirectoryDMA + dirBlockIndex
+	RET		Z							; Exit at end of directory
+; not end of directory, valid entry?
+	CALL	GetDirElementAddress		; Calculate the location of the element
 	LD		A,emptyDir
 	CP		M
 	JP	Z,InitDisk1						; go get another item
@@ -1717,31 +1716,60 @@ Home:                                                                       ;
  ;*****************************************************************
 ;--------------------------- Disk Utilities --------------------------------;
 SetDataDMA:                                                                 ;
-	LD		HL,initDAMAddress                                               ;
-	JR		SetDMA						; Skip to complete the call         ;
-;	LD		BC,initDAMAddress                                               ;
-;	JP		bcSetdma					; Call BIOS to set                  ;
-;                                                                           ;
+;	LD		HL,initDAMAddress                                               ;
+;	JR		SetDMA						; Skip to complete the call         ;
+	LD		BC,initDAMAddress                                               ;
+	JP		bcSetdma					; Call BIOS to set                  ;
+                                                                           ;
 SetDirDMA:                                                                  ;
 	LD		HL,caDirectoryDMA			; Load current directory Buffer     ;
-;	LD		HL,caDirectoryDMA			; Load current directory Buffer     ;
+;	LD		BC,caDirectoryDMA			; Load current directory Buffer     ;
 ;	JP		bcSetdma					; Call BIOS to set                  ;
 	                                                                        ;
-SetDMA:									                                ;
+;SetDMA:									                                ;
 	LD		C,(HL)                                                          ;
 	INC		HL                                                              ;
 	LD		B,(HL)							; parameter ready               ;
 	JP		bcSetdma						; call bios to set              ;
                                                                           ;
-;--------------------------- Disk Utilities --------------------------------; 
+;--------------------------- Disk Utilities --------------------------------;
+ 
 ;--------------------------- File Utilities --------------------------------;
-; Set the directory index to -1                                             ;
+;--------------------------- File Utilities --------------------------------;
+
+;--------------------------- Directory Utilities ---------------------------;
+; Set the directory index to 0FFFFH                                         ;
 SetEndDirectory:                                                            ;
 	LD		HL,EOD                                                          ;
 	LD		(dirEntryIndex),HL                                              ;
 	RET                                                                     ;
+	                                                                        ;
+; compute the address of a directory element in Directory Buffer            ;
+GetDirElementAddress:                                                       ;
+	LD		HL,(caDirectoryDMA)			; Get the Directory Buffer base     ;
+	LD		A,(dirBlockIndex)			; Get the index value               ;
+	LD		C,A                                                             ;
+	XOR		A							; Set to Zero and reset CY          ;
+	LD		B,A                                                             ;
+	ADC		HL,BC						; Compute the Entry Location        ;
+	RET                                                                     ;
                                                                             ;
-;--------------------------- File Utilities --------------------------------; 
+;--------------------------- Directory Utilities ---------------------------;
+;--------------------------- General   Utilities ---------------------------;
+; HL = Value to be shifted Right
+;  B = Amount to shift 
+ShiftRightHLbyB:                                                            ;
+ 		SCF								; Set carry flag, expect LSBit = 1  ;
+		BIT		0,L						; is LSB set?                       ;
+		JR		NZ, ShiftRightHLbyB1		; Skip if LSB set               ;
+		CCF								; else Clear Carry flag             ;
+ShiftRightHLbyB1:                                                           ;
+		RR		H						; Shift thru CY                     ;
+		RR		L						; ditto                             ;
+		DJNZ	ShiftRightHLbyB:                                            ;
+		RET                                                                 ;
+                                                                            ;
+;--------------------------- General   Utilities ---------------------------;
 
  ;---------------
 ;---------------
@@ -1768,48 +1796,48 @@ SetEndDirectory:                                                            ;
 ;--------------------------- Read Directory Record --------------------------;
 
 ;--------------------------- Read Directory ---------------------------------;
- ; read next directory entry, with C=true if initializing
+; Read next directory entry, with C=true if initializing and setting CheckSum
  ReadDirectory:
-	LD		HL,(dpbDRM)						; Number of Dir Entries-1
-	EX		DE,HL							; determine number of directory entries
-	LD		HL,(dirEntryIndex)					; index into directory
-	INC		HL
-	LD	(dirEntryIndex),HL					; initialize directory index
- ; continue while dpbDRM >= dirEntryIndex (dpbDRM-dirEntryIndex no cy)
-	CALL	DEminusHL2HL					; DE-HL - processed all entries ?
-	JP	NC,ReadDirectory0					; no - do it again
- ; yes, set dirEntryIndex to end of directory
-	CALL	SetEndDirectory
+	LD		DE,(dpbDRM)					; Number of Dir Entries-1
+	LD		HL,(dirEntryIndex)			; Prior Directory Index
+	INC		HL							; Increment the Index
+	LD		(dirEntryIndex),HL			; Save current directory index
+	XOR		A							; Clear the CY flag
+	SBC		HL,DE						; Are we at end Of the directory
+	JR		NZ,ReadDirectory0			;  No the process
+	CALL	SetEndDirectory				;  else we are done
 	RET
 
- ; not at end of directory, seek next element, initialization flag is in C
- ReadDirectory0:
-	LD		A,(dirEntryIndex)
-	AND		dirEntryMask					; low(dirEntryIndex) and dirEntryMask
-	LD		B,fcbShift						; to multiply by fcb size to get the correct index in dir record
- ReadDirectory1:
+; Calculate the entry index Position in Buffer
+ReadDirectory0:
+	LD		A,(dirEntryIndex)			; Get the index
+	AND		dirEntryMask				; Determine Entry number in the buffer 
+	LD		B,fcbShift					; Shift value results in Record Size
+ReadDirectory1:
 	ADD		A,A
-	DEC		B
-	JP	NZ,ReadDirectory1
- ; A = (low(dirEntryIndex) and dirEntryMask) shl fcbShift
-	LD		(dirBlockIndex),A					; ready for next dir operation
-	OR		A
-	RET	NZ; return if not a new record (Directory Block)
-	PUSH	BC								; save initialization flag C
+	DJNZ	ReadDirectory1		
+	LD		(dirBlockIndex),A			; Now save the Index into to buffer
+	OR		A							; Is this the 1st entry?
+	RET		NZ							;  return if not. 
+	PUSH	BC							; Save init Flag (CheckSum)
 	CALL	SeekDir							; seek$dir seek proper record
 	CALL	ReadDirRecord					; read the directory record
 	POP		BC								; recall initialization flag
 	JP		CalculateCheckSum				; checksum the directory elt
  ;---------
 ;--------------------------- Read Directory ---------------------------------;
+;--------------------------- Seek Directory ---------------------------------;
  ;seek the record containing the current dir entry
  SeekDir:
-	LD	HL,(dirEntryIndex)					; directory counter to HL
-	LD		C,dirEntryShift					; 4 entries per record
-	CALL	ShiftRightHLbyC 				; value to HL
-	LD	(currentBlock),HL
-	LD	(dirRecord),HL						; ready for seek
+	LD		HL,(dirEntryIndex)			; Directory Entry Index
+	LD		B,dirEntryShift				; 4 entries per record
+;	CALL	ShiftRightHLbyC 			; value to HL
+	CALL	ShiftRightHLbyB
+	LD		(currentBlock),HL
+	LD		(dirRecord),HL				; Save
 	JP		Seek
+;--------------------------- Seek Directory ---------------------------------;
+;--------------------------- Seek -------------------------------------------;
  ;---------------------------
  Seek:						; seek
 	;seek the track given by currentBlock (actual record number)
@@ -1901,6 +1929,7 @@ SetEndDirectory:                                                            ;
 	LD		B,A								; back into BC
 	JP	bcSetsec							; sector selected
 	;ret
+;--------------------------- Seek -------------------------------------------;
  ;************* CheckSum *******************************
  ; compute current checksum record
  ; if C = TRUE , update the allocation vector
@@ -1951,12 +1980,6 @@ SetEndDirectory:                                                            ;
 	JP	NZ,ComputeCheckSum0
 	RET										; with checksum in A
  ;*****************************************************************
- ; compute the address of a directory element at positon dirBlockIndex in the buffer
- GetDirElementAddress:
-	LD	HL,(caDirectoryDMA)
-	LD		A,(dirBlockIndex)
-	JP		AddAtoHL
- ;---------------------
  ;if not still in directory set max value
  SetDirectoryEntry:
 	CALL	StillInDirectory
