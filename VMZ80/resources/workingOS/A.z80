@@ -21,6 +21,7 @@ Max			EQU		10H
 
 			ORG		TPA			
 Start:
+		LD		BC,Loop0
 		LD		SP,TPA
 		LD		IX,Disk
 		XOR		A
@@ -37,37 +38,47 @@ Loop0:
 		JR		Loop0
 
 		HALT
-;---------------------------------- Set Map Bit -----------------------------;		
-; Enter  HL  contains the bit map                                             ;
-;        B   Has the bit number (0...F)                                       ;
-; Return HL  Contains the modified bit map
-SetMapBit:
-		PUSH	BC						; Save the Bit Number
-		CALL	IsBitSet				; Put the bit in the LSBit
-
-		POP		BC						; Get the bit position
-		SET		7,H
-		
-ReAlignMap:
-		INC		B
-ReAlignMapLoop:
+;============================ Set/Reset Map Bit =============================;		
+;---------------------------------- Set Map Bit ----------------------------;;		
+; Enter  HL  contains the bit map                                           ;;
+;        B   Has the bit number (0...F)                                     ;;
+; Return HL  Contains the modified bit map                                  ;;
+SetMapBit:                                                                  ;;
+		PUSH	BC						; Save the Bit Number               ;;
+		CALL	IsBitSet				; Put the bit in the LSBit          ;;
+                                                                            ;;
+		POP		BC						; Get the bit position              ;;
+		SET		7,H                                                         ;;
+		JR		ReAlignMap				;                                    ;
+;---------------------------------- Set Map Bit ----------------------------;;
+;---------------------------------- Reset Map Bit --------------------------;;		
+; Enter  HL  contains the bit map                                           ;;
+;        B   Has the bit number (0...F)                                     ;;
+; Return HL  Contains the modified bit map                                  ;;
+SetMapBit:                                                                  ;;
+		PUSH	BC						; Save the Bit Number               ;;
+		CALL	IsBitSet				; Put the bit in the LSBit          ;;
+                                                                            ;;
+		POP		BC						; Get the bit position              ;;
+		RES		7,H                                                         ;;
+; Fall thru to ReAlignMap                                                    ;
+;---------------------------------- Reset Map Bit --------------------------;;		
+;---------------------------------- Set Map Bit ----------------------------;;
+; Adjusts the HL register to its Original Alignment after IsBitSet           ;
+		                                                                     ;
+ReAlignMap:                                                                  ;
+		INC		B                                                            ;
+ReAlignMapLoop:                                                              ;
  		SCF								; Set carry flag, expect LSBit = 1   ;
 		BIT		7,H						; is LSB set?                        ;
-		JR		NZ, ReAlignMap1				; Skip if LSB set                    ;
+		JR		NZ, ReAlignMap1				; Skip if LSB set                ;
 		CCF								; else Clear Carry flag              ;
-ReAlignMap1:                                                                      ;
+ReAlignMap1:                                                                 ;
 		RL		L						; Shift thru CY                      ;
 		RL		H						; ditto                              ;
-		DJNZ	ReAlignMapLoop 
+		DJNZ	ReAlignMapLoop                                               ;
 		RET                                                                  ;
-;---------------------------------- Set Map Bit -----------------------------;
-
-;------------------------------ ReAlign Map ---------------------------------;
-; Enter HL  contains the bit map                                             ;
-;       B   Has the bit number (0...F)                                       ;
-;ReAlignMap:																	 ;
-
-;------------------------------ ReAlign Map ---------------------------------;
+;============================ Set/Reset Map Bit =============================;		
 
 ;---------------------------------- Is Bit Set ------------------------------;
 ; Enter HL  contains the bit map                                             ;

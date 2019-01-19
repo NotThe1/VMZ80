@@ -936,7 +936,7 @@ vResetSystem:
 	LD		(currentDisk),A
 ; note that currentUserNumber remains unchanged
 	LD		HL,DMABuffer
-	LD		(InitDAMAddress),HL			; InitDAMAddress = DMABuffer
+	LD		(initDAMAddress),HL			; initDAMAddress = DMABuffer
 	CALL	SetDataDMA					; to data dma address
 	JP		Select
 ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1004,7 +1004,7 @@ vGetCurrentDisk:
 ;---------------------------- Set DMA Address - 1A (26) ---------------------;
 vSetDMA:
 	LD		HL,(paramDE)
-	LD		(InitDAMAddress),HL
+	LD		(initDAMAddress),HL
 	JP		SetDataDMA
 ;---------------------------- Get Allocation Vector - 1B (27) ---------------;
 ;  This function returns the base, or starting, address of the allocation    ;
@@ -1477,11 +1477,44 @@ SelectDisk:                                                                  ;
 	RET                                                                      ;
 ;--------------------------- Select Disk ------------------------------------;
 ;--------------------------- Initialize Disk --------------------------------;
+InitDisk:
+	LD		HL,(dpbDSM)					; Maximum allocation value
+	LD		B,3							; We want dpbDSM/8
+InitDiskLoop1:
+	XOR		A							; Rest the CY flag
+	RR		H
+	RR		L							; Shift right
+	DJNZ	InitDiskLoop1				; Loop till divide by 8
+	PUSH	HL
+	POP		BC							; BC = dpbDSM/8+1
+; Clear the Allocation Vector	
+	LD		HL,(caAllocVector)			; Allocation vector Start
+	LD		(HL),0						; Clear location
+	LD		DE,(caAllocVector)
+	INC		DE							; Allocation vector Start + 1
+	LDIR								; Cascade 00 thru Allocation Vector
+; Mark the reserved space for the directory
+	LD		HL,(dpbDABM)				; Directory block reserved bits
+	EX		DE,HL 
+	LD		HL,(caAllocVector)			; HL Start of Allocation Vector
+	LD		(HL),E
+	INC		HL
+	LD		(HL),D						; Put reserved blocks in Vector	
+; home disk, and set current track and sector to 00
+	CALL	Home
+ 
+	LD		HL,(caDirMaxValue)
+	LD		(HL),3
+	INC		HL
+	LD		(HL),0						; Current Max Dir Value = 0003
+
+	CALL	SetEndDirectory				; dirEntryIndex = EOD (-1)
+
  InitDisk1:
 	LD		C,TRUE
 	CALL	ReadDirectory
 	CALL	EndOfDirectory
-	RET	Z; return if end of directory
+	RET	Z								; Return if end of directory
  ; not end of directory, valid entry?
 	CALL	GetDirElementAddress			; HL = caDirectoryDMA + dirBlockIndex
 	LD		A,emptyDir
@@ -1540,73 +1573,7 @@ SelectDisk:                                                                  ;
 	INC		HL
 	LD		(HL),D								; cdrmax = dpbDRM
 	RET
- ;----------------------- initialize the current disk
- ;
- ;exitParameterByte = false ;set to true if $ file exists
- ; compute the length of the allocation vector - 2
-
- InitDisk:
-	LD	HL,(dpbDSM)							; get max allocation value
-	LD		C,3								; we want dpbDSM/8
- ; number of bytes in alloc vector is (dpbDSM/8)+1
-	CALL	ShiftRightHLbyC
-	INC		HL								; HL = dpbDSM/8+1
-	LD		B,H
-	LD		C,L								; BC has size of AllocationVector
-	LD	HL,(caAllocVector)					; base of allocation vector
- ;fill the allocation vector with zeros
- InitDisk0:
-	LD		(HL),0
-	INC		HL								; alloc(i)=0
-	DEC		BC								; count length down
-	LD		A,B
-	OR		C
-	JP	NZ,InitDisk0
- ; set the reserved space for the directory
-	LD	HL,(dpbDABM)							; get the directory block reserved bits
-	EX	DE,HL 
-	LD	HL,(caAllocVector) 					; HL=.alloc()
-	LD		(HL),E
-	INC		HL
-	LD		(HL),D								; sets reserved directory blks
- ; allocation vector initialized, home disk
-	CALL	Home
- ; caDirMaxValue = 3 (scans at least one directory record)
-	LD	HL,(caDirMaxValue)
-	LD		(HL),3
-	INC		HL
-	LD		(HL),0								; caDirMaxValue = 0003
-
-	CALL	SetEndDirectory					; dirEntryIndex = EOD
- ; read directory entries and check for allocated storage
-;? InitDisk1:
-;?	LD		C,TRUE
-;?	CALL	ReadDirectory
-;?	CALL	EndOfDirectory
-;?	RET	Z; return if end of directory
-;? ; not end of directory, valid entry?
-;?	CALL	GetDirElementAddress			; HL = caDirectoryDMA + dirBlockIndex
-;?	LD		A,emptyDir
-;?	CP		M
-;?	JP	Z,InitDisk1						; go get another item
-;? ; not emptyDir, user code the same?
-;?	LD		A,(currentUserNumber)
-;?	CP		M
-;?	JP	NZ,InitDisk2
-;? ; same user code, check for '$' submit
-;?	INC		HL
-;?	LD		A,(HL)								; first character
-;?	SUB		DOLLAR							; dollar file?
-;?	JP	NZ,InitDisk2
-;? ; dollar file found, mark in exitParameterByte
-;?	DEC		A
-;?	LD		(exitParameterByte),A					; exitParameterByte = 255
-;? InitDisk2:
-;? ; now scan the disk map for allocated blocks
-;?	LD		C,1								; set to allocated
-;?	CALL	ScanDiskMap
-;?	CALL	SetDirectoryEntry				; set DirMaxVAlue to dirEntryIndex
-;?	JP		InitDisk1						; for another entry
+ 
  ;
  ;-------------Scan the disk map for unallocated entry-----------------------------------
  ; scan the disk map addressed by dptr for non-zero entries.  The allocation
@@ -1720,51 +1687,64 @@ SelectDisk:                                                                  ;
 	LD	(HL),A									; back to ALLOC
 	RET
  ;-----------------------------------
-
- ;move to home position, then offset to start of dir
- Home:
-	CALL	bcHome							; move to track 00, sector 00 reference
-	LD		HL,dpbOFF						; get track ofset at begining
-	LD		C,(HL)
-	INC		HL
-	LD		B,(HL)
-	CALL	bcSettrk						; select first directory position
-
-	XOR		A								; constant zero to accumulator
-	LD	HL,(caTrack)
-	LD		(HL),A
-	INC		HL
-	LD		(HL),A								; curtrk=0000
-	LD	HL,(caSector)
-	LD		(HL),A
-	INC		HL
-	LD		(HL),A								; currec=0000
-	RET
-
+;--------------------------- Home The Current Disk -------------------------;
+;move to home position, then offset to start of dir                         ;
+Home:                                                                       ;
+	CALL	bcHome						; Sets Track to 0, and checks       ;
+										; if Buffer needs to be written     ;
+	LD		HL,dpbOFF					; Number of tracks before directory ;
+	LD		C,(HL)                                                          ;
+	INC		HL                                                              ;
+	LD		B,(HL)                                                          ;
+	CALL	bcSettrk					; Point at 1st directory position   ;
+	                                                                        ;
+; Set Current Track and Sector to 00                                        ;
+	XOR		A							; set ACC to 00                     ;
+	LD		HL,(caTrack)				                                    ;
+	LD		(HL),A                                                          ;
+	INC		HL                                                              ;
+	LD		(HL),A                                                          ;
+	LD	HL,(caSector)                                                       ;
+	LD		(HL),A                                                          ;
+	INC		HL                                                              ;
+	LD		(HL),A                                                          ;
+	RET                                                                     ;
+                                                                            ;
+;--------------------------- Home The Current Disk -------------------------;
 
  ;*****************************************************************
 
  ;*****************************************************************
- ;*****************************************************************
- ; set directory counter to end  -1
- SetEndDirectory:
-	LD		HL,EOD
-	LD		(dirEntryIndex),HL
-	RET
- ;---------------
- SetDataDMA:									; setdata
-	LD		HL,InitDAMAddress
-	JP		SetDMA							; to complete the call
- ;---------------
- SetDirDMA:									; setdir
-	LD		HL,caDirectoryDMA
+;--------------------------- Disk Utilities --------------------------------;
+SetDataDMA:                                                                 ;
+	LD		HL,initDAMAddress                                               ;
+	JR		SetDMA						; Skip to complete the call         ;
+;	LD		BC,initDAMAddress                                               ;
+;	JP		bcSetdma					; Call BIOS to set                  ;
+;                                                                           ;
+SetDirDMA:                                                                  ;
+	LD		HL,caDirectoryDMA			; Load current directory Buffer     ;
+;	LD		HL,caDirectoryDMA			; Load current directory Buffer     ;
+;	JP		bcSetdma					; Call BIOS to set                  ;
+	                                                                        ;
+SetDMA:									                                ;
+	LD		C,(HL)                                                          ;
+	INC		HL                                                              ;
+	LD		B,(HL)							; parameter ready               ;
+	JP		bcSetdma						; call bios to set              ;
+                                                                          ;
+;--------------------------- Disk Utilities --------------------------------; 
+;--------------------------- File Utilities --------------------------------;
+; Set the directory index to -1                                             ;
+SetEndDirectory:                                                            ;
+	LD		HL,EOD                                                          ;
+	LD		(dirEntryIndex),HL                                              ;
+	RET                                                                     ;
+                                                                            ;
+;--------------------------- File Utilities --------------------------------; 
 
- SetDMA:									
-	LD		C,(HL)
-	INC		HL
-	LD		B,(HL)								; parameter ready
-	JP		bcSetdma						; call bios to set
  ;---------------
+;---------------
  ;---------------
  ; return zero flag if at end of directory
  ; non zero if not at end (end of dir if dirEntryIndex = 0ffffh)
@@ -2985,7 +2965,7 @@ SelectDisk:                                                                  ;
  CopyDirEntryToUser:
 	LD	HL,(caDirectoryDMA)
 	EX	DE,HL ; source is directory buffer
-	LD	HL,(InitDAMAddress)					; destination is user dma address
+	LD	HL,(initDAMAddress)					; destination is user dma address
 	LD		C,cpmRecordSize					; copy entire record
 	JP		Move
  ;---------------------
@@ -3321,7 +3301,7 @@ ReAlignMap1:                                                                 ;
  emptyFCB:			DB	emptyDir			; efcb 0E5 = available dir entry
  ReadOnlyVector:		DW	0					; rodsk read only disk vector
  loggedDisks:		DW	0					; dlog	 logged-in disks
- InitDAMAddress:		DW	DMABuffer			; dmaad tbuff initial dma address
+ initDAMAddress:		DW	DMABuffer			; dmaad tbuff initial dma address
 
  ;     *** Current Disk attributes ****
  ; These are set upon disk select
@@ -3348,7 +3328,7 @@ ReAlignMap1:                                                                 ;
  dpbBSH:				DB	0000H				; blkshf block shift factor
  dpbBLM:				DB	00H					; blkmsk block mask
  dpbEXM:				DB	00H					; extmsk extent mask
- dpbDSM:				DW	0000H				; maxall maximum allocation number
+ dpbDSM:				DW	0000H				; Maximum allocation number
  dpbDRM:				DW	0000H				; dirmax largest directory number
  dpbDABM:			DW	0000H				; dirblk reserved allocation bits for directory
  dpbCKS:				DW	0000H				; chksiz size of checksum vector

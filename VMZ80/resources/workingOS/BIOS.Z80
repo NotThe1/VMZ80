@@ -2,6 +2,7 @@
 ;     C:\Users\admin\Dropbox\Resources\CPM\CurrentOS\8080\BIOS.asm
 ; BIOS.Z80
 
+; 2018-01-19 Repaired CP   A,TRUE
 ; 2018-12-28 Version 1.0
 ; 2018-12-28 Changed the READ & WRITE routines
 ; 2018 12-27 Adjusted BOOT & WBOOT
@@ -692,7 +693,7 @@ LST_Vector:								; IOBYTE bits 7 & 6
 
 HOME:
 	LD		A,(DirtyBufferFlag)			; Check for Dirty Buffer
-	CP		A,TRUE
+	CP		TRUE
 	JR		Z,Home1
 	LD		A,FALSE						; Clear DataInBufferFlag
 	LD		(DataInBufferFlag),A		;   if Buffer not dirty
