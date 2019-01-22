@@ -226,7 +226,7 @@ public class DiskControlUnit {
 		currentDrive = (currentDiskControlByte == DISK_CONTROL_BYTE_5) ? 0 : 2; // 5" => A or B
 		currentDrive += currentUnit;
 
-		if (currentDrive >= Disk.NUMBER_OF_DISKS) {
+		if ((currentDrive < 0) || (currentDrive >= Disk.NUMBER_OF_DISKS)) {
 			doDiskError(ERROR_NO_DRIVE, String.format("No unit %d", currentDrive));
 			return;
 		} // if

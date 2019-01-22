@@ -1714,36 +1714,77 @@ Home:                                                                       ;
  ;*****************************************************************
 
  ;*****************************************************************
-;--------------------------- Disk Utilities --------------------------------;
-SetDataDMA:                                                                 ;
-;	LD		HL,initDAMAddress                                               ;
-;	JR		SetDMA						; Skip to complete the call         ;
-	LD		BC,initDAMAddress                                               ;
-	JP		bcSetdma					; Call BIOS to set                  ;
+;=========================== Disk Utilities ================================;
+;--------------------------- Set DMAs -------------------------------------;
+SetDataDMA:                                                                ;
+	LD		HL,initDAMAddress                                              ;
+	JR		SetDMA						; Skip to complete the call        ;
+;	LD		BC,initDAMAddress                                              ;
+;	JP		bcSetdma					; Call BIOS to set                 ;
                                                                            ;
-SetDirDMA:                                                                  ;
-	LD		HL,caDirectoryDMA			; Load current directory Buffer     ;
-;	LD		BC,caDirectoryDMA			; Load current directory Buffer     ;
-;	JP		bcSetdma					; Call BIOS to set                  ;
-	                                                                        ;
-;SetDMA:									                                ;
-	LD		C,(HL)                                                          ;
-	INC		HL                                                              ;
-	LD		B,(HL)							; parameter ready               ;
-	JP		bcSetdma						; call bios to set              ;
-                                                                          ;
-;--------------------------- Disk Utilities --------------------------------;
- 
-;--------------------------- File Utilities --------------------------------;
-;--------------------------- File Utilities --------------------------------;
+SetDirDMA:                                                                 ;
+	LD		HL,caDirectoryDMA			; Load current directory Buffer    ;
+;	LD		BC,caDirectoryDMA			; Load current directory Buffer    ;
+;	JP		bcSetdma					; Call BIOS to set                 ;
+	                                                                       ;
+SetDMA:									                              	   ;
+	LD		C,(HL)                                                         ;
+	INC		HL                                                             ;
+	LD		B,(HL)							; parameter ready              ;
+	JP		bcSetdma						; call bios to set             ;
+;--------------------------- Set DMAs -------------------------------------;
 
-;--------------------------- Directory Utilities ---------------------------;
-; Set the directory index to 0FFFFH                                         ;
+;=========================== Disk Utilities ================================;
+ 
+;=========================== File Utilities ================================;
+;--------------------------- Set Record Variables -------------------------;
+;set variables from currently FCB - Current Record, RC, EXM                ;
+SetRecordVars:                                                             ;
+	CALL	GetFcbRecordDetails			; DE = .RecordCount                ;
+										;  and HL => .CurrentRecord        ;
+	LD		A,(HL)                                                         ;
+	LD		(currentFileRecord),A		; Save current record              ;
+	EX		DE,HL                                                          ;
+	LD		A,(HL)                                                         ;
+	LD		(fcbRecordCount),A			; Save the FCBs RC                 ;
+	CALL	GetExtentAddress			; HL=.FCB(fcbExtIndex)             ;
+	LD		A,(dpbEXM)					; Extent mask                      ;
+	AND		M							; Remove unwanted bits             ;
+	LD		(extentValue),A				; Store the value                  ;
+	RET                                                                    ;
+;--------------------------- Set Record Variables -------------------------;
+
+;----------------------Get File Record Count and Current Record------------;
+; returns with DE pointing at RC from FCB                                  ;
+;         with HL pointing at Current Record                               ;
+ GetFcbRecordDetails:                                                      ;
+	LD		HL,(paramDE)				; Get FCB start                    ;
+	LD		DE,fcbRCIndex				; Offset to Record Count           ;
+	ADD		HL,DE                                                          ;
+	EX		DE,HL						; DE Points to Record Count        ;
+	LD		HL,NEXT_RECORD-fcbRCIndex                                      ;
+	ADD		HL,DE						; HL Points to Current Record      ;
+	RET                                                                    ;
+;----------------------Get File Record Count and Current Record------------;
+;----------------------Get FileExtent--------------------------------------;
+ ;get current extent field address to (HL)                                 ;
+ GetExtentAddress:                                                         ;
+	LD		HL,(paramDE)				; Get FCB                          ;
+	LD		DE,fcbExtIndex				; Get EXT offset                   ;
+	ADD		HL,DE						; HL=.fcb(fcbExtIndex)             ;
+	RET                                                                    ;
+;----------------------Get FileExtent--------------------------------------;
+
+;=========================== File Utilities ================================;
+
+;=========================== Directory Utilities ===========================;
+;--------------------------- Set End of Directory indicator ----------------;                                     
 SetEndDirectory:                                                            ;
-	LD		HL,EOD                                                          ;
+	LD		HL,EOD						; Put -1 (0FFFFH) in index          ;                                               
 	LD		(dirEntryIndex),HL                                              ;
 	RET                                                                     ;
-	                                                                        ;
+;--------------------------- Set End of Directory indicator ----------------;
+;--------------------------- Get Directory Entry ---------------------------;
 ; compute the address of a directory element in Directory Buffer            ;
 GetDirElementAddress:                                                       ;
 	LD		HL,(caDirectoryDMA)			; Get the Directory Buffer base     ;
@@ -1753,23 +1794,28 @@ GetDirElementAddress:                                                       ;
 	LD		B,A                                                             ;
 	ADC		HL,BC						; Compute the Entry Location        ;
 	RET                                                                     ;
-                                                                            ;
-;--------------------------- Directory Utilities ---------------------------;
-;--------------------------- General   Utilities ---------------------------;
-; HL = Value to be shifted Right
-;  B = Amount to shift 
-ShiftRightHLbyB:                                                            ;
- 		SCF								; Set carry flag, expect LSBit = 1  ;
-		BIT		0,L						; is LSB set?                       ;
-		JR		NZ, ShiftRightHLbyB1		; Skip if LSB set               ;
-		CCF								; else Clear Carry flag             ;
-ShiftRightHLbyB1:                                                           ;
-		RR		H						; Shift thru CY                     ;
-		RR		L						; ditto                             ;
-		DJNZ	ShiftRightHLbyB:                                            ;
-		RET                                                                 ;
-                                                                            ;
-;--------------------------- General   Utilities ---------------------------;
+;--------------------------- Get Directory Entry ---------------------------;
+                                                                            
+;=========================== Directory Utilities ===========================;
+
+;=========================== General   Utilities ===========================;
+;--------------------------- Shift HL right by value in C -----------------;
+                                                                           ;
+; HL = Value to be shifted Right                                           ;
+;  B = Amount to shift                                                     ;
+ShiftRightHLbyB:                                                           ;
+ 		SCF								; Set carry flag, expect LSBit = 1 ;
+		BIT		0,L						; is LSB set?                      ;
+		JR		NZ, ShiftRightHLbyB1		; Skip if LSB set              ;
+		CCF								; else Clear Carry flag            ;
+ShiftRightHLbyB1:                                                          ;
+		RR		H						; Shift thru CY                    ;
+		RR		L						; ditto                            ;
+		DJNZ	ShiftRightHLbyB                                            ;
+		RET                                                                ;
+                                                                           ;
+;--------------------------- Shift HL right by value in C -----------------;
+;=========================== General   Utilities ===========================;
 
  ;---------------
 ;---------------
@@ -1828,47 +1874,50 @@ ReadDirectory1:
 ;--------------------------- Read Directory ---------------------------------;
 ;--------------------------- Seek Directory ---------------------------------;
  ;seek the record containing the current dir entry
- SeekDir:
+SeekDir:
 	LD		HL,(dirEntryIndex)			; Directory Entry Index
 	LD		B,dirEntryShift				; 4 entries per record
 ;	CALL	ShiftRightHLbyC 			; value to HL
 	CALL	ShiftRightHLbyB
-	LD		(currentBlock),HL
+	LD		(absoluteCPMRecord),HL
 	LD		(dirRecord),HL				; Save
 	JP		Seek
 ;--------------------------- Seek Directory ---------------------------------;
 ;--------------------------- Seek -------------------------------------------;
- ;---------------------------
- Seek:						; seek
-	;seek the track given by currentBlock (actual record number)
+Seek:						; seek
+	;seek the track given by Absolute CPM Record (actual record number)
 
-	LD		HL,currentBlock					; contains the cpm record number
-	LD		C,(HL)								; Actual Record Number Low
-	INC		HL
-	LD		B,(HL)								; Actual Record Number High
-	LD	HL,(caSector)		 				; Current Sector
-	LD		E,(HL)								; Current Sector Number Low
-	INC		HL
-	LD		D,(HL)								; Current Sector Number High
-	LD	HL,(caTrack) 						; Current track
-	LD		A,(HL)								; Current track Number Low - temp
-	INC		HL
-	LD		H,(HL)								; Current track Number High
-	LD		L,A								; Current track Number Low
- ;(BC) - cpmRecord Number
- ;(DE) - Current Sector
- ;(HL) - Current Track
+;	LD		HL,absoluteCPMRecord		; CPM Record
+;	LD		C,(HL)						; CPM Record Low
+;	INC		HL
+;	LD		B,(HL)						; CPM Record High
 
-	;loop while currentBlock < currec   ?????
- Seek0:
+	LD		BC,(absoluteCPMRecord)		; Absolute CPM Record
+	
+	LD		HL,(caSector)		 		; Current Sector
+	LD		E,(HL)						; Current Sector Number Low
+	INC		HL
+	LD		D,(HL)						; Current Sector Number High
+	
+	LD		HL,(caTrack) 				; Current Track
+	LD		A,(HL)						; Current Track  Low - temp
+	INC		HL
+	LD		H,(HL)						; Current Track Number High
+	LD		L,A							; Current Track Number Low
+				;(BC) - Absolute CPM Record
+				;(DE) - Current Sector
+				;(HL) - Current Track
+
+	;loop while Absolute CPM Record < Current Sector   ?????
+Seek0:
 	LD		A,C								;   Current Sector
-	SUB		E								;
-	LD		A,B								; - cpmRecord Number
-	SBC		A,D								;
-	JP	NC,Seek1							; skip if cpmRecord Number >= Current Sector
+	SUB		E
+	LD		A,B								; - Current Disk Block
+	SBC		A,D	
+	JR		NC,Seek1							; skip if current File Record Number >= Current Sector
 
 	PUSH	HL
-	LD	HL,(dpbSPT)
+	LD		HL,(dpbSPT)
 	LD		A,E
 	SUB		L
 	LD		E,A
@@ -1879,16 +1928,17 @@ ReadDirectory1:
 	DEC		HL
 	JP		Seek0
 
+; seek1 sets track	
  Seek1:
 
 	PUSH	HL								; Save Current Track
 	LD	HL,(dpbSPT)							; records per track
 	ADD		HL,DE								; HL = Current Sector + sectorsPerClynder
-	LD		A,C								;     cpmRecord Number
+	LD		A,C								;     current File Record Number
 	SUB		L								;
 	LD		A,B								;  - HL (above)
 	SBC		A,H								;
-	JP	C,Seek2								; skip if cpmRecord Number > HL (above)
+	JP	C,Seek2								; skip if current File Record Number > HL (above)
 
 	EX	DE,HL 
 
@@ -1898,15 +1948,40 @@ ReadDirectory1:
 
  Seek2:
 	POP		HL								; retreive Current Track
-	PUSH	BC								; save  cpmRecord Number
+	PUSH	BC								; save  current File Record Number
 	PUSH	DE								; save  Current Sector
 	PUSH	HL								; save CurrentTrack
- ; stack contains CurrentTrack , Current Sector, cpmRecord Number
+
+
+; adjust track to account for number of tracks before directory (boot record)
+ ; stack contains CurrentTrack , Current Sector, current File Record Number
 	EX	DE,HL ; DE => CurrentTrack, HL => Current Sector
 	LD	HL,(dpbOFF)							; Block Zero starting Track
 	ADD		HL,DE								; HL =  actual physical Track number
 	LD		B,H
 	LD		C,L								; BC has physical Track number
+;------------------	
+;?	LD		BC,0FFFFH
+;?	LD		HL,(absoluteCPMRecord)
+;?	LD		DE,(dpbSPT)
+;?SeekX:
+;?	INC		BC
+;?	XOR		A
+;?	SBC		HL,DE
+;?	JR		NC,SeekX
+;?	
+;?	ADD		HL,DE
+;?	PUSH	DE					; save sector
+;?	
+;?	LD		HL,(dpbOFF)
+;?	
+;?	PUSH	BC					; track gross
+;?	
+;?	ADD		HL,BC
+;?	PUSH	HL					; Net track
+;?	POP		BC
+;?;--------------------
+
 	CALL	bcSettrk						; track set up
 						; note that BC - curtrk is difference to move in bios
 	POP		DE								; recall CurrentTrack
@@ -1914,14 +1989,14 @@ ReadDirectory1:
 	LD		(HL),E
 	INC		HL
 	LD		(HL),D								; current Track updated
- ; now compute sector as currentBlock-currec
+ ; now compute sector as Absolute CPM Record-currec
 	POP		DE								; recall Current Sector
 	LD	HL,(caSector)						; point at current Sector
 	LD		(HL),E
 	INC		HL
 	LD		(HL),D								; current sector updated / DE has currentSector
-	POP		BC								; recall cpmRecord Number
-	LD		A,C								; cpmRecord Number
+	POP		BC								; recall current File Record Number
+	LD		A,C								; current File Record Number
 	SUB		E
 	LD		C,A								; - currentSector
 	LD		A,B
@@ -2004,40 +2079,15 @@ ReadDirectory1:
  ;condition dirEntryIndex - cdrmax  produces cy if cdrmax>dirEntryIndex
 	RET
  ;---------------------
- ;compute fcbRCIndex and NEXT_RECORD addresses for get/setfcb
- ; returns with DE pointing at RC from FCB
- ;         with HL pointing at Next Record
- GetFcbAddress:					; getfcba
-	LD	HL,(paramDE)
-	LD		DE,fcbRCIndex
-	ADD		HL,DE
-	EX	DE,HL ; DE=.fcb(fcbRCIndex)
-	LD		HL,NEXT_RECORD-fcbRCIndex	;RATS
-	ADD		HL,DE								; HL=.fcb(NEXT_RECORD)
-	RET
- ;---------------------
- ;set variables from currently fcb - NEXT_RECORD, RC, EXM
- SetRecordVars:
-	CALL	GetFcbAddress					; DE => fcbRCIndex(RC) , HL => NEXT_RECORD
-	LD		A,(HL)
-	LD		(cpmRecord),A 						; cpmRecord=fcb(NEXT_RECORD)
-	EX	DE,HL 
-	LD		A,(HL)
-	LD		(fcbRecordCount),A					; fcbRecordCount=fcb(fcbRCIndex)
-	CALL	GetExtentAddress				; HL=.fcb(fcbExtIndex)
-	LD		A,(dpbEXM)							; extent mask to a
-	AND		M								; fcb(fcbExtIndex) and dpbEXM
-	LD		(extentValue),A						; save extent number
-	RET
- ;---------------------
+;---------------------
  ;update variables from I/O in  fcb
  UpdateRecordVars:
-	CALL	GetFcbAddress					; DE => fcbRCIndex(RC) , HL => NEXT_RECORD
+	CALL	GetFcbRecordDetails					; DE => fcbRCIndex(RC) , HL => NEXT_RECORD
 	LD		A,(seqReadFlag)
 	LD		C,A								; =1 if sequential i/o
-	LD		A,(cpmRecord)							; get NEXT_RECORD
+	LD		A,(currentFileRecord)							; get NEXT_RECORD
 	ADD		A,C
-	LD		(HL),A								; fcb(NEXT_RECORD)=cpmRecord+seqReadFlag
+	LD		(HL),A								; fcb(NEXT_RECORD)=current File Record+seqReadFlag
 	EX	DE,HL 
 	LD		A,(fcbRecordCount)
 	LD		(HL),A								; fcb(fcbRCIndex)=fcbRecordCount
@@ -2190,18 +2240,18 @@ ReadDirectory1:
 	LD		A,TRUE
 	LD		(readModeFlag),A					; read mode flag = true (OpenNextExt)
 
-	CALL	SetRecordVars					; sets cpmRecord, fcbRecordCount and EXM
-	LD		A,(cpmRecord)
+	CALL	SetRecordVars					; sets current File Record, fcbRecordCount and EXM
+	LD		A,(currentFileRecord)
 	LD		HL,fcbRecordCount
-	CP		M								; cpmRecord-fcbRecordCount
-											; skip if  cpmRecord < fcbRecordCount
+	CP		M								; current File Record-fcbRecordCount
+											; skip if  current File Record < fcbRecordCount
 	JP	C,RecordOK
  ; not enough records in the extent
-	CP		RecordsPerExtent				; cpmRecord = 128?   *** Records in an Extent
-	JP	NZ,DiskEOF							; skip if cpmRecord<>128
+	CP		RecordsPerExtent				; current File Record = 128?   *** Records in an Extent
+	JP	NZ,DiskEOF							; skip if current File Record<>128
 	CALL	OpenNextExt						; go to next extent if so
 	XOR		A
-	LD		(cpmRecord),A						; cpmRecord=00
+	LD		(currentFileRecord),A						; current File Record=00
  ; now check for open ok
 	LD		A,(exitParameterByte)
 	OR		A
@@ -2209,11 +2259,11 @@ ReadDirectory1:
 	; stop at eof
  ; arrive with fcb addressing a record to read
  RecordOK:									; recordok:
-	CALL	GetBlockNumber					; save it in currentBlock
-	CALL	IsAllocated						; currentBlock=0000?
+	CALL	GetBlockNumber					; save it in Absolute CPM Record
+	CALL	IsAllocated						; Absolute CPM Record=0000?
 	JP	Z,DiskEOF							; get out if not allocated already
 
-	CALL	SetActualRecordAdd				; currentBlock now a record value
+	CALL	SetActualRecordAdd				; Absolute CPM Record now a record value
 	CALL	Seek							; to proper track,sector
 	CALL	ReadBuffer						; to dma address
 	CALL	UpdateRecordVars				; update variables from I/O in  fcb
@@ -2236,7 +2286,7 @@ ReadDirectory1:
 	LD	HL,(paramDE)							; HL = .fcb(0)
 	CALL	CheckROFile						; may be a read-only file
 	CALL	SetRecordVars					; set local Record parameters
-	LD		A,(cpmRecord)
+	LD		A,(currentFileRecord)
 	CP		highestRecordNumber + 1			; Still in the same extent?
 	JP	C,DiskWrite1						; skip if in the same Extent
 	CALL	SetLowReturnTo1
@@ -2277,7 +2327,7 @@ ReadDirectory1:
 	RET										; exitParameterByte=2
 
  BlockOK:
-	LD	(currentBlock),HL					; allocated block number is in HL
+	LD	(absoluteCPMRecord),HL					; allocated block number is in HL
 	EX	DE,HL ; block number to DE
 	LD	HL,(paramDE)
 	LD		BC,fcbDiskMapIndex
@@ -2313,35 +2363,35 @@ ReadDirectory1:
 	RET	NZ; stop if non zero returned value
 
 	PUSH	BC								; save write flag ( in C see above)
-	CALL	SetActualRecordAdd				; currentBlock set to actual record number
+	CALL	SetActualRecordAdd				; Absolute CPM Record set to actual record number
 	CALL	Seek							; to proper file position
 	POP		BC								; get write flag
 	PUSH	BC								; restore/save write flag (C=2 if new block)
 	CALL	WriteBuffer						; written to disk
 	POP		BC								; C = 2 if a new block was allocated, 0 if not
-											; increment record count if fcbRecordCount<=cpmRecord
-	LD		A,(cpmRecord)
+											; increment record count if fcbRecordCount<=current File Record
+	LD		A,(currentFileRecord)
 	LD		HL,fcbRecordCount
-	CP		M 								; cpmRecord-fcbRecordCount
+	CP		M 								; current File Record-fcbRecordCount
 	JP	C,DiskWrite4
- ; fcbRecordCount <= cpmRecord
+ ; fcbRecordCount <= current File Record
 	LD		(HL),A
-	INC		M								; fcbRecordCount = cpmRecord+1
+	INC		M								; fcbRecordCount = current File Record+1
 	LD		C,2								; mark as record count incremented
  DiskWrite4:
- ; A has cpmRecord, C=2 if new block or new record#
+ ; A has current File Record, C=2 if new block or new record#
 	DEC		C
 	DEC		C
 	JP	NZ,DiskWrite5
-	PUSH	AF								; save cpmRecord value
+	PUSH	AF								; save current File Record value
 	CALL	GetModuleNum					; HL=.fcb(fcbS2Index), A=fcb(fcbS2Index)
  ; reset the file write flag to mark as written fcb
 	AND		7FH								; not writeFlagMask
 	LD		(HL),A								; fcb(fcbS2Index) = fcb(fcbS2Index) and 7fh
-	POP		AF								; restore cpmRecord
+	POP		AF								; restore current File Record
  DiskWrite5:
  ; check for end of extent, if found attempt to open next extent in preparation for next write
-	CP		highestRecordNumber				; cpmRecord=highestRecordNumber?
+	CP		highestRecordNumber				; current File Record=highestRecordNumber?
 	JP	NZ,DiskWrite7						; skip if not
  ; may be random access write, if so we are done
 	LD		A,(seqReadFlag)
@@ -2350,14 +2400,14 @@ ReadDirectory1:
  ; update current fcb before going to next extent
 	CALL	UpdateRecordVars				;update variables from I/O in  fcb
 	CALL	OpenNextExt						; readModeFlag=false
- ; cpmRecord remains at highestRecordNumber causing eof if no more directory space is available
+ ; current File Record remains at highestRecordNumber causing eof if no more directory space is available
 	LD		HL,exitParameterByte
 	LD		A,(HL)
 	OR		A
 	JP	NZ,DiskWrite6						; no space
- ; space available, set cpmRecord=255
+ ; space available, set current File Record=255
 	DEC		A
-	LD		(cpmRecord),A						; goes to 00 next time
+	LD		(currentFileRecord),A						; goes to 00 next time
  DiskWrite6:
 	LD		(HL),0								; exitParameterByte = 00 for returned value
  DiskWrite7:
@@ -2724,35 +2774,35 @@ ReadDirectory1:
 	LD		C,A
 	LD		B,0
 	CALL	GetDiskMapValue					; return value in HL
-	LD	(currentBlock),HL					; save for later
+	LD	(absoluteCPMRecord),HL					; save for later
 	RET
  ;-----------------------------------------------------------------
  ;is  block allocated
  IsAllocated:
-	LD	HL,(currentBlock)
+	LD	HL,(absoluteCPMRecord)
 	LD		A,L
 	OR		H
 	RET
  ;-----------------------------------------------------------------
  ;compute actual record address
- ; result = currentBlock * ( 2**BSH)
+ ; result = absoluteCPMRecord * ( 2**BSH)
  SetActualRecordAdd:
 	LD		A,(dpbBSH)							; Block Shift  to reg A
-	LD	HL,(currentBlock)
+	LD	HL,(absoluteCPMRecord)
 
  SetActualRecordAdd1:
 	ADD		HL,HL
-	DEC		A								; shl(currentBlock,dpbBSH)
+	DEC		A								; shl(absoluteCPMRecord,dpbBSH)
 	JP	NZ,SetActualRecordAdd1
  ; HL has Record number for start of the block;
 	LD		A,(dpbBLM)							; get block mask
-	LD		C,A								; to get cpmRecord mod Block
-	LD		A,(cpmRecord)						; get index into block
+	LD		C,A								; to get current File Record mod Block
+	LD		A,(currentFileRecord)						; get index into block
 	AND		C								; masked value in A
 	OR		L
 	LD		L,A								; to HL
-	LD	(currentBlock),HL					; currentBlock=HL or (cpmRecord and dpbBLM)
- ; *** currentBlock now has current record number - Starting record number + index into block
+	LD	(absoluteCPMRecord),HL					; Absolute CPM Record=HL or (current File Record and dpbBLM)
+ ; *** Absolute CPM Record now has current record number - Starting record number + index into block
 	RET
  ;-----------------------------------------------------------------
  ;---------------------
@@ -2946,13 +2996,6 @@ ReadDirectory1:
 	LD		(exitParameterByte),A
 	RET
  ;---------------------
- ;get current extent field address to (HL)
- GetExtentAddress:
-	LD	HL,(paramDE)
-	LD		DE,fcbExtIndex
-	ADD		HL,DE						;HL=.fcb(fcbExtIndex)
-	RET
- ;---------------------
  ;Set file write flag
  SetFileWriteFlag:
 	CALL	GetModuleNum					; HL=.fcb(fcbS2Index), A=fcb(fcbS2Index)
@@ -3013,18 +3056,18 @@ ReadDirectory1:
 	CALL	SeekDir							; seek$dir ;to the directory element
 	JP	WriteDir							; write the directory element
  ;---------------------
- ;Return the  disk map Index for cpmRecord in the ACC
+ ;Return the  disk map Index for current File Record in the ACC
  ;  account for multiple extents in 1 physical Directory entry
  GetDiskMapIndex:							; dm$position
 	LD		HL,dpbBSH						; get block shift value
 	LD		C,(HL)								; shift count to C
-	LD		A,(cpmRecord)						; current virtual record to A
+	LD		A,(currentFileRecord)						; current virtual record to A
  GetDiskMapIndex1:
 	OR		A								; reset the carry flag
 	RRA
 	DEC		C
 	JP	NZ,GetDiskMapIndex1
-											; A = shr(cpmRecord,dpbBSH) = cpmRecord/2**(sect/block)
+											; A = shr(current File Record,dpbBSH) = current File Record/2**(sect/block)
 											; A has the relative position in the block.
 	LD		B,A								; save it for later addition
 	LD		A,8
@@ -3043,7 +3086,7 @@ ReadDirectory1:
  ; The ACC has the Block Number for this record
  GetDiskMapIndex3:
 											; arrive here with A = shl(ext and extmsk,7-dpbBSH)
-	ADD	A,B 									; add the previous shr(cpmRecord,dpbBSH) value
+	ADD	A,B 									; add the previous shr(current File Record,dpbBSH) value
 											; A is one of the following values, depending upon alloc
 											; bks dpbBSH
 											; 1k   3     v/8 + extentValue * 16
@@ -3276,14 +3319,16 @@ ReAlignMap1:                                                                 ;
  ;*****************************************************************
 
  ;********* file control block (fcb) constants ********************
- fcbLength			EQU		32				; fcblen file control block size
- fcbROfileIndex		EQU		9				; high order of first type char
- fcbHiddenfileIndex	EQU		10				; invisible file in dir command
- fcbExtIndex			EQU		12				; extent number field index
- fcbS1Index			EQU		13				; S1 index
- fcbS2Index			EQU		14				; S2 data module number index
- fcbRCIndex			EQU		15				; record count field index
- fcbDiskMapIndex		EQU		16				; dskmap disk map field
+ fcbLength			EQU		20H	;32				; fcblen file control block size
+ fcbROfileIndex		EQU		09H				; high order of first type char
+ fcbHiddenfileIndex	EQU		0AH	;10				; invisible file in dir command
+ fcbExtIndex		EQU		0CH	;12				; extent number field index
+ fcbS1Index			EQU		0DH	;13				; S1 index
+ fcbS2Index			EQU		0EH	;14				; S2 data module number index
+ fcbRCIndex			EQU		0FH	;15				; record count field index
+ fcbDiskMapIndex	EQU		10H	;16				; dskmap disk map field
+ 
+ fcbCurrentRecord	EQU		21H	;33
 
  highestRecordNumber	EQU		RecordsPerExtent - 1; last record# in extent
 
@@ -3375,10 +3420,10 @@ ReAlignMap1:                                                                 ;
  fResel:				DB	00H					; resel reselection flag
  entryDisk:			DB	00H					; olddsk disk on entry to bdos
  fcbDisk:			DB	00H					; fcbdsk disk named in fcb
- fcbRecordCount:		DB	00H					; record count from current fcb
+ fcbRecordCount:	DB	00H				; record count from current FCB
  extentValue:		DB	00H					; extent number and dpbEXM from current fcb
- cpmRecord:			DW	0000H				; current virtual record - NEXT_RECORD
- currentBlock:		DW	0000H				; arecord current actual record
+ currentFileRecord:			DW	0000H				; Current File Record - fcbCurrentRecord
+ absoluteCPMRecord:	DW	0000H			; Raw record ( 4 records / Sector)( 4 Sectors per block)
  ;
  ;	local variables for directory access
  dirBlockIndex:		DB	00H					; directory block Index 0,1,2,3
