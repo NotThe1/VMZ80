@@ -2,7 +2,7 @@
 ; 				
 
 ;	2018-11-30
-; 4
+; 5
 BDOS		EQU		05H
 TRUE		EQU		0FFH
 FALSE		EQU		000H
@@ -11,26 +11,54 @@ LF			EQU		00DH
 TPA			EQU		0100H
 BS			EQU		08H
 SPACE		EQU		020H
-bcConOut	EQU		0F60CH
-ConIn		EQU		0E91CH
-PrintString	EQU		09H
-ReadConsole	EQU		0AH
-Buffer		EQU		080H
-Max			EQU		10H
 
 
 			ORG		TPA			
 Start:
-		LD		SP,TPA
-L123:
-		LD		BC,0FFFFH
-		LD		HL,02A0H
-		LD		DE,0090H
-L234:
-		INC		BC
-		XOR		A
-		SBC		HL,DE
-		JR		NC,L234
+	LD		SP,TPA
+	LD		BC,0FFFFH
+	LD		HL,(absoluteCPMRecord)
+	LD		DE,(dpbSPT)
+SeekX:
+	INC		BC
+	XOR		A
+	SBC		HL,DE
+	JR		NC,SeekX
+	
+	
+	ADD		HL,DE
+	PUSH	HL							; Save Index Sector
+	
+	LD		IX,(caTrack)
+	LD		(IX + 0),C
+	LD		(IX + 1),B					; Gross Track
+	
+	EX		DE,HL
+	LD		HL,(absoluteCPMRecord)	
+	XOR		A
+	SBC		HL,DE
+	
+	LD		IX,(caSector)
+	LD		(IX + 0),L
+	LD		(IX + 1),H					; Block Start
+	
+	LD		HL,(dpbOFF)			
+	ADD		HL,BC
+	PUSH	HL
+	POP		BC
+;	CALL	bcSetTrk					; Net track
+	POP		BC
+;	CALL	bcSetSector					; Index Sector
 		
-		ADD		HL,DE
 		HALT
+		
+absoluteCPMRecord:
+		DW		02A0H
+dpbSPT:
+		DW		0090H
+dpbOFF:
+		DW		0001H
+caTrack:
+		DW		0000
+caSector:
+		DW		0000

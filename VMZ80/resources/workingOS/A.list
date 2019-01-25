@@ -2,7 +2,7 @@
 0002: 0100         ;
 0003: 0100
 0004: 0100         ;	2018-11-30
-0005: 0100         ; 4
+0005: 0100         ; 5
 0006: 0100             BDOS       EQU    05H
 0007: 0100             TRUE       EQU    0FFH
 0008: 0100             FALSE      EQU    000H
@@ -11,45 +11,71 @@
 0011: 0100             TPA        EQU    0100H
 0012: 0100             BS         EQU    08H
 0013: 0100             SPACE      EQU    020H
-0014: 0100             bcConOut   EQU    0F60CH
-0015: 0100             ConIn      EQU    0E91CH
-0016: 0100             PrintString EQU    09H
-0017: 0100             ReadConsole EQU    0AH
-0018: 0100             Buffer     EQU    080H
-0019: 0100             Max        EQU    10H
-0020: 0100
-0021: 0100
-0022: 0100                        ORG    TPA
-0023: 0100             Start:
-0024: 0100 31 00 01               LD     SP,TPA
-0025: 0103             L123:
-0026: 0103 01 FF FF               LD     BC,0FFFFH
-0027: 0106 21 A0 02               LD     HL,02A0H
-0028: 0109 11 90 00               LD     DE,0090H
-0029: 010C             L234:
-0030: 010C 03                     INC    BC
-0031: 010D AF                     XOR    A
-0032: 010E ED 52                  SBC    HL,DE
-0033: 0110 30 FA                  JR     NC,L234
-0034: 0112
-0035: 0112 19                     ADD    HL,DE
-0036: 0113 76                     HALT
+0014: 0100
+0015: 0100
+0016: 0100                        ORG    TPA
+0017: 0100             Start:
+0018: 0100 31 00 01               LD     SP,TPA
+0019: 0103 01 FF FF               LD     BC,0FFFFH
+0020: 0106 2A 38 01               LD     HL,(absoluteCPMRecord)
+0021: 0109 ED 5B 3A 01               LD     DE,(dpbSPT)
+0022: 010D             SeekX:
+0023: 010D 03                     INC    BC
+0024: 010E AF                     XOR    A
+0025: 010F ED 52                  SBC    HL,DE
+0026: 0111 30 FA                  JR     NC,SeekX
+0027: 0113
+0028: 0113
+0029: 0113 19                     ADD    HL,DE
+0030: 0114 E5                     PUSH   HL                   ; Save Index Sector
+0031: 0115
+0032: 0115 DD 2A 3E 01               LD     IX,(caTrack)
+0033: 0119 DD 71 00               LD     (IX+0),C
+0034: 011C DD 70 01               LD     (IX+1),B             ; Gross Track
+0035: 011F
+0036: 011F EB                     EX     DE,HL
+0037: 0120 2A 38 01               LD     HL,(absoluteCPMRecord)
+0038: 0123 AF                     XOR    A
+0039: 0124 ED 52                  SBC    HL,DE
+0040: 0126
+0041: 0126 DD 2A 40 01               LD     IX,(caSector)
+0042: 012A DD 75 00               LD     (IX+0),L
+0043: 012D DD 74 01               LD     (IX+1),H             ; Block Start
+0044: 0130
+0045: 0130 2A 3C 01               LD     HL,(dpbOFF)
+0046: 0133 09                     ADD    HL,BC
+0047: 0134 C5                     PUSH   BC
+0048: 0135 C1                     POP    BC
+0049: 0136         ;	CALL	bcSetTrk					; Net track
+0050: 0136 C1                     POP    BC
+0051: 0137         ;	CALL	bcSetSector					; Index Sector
+0052: 0137
+0053: 0137 76                     HALT
+0054: 0138
+0055: 0138             absoluteCPMRecord:
+0056: 0138 A0 02                  DW     02A0H
+0057: 013A             dpbSPT:
+0058: 013A 90 00                  DW     0090H
+0059: 013C             dpbOFF:
+0060: 013C 01 00                  DW     0001H
+0061: 013E             caTrack:
+0062: 013E 00 00                  DW     0000
+0063: 0140             caSector:
+0064: 0140 00 00                  DW     0000
            ************************   Xref   ************************
-0000: $               0113
-0014: bcConOut        F60C
+0000: $               0140
+0055: absoluteCPMRecord 0138   0020 0037
 0006: BDOS            0005
 0012: BS              0008
-0018: Buffer          0080
-0015: ConIn           E91C
+0063: caSector        0140   0041
+0061: caTrack         013E   0032
 0009: CR              000A
+0059: dpbOFF          013C   0045
+0057: dpbSPT          013A   0021
 0008: FALSE           0000
-0025: L123            0103
-0029: L234            010C   0033
 0010: LF              000D
-0019: Max             0010
-0016: PrintString     0009
-0017: ReadConsole     000A
+0022: SeekX           010D   0026
 0013: SPACE           0020
-0023: Start           0100
-0011: TPA             0100   0022 0024
+0017: Start           0100
+0011: TPA             0100   0016 0018
 0007: TRUE            00FF

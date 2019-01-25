@@ -930,7 +930,7 @@ exitParameterWord:	DS	WORD				; Word                           ;
 ;---------------------------- Reset Disk System - D (13) --------------------;
 vResetSystem:
   	LD		HL,0
-	LD		(ReadOnlyVector),HL			; Clear the vectors for 
+	LD		(readOnlyVector),HL			; Clear the vectors for 
 	LD		(loggedDisks),HL			;   R/O and Logged Disks
 	XOR		A							; Clear the current disk
 	LD		(currentDisk),A
@@ -1039,7 +1039,7 @@ vGetAllocAddr:
 ;																			 ;
 ;---------------------------- Get Read-Only Map - 1D (29) -------------------;
 vGetReadOnlyMap:
-	LD		HL,(ReadOnlyVector)
+	LD		HL,(readOnlyVector)
 	LD		(exitParameterWord),HL
 	RET
 ;------------------ Get Disk Parameter Block Address - 1F (31) --------------;
@@ -1556,33 +1556,42 @@ InitDiskLoop1:
 	LD		H,A								; HL = mask or rol(1,currentDisk)
 	RET
  ;--------------
+;--------------------------- Set disk Read Only ----------------------------;
  ;set current disk to read only
  SetDiskReadOnly:
-	LD		HL,ReadOnlyVector
+	LD		HL,readOnlyVector			; Get the Vector
+	
+;	LD		B,(currentDisk)				; Get the current disk
+;	CALL	SetMapBit					; Set the bit
 	LD		C,(HL)
 	INC		HL
 	LD		B,(HL)
 	CALL	SetCurrentDiskBit				; sets bit to 1
-	LD	(ReadOnlyVector),HL
- ; high water mark in directory goes to max
-	LD	HL,(dpbDRM)							; directory max
+	LD		(readOnlyVector),HL			; Update the Vector
+
+	
+	
+	LD	HL,(dpbDRM)						; Directory Max Value
 	EX	DE,HL ; DE = directory max
 	LD	HL,(caDirMaxValue)					; HL = .Directory max value
 	LD		(HL),E
 	INC		HL
 	LD		(HL),D								; cdrmax = dpbDRM
+
+;	LD		IX(dpbDRM)
 	RET
- 
+ ;--------------------------- Set disk Read Only ----------------------------;
+
  ;
  ;-------------Scan the disk map for unallocated entry-----------------------------------
  ; scan the disk map addressed by dptr for non-zero entries.  The allocation
  ; vector entry corresponding to a non-zero entry is set to the value of C (0,1)
  ScanDiskMap:
+	PUSH	BC								; save the set/reset bit
 	CALL	GetDirElementAddress			; HL = buffa + dptr
   ; HL addresses the beginning of the directory entry
 	LD		DE,fcbDiskMapIndex
 	ADD		HL,DE								; hl now addresses the disk map
-	PUSH	BC								; save the set/reset bit
 	LD		C,fcbLength-fcbDiskMapIndex+1	; size of Disk Allocation Map + 1
 
  ScanDiskMap0:								; loop once for each disk map entry
@@ -1733,6 +1742,15 @@ SetDMA:									                              	   ;
 	LD		B,(HL)							; parameter ready              ;
 	JP		bcSetdma						; call bios to set             ;
 ;--------------------------- Set DMAs -------------------------------------;
+;--------------------------- Read Buffer ----------------------------------;
+;reads into current DMA, using current Disk,Track and Sector               ;
+ReadBuffer:                                                                ;
+	CALL	bcRead						; Do the read at the BIOS level    ;
+	OR		A							; Check status                     ;
+	JP		NZ,erPermanentNoWait		; Report if Status not OK          ;
+	RET                                                                    ;
+;--------------------------- Read Buffer ----------------------------------;
+
 
 ;=========================== Disk Utilities ================================;
  
@@ -1784,7 +1802,7 @@ SetEndDirectory:                                                            ;
 	LD		(dirEntryIndex),HL                                              ;
 	RET                                                                     ;
 ;--------------------------- Set End of Directory indicator ----------------;
-;--------------------------- Get Directory Entry ---------------------------;
+;--------------------------- Get Directory Element -------------------------;
 ; compute the address of a directory element in Directory Buffer            ;
 GetDirElementAddress:                                                       ;
 	LD		HL,(caDirectoryDMA)			; Get the Directory Buffer base     ;
@@ -1794,7 +1812,41 @@ GetDirElementAddress:                                                       ;
 	LD		B,A                                                             ;
 	ADC		HL,BC						; Compute the Entry Location        ;
 	RET                                                                     ;
-;--------------------------- Get Directory Entry ---------------------------;
+;--------------------------- Get Directory Element -------------------------;
+;--------------------------- Set Directory Entry ---------------------------;
+; Will update directory if not in the directory                             ;
+                                                                            ;
+SetDirectoryEntry:                                                          ;
+	CALL	StillInDirectory                                                ;
+	RET	C								; Exit if still in the Directory  	;
+																			;
+; StillInDirectory will return with:                                        ;
+;									DE = Directory entry number             ;
+;									HL = Address of entry number + 1        ;
+	INC	DE                                                                  ;
+	LD	(HL),D                                                              ;
+	DEC	HL                                                                  ;
+	LD	(HL),E                                                              ;
+	RET                                                                     ;
+;--------------------------- Set Directory Entry ---------------------------;
+
+;--------------------------- Are we sill in the Directory ------------------;
+;Returns	:                                                               ;
+;			CY Set   if dirEntryIndex <= Directory Max Value                ;
+;			CY Reset if dirEntryIndex  > Directory Max Value                ;
+;			HL = (address of Index Value) + 1                               ;
+;			DE = Directory Index Value                                      ;
+StillInDirectory:                                                           ;
+	LD		HL,(dirEntryIndex)                                              ;
+	EX		DE,HL 						; DE = directory counter            ;
+	LD		HL,(caDirMaxValue)			; HL = caDirMaxValue              	;
+	LD		A,E                                                             ;
+	SUB		M                                                               ;
+	INC		HL                                                              ;
+	LD		A,D                                                             ;
+	SBC		A,(HL)						; Set CY if dirEntryIndex           ;
+	RET										;  <= Directory Max Value       ;
+;--------------------------- Are we sill in the Directory ------------------;
                                                                             
 ;=========================== Directory Utilities ===========================;
 
@@ -1832,16 +1884,15 @@ ShiftRightHLbyB1:                                                          ;
 	INC		A								; 0ffh becomes 00 if so
 	RET
  ;---------------
-;--------------------------- Read Directory Record --------------------------;
-; read a directory entry into the directory buffer
- ReadDirRecord:
-	CALL	SetDirDMA					; System Assigned Buffer
-	CALL	ReadBuffer						; directory record loaded
-     JP		SetDataDMA						; to data dma address
-	;ret
-;--------------------------- Read Directory Record --------------------------;
+;--------------------------- Read Directory Record -------------------------;
+; read a directory entry into the directory buffer                          ;
+ReadDirRecord:                                                              ;
+	CALL	SetDirDMA					; System Assigned Buffer            ;
+	CALL	ReadBuffer					; Go to BIOS for the read           ;
+	JP		SetDataDMA					; Restore DMA                       ;
+;--------------------------- Read Directory Record -------------------------;
 
-;--------------------------- Read Directory ---------------------------------;
+;--------------------------- Read Directory --------------------------------;
 ; Read next directory entry, with C=true if initializing and setting CheckSum
  ReadDirectory:
 	LD		DE,(dpbDRM)					; Number of Dir Entries-1
@@ -1865,220 +1916,126 @@ ReadDirectory1:
 	LD		(dirBlockIndex),A			; Now save the Index into to buffer
 	OR		A							; Is this the 1st entry?
 	RET		NZ							;  return if not. 
+	
 	PUSH	BC							; Save init Flag (CheckSum)
-	CALL	SeekDir							; seek$dir seek proper record
-	CALL	ReadDirRecord					; read the directory record
-	POP		BC								; recall initialization flag
-	JP		CalculateCheckSum				; checksum the directory elt
+	CALL	SeekDir						; Set up for Directory Read
+	CALL	ReadDirRecord				; Read the directory record
+	POP		BC							; Recall initialization flag
+	JP		CheckSumUtility				; checksum the directory elt
  ;---------
 ;--------------------------- Read Directory ---------------------------------;
-;--------------------------- Seek Directory ---------------------------------;
- ;seek the record containing the current dir entry
-SeekDir:
-	LD		HL,(dirEntryIndex)			; Directory Entry Index
-	LD		B,dirEntryShift				; 4 entries per record
-;	CALL	ShiftRightHLbyC 			; value to HL
-	CALL	ShiftRightHLbyB
-	LD		(absoluteCPMRecord),HL
-	LD		(dirRecord),HL				; Save
-	JP		Seek
-;--------------------------- Seek Directory ---------------------------------;
-;--------------------------- Seek -------------------------------------------;
-Seek:						; seek
-	;seek the track given by Absolute CPM Record (actual record number)
+;--------------------------- Seek Directory --------------------------------;
+ ;seek the record containing the current dir entry                          ;
+SeekDir:                                                                    ;
+	LD		HL,(dirEntryIndex)			; Directory Entry Index             ;
+	LD		B,dirEntryShift				; 4 entries per record              ;
+	CALL	ShiftRightHLbyB                                                 ;
+	LD		(absoluteCPMRecord),HL                                          ;
+	LD		(dirRecord),HL				; Save                              ;
+	JP		Seek                                                            ;
+;--------------------------- Seek Directory --------------------------------;
+;--------------------------- Seek ------------------------------------------;
+Seek:						; seek                                          ;
+	LD		BC,0FFFFH					; Initialize the track counter      ;
+	LD		HL,(absoluteCPMRecord)		; Get the record in question        ;
+	LD		DE,(dpbSPT)					; Get Sectors Per track             ;
+																			;
+Seek0:                                                                      ;
+	INC		BC							; Divide the record                 ;
+	XOR		A							;  by the sectors per track         ;
+	SBC		HL,DE                                                           ;
+	JR		NC,Seek0					;  to get the gross track number    ;
+	                                                                        ;
+	                                                                        ;
+	ADD		HL,DE						; Gets the sector in the track      ;
+	PUSH	HL							; Save Index Sector                 ;
+	                                                                        ;
+	LD		IX,(caTrack)                                                    ;
+	LD		(IX + 0),C                                                      ;
+	LD		(IX + 1),B					; Save the Gross Track              ;
+	                                                                        ;
+	EX		DE,HL						; Take the index from the record    ;
+	LD		HL,(absoluteCPMRecord)                                          ;
+	XOR		A                                                               ;
+	SBC		HL,DE						;  and you get the Block start      ;
+	                                                                        ;
+	LD		IX,(caSector)                                                   ;
+	LD		(IX + 0),L                                                      ;
+	LD		(IX + 1),H					; Save the Block Start              ;
+	                                                                        ;
+	LD		HL,(dpbOFF)					; Get directory Offset (tracks)		;
+	ADD		HL,BC						;  to add to the gross Track        ;
+	PUSH	HL							;  which yields the net or          ;
+	POP		BC							;  actual track for the record      ;
+	CALL	bcSettrk					; Set the net (actual) track        ;
+	                                                                        ;
+	POP		BC							; Get the sector within the track   ;
+	JP		bcSetsec					;  and set it for the seek          ;
+                                                                            ;
+;--------------------------- Seek ------------------------------------------;
+;--------------------------- Check Sum Utility -----------------------------;
+; At entry
+;			C  = TRUE	-  Set the Checksum values in Vector
+;			C <> TRUE	-  Validate Checksum value in Vector
 
-;	LD		HL,absoluteCPMRecord		; CPM Record
-;	LD		C,(HL)						; CPM Record Low
-;	INC		HL
-;	LD		B,(HL)						; CPM Record High
+;/ NewCheckSum:
+;/	LD		C,TRUE
+;/
+CheckSumUtility:
+	LD		HL,(dpbCKS)
+	LD		DE,(dirRecord)
+	XOR		A
+	SBC		HL,DE							; Skip if past the Directory 
+	RET		C								;  Entry
 
-	LD		BC,(absoluteCPMRecord)		; Absolute CPM Record
+	PUSH	BC								; Save New/Validate Flag
 	
-	LD		HL,(caSector)		 		; Current Sector
-	LD		E,(HL)						; Current Sector Number Low
+; CheckSum = MOD( SUM(all bytes in The Record), 0FFH)
+ComputeCheckSum:
+	LD		B,cpmRecordSize
+	LD		HL,(caDirectoryDMA)
+	XOR
+ComputeCheckSum1:
+	ADD		A,(HL)
 	INC		HL
-	LD		D,(HL)						; Current Sector Number High
+	DJNZ	ComputeCheckSum1
+; Checksum is in ACC	
+
+	LD		HL,(caCheckSum)				; Address of check sum vector
+	LD		DE,(dirRecord)				; Index to this record
+	ADD		HL,DE						; Address of this record in vector
+	POP		BC							; Retrieve New/Validate Flag
+	INC		C
+	JP		Z,SetNewCheckSum			; Set the Value if Flag was TRUE
 	
-	LD		HL,(caTrack) 				; Current Track
-	LD		A,(HL)						; Current Track  Low - temp
-	INC		HL
-	LD		H,(HL)						; Current Track Number High
-	LD		L,A							; Current Track Number Low
-				;(BC) - Absolute CPM Record
-				;(DE) - Current Sector
-				;(HL) - Current Track
-
-	;loop while Absolute CPM Record < Current Sector   ?????
-Seek0:
-	LD		A,C								;   Current Sector
-	SUB		E
-	LD		A,B								; - Current Disk Block
-	SBC		A,D	
-	JR		NC,Seek1							; skip if current File Record Number >= Current Sector
-
-	PUSH	HL
-	LD		HL,(dpbSPT)
-	LD		A,E
-	SUB		L
-	LD		E,A
-	LD		A,D
-	SBC		A,H
-	LD		D,A
-	POP		HL
-	DEC		HL
-	JP		Seek0
-
-; seek1 sets track	
- Seek1:
-
-	PUSH	HL								; Save Current Track
-	LD	HL,(dpbSPT)							; records per track
-	ADD		HL,DE								; HL = Current Sector + sectorsPerClynder
-	LD		A,C								;     current File Record Number
-	SUB		L								;
-	LD		A,B								;  - HL (above)
-	SBC		A,H								;
-	JP	C,Seek2								; skip if current File Record Number > HL (above)
-
-	EX	DE,HL 
-
-	POP	HL
-	INC	HL
-	JP	Seek1
-
- Seek2:
-	POP		HL								; retreive Current Track
-	PUSH	BC								; save  current File Record Number
-	PUSH	DE								; save  Current Sector
-	PUSH	HL								; save CurrentTrack
-
-
-; adjust track to account for number of tracks before directory (boot record)
- ; stack contains CurrentTrack , Current Sector, current File Record Number
-	EX	DE,HL ; DE => CurrentTrack, HL => Current Sector
-	LD	HL,(dpbOFF)							; Block Zero starting Track
-	ADD		HL,DE								; HL =  actual physical Track number
-	LD		B,H
-	LD		C,L								; BC has physical Track number
-;------------------	
-;?	LD		BC,0FFFFH
-;?	LD		HL,(absoluteCPMRecord)
-;?	LD		DE,(dpbSPT)
-;?SeekX:
-;?	INC		BC
-;?	XOR		A
-;?	SBC		HL,DE
-;?	JR		NC,SeekX
-;?	
-;?	ADD		HL,DE
-;?	PUSH	DE					; save sector
-;?	
-;?	LD		HL,(dpbOFF)
-;?	
-;?	PUSH	BC					; track gross
-;?	
-;?	ADD		HL,BC
-;?	PUSH	HL					; Net track
-;?	POP		BC
-;?;--------------------
-
-	CALL	bcSettrk						; track set up
-						; note that BC - curtrk is difference to move in bios
-	POP		DE								; recall CurrentTrack
-	LD	HL,(caTrack)							; point at current Track
-	LD		(HL),E
-	INC		HL
-	LD		(HL),D								; current Track updated
- ; now compute sector as Absolute CPM Record-currec
-	POP		DE								; recall Current Sector
-	LD	HL,(caSector)						; point at current Sector
-	LD		(HL),E
-	INC		HL
-	LD		(HL),D								; current sector updated / DE has currentSector
-	POP		BC								; recall current File Record Number
-	LD		A,C								; current File Record Number
-	SUB		E
-	LD		C,A								; - currentSector
-	LD		A,B
-	SBC		A,D
-	LD		B,A								; back into BC
-	JP	bcSetsec							; sector selected
-	;ret
-;--------------------------- Seek -------------------------------------------;
- ;************* CheckSum *******************************
- ; compute current checksum record
- ; if C = TRUE , update the allocation vector
- ;
- ; or check for = if not dirRecord < dpbCKS ????
-
- NewCheckSum:
-	LD		C,TRUE
-
- CalculateCheckSum:
-	LD	HL,(dirRecord)
-	EX	DE,HL 
-	LD	HL,(dpbCKS)							; size of checksum vector
-	CALL	DEminusHL2HL					; DE-HL
-	RET	NC; skip checksum if past checksum vector size
-	PUSH	BC								; save init flag
-	CALL	ComputeCheckSum					; check sum value to A
-	LD	HL,(caCheckSum)						; address of check sum vector
-	EX	DE,HL 
-	LD	HL,(dirRecord)						; value of dirRecord
-	ADD		HL,DE								; HL = .check(dirRecord)
-	POP		BC								; recall true=0ffh or false=00 to C
-	INC		C								; 0ffh produces zero flag
-	JP	Z,SetNewCheckSum
- ; not initializing, compare
-	CP		M								; compute$cs=check(dirRecord)?
-	RET	Z; no message if ok
- ; possible checksum error, are we beyond the end of the disk?
+	CP		M							; Else we are checking the value
+	RET		Z							; Exit if OK
+; possible checksum error, are we beyond the end of the disk?
 	CALL	StillInDirectory
-	RET	NC; no message if so
-	CALL	SetDiskReadOnly					; read/only disk set
-	RET
+	RET		NC							; OK, if not in the directory
+	CALL	SetDiskReadOnly				;  else the checksums don't match
+	RET									;  Set disk RO before returning
 
  ;initializing the checksum
  SetNewCheckSum:
 	LD		(HL),A
 	RET
  ;------------------
- ;compute checksum for current directory buffer
- ComputeCheckSum:
-	LD		C,cpmRecordSize					; size of directory buffer
-	LD	HL,(caDirectoryDMA)					; current directory buffer
-	XOR		A								; clear checksum value
- ComputeCheckSum0:
-	ADD		A,(HL)
-	INC		HL
-	DEC		C								; cs=cs+buff(cpmRecordSize-C)
-	JP	NZ,ComputeCheckSum0
-	RET										; with checksum in A
+;/ ;compute checksum for current directory buffer
+;/ ComputeCheckSum:
+;/	LD		C,cpmRecordSize					; size of directory buffer
+;/	LD	HL,(caDirectoryDMA)					; current directory buffer
+;/	XOR		A								; clear checksum value
+;/ ComputeCheckSum0:
+;/	ADD		A,(HL)
+;/	INC		HL
+;/	DEC		C								; cs=cs+buff(cpmRecordSize-C)
+;/	JP	NZ,ComputeCheckSum0
+;/	RET										; with checksum in A
  ;*****************************************************************
- ;if not still in directory set max value
- SetDirectoryEntry:
-	CALL	StillInDirectory
-	RET	C
- ; return if yes,otherwise, HL = DirMaxValue+1, DE = directoryCount
+;--------------------------- Check Sum Utility -----------------------------;
 
-	INC	DE
-	LD	(HL),D
-	DEC	HL
-	LD	(HL),E
-	RET
- ; return CY if entry is still in Directory
- StillInDirectory:
-	LD	HL,(dirEntryIndex)
-	EX	DE,HL ; DE = directory counter
-	LD	HL,(caDirMaxValue)					; HL=caDirMaxValue
-	LD	A,E
-	SUB	M									; low(dirEntryIndex) - low(cdrmax)
-	INC	HL									; HL = .cdrmax+1
-	LD	A,D
-	SBC	A,(HL)									; hi(dirEntryIndex) - hig(cdrmax)
- ;condition dirEntryIndex - cdrmax  produces cy if cdrmax>dirEntryIndex
-	RET
- ;---------------------
+
 ;---------------------
  ;update variables from I/O in  fcb
  UpdateRecordVars:
@@ -2221,7 +2178,7 @@ Seek0:
  ;-----------------------------------------------------------------
  ;return true if dir checksum difference occurred
  DoNotWrite:
-	LD	HL,(ReadOnlyVector)
+	LD	HL,(readOnlyVector)
 	LD		A,(currentDisk)
 	LD		C,A
 	CALL	ShiftRightHLbyC
@@ -2671,7 +2628,10 @@ Seek0:
  ;-----------------------------------------------------------------
  ;write the current directory entry, set checksum
  WriteDir:
-	CALL	NewCheckSum						; initialize entry
+;	CALL	NewCheckSum						; initialize entry
+	LD		C,TRUE
+	CALL	CheckSumUtility
+	
 	CALL	SetDirDMA						; directory dma
 	LD		C,1								; indicates a write directory operation
 	CALL	WriteBuffer						; write the buffer
@@ -2689,13 +2649,7 @@ Seek0:
 	JP	NZ,erPermanentNoWait				; error if not 00
 	RET
  ;-----------------------------------------------------------------
- ;read buffer and check condition
- ReadBuffer:
-	CALL	bcRead							; current drive, track, sector, dma
-	OR		A
-	JP	NZ,erPermanentNoWait
-	RET
- ;-----------------------------------------------------------------
+
  ;HL = .fcb1(i), DE = .fcb2(i),
  ;if fcb1(i) = 0 then fcb1(i) := fcb2(i)
  Merge:
@@ -3367,7 +3321,7 @@ ReAlignMap1:                                                                 ;
  ;     *** Initialized Data ***
 
  emptyFCB:			DB	emptyDir			; efcb 0E5 = available dir entry
- ReadOnlyVector:		DW	0					; rodsk read only disk vector
+ readOnlyVector:		DW	0					; rodsk read only disk vector
  loggedDisks:		DW	0					; dlog	 logged-in disks
  initDAMAddress:		DW	DMABuffer			; dmaad tbuff initial dma address
 
