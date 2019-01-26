@@ -1035,7 +1035,7 @@ vGetAllocAddr:
 ;                                                                            ;
 ;			Function Code	:	C = 0DBH                                     ;
 ;			Entry Parameters:	None										 ;
-;			Exit Parameters :	HL = Read-Only Map							 ;
+;			Exit Parameters :	HL = Read-Only Vector						 ;
 ;																			 ;
 ;---------------------------- Get Read-Only Map - 1D (29) -------------------;
 vGetReadOnlyMap:
@@ -1074,7 +1074,7 @@ vGetDiskParamBlock:							; func31 (31 - 1F)
 ; compatibility with MP/ M.                                                  ;
 ;                                                                            ;
 ;			Function Code	:	C = 25H                                      ;
-;			Entry Parameters:	DE = Logical Drive Bit Map					 ;
+;			Entry Parameters:	DE = Logical Drive Bit Vector					 ;
 ;			Exit Parameters :	A = 00H										 ;
 ;																			 ;
 ;------------------------ Reset Logical Disk Drive - 25 (37) ----------------;
@@ -1418,8 +1418,8 @@ Select:                                                                      ;
 	LD		HL,currentDisk													 ;
 	LD		B,(HL)						; Get Current Disk                   ;
 	LD		HL,(loggedDisks)			; else log in a different disk	     ;
-	CALL	SetMapBit                                                        ;
-	LD		(loggedDisks),HL			; Update the Map                     ;
+	CALL	SetVectorBit                                                        ;
+	LD		(loggedDisks),HL			; Update the Vector                     ;
 	                                                                         ;
 	JP		InitDisk                                                         ;
 ;--------------------------- Select Login Drive -----------------------------;
@@ -1500,7 +1500,7 @@ InitDiskLoop1:
 	LD		(HL),E
 	INC		HL
 	LD		(HL),D						; Put reserved blocks in Vector	
-; home disk, and set current track and sector to 00
+; Home disk, and set current track and sector to 00
 	CALL	Home
 	LD		HL,(caDirMaxValue)
 	LD		(HL),3
@@ -1508,35 +1508,35 @@ InitDiskLoop1:
 	LD		(HL),0						; Current Max Dir Value = 0003
 	CALL	SetEndDirectory				; dirEntryIndex = EOD (-1)
 
- InitDisk1:
-; Process the directory for 
+InitDisk1:
+; Process the directory
 	LD		C,TRUE						; Set flag for setting CheckSum	
-	CALL	ReadDirectory
-	CALL	EndOfDirectory
-	RET		Z							; Exit at end of directory
-; not end of directory, valid entry?
-	CALL	GetDirElementAddress		; Calculate the location of the element
+	CALL	ReadDirectory				; Get the directory Record
+	CALL	EndOfDirectory				; Are we Done ?
+	RET		Z							;  Exit if Yes
+; Not end of directory, valid entry?
+	CALL	GetDirElementAddress		; Calculate location of the element
 	LD		A,emptyDir
-	CP		M
-	JP	Z,InitDisk1						; go get another item
- ; not emptyDir, user code the same?
+	CP		M							; Is it an Empty Dir Entry
+	JR		Z,InitDisk1					;   Loop back if yes
+; Not emptyDir, user code the same?
 	LD		A,(currentUserNumber)
 	CP		M
-	JP	NZ,InitDisk2
- ; same user code, check for '$' submit
+	JR		NZ,InitDisk2				; Skip if this entry not the users
+; Same user, check for '$' submit
 	INC		HL
-	LD		A,(HL)								; first character
-	SUB		DOLLAR							; dollar file?
-	JP	NZ,InitDisk2
- ; dollar file found, mark in exitParameterByte
-	DEC		A
-	LD		(exitParameterByte),A					; exitParameterByte = 255
+	LD		A,(HL)
+	SUB		DOLLAR						; Is first Char a $
+	JR		NZ,InitDisk2
+; dollar file found, mark in exitParameterByte
+	DEC		A							; Set A to FFH
+	LD		(exitParameterByte),A		; Return it the exit parameter
  InitDisk2:
- ; now scan the disk map for allocated blocks
+; now scan the disk map for allocated blocks
 	LD		C,1								; set to allocated
 	CALL	ScanDiskMap
 	CALL	SetDirectoryEntry				; set DirMaxVAlue to dirEntryIndex
-	JP		InitDisk1						; for another entry
+	JR		InitDisk1						; for another entry
 ;--------------------------- Initialize Disk --------------------------------;
  ;---------------
  ; set a "1" value in currentDisk position of BC
@@ -1556,78 +1556,89 @@ InitDiskLoop1:
 	LD		H,A								; HL = mask or rol(1,currentDisk)
 	RET
  ;--------------
-;--------------------------- Set disk Read Only ----------------------------;
- ;set current disk to read only
- SetDiskReadOnly:
-	LD		HL,readOnlyVector			; Get the Vector
-	
-;	LD		B,(currentDisk)				; Get the current disk
-;	CALL	SetMapBit					; Set the bit
-	LD		C,(HL)
-	INC		HL
-	LD		B,(HL)
-	CALL	SetCurrentDiskBit				; sets bit to 1
-	LD		(readOnlyVector),HL			; Update the Vector
 
-	
-	
-	LD	HL,(dpbDRM)						; Directory Max Value
-	EX	DE,HL ; DE = directory max
-	LD	HL,(caDirMaxValue)					; HL = .Directory max value
-	LD		(HL),E
-	INC		HL
-	LD		(HL),D								; cdrmax = dpbDRM
+;--------------------------- Scan Disk Map ----------------------------------;
+;--------------------------- Set/Reset Allocation Bit -----------------------;
+; At Entry:	HL Contains to the Block to be modified
+;			C  = TRUE if bit is to be set
+;			C  <> TRUE if bit is to be reset
+; At Exit:  The target bit in the target Octet will be set/reset	
+ManageAllocationBit:
+	LD		A,L							; LSB of the Block Number
+	AND		07H							; Calculate Mod(Block,8)
+	PUSH	AF							; Save the OctetBit
+	LD		B,3
+	CALL	ShiftRightHLbyB				; Calculate Block / 8
+	LD		DE,(caAllocVector)			; Start Of Map
+;	LD		DE,0FAF6H
+	ADD		HL,DE						; Address of targeted Octet
+	POP		AF
+	LD		B,A							; Get the bit 
 
-;	LD		IX(dpbDRM)
+	INC		B							; Adjust for looping
+	PUSH	BC							; Will need this later
+Left:
+	RL		(HL)						; Rotate the Octet
+	DJNZ	Left						;  to move target bit to bit 0  
+	POP		BC							; Restore loop limit and
+	SCF									;  set/reset flag 
+	INC		C							; was C = TRUE
+	JR		Z,Left						; Skip if Set
+	CCF									; Set for Reset
+Right:
+	RR		(HL)						; Move the Octet back
+	DJNZ	Right						;  to its original alignment
 	RET
- ;--------------------------- Set disk Read Only ----------------------------;
+;--------------------------- Set/Reset Allocation Bit -----------------------;
 
- ;
+;--------------------------- Scan Disk Map ----------------------------------;
  ;-------------Scan the disk map for unallocated entry-----------------------------------
  ; scan the disk map addressed by dptr for non-zero entries.  The allocation
  ; vector entry corresponding to a non-zero entry is set to the value of C (0,1)
- ScanDiskMap:
-	PUSH	BC								; save the set/reset bit
-	CALL	GetDirElementAddress			; HL = buffa + dptr
-  ; HL addresses the beginning of the directory entry
-	LD		DE,fcbDiskMapIndex
-	ADD		HL,DE								; hl now addresses the disk map
-	LD		C,fcbLength-fcbDiskMapIndex+1	; size of Disk Allocation Map + 1
+ScanDiskMap:
+	PUSH	BC								; Save the Set/Reset Info
+	CALL	GetDirElementAddress			; HL points at the directory record
+	LD		DE,fcbDiskMapIndex				; DE is the index to the FCBs Map
+	ADD		HL,DE							; HL is now at start of the MAP
+	LD		C,fcbLength-fcbDiskMapIndex+1	; Size of Disk Allocation Map + 1
+	
 
- ScanDiskMap0:								; loop once for each disk map entry
-	POP		DE								; recall the set/reset bit
+ScanDiskMap0:
+	POP		DE								; Recall the set/reset Info
 	DEC		C
-	RET	Z
+	RET		Z								; Loop once for each disk map entry
 
-	PUSH	DE								; save the set/reset bit
-	LD		A,(byteAllocationFlag)							; byteAllocationFlag byte entry flag
+	PUSH	DE								; Save the Set/Reset Info
+	LD		A,(byteAllocationFlag)			; Is Map Byte or Word sized
 	OR		A
-	JP	Z,ScanDiskMap1					; skip if two byte value
- ;  Byte Allocation scan operation
-	PUSH	BC								; save counter
-	PUSH	HL								; save map address
+	JR		Z,ScanDiskMapWord				; Skip if Word Sized
+;  Byte Allocation scan operation
+	PUSH	BC								; Save counter
+	PUSH	HL								; Save map address
 	LD		C,(HL)
-	LD		B,0								; BC=block#
-	JP		ScanDiskMap2
- ; two byte scan operation
- ScanDiskMap1:
-	DEC		C								; adjust counter for double byte
-	PUSH	BC								; save counter
- ;	MOV		C,M
+	LD		B,0								; BC=block# for Byte
+	JR		ScanDiskMap2
+; Word scan operation
+ScanDiskMapWord:
+	DEC		C								; Adjust counter for 2 bytes
+	PUSH	BC								; Save counter
 	LD		B,(HL)
 	INC		HL
- ;	MOV		B,M								; BC=block#
-	LD		C,(HL)								; BC=block#
-	PUSH	HL								; save map address
- ScanDiskMap2:								; arrive here with BC=block#, E=0/1
+	LD		C,(HL)							; BC=block# for Word
+	PUSH	HL								; Save map address
+	
+; Arrive here with BC=block#, E=0/1	
+ ScanDiskMap2:
 	LD		A,C
-	OR		B								; skip if = 0000
+	OR		B								; Skip if = 0000 (No Block)
 	CALL	NZ,SetAllocBit						; bit set to 0/1 its in C
 	POP		HL
 	INC		HL								; to next bit position
 	POP		BC								; recall counter
 	JP		ScanDiskMap0					; for another item
- ;
+ 
+;--------------------------- Scan Disk Map ----------------------------------;
+
  ;-----------------------------------
  ;given allocation vector position BC, return with byte
  ;containing BC shifted so that the least significant
@@ -1674,9 +1685,35 @@ InitDiskLoop1:
 	RET
 
  ;-----------------------------------
- ; BC is the bit position of ALLOC to set or reset.  The
- ; value of the bit is in register E.
+; BC is the bit position of ALLOC to set or reset.  The
+; value of the bit is in register E.
+; Arrive here with BC=block#, E=0/1
  SetAllocBit:
+	
+;---------------------------------------------------
+;	PUSH	AF
+;	PUSH	BC
+;	PUSH	DE
+;	PUSH	HL
+;;-------
+	LD		HL,0000H
+	ADD		HL,BC
+	LD		A,E
+	CP		A,01H
+	LD		C,TRUE
+	JR		Z,SetIt
+	INC		C
+SetIt:
+	CALL	ManageAllocationBit
+	RET
+;;-------
+;	POP		HL
+;	POP		DE
+;	POP		BC
+;	POP		AF
+;---------------------------------------------------
+	
+ 
 	PUSH	DE
 	CALL	GetAllocBit						; shifted val A, count in D
 	AND		11111110b						; mask low bit to zero (may be set)
@@ -1751,6 +1788,25 @@ ReadBuffer:                                                                ;
 	RET                                                                    ;
 ;--------------------------- Read Buffer ----------------------------------;
 
+;--------------------------- Set Current Disk Read Only --------------------;
+;set current disk to read only                                              ;
+ SetDiskReadOnly:                                                           ;
+	LD		HL,(readOnlyVector)			; Get the Vector                    ;
+	                                                                        ;
+	LD		A,(currentDisk)				; Get the current disk              ;
+	LD		B,A							; Move into B                       ;
+	CALL	SetVectorBit					; Set the bit                       ;
+	LD		(readOnlyVector),HL			; Update the Vector                 ;
+	                                                                        ;
+	LD		HL,(dpbDRM)					; Directory Max Value               ;
+	EX		DE,HL                                                           ;
+	LD		HL,(caDirMaxValue)			; HL = .Directory max value         ;
+	LD		(HL),E                                                          ;
+	INC		HL                                                              ;
+	LD		(HL),D                                                          ;
+	RET                                                                     ;
+;--------------------------- Set disk Read Only ----------------------------;
+
 
 ;=========================== Disk Utilities ================================;
  
@@ -1804,6 +1860,7 @@ SetEndDirectory:                                                            ;
 ;--------------------------- Set End of Directory indicator ----------------;
 ;--------------------------- Get Directory Element -------------------------;
 ; compute the address of a directory element in Directory Buffer            ;
+; Returns:  HL = Address of the specific directory Record                   ;
 GetDirElementAddress:                                                       ;
 	LD		HL,(caDirectoryDMA)			; Get the Directory Buffer base     ;
 	LD		A,(dirBlockIndex)			; Get the index value               ;
@@ -1851,22 +1908,33 @@ StillInDirectory:                                                           ;
 ;=========================== Directory Utilities ===========================;
 
 ;=========================== General   Utilities ===========================;
-;--------------------------- Shift HL right by value in C -----------------;
+;--------------------------- Rotate HL right by value in C ----------------;
                                                                            ;
+; HL = Value to be rotated Right                                           ;
+;  B = Amount to shift                                                     ;
+RotateRightHLbyB:                                                          ;
+ 		SCF								; Set carry flag, expect LSBit = 1 ;
+		BIT		0,L						; is LSB set?                      ;
+		JR		NZ, RotateRightHLbyB1		; Skip if LSB set              ;
+		CCF								; else Clear Carry flag            ;
+RotateRightHLbyB1:                                                         ;
+		RR		H						; Shift thru CY                    ;
+		RR		L						; ditto                            ;
+		DJNZ	RotateRightHLbyB                                           ;
+		RET                                                                ;
+                                                                           ;
+;--------------------------- Rotate HL right by value in C ----------------;
+;---------------------------  Shift HL right by value in C ----------------;
 ; HL = Value to be shifted Right                                           ;
 ;  B = Amount to shift                                                     ;
 ShiftRightHLbyB:                                                           ;
- 		SCF								; Set carry flag, expect LSBit = 1 ;
-		BIT		0,L						; is LSB set?                      ;
-		JR		NZ, ShiftRightHLbyB1		; Skip if LSB set              ;
-		CCF								; else Clear Carry flag            ;
-ShiftRightHLbyB1:                                                          ;
+		XOR		A						; else Clear Carry flag            ;
 		RR		H						; Shift thru CY                    ;
 		RR		L						; ditto                            ;
 		DJNZ	ShiftRightHLbyB                                            ;
 		RET                                                                ;
-                                                                           ;
-;--------------------------- Shift HL right by value in C -----------------;
+;---------------------------  Shift HL right by value in C ----------------;
+
 ;=========================== General   Utilities ===========================;
 
  ;---------------
@@ -1893,49 +1961,51 @@ ReadDirRecord:                                                              ;
 ;--------------------------- Read Directory Record -------------------------;
 
 ;--------------------------- Read Directory --------------------------------;
-; Read next directory entry, with C=true if initializing and setting CheckSum
- ReadDirectory:
-	LD		DE,(dpbDRM)					; Number of Dir Entries-1
-	LD		HL,(dirEntryIndex)			; Prior Directory Index
-	INC		HL							; Increment the Index
-	LD		(dirEntryIndex),HL			; Save current directory index
-	XOR		A							; Clear the CY flag
-	SBC		HL,DE						; Are we at end Of the directory
-	JR		NZ,ReadDirectory0			;  No the process
-	CALL	SetEndDirectory				;  else we are done
-	RET
-
-; Calculate the entry index Position in Buffer
-ReadDirectory0:
-	LD		A,(dirEntryIndex)			; Get the index
-	AND		dirEntryMask				; Determine Entry number in the buffer 
-	LD		B,fcbShift					; Shift value results in Record Size
-ReadDirectory1:
-	ADD		A,A
-	DJNZ	ReadDirectory1		
-	LD		(dirBlockIndex),A			; Now save the Index into to buffer
-	OR		A							; Is this the 1st entry?
-	RET		NZ							;  return if not. 
-	
-	PUSH	BC							; Save init Flag (CheckSum)
-	CALL	SeekDir						; Set up for Directory Read
-	CALL	ReadDirRecord				; Read the directory record
-	POP		BC							; Recall initialization flag
-	JP		CheckSumUtility				; checksum the directory elt
- ;---------
-;--------------------------- Read Directory ---------------------------------;
+; Read next directory entry                                                 ;
+; Enter :                                                                   ;
+;		C =  TRUE initializing and setting CheckSum                         ;
+;		  <> TRUE Checking existing CheckSum                                ;
+ ReadDirectory:                                                             ;
+	LD		DE,(dpbDRM)					; Number of Dir Entries-1           ;
+	LD		HL,(dirEntryIndex)			; Prior Directory Index             ;
+	INC		HL							; Increment the Index               ;
+	LD		(dirEntryIndex),HL			; Save current directory index      ;
+	XOR		A							; Clear the CY flag                 ;
+	SBC		HL,DE						; Are we at end Of the directory    ;
+	JR		NZ,ReadDirectory0			;  No the process                   ;
+	CALL	SetEndDirectory				;  else we are done                 ;
+	RET                                                                     ;
+                                                                            ;
+; Calculate the entry index Position in Buffer                              ;
+ReadDirectory0:                                                             ;
+	LD		A,(dirEntryIndex)			; Get the index                     ;
+	AND		dirEntryMask				; Determine Entry number            ;
+	LD		B,fcbShift					; Shift value for Record Size       ;
+ReadDirectory1:                                                             ;
+	ADD		A,A                                                             ;
+	DJNZ	ReadDirectory1		                                            ;
+	LD		(dirBlockIndex),A			; Now save the Index into to buffer ;
+	OR		A							; Is this the 1st entry?            ;
+	RET		NZ							;  return if not.                   ;
+	                                                                        ;
+	PUSH	BC							; Save init Flag (CheckSum)         ;
+	CALL	SeekDir						; Set up for Directory Read         ;
+	CALL	ReadDirRecord				; Read the directory record         ;
+	POP		BC							; Recall initialization flag        ;
+	JP		CheckSumUtility				; Checksum the directory            ;
+;--------------------------- Read Directory --------------------------------;
 ;--------------------------- Seek Directory --------------------------------;
- ;seek the record containing the current dir entry                          ;
+ ;seek the record containing the current directory entry					;
 SeekDir:                                                                    ;
 	LD		HL,(dirEntryIndex)			; Directory Entry Index             ;
 	LD		B,dirEntryShift				; 4 entries per record              ;
-	CALL	ShiftRightHLbyB                                                 ;
+	CALL	RotateRightHLbyB                                                 ;
 	LD		(absoluteCPMRecord),HL                                          ;
 	LD		(dirRecord),HL				; Save                              ;
 	JP		Seek                                                            ;
 ;--------------------------- Seek Directory --------------------------------;
 ;--------------------------- Seek ------------------------------------------;
-Seek:						; seek                                          ;
+Seek:								                                        ;
 	LD		BC,0FFFFH					; Initialize the track counter      ;
 	LD		HL,(absoluteCPMRecord)		; Get the record in question        ;
 	LD		DE,(dpbSPT)					; Get Sectors Per track             ;
@@ -1974,65 +2044,49 @@ Seek0:                                                                      ;
                                                                             ;
 ;--------------------------- Seek ------------------------------------------;
 ;--------------------------- Check Sum Utility -----------------------------;
-; At entry
-;			C  = TRUE	-  Set the Checksum values in Vector
-;			C <> TRUE	-  Validate Checksum value in Vector
-
-;/ NewCheckSum:
-;/	LD		C,TRUE
-;/
-CheckSumUtility:
-	LD		HL,(dpbCKS)
-	LD		DE,(dirRecord)
-	XOR		A
-	SBC		HL,DE							; Skip if past the Directory 
-	RET		C								;  Entry
-
-	PUSH	BC								; Save New/Validate Flag
-	
-; CheckSum = MOD( SUM(all bytes in The Record), 0FFH)
-ComputeCheckSum:
-	LD		B,cpmRecordSize
-	LD		HL,(caDirectoryDMA)
-	XOR
-ComputeCheckSum1:
-	ADD		A,(HL)
-	INC		HL
-	DJNZ	ComputeCheckSum1
-; Checksum is in ACC	
-
-	LD		HL,(caCheckSum)				; Address of check sum vector
-	LD		DE,(dirRecord)				; Index to this record
-	ADD		HL,DE						; Address of this record in vector
-	POP		BC							; Retrieve New/Validate Flag
-	INC		C
-	JP		Z,SetNewCheckSum			; Set the Value if Flag was TRUE
-	
-	CP		M							; Else we are checking the value
-	RET		Z							; Exit if OK
-; possible checksum error, are we beyond the end of the disk?
-	CALL	StillInDirectory
-	RET		NC							; OK, if not in the directory
-	CALL	SetDiskReadOnly				;  else the checksums don't match
-	RET									;  Set disk RO before returning
-
- ;initializing the checksum
- SetNewCheckSum:
-	LD		(HL),A
-	RET
- ;------------------
-;/ ;compute checksum for current directory buffer
-;/ ComputeCheckSum:
-;/	LD		C,cpmRecordSize					; size of directory buffer
-;/	LD	HL,(caDirectoryDMA)					; current directory buffer
-;/	XOR		A								; clear checksum value
-;/ ComputeCheckSum0:
-;/	ADD		A,(HL)
-;/	INC		HL
-;/	DEC		C								; cs=cs+buff(cpmRecordSize-C)
-;/	JP	NZ,ComputeCheckSum0
-;/	RET										; with checksum in A
- ;*****************************************************************
+; At entry                                                                  ;
+;			C  = TRUE	-  Set the Checksum values in Vector                ;
+;			C <> TRUE	-  Validate Checksum value in Vector                ;
+                                                                            ;
+CheckSumUtility:                                                            ;
+	LD		HL,(dpbCKS)                                                     ;
+	LD		DE,(dirRecord)                                                  ;
+	XOR		A                                                               ;
+	SBC		HL,DE							; Skip if past the Directory    ;
+	RET		C								;  Entries                      ;
+                                                                            ;
+	PUSH	BC								; Save New/Validate Flag        ;
+	                                                                        ;
+; CheckSum = MOD( SUM(all bytes in The Record), 0FFH)                       ;
+ComputeCheckSum:                                                            ;
+	LD		B,cpmRecordSize                                                 ;
+	LD		HL,(caDirectoryDMA)                                             ;
+	XOR                                                                     ;
+ComputeCheckSum1:                                                           ;
+	ADD		A,(HL)                                                          ;
+	INC		HL                                                              ;
+	DJNZ	ComputeCheckSum1                                                ;
+; Checksum is in ACC	                                                    ;
+                                                                            ;
+	LD		HL,(caCheckSum)				; Address of check sum vector       ;
+	LD		DE,(dirRecord)				; Index to this record              ;
+	ADD		HL,DE						; Address of this record in vector  ;
+	POP		BC							; Retrieve New/Validate Flag        ;
+	INC		C                                                               ;
+	JP		Z,SetNewCheckSum			; Set the Value if Flag was TRUE    ;
+	                                                                        ;
+	CP		M							; Else we are checking the value    ;
+	RET		Z							; Exit if OK                        ;
+; possible checksum error, are we beyond the end of the disk?               ;
+	CALL	StillInDirectory                                                ;
+	RET		NC							; OK, if not in the directory       ;
+	CALL	SetDiskReadOnly				;  else the checksums don't match   ;
+	RET									;  Set disk RO before returning     ;
+                                                                            ;
+ ;initializing the checksum                                                 ;
+ SetNewCheckSum:                                                            ;
+	LD		(HL),A                                                          ;
+	RET                                                                     ;
 ;--------------------------- Check Sum Utility -----------------------------;
 
 
@@ -3148,35 +3202,35 @@ IsBitSet1:                                                                   ;
 		RET                                                                  ;
 ;---------------------------------- Is Bit Set ------------------------------;
 
-;============================ Set/Reset Map Bit =============================;		
-;---------------------------------- Set Map Bit ----------------------------;;		
-; Enter  HL  contains the bit map                                           ;;
+;============================ Set/Reset Vector Bit ==========================;		
+;---------------------------------- Set Vector Bit -------------------------;;		
+; Enter  HL  contains the bit map vector                                    ;;
 ;        B   Has the bit number (0...F)                                     ;;
-; Return HL  Contains the modified bit map                                  ;;
-SetMapBit:                                                                  ;;
+; Return HL  Contains the modified bit map vector                                  ;;
+SetVectorBit:                                                               ;;
 		PUSH	BC						; Save the Bit Number               ;;
 		CALL	IsBitSet				; Put the bit in the LSBit          ;;
                                                                             ;;
 		POP		BC						; Get the bit position              ;;
 		SET		7,H                                                         ;;
-		JR		ReAlignMap				;                                    ;
-;---------------------------------- Set Map Bit ----------------------------;;
-;---------------------------------- Reset Map Bit --------------------------;;		
-; Enter  HL  contains the bit map                                           ;;
+		JR		ReAlignVector				;                                    ;
+;---------------------------------- Set Vector Bit -------------------------;;
+;---------------------------------- Reset Vector Bit -----------------------;;		
+; Enter  HL  contains the bit map vector                                    ;;
 ;        B   Has the bit number (0...F)                                     ;;
-; Return HL  Contains the modified bit map                                  ;;
-ResetMapBit:                                                                  ;;
+; Return HL  Contains the modified bit map vector                           ;;
+ResetVectorBit:                                                             ;;
 		PUSH	BC						; Save the Bit Number               ;;
 		CALL	IsBitSet				; Put the bit in the LSBit          ;;
                                                                             ;;
 		POP		BC						; Get the bit position              ;;
 		RES		7,H                                                         ;;
-; Fall thru to ReAlignMap                                                    ;
-;---------------------------------- Reset Map Bit --------------------------;;		
-;---------------------------------- Set Map Bit ----------------------------;;
+; Fall thru to ReAlignVector                                                 ;
+;---------------------------------- Reset Vector Bit -----------------------;;		
+;---------------------------------- Set VectorBit --------------------------;;
 ; Adjusts the HL register to its Original Alignment after IsBitSet           ;
 		                                                                     ;
-ReAlignMap:                                                                  ;
+ReAlignVector:                                                                  ;
 		INC		B                                                            ;
 ReAlignMapLoop:                                                              ;
  		SCF								; Set carry flag, expect LSBit = 1   ;
@@ -3188,7 +3242,7 @@ ReAlignMap1:                                                                 ;
 		RL		H						; ditto                              ;
 		DJNZ	ReAlignMapLoop                                               ;
 		RET                                                                  ;
-;============================ Set/Reset Map Bit =============================;		
+;============================ Set/Reset Vector Bit ==========================;		
 
 
 ;? ;********************************************************

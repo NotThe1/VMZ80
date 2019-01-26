@@ -11,54 +11,70 @@ LF			EQU		00DH
 TPA			EQU		0100H
 BS			EQU		08H
 SPACE		EQU		020H
+GetRO		EQU		01DH
+SetRO		EQU		01CH
+SelectDisk	EQU		0EH
+
+BLOCK		EQU		02AH
 
 
 			ORG		TPA			
 Start:
-	LD		SP,TPA
-	LD		BC,0FFFFH
-	LD		HL,(absoluteCPMRecord)
-	LD		DE,(dpbSPT)
-SeekX:
-	INC		BC
-	XOR		A
-	SBC		HL,DE
-	JR		NC,SeekX
-	
-	
-	ADD		HL,DE
-	PUSH	HL							; Save Index Sector
-	
-	LD		IX,(caTrack)
-	LD		(IX + 0),C
-	LD		(IX + 1),B					; Gross Track
-	
-	EX		DE,HL
-	LD		HL,(absoluteCPMRecord)	
-	XOR		A
-	SBC		HL,DE
-	
-	LD		IX,(caSector)
-	LD		(IX + 0),L
-	LD		(IX + 1),H					; Block Start
-	
-	LD		HL,(dpbOFF)			
-	ADD		HL,BC
-	PUSH	HL
-	POP		BC
-;	CALL	bcSetTrk					; Net track
-	POP		BC
-;	CALL	bcSetSector					; Index Sector
+			
+			LD		HL,BLOCK			; Block number
+			LD		A,L					; LSB of Block
+			AND		0111B				; Get Mod(Block,8)
+			PUSH	AF					; Save the Obit
+			LD		B,3					; divide by 8
+			CALL	ShiftRightHLbyB		; HL has the Octet
+			LD		DE,(addMap)			; Start of Map
+			ADD		HL,DE				; Address of target Octet
+			POP		AF
+			
+			LD		B,A					; OctetBit now in B 
+			CALL	SetObit				; Set the bit in place
+			
+			
+			NOP
+			JP		Start
+;---------------------------------------
+;			LD		SP,TPA
+;			LD		A,(Value)
+;			LD		HL,Value
+;			LD		B,3
+;			CALL	SetObit			
+;			LD		A,(Value)
+;			NOP
+;			JR		Start
+;
+;
+;;---------------------------------------
+
+addMap:		DW		Map
+			
+SetObit:			
+			INC		B
+			PUSH	BC
+Right:
+			RR		(HL)
+			DJNZ	Right
+			POP		BC
+			SCF
+Left:
+			RL		(HL)
+			DJNZ	Left
+			RET
+			
+; HL = Value to be shifted Right                                           ;
+;  B = Amount to shift                                                     ;
+ShiftRightHLbyB:                                                           ;
+		XOR		A						; else Clear Carry flag            ;
+		RR		H						; Shift thru CY                    ;
+		RR		L						; ditto                            ;
+		DJNZ	ShiftRightHLbyB                                            ;
+		RET
+		;
 		
-		HALT
-		
-absoluteCPMRecord:
-		DW		02A0H
-dpbSPT:
-		DW		0090H
-dpbOFF:
-		DW		0001H
-caTrack:
-		DW		0000
-caSector:
-		DW		0000
+		ORG		1000H
+Map:			
+			

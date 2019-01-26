@@ -11,71 +11,91 @@
 0011: 0100             TPA        EQU    0100H
 0012: 0100             BS         EQU    08H
 0013: 0100             SPACE      EQU    020H
-0014: 0100
-0015: 0100
-0016: 0100                        ORG    TPA
-0017: 0100             Start:
-0018: 0100 31 00 01               LD     SP,TPA
-0019: 0103 01 FF FF               LD     BC,0FFFFH
-0020: 0106 2A 38 01               LD     HL,(absoluteCPMRecord)
-0021: 0109 ED 5B 3A 01               LD     DE,(dpbSPT)
-0022: 010D             SeekX:
-0023: 010D 03                     INC    BC
-0024: 010E AF                     XOR    A
-0025: 010F ED 52                  SBC    HL,DE
-0026: 0111 30 FA                  JR     NC,SeekX
-0027: 0113
-0028: 0113
-0029: 0113 19                     ADD    HL,DE
-0030: 0114 E5                     PUSH   HL                   ; Save Index Sector
-0031: 0115
-0032: 0115 DD 2A 3E 01               LD     IX,(caTrack)
-0033: 0119 DD 71 00               LD     (IX+0),C
-0034: 011C DD 70 01               LD     (IX+1),B             ; Gross Track
-0035: 011F
-0036: 011F EB                     EX     DE,HL
-0037: 0120 2A 38 01               LD     HL,(absoluteCPMRecord)
-0038: 0123 AF                     XOR    A
-0039: 0124 ED 52                  SBC    HL,DE
-0040: 0126
-0041: 0126 DD 2A 40 01               LD     IX,(caSector)
-0042: 012A DD 75 00               LD     (IX+0),L
-0043: 012D DD 74 01               LD     (IX+1),H             ; Block Start
-0044: 0130
-0045: 0130 2A 3C 01               LD     HL,(dpbOFF)
-0046: 0133 09                     ADD    HL,BC
-0047: 0134 C5                     PUSH   BC
-0048: 0135 C1                     POP    BC
-0049: 0136         ;	CALL	bcSetTrk					; Net track
-0050: 0136 C1                     POP    BC
-0051: 0137         ;	CALL	bcSetSector					; Index Sector
-0052: 0137
-0053: 0137 76                     HALT
-0054: 0138
-0055: 0138             absoluteCPMRecord:
-0056: 0138 A0 02                  DW     02A0H
-0057: 013A             dpbSPT:
-0058: 013A 90 00                  DW     0090H
-0059: 013C             dpbOFF:
-0060: 013C 01 00                  DW     0001H
-0061: 013E             caTrack:
-0062: 013E 00 00                  DW     0000
-0063: 0140             caSector:
-0064: 0140 00 00                  DW     0000
+0014: 0100             GetRO      EQU    01DH
+0015: 0100             SetRO      EQU    01CH
+0016: 0100             SelectDisk EQU    0EH
+0017: 0100
+0018: 0100             BLOCK      EQU    02AH
+0019: 0100
+0020: 0100
+0021: 0100                        ORG    TPA
+0022: 0100             Start:
+0023: 0100
+0024: 0100 21 2A 00               LD     HL,BLOCK             ; Block number
+0025: 0103 7D                     LD     A,L                  ; LSB of Block
+0026: 0104 E6 07                  AND    0111B                ; Get Mod(Block,8)
+0027: 0106 F5                     PUSH   AF                   ; Save the Obit
+0028: 0107 06 03                  LD     B,3                  ; divide by 8
+0029: 0109 CD 29 01               CALL   ShiftRightHLbyB      ; HL has the Octet
+0030: 010C ED 5B 1A 01               LD     DE,(addMap)          ; Start of Map
+0031: 0110 19                     ADD    HL,DE                ; Address of target Octet
+0032: 0111 F1                     POP    AF
+0033: 0112
+0034: 0112 47                     LD     B,A                  ; OctetBit now in B
+0035: 0113 CD 1C 01               CALL   SetObit              ; Set the bit in place
+0036: 0116
+0037: 0116
+0038: 0116 00                     NOP
+0039: 0117 C3 00 01               JP     Start
+0040: 011A         ;---------------------------------------
+0041: 011A         ;			LD		SP,TPA
+0042: 011A         ;			LD		A,(Value)
+0043: 011A         ;			LD		HL,Value
+0044: 011A         ;			LD		B,3
+0045: 011A         ;			CALL	SetObit
+0046: 011A         ;			LD		A,(Value)
+0047: 011A         ;			NOP
+0048: 011A         ;			JR		Start
+0049: 011A         ;
+0050: 011A         ;
+0051: 011A         ;;---------------------------------------
+0052: 011A
+0053: 011A 00 10       addMap:    DW     Map
+0054: 011C
+0055: 011C             SetObit:
+0056: 011C 04                     INC    B
+0057: 011D C5                     PUSH   BC
+0058: 011E             Right:
+0059: 011E CB 1E                  RR     (HL)
+0060: 0120 10 FC                  DJNZ   Right
+0061: 0122 C1                     POP    BC
+0062: 0123 37                     SCF
+0063: 0124             Left:
+0064: 0124 CB 16                  RL     (HL)
+0065: 0126 10 FC                  DJNZ   Left
+0066: 0128 C9                     RET
+0067: 0129
+0068: 0129         ; HL = Value to be shifted Right                                           ;
+0069: 0129         ;  B = Amount to shift                                                     ;
+0070: 0129             ShiftRightHLbyB:                      ;
+0071: 0129 AF                     XOR    A                    ; else Clear Carry flag            ;
+0072: 012A CB 1C                  RR     H                    ; Shift thru CY                    ;
+0073: 012C CB 1D                  RR     L                    ; ditto                            ;
+0074: 012E 10 F9                  DJNZ   ShiftRightHLbyB      ;
+0075: 0130 C9                     RET
+0076: 0131         ;
+0077: 0131
+0078: 0131                        ORG    1000H
+0079: 1000             Map:
+0080: 1000
            ************************   Xref   ************************
-0000: $               0140
-0055: absoluteCPMRecord 0138   0020 0037
+0000: $               1000
+0053: addMap          011A   0030
 0006: BDOS            0005
+0018: BLOCK           002A   0024
 0012: BS              0008
-0063: caSector        0140   0041
-0061: caTrack         013E   0032
 0009: CR              000A
-0059: dpbOFF          013C   0045
-0057: dpbSPT          013A   0021
 0008: FALSE           0000
+0014: GetRO           001D
+0063: Left            0124   0065
 0010: LF              000D
-0022: SeekX           010D   0026
+0079: Map             1000   0053
+0058: Right           011E   0060
+0016: SelectDisk      000E
+0055: SetObit         011C   0035
+0015: SetRO           001C
+0070: ShiftRightHLbyB 0129   0029 0074
 0013: SPACE           0020
-0017: Start           0100
-0011: TPA             0100   0016 0018
+0022: Start           0100   0039
+0011: TPA             0100   0021
 0007: TRUE            00FF
