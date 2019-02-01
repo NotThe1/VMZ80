@@ -1,80 +1,134 @@
 ; A.Z80
-; 				
+; 7
 
-;	2018-11-30
-; 5
-BDOS		EQU		05H
-TRUE		EQU		0FFH
-FALSE		EQU		000H
-CR			EQU		00AH
-LF			EQU		00DH
+BLOCK		EQU		002H
 TPA			EQU		0100H
-BS			EQU		08H
-SPACE		EQU		020H
-GetRO		EQU		01DH
-SetRO		EQU		01CH
-SelectDisk	EQU		0EH
-
-BLOCK		EQU		02AH
-
 
 			ORG		TPA			
 Start:
+			LD		SP,TPA
+			CALL	SeedMap
+;			LD		HL,0FA45H
+;			LD		(HL),00
+;			LD		HL,0FA4AH
+;			LD		(HL),00
+MainLoop:
+			LD		BC,BLOCK
 			
-			LD		HL,BLOCK			; Block number
-			LD		A,L					; LSB of Block
-			AND		0111B				; Get Mod(Block,8)
-			PUSH	AF					; Save the Obit
-			LD		B,3					; divide by 8
-			CALL	ShiftRightHLbyB		; HL has the Octet
-			LD		DE,(addMap)			; Start of Map
-			ADD		HL,DE				; Address of target Octet
-			POP		AF
+; Enter with Block Last Block Number in BC
+			PUSH	BC					; save the starting Block #
+						
+			LD		HL,(dpbDSM)			; Maximum allocation value
+			CALL	DivideHLby8			; Length of Map
+		
+			EX		DE,HL				; put size into DE
 			
-			LD		B,A					; OctetBit now in B 
-			CALL	SetObit				; Set the bit in place
+			POP		HL					; Block number into HL
+			CALL	DivideHLby8			; Length of Map
+;			LD		(startOctet),HL		; Starting Octet
+			EX		DE,HL				; Size in HL, Start in DE
+			XOR		A					; Reset CY
+			SBC		HL,DE				; Size for right
+; DE = Start Index
+; DE = Left Size
+; HL	= Right Size
+			PUSH	HL					; Save right size
+			PUSH	DE					; Save left size & Start Index
+			LD		A,0FFH				; Full Octet
+
+			LD		HL,(caAllocVector)	; Start of Map
+			ADD		HL,DE				; Determine initial Octet			
+; Set up Left side
+			POP		BC					; Left size
+			INC		BC					; adjust 
+			PUSH	HL					; Save initial Octet
+			LD		DE,-1				; Flag as Left register set
+; HL = Initial Octet
+; BC = Left Size
+			EXX							; Use alternate registers
+			LD		DE,0000H			; Flag as Right register set
+			POP		HL					; Get Initial Octet
+			POP		BC					; Get Right Size
+			INC		BC					; adjust
+LookRight:
+			CPI							; UnSet Bit?
+			JR		NZ,FoundFreeOctet	;  Then get out of search
+			JP		PO,NoMoreRight		; Exhausted Map to the right
 			
+			EXX							; Switch to the Left
+			CPD							; UnSet Bit?
+			JR		NZ,FoundFreeOctet	;  Then get out of search
+			JP		PO,NoMoreLeft		; Exhausted Map to the right
+			EXX							; switch to right
+			JR		LookRight			; Keep on looking
 			
 			NOP
-			JP		Start
-;---------------------------------------
-;			LD		SP,TPA
-;			LD		A,(Value)
-;			LD		HL,Value
-;			LD		B,3
-;			CALL	SetObit			
-;			LD		A,(Value)
-;			NOP
-;			JR		Start
-;
-;
-;;---------------------------------------
+			HALT
+NoMoreLeft:
+			EXX							; Switch to Right
+NoMoreLeftLoop:
+			CPI
+			JR		NZ,FoundFreeOctet	;  Then get out of search
+			JP		PO,NoFreeBlocks		; Exhausted Map to the right			
+			JR		NoMoreLeftLoop		; Keep looking
+			HALT
+NoMoreRight:
+			EXX							; Switch to Left
+NoMoreRightLoop:
+			CPD
+			JR		NZ,FoundFreeOctet	;  Then get out of search
+			JP		PO,NoFreeBlocks		; Exhausted Map to the right			
+			JR		NoMoreRightLoop		; Keep looking
+			HALT
+NoFreeBlocks:
+			LD		HL,0000H
+			NOP
+			HALT
+FoundFreeOctet:
+			CP		E					; Left or Right
+			JR		Z,FoundFreeOctet1	;  it was left
+			DEC		HL					; Adjust for direction
+			JR		FoundFreeOctet2
+			
+FoundFreeOctet1:
+			INC		HL					; Adjust for direction
+FoundFreeOctet2:
+			LD		BC,00				; need to keep track of bit
+FoundFreeOctet3:
+			RLC		(HL)
+			INC		BC
+			JR		C,FoundFreeOctet3	; Loop if Bit 7 set
+			SET		0,(HL)				; Make map bit set
+			LD		B,C					; Put count in B
+FoundFreeOctet4:
+			RRC		(HL)
+			DJNZ	FoundFreeOctet4		; Restore the Octet
+			DEC		BC					; adjust for Zero based value
+			PUSH	BC					; Save the bit index
+			LD		BC,(caAllocVector)	; Get Map start
+			XOR		A					; Clear CY
+			SBC		HL,BC				; Get how far in the map
+			CALL	MultiplyHLby8			; Calculate the Octet
+			POP		BC					; Restore index into Octet
+			ADD		HL,BC				; This is the Block Number
 
-addMap:		DW		Map
-			
-SetObit:			
-			INC		B
-			PUSH	BC
-Right:
-			RR		(HL)
-			DJNZ	Right
-			POP		BC
-			SCF
-Left:
-			RL		(HL)
-			DJNZ	Left
-			RET
-			
-; HL = Value to be shifted Right                                           ;
-;  B = Amount to shift                                                     ;
-ShiftRightHLbyB:                                                           ;
-		XOR		A						; else Clear Carry flag            ;
-		RR		H						; Shift thru CY                    ;
-		RR		L						; ditto                            ;
-		DJNZ	ShiftRightHLbyB                                            ;
-		RET
-		;
-		
-		ORG		1000H
-Map:			
-			
+
+
+			NOP
+			JP		MainLoop
+			HALT
+
+dpbDSM:				DW		02c6H						; Max Block Number
+;startOctet:			DW		0000H
+
+caAllocVector:		DW		0FA44H
+
+;map					EQU		01000H
+
+;----------------------------------------------------------
+			ORG		0200H
+;----------------------------------------------------------
+
+
+
+$Include ./HeaderForA.Z80

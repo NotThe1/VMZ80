@@ -2,7 +2,7 @@
 ;     C:\Users\admin\Dropbox\Resources\CPM\CurrentOS\8080\BDOSX.asm
  ; BDOS.Z80
  
- 
+ ; 2019-01-10	Last rev before remaking  FInd nearest Block
  ; 2019-01-11 - BDOS 0.B  - Function 0-A Refactored to Z80 idiom
  ; 2018-12-28 Started to refactor to Z80 idiom
  ; 2018-03-31 added vector for BDOS Call 5 -ListOut
@@ -1479,27 +1479,46 @@ SelectDisk:                                                                  ;
 ;--------------------------- Initialize Disk --------------------------------;
 InitDisk:
 	LD		HL,(dpbDSM)					; Maximum allocation value
-	LD		B,3							; We want dpbDSM/8
-InitDiskLoop1:
-	XOR		A							; Rest the CY flag
-	RR		H
-	RR		L							; Shift right
-	DJNZ	InitDiskLoop1				; Loop till divide by 8
-	PUSH	HL
-	POP		BC							; BC = dpbDSM/8+1
+	CALL	DivideHLby8					; Length of Map
+	PUSH	HL							; Save Length
+	PUSH	HL							; Save for end of MAP
+	POP		BC							; BC = dpbDSM/8
 ; Clear the Allocation Vector	
 	LD		HL,(caAllocVector)			; Allocation vector Start
 	LD		(HL),0						; Clear location
 	LD		DE,(caAllocVector)
 	INC		DE							; Allocation vector Start + 1
-	LDIR								; Cascade 00 thru Allocation Vector
+	LDIR								; Cascade 00 thru Map
+; Force bits at End of Map
+	EX		DE,HL						; Put last Map byte into DE
+	POP		HL
+	INC		HL
+	CALL	MultiplyHLby8				; Blocks if all bits used
+	LD		BC,(dpbDSM)					; Actual block max
+	INC		BC							; Now has size of the Map
+	XOR		A							; Clear CY
+	SBC		HL,BC						; Extra unused bits
+	CP		L							;  are there any
+	JR		Z,Mark4Directory
+	LD		B,L							; Number of bits to set
+	EX		DE,HL						; Put last Map byte into HL
+SetBitLoop:
+	SCF
+	RL		(HL)						; Set LSB
+	DJNZ	SetBitLoop					; Loop thru the bits
+	
+Mark4Directory:	
 ; Mark the reserved space for the directory
 	LD		HL,(dpbDABM)				; Directory block reserved bits
 	EX		DE,HL 
 	LD		HL,(caAllocVector)			; HL Start of Allocation Vector
 	LD		(HL),E
 	INC		HL
-	LD		(HL),D						; Put reserved blocks in Vector	
+	LD		(HL),D						; Put reserved blocks in Vector
+;---------------------------------
+; end of Map
+
+;---------------------------------	
 ; Home disk, and set current track and sector to 00
 	CALL	Home
 	LD		HL,(caDirMaxValue)
@@ -1533,7 +1552,7 @@ InitDisk1:
 	LD		(exitParameterByte),A		; Return it the exit parameter
  InitDisk2:
 ; now scan the disk map for allocated blocks
-	LD		C,1								; set to allocated
+	LD		C,TRUE							; set to allocated
 	CALL	ScanDiskMap
 	CALL	SetDirectoryEntry				; set DirMaxVAlue to dirEntryIndex
 	JR		InitDisk1						; for another entry
@@ -1558,38 +1577,6 @@ InitDisk1:
  ;--------------
 
 ;--------------------------- Scan Disk Map ----------------------------------;
-;--------------------------- Set/Reset Allocation Bit -----------------------;
-; At Entry:	HL Contains to the Block to be modified
-;			C  = TRUE if bit is to be set
-;			C  <> TRUE if bit is to be reset
-; At Exit:  The target bit in the target Octet will be set/reset	
-ManageAllocationBit:
-	LD		A,L							; LSB of the Block Number
-	AND		07H							; Calculate Mod(Block,8)
-	PUSH	AF							; Save the OctetBit
-	LD		B,3
-	CALL	ShiftRightHLbyB				; Calculate Block / 8
-	LD		DE,(caAllocVector)			; Start Of Map
-;	LD		DE,0FAF6H
-	ADD		HL,DE						; Address of targeted Octet
-	POP		AF
-	LD		B,A							; Get the bit 
-
-	INC		B							; Adjust for looping
-	PUSH	BC							; Will need this later
-Left:
-	RL		(HL)						; Rotate the Octet
-	DJNZ	Left						;  to move target bit to bit 0  
-	POP		BC							; Restore loop limit and
-	SCF									;  set/reset flag 
-	INC		C							; was C = TRUE
-	JR		Z,Left						; Skip if Set
-	CCF									; Set for Reset
-Right:
-	RR		(HL)						; Move the Octet back
-	DJNZ	Right						;  to its original alignment
-	RET
-;--------------------------- Set/Reset Allocation Bit -----------------------;
 
 ;--------------------------- Scan Disk Map ----------------------------------;
  ;-------------Scan the disk map for unallocated entry-----------------------------------
@@ -1631,7 +1618,7 @@ ScanDiskMapWord:
  ScanDiskMap2:
 	LD		A,C
 	OR		B								; Skip if = 0000 (No Block)
-	CALL	NZ,SetAllocBit						; bit set to 0/1 its in C
+	CALL	NZ,SetResetMapBit						; bit set to 0/1 its in C
 	POP		HL
 	INC		HL								; to next bit position
 	POP		BC								; recall counter
@@ -1684,43 +1671,7 @@ ScanDiskMapWord:
 	JP	NZ,GetAllocBitl
 	RET
 
- ;-----------------------------------
-; BC is the bit position of ALLOC to set or reset.  The
-; value of the bit is in register E.
-; Arrive here with BC=block#, E=0/1
- SetAllocBit:
-	
-;---------------------------------------------------
-;	PUSH	AF
-;	PUSH	BC
-;	PUSH	DE
-;	PUSH	HL
-;;-------
-	LD		HL,0000H
-	ADD		HL,BC
-	LD		A,E
-	CP		A,01H
-	LD		C,TRUE
-	JR		Z,SetIt
-	INC		C
-SetIt:
-	CALL	ManageAllocationBit
-	RET
-;;-------
-;	POP		HL
-;	POP		DE
-;	POP		BC
-;	POP		AF
-;---------------------------------------------------
-	
- 
-	PUSH	DE
-	CALL	GetAllocBit						; shifted val A, count in D
-	AND		11111110b						; mask low bit to zero (may be set)
-	POP		BC
-	OR		C								; low bit of C is masked into A
-	JP		RotateAndReplace				; to rotate back into proper position
-	;ret
+
  ;-----------------------------------
  ; byte value from ALLOC is in register A, with shift count
  ; in register C (to place bit back into position), and
@@ -1827,7 +1778,6 @@ SetRecordVars:                                                             ;
 	LD		(extentValue),A				; Store the value                  ;
 	RET                                                                    ;
 ;--------------------------- Set Record Variables -------------------------;
-
 ;----------------------Get File Record Count and Current Record------------;
 ; returns with DE pointing at RC from FCB                                  ;
 ;         with HL pointing at Current Record                               ;
@@ -1848,6 +1798,42 @@ SetRecordVars:                                                             ;
 	ADD		HL,DE						; HL=.fcb(fcbExtIndex)             ;
 	RET                                                                    ;
 ;----------------------Get FileExtent--------------------------------------;
+;--------------------- Set/Reset Disk Map Allocation Bit ------------------;
+; At Entry:	BC Contains to the Block to be modified                        ;
+;			E  = TRUE if bit is to be set                                  ;
+;			E  <> TRUE if bit is to be reset                               ;
+; At Exit:  The target bit in the target Octet will be set/reset	       ;
+ SetResetMapBit:                                                           ;
+                                                                           ;
+	LD		HL,0000H					; Move the block number from BC    ;
+	ADD		HL,BC						;  to HL                           ;
+	LD		C,E							; Move the flag to E               ;
+	                                                                       ;
+	LD		A,L							; LSB of the Block Number          ;
+	AND		07H							; Calculate Mod(Block,8)           ;
+	PUSH	AF							; Save the OctetBit                ;
+	LD		B,3                                                            ;
+	CALL	ShiftRightHLbyB				; Calculate Block / 8              ;
+	LD		DE,(caAllocVector)			; Start Of Map                     ;
+	ADD		HL,DE						; Address of targeted Octet        ;
+	POP		AF                                                             ;
+	LD		B,A							; Get the bit                      ;
+                                                                           ;
+	INC		B							; Adjust for looping               ;
+	PUSH	BC							; Will need this later             ;
+Left:                                                                      ;
+	RL		(HL)						; Rotate the Octet                 ;
+	DJNZ	Left						;  to move target bit to bit 0     ;
+	POP		BC							; Restore loop limit and           ;
+	SCF									;  set/reset flag                  ;
+	INC		C							; was C = TRUE                     ;
+	JR		Z,Right						; Skip if Set                      ;
+	CCF									; Set for Reset                    ;
+Right:                                                                     ;
+	RR		(HL)						; Move the Octet back              ;
+	DJNZ	Right						;  to its original alignment       ;
+	RET                                                                    ;
+;--------------------- Set/Reset Disk Map Allocation Bit ------------------;
 
 ;=========================== File Utilities ================================;
 
@@ -1861,13 +1847,21 @@ SetEndDirectory:                                                            ;
 ;--------------------------- Get Directory Element -------------------------;
 ; compute the address of a directory element in Directory Buffer            ;
 ; Returns:  HL = Address of the specific directory Record                   ;
-GetDirElementAddress:                                                       ;
+GetDirElementAddress:														;
+;	PUSH	BC							; Save BC
+;	LD		BC,(dirBlockIndex)
+;	LD		HL,(caDirectoryDMA)			; Get the Directory Buffer base     ;
+;	ADD		HL,BC
+;	POP		BC							; Restore
+	
+	PUSH	BC							; Save BC
 	LD		HL,(caDirectoryDMA)			; Get the Directory Buffer base     ;
 	LD		A,(dirBlockIndex)			; Get the index value               ;
 	LD		C,A                                                             ;
 	XOR		A							; Set to Zero and reset CY          ;
 	LD		B,A                                                             ;
 	ADC		HL,BC						; Compute the Entry Location        ;
+	POP		BC							; Restore	
 	RET                                                                     ;
 ;--------------------------- Get Directory Element -------------------------;
 ;--------------------------- Set Directory Entry ---------------------------;
@@ -1924,8 +1918,10 @@ RotateRightHLbyB1:                                                         ;
 		RET                                                                ;
                                                                            ;
 ;--------------------------- Rotate HL right by value in C ----------------;
-;---------------------------  Shift HL right by value in C ----------------;
+;---------Divide HL by 8  &&  Shift HL right by value in C ----------------;
 ; HL = Value to be shifted Right                                           ;
+DivideHLby8:															   ;
+		LD		B,3						; 8 = 2**3						   ;
 ;  B = Amount to shift                                                     ;
 ShiftRightHLbyB:                                                           ;
 		XOR		A						; else Clear Carry flag            ;
@@ -1933,7 +1929,19 @@ ShiftRightHLbyB:                                                           ;
 		RR		L						; ditto                            ;
 		DJNZ	ShiftRightHLbyB                                            ;
 		RET                                                                ;
-;---------------------------  Shift HL right by value in C ----------------;
+;---------Divide HL by 8  &&  Shift HL right by value in C ----------------;
+;---------Multiply HL by 8  &&  Shift HL left by value in C ---------------;
+; HL = Value to be shifted Left                                            ;
+MultiplyHLby8:															   ;
+		LD		B,3						; 8 = 2**3						   ;
+;  B = Amount to shift                                                     ;
+ShiftLeftHLbyB:                                                            ;
+		XOR		A						; else Clear Carry flag            ;
+		RL		L						; Shift thru CY                    ;
+		RL		H						; ditto                            ;
+		DJNZ	ShiftLeftHLbyB                                             ;
+		RET                                                                ;
+;---------Multiply HL by 8  &&  Shift HL left by value in C ---------------;
 
 ;=========================== General   Utilities ===========================;
 
@@ -1999,7 +2007,7 @@ ReadDirectory1:                                                             ;
 SeekDir:                                                                    ;
 	LD		HL,(dirEntryIndex)			; Directory Entry Index             ;
 	LD		B,dirEntryShift				; 4 entries per record              ;
-	CALL	RotateRightHLbyB                                                 ;
+	CALL	ShiftRightHLbyB                                                 ;
 	LD		(absoluteCPMRecord),HL                                          ;
 	LD		(dirRecord),HL				; Save                              ;
 	JP		Seek                                                            ;
@@ -2226,12 +2234,12 @@ ComputeCheckSum1:                                                           ;
  ;-----------------------------------------------------------------
  ;check for write protected disk
  CheckWrite:
-	CALL	DoNotWrite
-	RET	Z; ok to write if not rodsk
+	CALL	IsDiskWriteProtected
+	RET		Z					; OK to write
 	JP		errReadOnlyDisk					; read only disk error
  ;-----------------------------------------------------------------
- ;return true if dir checksum difference occurred
- DoNotWrite:
+ ;return 0 if OK to write (NO)
+IsDiskWriteProtected:
 	LD	HL,(readOnlyVector)
 	LD		A,(currentDisk)
 	LD		C,A
@@ -2567,7 +2575,7 @@ ComputeCheckSum1:                                                           ;
 	CALL	CheckRODirectory				; ro disk error if found
 	CALL	GetDirElementAddress			; HL=.buff(dptr)
 	LD		(HL),emptyDir
-	LD		C,0
+	LD		C,FALSE
 	CALL	ScanDiskMap						; alloc elts set to 0
 	CALL	WriteDir						; write the directory
 	CALL	Search4NextDirElement			; to next element
@@ -2577,7 +2585,7 @@ ComputeCheckSum1:                                                           ;
  CloseDirEntry:
 	XOR		A
 	LD		(exitParameterByte),A
-	CALL	DoNotWrite						; return TRUE (0) if checksum change
+	CALL	IsDiskWriteProtected						; return TRUE (0) if checksum change
 	RET	NZ; skip close if r/o disk
  ; check file write flag - 0 indicates written
 	CALL	GetModuleNum					; fcb(fcbS2Index) in A
@@ -2588,8 +2596,8 @@ ComputeCheckSum1:                                                           ;
 	CALL	EndOfDirectory
 	RET	Z; return if not found
  ; merge the disk map at paramDE with that at buff(dptr)
-	LD		BC,fcbDiskMapIndex
 	CALL	GetDirElementAddress
+	LD		BC,fcbDiskMapIndex
 	ADD		HL,BC
 	EX	DE,HL ; DE is .buff(dptr+16)
 	LD	HL,(paramDE)
@@ -2793,14 +2801,14 @@ ComputeCheckSum1:                                                           ;
 	RET
  ;-----------------------------------------------------------------
  ;compute actual record address
- ; result = absoluteCPMRecord * ( 2**BSH)
+ ; result = absolute CPMRecord * ( 2**BSH)
  SetActualRecordAdd:
 	LD		A,(dpbBSH)							; Block Shift  to reg A
 	LD	HL,(absoluteCPMRecord)
 
  SetActualRecordAdd1:
 	ADD		HL,HL
-	DEC		A								; shl(absoluteCPMRecord,dpbBSH)
+	DEC		A								; shl(absolute CPMRecord,dpbBSH)
 	JP	NZ,SetActualRecordAdd1
  ; HL has Record number for start of the block;
 	LD		A,(dpbBLM)							; get block mask
