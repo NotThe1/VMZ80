@@ -1,196 +1,38 @@
 0001: 0100         ; A.Z80
-0002: 0100         ; 7
-0003: 0100
-0004: 0100             BLOCK      EQU    002H
-0005: 0100             TPA        EQU    0100H
-0006: 0100
-0007: 0100                        ORG    TPA
-0008: 0100             Start:
-0009: 0100 31 00 01               LD     SP,TPA
-0010: 0103 CD 14 02               CALL   SeedMap
-0011: 0106         ;			LD		HL,0FA45H
-0012: 0106         ;			LD		(HL),00
-0013: 0106         ;			LD		HL,0FA4AH
-0014: 0106         ;			LD		(HL),00
-0015: 0106             MainLoop:
-0016: 0106 01 02 00               LD     BC,BLOCK
-0017: 0109
-0018: 0109         ; Enter with Block Last Block Number in BC
-0019: 0109 C5                     PUSH   BC                   ; save the starting Block #
-0020: 010A
-0021: 010A 2A 86 01               LD     HL,(dpbDSM)          ; Maximum allocation value
-0022: 010D CD 00 02               CALL   DivideHLby8          ; Length of Map
-0023: 0110
-0024: 0110 EB                     EX     DE,HL                ; put size into DE
-0025: 0111
-0026: 0111 E1                     POP    HL                   ; Block number into HL
-0027: 0112 CD 00 02               CALL   DivideHLby8          ; Length of Map
-0028: 0115         ;			LD		(startOctet),HL		; Starting Octet
-0029: 0115 EB                     EX     DE,HL                ; Size in HL, Start in DE
-0030: 0116 AF                     XOR    A                    ; Reset CY
-0031: 0117 ED 52                  SBC    HL,DE                ; Size for right
-0032: 0119         ; DE = Start Index
-0033: 0119         ; DE = Left Size
-0034: 0119         ; HL	= Right Size
-0035: 0119 E5                     PUSH   HL                   ; Save right size
-0036: 011A D5                     PUSH   DE                   ; Save left size & Start Index
-0037: 011B 3E FF                  LD     A,0FFH               ; Full Octet
-0038: 011D
-0039: 011D 2A 88 01               LD     HL,(caAllocVector)   ; Start of Map
-0040: 0120 19                     ADD    HL,DE                ; Determine initial Octet
-0041: 0121         ; Set up Left side
-0042: 0121 C1                     POP    BC                   ; Left size
-0043: 0122 03                     INC    BC                   ; adjust
-0044: 0123 E5                     PUSH   HL                   ; Save initial Octet
-0045: 0124 11 FF FF               LD     DE,-1                ; Flag as Left register set
-0046: 0127         ; HL = Initial Octet
-0047: 0127         ; BC = Left Size
-0048: 0127 D9                     EXX                         ; Use alternate registers
-0049: 0128 11 00 00               LD     DE,0000H             ; Flag as Right register set
-0050: 012B E1                     POP    HL                   ; Get Initial Octet
-0051: 012C C1                     POP    BC                   ; Get Right Size
-0052: 012D 03                     INC    BC                   ; adjust
-0053: 012E             LookRight:
-0054: 012E ED A1                  CPI                         ; UnSet Bit?
-0055: 0130 20 2B                  JR     NZ,FoundFreeOctet    ;  Then get out of search
-0056: 0132 E2 4D 01               JP     PO,NoMoreRight       ; Exhausted Map to the right
-0057: 0135
-0058: 0135 D9                     EXX                         ; Switch to the Left
-0059: 0136 ED A9                  CPD                         ; UnSet Bit?
-0060: 0138 20 23                  JR     NZ,FoundFreeOctet    ;  Then get out of search
-0061: 013A E2 42 01               JP     PO,NoMoreLeft        ; Exhausted Map to the right
-0062: 013D D9                     EXX                         ; switch to right
-0063: 013E 18 EE                  JR     LookRight            ; Keep on looking
-0064: 0140
-0065: 0140 00                     NOP
-0066: 0141 76                     HALT
-0067: 0142             NoMoreLeft:
-0068: 0142 D9                     EXX                         ; Switch to Right
-0069: 0143             NoMoreLeftLoop:
-0070: 0143 ED A1                  CPI
-0071: 0145 20 16                  JR     NZ,FoundFreeOctet    ;  Then get out of search
-0072: 0147 E2 58 01               JP     PO,NoFreeBlocks      ; Exhausted Map to the right
-0073: 014A 18 F7                  JR     NoMoreLeftLoop       ; Keep looking
-0074: 014C 76                     HALT
-0075: 014D             NoMoreRight:
-0076: 014D D9                     EXX                         ; Switch to Left
-0077: 014E             NoMoreRightLoop:
-0078: 014E ED A9                  CPD
-0079: 0150 20 0B                  JR     NZ,FoundFreeOctet    ;  Then get out of search
-0080: 0152 E2 58 01               JP     PO,NoFreeBlocks      ; Exhausted Map to the right
-0081: 0155 18 F7                  JR     NoMoreRightLoop      ; Keep looking
-0082: 0157 76                     HALT
-0083: 0158             NoFreeBlocks:
-0084: 0158 21 00 00               LD     HL,0000H
-0085: 015B 00                     NOP
-0086: 015C 76                     HALT
-0087: 015D             FoundFreeOctet:
-0088: 015D BB                     CP     E                    ; Left or Right
-0089: 015E 28 03                  JR     Z,FoundFreeOctet1    ;  it was left
-0090: 0160 2B                     DEC    HL                   ; Adjust for direction
-0091: 0161 18 01                  JR     FoundFreeOctet2
-0092: 0163
-0093: 0163             FoundFreeOctet1:
-0094: 0163 23                     INC    HL                   ; Adjust for direction
-0095: 0164             FoundFreeOctet2:
-0096: 0164 01 00 00               LD     BC,00                ; need to keep track of bit
-0097: 0167             FoundFreeOctet3:
-0098: 0167 CB 06                  RLC    (HL)
-0099: 0169 03                     INC    BC
-0100: 016A 38 FB                  JR     C,FoundFreeOctet3    ; Loop if Bit 7 set
-0101: 016C CB C6                  SET    0,(HL)               ; Make map bit set
-0102: 016E 41                     LD     B,C                  ; Put count in B
-0103: 016F             FoundFreeOctet4:
-0104: 016F CB 0E                  RRC    (HL)
-0105: 0171 10 FC                  DJNZ   FoundFreeOctet4      ; Restore the Octet
-0106: 0173 0B                     DEC    BC                   ; adjust for Zero based value
-0107: 0174 C5                     PUSH   BC                   ; Save the bit index
-0108: 0175 ED 4B 88 01               LD     BC,(caAllocVector)   ; Get Map start
-0109: 0179 AF                     XOR    A                    ; Clear CY
-0110: 017A ED 42                  SBC    HL,BC                ; Get how far in the map
-0111: 017C CD 0A 02               CALL   MultiplyHLby8        ; Calculate the Octet
-0112: 017F C1                     POP    BC                   ; Restore index into Octet
-0113: 0180 09                     ADD    HL,BC                ; This is the Block Number
-0114: 0181
-0115: 0181
-0116: 0181
-0117: 0181 00                     NOP
-0118: 0182 C3 06 01               JP     MainLoop
-0119: 0185 76                     HALT
-0120: 0186
-0121: 0186 C6 02       dpbDSM:    DW     02c6H                ; Max Block Number
-0122: 0188         ;startOctet:			DW		0000H
-0123: 0188
-0124: 0188 44 FA       caAllocVector: DW     0FA44H
-0125: 018A
-0126: 018A         ;map					EQU		01000H
-0127: 018A
-0128: 018A         ;----------------------------------------------------------
-0129: 018A                        ORG    0200H
-0130: 0200         ;----------------------------------------------------------
-0131: 0200
-0132: 0200
-0133: 0200
-0134: 0200                        Include ./HeaderForA.Z80
-0135: 0200         ;<<<<<<<<<<<<<<<<<<<<<<< Include >>>>>>>>>>>>>>>>
-0136: 0200         ; HeaderForA.Z80
-0137: 0200         ;
-0138: 0200             DivideHLby8:
-0139: 0200 06 03                  LD     B,3
-0140: 0202             ShiftRightHLbyB:
-0141: 0202 AF                     XOR    A                    ; else Clear Carry flag
-0142: 0203 CB 1C                  RR     H                    ; Shift thru CY
-0143: 0205 CB 1D                  RR     L                    ; ditto
-0144: 0207 10 F9                  DJNZ   ShiftRightHLbyB
-0145: 0209 C9                     RET
-0146: 020A
-0147: 020A             MultiplyHLby8:
-0148: 020A 06 03                  LD     B,3
-0149: 020C             ShiftLeftHLbyB:
-0150: 020C AF                     XOR    A                    ; else Clear Carry flag
-0151: 020D CB 15                  RL     L                    ; Shift thru CY
-0152: 020F CB 14                  RL     H                    ; ditto
-0153: 0211 10 F9                  DJNZ   ShiftLeftHLbyB
-0154: 0213 C9                     RET
-0155: 0214
-0156: 0214             SeedMap:
-0157: 0214         ; Fill the Allocation Vector
-0158: 0214 2A 86 01               LD     HL,(dpbDSM)          ; Maximum allocation value
-0159: 0217 CD 00 02               CALL   DivideHLby8          ; Length of Map
-0160: 021A E5                     PUSH   HL                   ; Save Length
-0161: 021B C1                     POP    BC                   ; BC = dpbDSM/8
-0162: 021C
-0163: 021C 2A 88 01               LD     HL,(caAllocVector)   ; Allocation vector Start
-0164: 021F 36 FF                  LD     (HL),0FFH            ; Clear location
-0165: 0221 ED 5B 88 01               LD     DE,(caAllocVector)
-0166: 0225 13                     INC    DE                   ; Allocation vector Start + 1
-0167: 0226 ED B0                  LDIR                        ; Cascade FF thru Map
-0168: 0228
-0169: 0228 2A 88 01               LD     HL,(caAllocVector)
-0170: 022B 36 FF                  LD     (HL),0FFH            ; Directory Blocks
-0171: 022D C9                     RET
-0172: 022E         ;<<<<<<<<<<<<<<<<<<<<<<< Include >>>>>>>>>>>>>>>>
+0002: 0100         ; 8
+0003: 0100             OPEN_FILE  EQU    0FH
+0004: 0100             BDOS       EQU    00005H
+0005: 0100
+0006: 0100             TPA        EQU    0100H
+0007: 0100
+0008: 0100                        ORG    TPA
+0009: 0100             Start:
+0010: 0100 31 25 02               LD     SP,Stack
+0011: 0103 0E 0F                  LD     C,OPEN_FILE
+0012: 0105 11 0D 01               LD     DE,FCB
+0013: 0108 CD 05 00               CALL   BDOS
+0014: 010B 00                     NOP
+0015: 010C 76                     HALT
+0016: 010D
+0017: 010D             FCB:
+0018: 010D 02                     DB     2
+0019: 010E 43 4F 50 59 20 20 20 20                DB     'COPY    '
+0020: 0116 41 53 4D                DB     'ASM'
+0021: 0119 00 00                  DW     0000H
+0022: 011B 00 00                  DW     0000H
+0023: 011D 00 00                  DW     0000H
+0024: 011F 00 00                  DW     0000H
+0025: 0121 00 00                  DW     0000H
+0026: 0123 00 00                  DW     0000H
+0027: 0125
+0028: 0125         ;DOLLARInclude ./HeaderForA.Z80
+0029: 0125                        DS     0100H
+0030: 0225             Stack:
            ************************   Xref   ************************
-0000: $               022D
-0004: BLOCK           0002   0016
-0124: caAllocVector   0188   0039 0108 0163 0165 0169
-0138: DivideHLby8     0200   0022 0027 0159
-0121: dpbDSM          0186   0021 0158
-0087: FoundFreeOctet  015D   0055 0060 0071 0079
-0093: FoundFreeOctet1 0163   0089
-0095: FoundFreeOctet2 0164   0091
-0097: FoundFreeOctet3 0167   0100
-0103: FoundFreeOctet4 016F   0105
-0053: LookRight       012E   0063
-0015: MainLoop        0106   0118
-0147: MultiplyHLby8   020A   0111
-0083: NoFreeBlocks    0158   0072 0080
-0067: NoMoreLeft      0142   0061
-0069: NoMoreLeftLoop  0143   0073
-0075: NoMoreRight     014D   0056
-0077: NoMoreRightLoop 014E   0081
-0156: SeedMap         0214   0010
-0149: ShiftLeftHLbyB  020C   0153
-0140: ShiftRightHLbyB 0202   0144
-0008: Start           0100
-0005: TPA             0100   0007 0009
+0000: $               0125
+0004: BDOS            0005   0013
+0017: FCB             010D   0012
+0003: OPEN_FILE       000F   0011
+0030: Stack           0225   0010
+0009: Start           0100
+0006: TPA             0100   0008

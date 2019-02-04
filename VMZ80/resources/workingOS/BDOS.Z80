@@ -1,6 +1,7 @@
 ;     File created by MakeZ80Source on Tue Sep 18 12:41:03 EDT 2018 from:
 ;     C:\Users\admin\Dropbox\Resources\CPM\CurrentOS\8080\BDOSX.asm
  ; BDOS.Z80
+ ;  in process  OpenFile (0FH) 
  
  ; 2019-01-10	Last rev before remaking  FInd nearest Block
  ; 2019-01-11 - BDOS 0.B  - Function 0-A Refactored to Z80 idiom
@@ -10,7 +11,8 @@
  ; 2018-02-12 fixed allocate 16 bit problem
  ; 2014-01-16 extended from part of newOS (newBDOS)
  ; 2014-03-14  :  Frank Martyn
-
+fcbExtIndexLSB	EQU		0CH			; 12 
+fcbExtIndexMSB	EQU		0EH			; 14   Bit 7 = Write protected 
 
 	$Include ./stdHeader.Z80
 	$Include ./osHeader.Z80
@@ -527,7 +529,7 @@ ConIn:                                                                       ;
 	LD		(HL),0                                                           ;
 	OR		A                                                                ;
 	RET		NZ                                                               ;
-																		 ;
+																			 ;
 	JP		bcConin				 		; Go get byte from Console           ;
 ;-------------------- Return a Character from the console -------------------;
 
@@ -813,7 +815,7 @@ ItIsPhysicalEOL:                                                             ;
 	JP		ReadNext0					;   and go for next char   			 ;
 ;.......................... It is PhysicalEOL ...............................;
 ;.......................... It is PrintToggle ...............................;
-ItIsPrintToggle:
+ItIsPrintToggle:															 ;
 	PUSH	HL							; Save pointer                       ;
 ; Toggle the printEcho Flag                                                  ;
 	LD		HL,printEchoFlag			; Point at the flag                  ;
@@ -937,8 +939,52 @@ vResetSystem:
 ; note that currentUserNumber remains unchanged
 	LD		HL,DMABuffer
 	LD		(initDAMAddress),HL			; initDAMAddress = DMABuffer
-	CALL	SetDataDMA					; to data dma address
+	CALL	SetDataDMA					; to data DMA address
 	JP		Select
+;---------------------------- Select Disk - E (14) -------------------------;
+;  This function makes the logical disk named in register E the default disk;
+; All subsequent references to disk files that do not specify the disk will ;
+; use this default. When you reference a disk file that does have an        ;
+; explicit logical disk in its name you do not have to issue another        ;
+; Select Disk function; the BDOS will take care of that for you.            ;
+;                                                                           ;
+;  Notice the way in which the logical disk is specified in register E.     ;
+; It is not the same as the disk drive specification in the first byte of   ;
+; the file control block. In the FeB, a value ofOOH is used to mean         ;
+; "use the current default disk" (as specified in the last Select Disk      ;
+; call or by the operator on the console). With this function, a value      ;
+; of OOH in register A means that A is the selected drive, a value of       ;
+; 01H means drive B, and so on to OFR for drive P, allowing                 ;
+; 16 drives in the system.                                                  ;
+;                                                                           ;
+;			Function Code	:	C = 0EH                                     ;
+;			Entry Parameters:	E = Logical Disk Code (00H = A,01H = B ..)	;
+;			Exit Parameters :	None										;
+;																			;
+;---------------------------- Select Disk - E (14) -------------------------;
+
+ vSelectDisk:
+	JP	SelectCurrent
+
+;---------------------------- Open File - F (15) ---------------------------;
+;  This function opens a specified file for reading or writing. The FCB,    ;
+; whose address must be in register DE, tells CP/M the user number,         ;
+; the logical disk, the file name, and the file type. All other bytes of    ;
+; the FCB will normally be set to O.                                        ;
+;  The code returned by the BDOS in register A indicates whether the file   ;
+; has been opened successfully. If A contains OFFH, then the BOOS was       ;
+; unable to find the correct entry in the directory. If A= 0,1,2, or 3,     ;
+; then the file has been opened.                                            ;
+;			Function Code	:	C  = 0FH                                    ;
+;			Entry Parameters:	DE = Address of File Control Block			;
+;			Exit Parameters :	A  = Directory Code							;
+;																			;
+;---------------------------- Open File - F (15) ---------------------------;
+ vOpenFile:
+	CALL	InitializeExtentNumberMSB		; Clear the Extent number
+	CALL	ReselectDisk						; do we need to reselect disk?
+	JP		OpenFile
+
 ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ;---------------------------- Get Active Disks - 18 (24) --------------------;
@@ -1048,7 +1094,7 @@ vGetReadOnlyMap:
 ; characteristics of a specific logical disk-information mainly of interest  ;
 ; for system utility programs.                                               ;
 ;                                                                            ;
-;			Function Code	:	C = 1FH                                     ;
+;			Function Code	:	C = 1FH                                      ;
 ;			Entry Parameters:	None										 ;
 ;			Exit Parameters :	HL = Address of Disk Parameter Block		 ;
 ;																			 ;
@@ -1087,12 +1133,6 @@ vGetDiskParamBlock:							; func31 (31 - 1F)
  ;*****************************************************************
 
 ;-----------------------------------------------------------------
- ;select disk in (E) paramDE
- ; IN - (E) disk number -- 0=A  1=B ...15=P
- vSelectDisk:								; func14 (14 - 0E)	Select Current Disk
-	JP	SelectCurrent
-	;ret ;jmp goba
-
 
  ;*****************************************************************
  ;random disk read
@@ -1104,7 +1144,7 @@ vGetDiskParamBlock:							; func31 (31 - 1F)
  ;	 05 = N/U
  ;	 06 = Seek past Physical end of Disk
  vReadRandom:								; func33 (33 - 21) Read Random record
-	CALL	Reselect
+	CALL	ReselectDisk
 	JP		RandomDiskRead					; to perform the disk read
  ;*****************************************************************
  ;write random record
@@ -1116,14 +1156,14 @@ vGetDiskParamBlock:							; func31 (31 - 1F)
  ;	 05 = Cannot create new Extent because of directory overflow
  ;	 06 = Seek past Physical end of Disk
  vWriteRandom:								; func34 (34 - 22) Write Random record
-	CALL	Reselect
+	CALL	ReselectDisk
 	JP		RandomDiskWrite					; to perform the disk write
 	;ret ;jmp goback
  ;*****************************************************************
  ;return file size (0-65536)
  ;IN  - (DE) FCB address
  vComputeFileSize:							; func35 (35 - 23) Compute File Size
-	CALL	Reselect
+	CALL	ReselectDisk
 	JP		GetFileSize
  ;*****************************************************************
  ;set random record
@@ -1263,7 +1303,7 @@ vGetDiskParamBlock:							; func31 (31 - 1F)
  ; fcb no longer contains a valid fcb, mark with 11000000b in fcbS2Index field so that it
  ; appears as overflow with file write flag set
 	PUSH	HL								; save error flag
-	CALL	GetModuleNum					; HL = .fcbS2Index
+	CALL	GetExtentNumberMSB					; HL = .fcbS2Index
 	LD		(HL),11000000B
 	POP		HL								; and drop through
  RandomSeekError:							; seekerr:
@@ -1291,7 +1331,7 @@ vGetDiskParamBlock:							; func31 (31 - 1F)
  ;compute logical file size for current fcb
  GetFileSize:								; getfilesize
 	LD		C,fcbExtIndex
-	CALL	Search4DirElement
+	CALL	SearchForDirectoryRecord
  ; zero the receiving Ramdom record field
 	LD	HL,(paramDE)
 	LD		DE,RANDOM_REC_FIELD
@@ -1303,10 +1343,10 @@ vGetDiskParamBlock:							; func31 (31 - 1F)
 	INC		HL
 	LD		(HL),D								; =00 00 00
  GetFileSize1:								; getsize:
-	CALL	EndOfDirectory
+	CALL	AtEndOfDirectory
 	JP	Z,GetFileSizeExit
  ; current fcb addressed by dptr
-	CALL	GetDirElementAddress
+	CALL	GetCurrentDirectoryRecord
 	LD		DE,fcbRCIndex					; ready for compute size
 	CALL	GetRandomRecordPosition
  ; A=0000 000? BC = mmmm eeee errr rrrr compare with memory, larger?
@@ -1329,7 +1369,7 @@ vGetDiskParamBlock:							; func31 (31 - 1F)
 	DEC		HL
 	LD		(HL),C
  GetFileSize2:								; getnextsize:
-	CALL	Search4NextDirElement
+	CALL	GetNextDirectoryRecord
 	JP		GetFileSize1
  GetFileSizeExit:							; setsize:
 	POP		HL								; discard .fcb(random record field)
@@ -1391,39 +1431,39 @@ vGetDiskParamBlock:							; func31 (31 - 1F)
  ;-----------------------------------------------------------------
  ;;set file Attributes
  vSetFileAttributes:							; func30 (30 - 1E) Set File Attributes
-	CALL	Reselect
+	CALL	ReselectDisk
 	CALL	SetAttributes
-	JP	DirLocationToReturnLoc				; exitParameterByte=dirloc
+	JP		DirLocationToReturnLoc				; exitParameterByte=dirloc
  ;-----------------------------------------------------------------
-
- SelectCurrent:								; curselect
-	LD	A,(paramE)
-	LD	HL,currentDisk
-	CP	M
-	RET	Z; exit if parame = Current disk
-	LD	(HL),A
-	JP	Select
- ;*****************************************************************
-;--------------------------- Select Login Drive -----------------------------;
- ; select Login Drive                                                        ;
-Select:                                                                      ;
- 	CALL	SelectDisk					; Select the Disk                    ;
-	CALL	Z,errSelect                                                      ;
-	LD		HL,currentDisk													 ;
-	LD		B,(HL)						; Get Current Disk                   ;
-	LD		HL,(loggedDisks)			; Load Logged Disk MAP               ;
-	CALL	IsBitSet                                                         ;
-	RET		NZ							; Exit if already logged in          ;
-;                                                                            ;
-	LD		HL,currentDisk													 ;
-	LD		B,(HL)						; Get Current Disk                   ;
-	LD		HL,(loggedDisks)			; else log in a different disk	     ;
-	CALL	SetVectorBit                                                        ;
-	LD		(loggedDisks),HL			; Update the Vector                     ;
-	                                                                         ;
-	JP		InitDisk                                                         ;
-;--------------------------- Select Login Drive -----------------------------;
-
+;--------------------------- Select  Drive ---------------------------------;
+; Establish the disk found in (paramE) as the current disk drive            ;
+SelectCurrent:                                                              ;
+	LD		A,(paramE)					; Get Disk (00H = A,01H = B ..)     ;
+	LD		HL,currentDisk				; Get the current disk              ;
+	CP		M							; Are the the same ?                ;
+	RET		Z							; Exit if yes, nothing to do        ;
+	LD		(HL),A						;  else update curretDisk and       ;
+	JP		Select						;  select it                        ;
+;--------------------------- Select  Drive ---------------------------------;
+;--------------------------- Select Login Drive ----------------------------;
+ ; select Login Drive                                                       ;
+Select:                                                                     ;
+ 	CALL	SelectDisk					; Select the Disk                   ;
+	CALL	Z,errSelect                                                     ;
+	LD		HL,currentDisk													;
+	LD		B,(HL)						; Get Current Disk                  ;
+	LD		HL,(loggedDisks)			; Load Logged Disk MAP              ;
+	CALL	IsBitSet                                                        ;
+	RET		NZ							; Exit if already logged in         ;
+;                                                                           ;
+	LD		HL,currentDisk													;
+	LD		B,(HL)						; Get Current Disk                  ;
+	LD		HL,(loggedDisks)			; else log in a different disk	    ;
+	CALL	SetVectorBit                                                    ;
+	LD		(loggedDisks),HL			; Update the Vector                 ;
+	                                                                        ;
+	JP		InitDisk                                                        ;
+;--------------------------- Select Login Drive ----------------------------;
 ;--------------------------- Select Disk ------------------------------------;
  ;*****************************************************************          ;
  ; select the disk drive given by currentDisk, and fill the base addresses   ;
@@ -1477,86 +1517,135 @@ SelectDisk:                                                                  ;
 	RET                                                                      ;
 ;--------------------------- Select Disk ------------------------------------;
 ;--------------------------- Initialize Disk --------------------------------;
-InitDisk:
-	LD		HL,(dpbDSM)					; Maximum allocation value
-	CALL	DivideHLby8					; Length of Map
-	PUSH	HL							; Save Length
-	PUSH	HL							; Save for end of MAP
-	POP		BC							; BC = dpbDSM/8
-; Clear the Allocation Vector	
-	LD		HL,(caAllocVector)			; Allocation vector Start
-	LD		(HL),0						; Clear location
-	LD		DE,(caAllocVector)
-	INC		DE							; Allocation vector Start + 1
-	LDIR								; Cascade 00 thru Map
-; Force bits at End of Map
-	EX		DE,HL						; Put last Map byte into DE
-	POP		HL
-	INC		HL
-	CALL	MultiplyHLby8				; Blocks if all bits used
-	LD		BC,(dpbDSM)					; Actual block max
-	INC		BC							; Now has size of the Map
-	XOR		A							; Clear CY
-	SBC		HL,BC						; Extra unused bits
-	CP		L							;  are there any
-	JR		Z,Mark4Directory
-	LD		B,L							; Number of bits to set
-	EX		DE,HL						; Put last Map byte into HL
-SetBitLoop:
-	SCF
-	RL		(HL)						; Set LSB
-	DJNZ	SetBitLoop					; Loop thru the bits
-	
-Mark4Directory:	
-; Mark the reserved space for the directory
-	LD		HL,(dpbDABM)				; Directory block reserved bits
-	EX		DE,HL 
-	LD		HL,(caAllocVector)			; HL Start of Allocation Vector
-	LD		(HL),E
-	INC		HL
-	LD		(HL),D						; Put reserved blocks in Vector
-;---------------------------------
-; end of Map
-
-;---------------------------------	
-; Home disk, and set current track and sector to 00
-	CALL	Home
-	LD		HL,(caDirMaxValue)
-	LD		(HL),3
-	INC		HL
-	LD		(HL),0						; Current Max Dir Value = 0003
-	CALL	SetEndDirectory				; dirEntryIndex = EOD (-1)
-
-InitDisk1:
-; Process the directory
-	LD		C,TRUE						; Set flag for setting CheckSum	
-	CALL	ReadDirectory				; Get the directory Record
-	CALL	EndOfDirectory				; Are we Done ?
-	RET		Z							;  Exit if Yes
-; Not end of directory, valid entry?
-	CALL	GetDirElementAddress		; Calculate location of the element
-	LD		A,emptyDir
-	CP		M							; Is it an Empty Dir Entry
-	JR		Z,InitDisk1					;   Loop back if yes
-; Not emptyDir, user code the same?
-	LD		A,(currentUserNumber)
-	CP		M
-	JR		NZ,InitDisk2				; Skip if this entry not the users
-; Same user, check for '$' submit
-	INC		HL
-	LD		A,(HL)
-	SUB		DOLLAR						; Is first Char a $
-	JR		NZ,InitDisk2
-; dollar file found, mark in exitParameterByte
-	DEC		A							; Set A to FFH
-	LD		(exitParameterByte),A		; Return it the exit parameter
- InitDisk2:
-; now scan the disk map for allocated blocks
-	LD		C,TRUE							; set to allocated
-	CALL	ScanDiskMap
-	CALL	SetDirectoryEntry				; set DirMaxVAlue to dirEntryIndex
-	JR		InitDisk1						; for another entry
+InitDisk:                                                                    ;
+	LD		HL,(dpbDSM)					; Maximum allocation value           ;
+	CALL	DivideHLby8					; Length of Map                      ;
+	PUSH	HL							; Save Length                        ;
+	PUSH	HL							; Save for end of MAP                ;
+	POP		BC							; BC = dpbDSM/8                      ;
+; Clear the Allocation Vector	                                             ;
+	LD		HL,(caAllocVector)			; Allocation vector Start            ;
+	LD		(HL),0						; Clear location                     ;
+	LD		DE,(caAllocVector)                                               ;
+	INC		DE							; Allocation vector Start + 1        ;
+	LDIR								; Cascade 00 thru Map                ;
+; Force bits at End of Map                                                   ;
+	EX		DE,HL						; Put last Map byte into DE          ;
+	POP		HL                                                               ;
+	INC		HL                                                               ;
+	CALL	MultiplyHLby8				; Blocks if all bits used            ;
+	LD		BC,(dpbDSM)					; Actual block max                   ;
+	INC		BC							; Now has size of the Map            ;
+	XOR		A							; Clear CY                           ;
+	SBC		HL,BC						; Extra unused bits                  ;
+	CP		L							;  are there any                     ;
+	JR		Z,Mark4Directory                                                 ;
+	LD		B,L							; Number of bits to set              ;
+	EX		DE,HL						; Put last Map byte into HL          ;
+SetBitLoop:                                                                  ;
+	SCF                                                                      ;
+	RL		(HL)						; Set LSB                            ;
+	DJNZ	SetBitLoop					; Loop thru the bits                 ;
+	                                                                         ;
+Mark4Directory:	                                                             ;
+; Mark the reserved space for the directory                                  ;
+	LD		HL,(dpbDABM)				; Directory block reserved bits      ;
+	EX		DE,HL                                                            ;
+	LD		HL,(caAllocVector)			; HL Start of Allocation Vector      ;
+	LD		(HL),E                                                           ;
+	INC		HL                                                               ;
+	LD		(HL),D						; Put reserved blocks in Vector      ;
+; end of Map                                                                 ;
+; Home disk, and set current track and sector to 00                          ;
+	CALL	Home                                                             ;
+	LD		HL,(caDirMaxValue)                                               ;
+	LD		(HL),3                                                           ;
+	INC		HL                                                               ;
+	LD		(HL),0						; Current Max Dir Value = 0003       ;
+	CALL	SetEndDirectory				; dirEntryIndex = EOD (-1)           ;
+                                                                             ;
+InitDisk1:                                                                   ;
+; Process the directory                                                      ;
+	LD		C,TRUE						; Set flag for setting CheckSum	     ;
+	CALL	ReadDirectory				; Get the directory Record           ;
+	CALL	AtEndOfDirectory				; Are we Done ?                      ;
+	RET		Z							;  Exit if Yes                       ;
+; Not end of directory, valid entry?                                         ;
+	CALL	GetCurrentDirectoryRecord		; Calculate location of the element  ;
+	LD		A,emptyDir                                                       ;
+	CP		M							; Is it an Empty Dir Entry           ;
+	JR		Z,InitDisk1					;   Loop back if yes                 ;
+; Not emptyDir, user code the same?                                          ;
+	LD		A,(currentUserNumber)                                            ;
+	CP		M                                                                ;
+	JR		NZ,InitDisk2				; Skip if this entry not the users   ;
+; Same user, check for '$' submit                                            ;
+	INC		HL                                                               ;
+	LD		A,(HL)                                                           ;
+	SUB		DOLLAR						; Is first Char a $                  ;
+	JR		NZ,InitDisk2                                                     ;
+; dollar file found, mark in exitParameterByte                               ;
+	DEC		A							; Set A to FFH                       ;
+	LD		(exitParameterByte),A		; Return it the exit parameter       ;
+ InitDisk2:                                                                  ;
+; now scan the disk map for allocated blocks                                 ;
+	LD		C,TRUE						; set to allocated                   ;
+	CALL	ScanDiskMap                                                      ;
+	CALL	SetDirectoryEntry			; Mark directory entry               ;
+	JR		InitDisk1					; Loop for another entry             ;
 ;--------------------------- Initialize Disk --------------------------------;
+;----------------------------- Open File -----------------------------------;
+;search for the directory entry matching FCB at paramDE						;
+ OpenFile:																	;
+	LD		C,nameLength                                                   	;
+	CALL	SearchForDirectoryRecord                                       	;
+	CALL	AtEndOfDirectory			; Have we gone thru all the dir    	;
+	RET		Z							; Exit exitParameterByte=255 if yes	;
+																			;
+CopyDirRecordToFCB:                                                        	;
+	CALL	GetExtentAddress			; HL points to FCB's EXT           	;
+	LD		A,(HL)						; Get the EXT                      	;
+	PUSH	AF							; Save the FCB's EXT value         	;
+	PUSH	HL							;  also save FCB's pointer         	;
+	CALL	GetCurrentDirectoryRecord	; Get pointer to Dir record in HL  	;
+	PUSH	HL							; Save Directory Record address    	;
+																			;
+	LD		DE,(paramDE)			                                       	;
+	LD		BC,fcbLength                                                   	;
+	LDIR								; Move dir record to FCB           	;
+																			;
+ ; note that entire fcb is copied, including indicators                    	;
+	CALL	SetFileWriteFlag			; Make file Read Only              	;
+	POP		DE							; Get Directory Record address     	;
+	LD		HL,fcbExtIndex				; Extent Index                     	;
+	ADD		HL,DE						; Directory's EXT address          	;
+	LD		C,(HL)						; Dir's EXT is in B		           	;
+	LD		HL,fcbRCIndex				; Get Record Count Index           	;
+	ADD		HL,DE						; Directory's RC address           	;
+	LD		B,(HL)						; B holds Dir's  record count      	;
+	POP		HL							; Get FCB's Extent Address         	;
+	POP		AF							; Get FCB's Extent Value           	;
+	LD		(HL),A						; Restore Extent Value             	;
+; if user ext < dir ext then user := 128 records                           	;
+; if user ext = dir ext then user := dir records                           	;
+; if user ext > dir ext then user := 0 records                             	;
+	LD		A,C							; Get the Dir's EXT                	;
+	CP		M							; Does it match the FCB'd          	;
+	LD		A,B							; Get the Dir's  record count      	;
+	JP		Z,OpenSetRecordCount		; If same EXT value, use it.       	;
+	LD		A,0							;   else prepare for RC = 0        	;
+	JP		C,OpenSetRecordCount		; If FCB EXT > Dir EXTr            	;
+	LD		A,RecordsPerExtent			;   else max record count out      	;
+ OpenSetRecordCount:                                                       	;
+	LD		HL,(paramDE)				; Get FCB's address                	;
+	LD		DE,fcbRCIndex				; Get record count index           	;
+	ADD		HL,DE						; FCB's record count               	;
+	LD		(HL),A						; Set the value                    	;
+	RET                                                                    	;
+;----------------------------- Open File -----------------------------------;
+
+;  +++++ ;
+
  ;---------------
  ; set a "1" value in currentDisk position of BC
  ; return in HL
@@ -1576,102 +1665,7 @@ InitDisk1:
 	RET
  ;--------------
 
-;--------------------------- Scan Disk Map ----------------------------------;
-
-;--------------------------- Scan Disk Map ----------------------------------;
- ;-------------Scan the disk map for unallocated entry-----------------------------------
- ; scan the disk map addressed by dptr for non-zero entries.  The allocation
- ; vector entry corresponding to a non-zero entry is set to the value of C (0,1)
-ScanDiskMap:
-	PUSH	BC								; Save the Set/Reset Info
-	CALL	GetDirElementAddress			; HL points at the directory record
-	LD		DE,fcbDiskMapIndex				; DE is the index to the FCBs Map
-	ADD		HL,DE							; HL is now at start of the MAP
-	LD		C,fcbLength-fcbDiskMapIndex+1	; Size of Disk Allocation Map + 1
-	
-
-ScanDiskMap0:
-	POP		DE								; Recall the set/reset Info
-	DEC		C
-	RET		Z								; Loop once for each disk map entry
-
-	PUSH	DE								; Save the Set/Reset Info
-	LD		A,(byteAllocationFlag)			; Is Map Byte or Word sized
-	OR		A
-	JR		Z,ScanDiskMapWord				; Skip if Word Sized
-;  Byte Allocation scan operation
-	PUSH	BC								; Save counter
-	PUSH	HL								; Save map address
-	LD		C,(HL)
-	LD		B,0								; BC=block# for Byte
-	JR		ScanDiskMap2
-; Word scan operation
-ScanDiskMapWord:
-	DEC		C								; Adjust counter for 2 bytes
-	PUSH	BC								; Save counter
-	LD		B,(HL)
-	INC		HL
-	LD		C,(HL)							; BC=block# for Word
-	PUSH	HL								; Save map address
-	
-; Arrive here with BC=block#, E=0/1	
- ScanDiskMap2:
-	LD		A,C
-	OR		B								; Skip if = 0000 (No Block)
-	CALL	NZ,SetResetMapBit						; bit set to 0/1 its in C
-	POP		HL
-	INC		HL								; to next bit position
-	POP		BC								; recall counter
-	JP		ScanDiskMap0					; for another item
- 
-;--------------------------- Scan Disk Map ----------------------------------;
-
- ;-----------------------------------
- ;given allocation vector position BC, return with byte
- ;containing BC shifted so that the least significant
- ;bit is in the low order accumulator position.  HL is
- ;the address of the byte for possible replacement in
- ;memory upon return, and D contains the number of shifts
- ;required to place the returned value back into position
-
- GetAllocBit:								; getallocbit
-	LD		A,C
-	AND		111b
-	INC		A
-	LD		E,A
-	LD		D,A
- ; d and e both contain the number of bit positions to shift
-	LD		A,C
-	RRCA
-	RRCA
-	RRCA
-	AND		11111b
-	LD		C,A								; C shr 3 to C
-	LD		A,B
-	ADD		A,A
-	ADD		A,A
-	ADD		A,A
-	ADD		A,A
-	ADD		A,A								; B shl 5
-	OR		C
-	LD		C,A								; bbbccccc to C
-	LD		A,B
-	RRCA
-	RRCA
-	RRCA
-	AND		11111b
-	LD		B,A								; BC shr 3 to BC
-	LD	HL,(caAllocVector)					; base address of allocation vector
-	ADD		HL,BC
-	LD		A,(HL)								; byte to A, hl = .alloc(BC shr 3)
-	 ;now move the bit to the low order position of A
- GetAllocBitl:
-	RLCA
-	DEC		E
-	JP	NZ,GetAllocBitl
-	RET
-
-
+;--------------------------- Scan      Map ----------------------------------;
  ;-----------------------------------
  ; byte value from ALLOC is in register A, with shift count
  ; in register C (to place bit back into position), and
@@ -1683,35 +1677,35 @@ ScanDiskMapWord:
 	LD	(HL),A									; back to ALLOC
 	RET
  ;-----------------------------------
-;--------------------------- Home The Current Disk -------------------------;
-;move to home position, then offset to start of dir                         ;
-Home:                                                                       ;
-	CALL	bcHome						; Sets Track to 0, and checks       ;
-										; if Buffer needs to be written     ;
-	LD		HL,dpbOFF					; Number of tracks before directory ;
-	LD		C,(HL)                                                          ;
-	INC		HL                                                              ;
-	LD		B,(HL)                                                          ;
-	CALL	bcSettrk					; Point at 1st directory position   ;
-	                                                                        ;
-; Set Current Track and Sector to 00                                        ;
-	XOR		A							; set ACC to 00                     ;
-	LD		HL,(caTrack)				                                    ;
-	LD		(HL),A                                                          ;
-	INC		HL                                                              ;
-	LD		(HL),A                                                          ;
-	LD	HL,(caSector)                                                       ;
-	LD		(HL),A                                                          ;
-	INC		HL                                                              ;
-	LD		(HL),A                                                          ;
-	RET                                                                     ;
-                                                                            ;
-;--------------------------- Home The Current Disk -------------------------;
 
  ;*****************************************************************
 
  ;*****************************************************************
 ;=========================== Disk Utilities ================================;
+;--------------------------- Home The Current Disk ------------------------;
+;move to home position, then offset to start of dir                        ;
+Home:                                                                      ;
+	CALL	bcHome						; Sets Track to 0, and checks      ;
+										; if Buffer needs to be written    ;
+	LD		HL,dpbOFF					; Number of tracks before directory;
+	LD		C,(HL)                                                         ;
+	INC		HL                                                             ;
+	LD		B,(HL)                                                         ;
+	CALL	bcSettrk					; Point at 1st directory position  ;
+	                                                                       ;
+; Set Current Track and Sector to 00                                       ;
+	XOR		A							; set ACC to 00                    ;
+	LD		HL,(caTrack)				                                   ;
+	LD		(HL),A                                                         ;
+	INC		HL                                                             ;
+	LD		(HL),A                                                         ;
+	LD	HL,(caSector)                                                      ;
+	LD		(HL),A                                                         ;
+	INC		HL                                                             ;
+	LD		(HL),A                                                         ;
+	RET                                                                    ;
+                                                                           ;
+;--------------------------- Home The Current Disk ------------------------;
 ;--------------------------- Set DMAs -------------------------------------;
 SetDataDMA:                                                                ;
 	LD		HL,initDAMAddress                                              ;
@@ -1738,7 +1732,6 @@ ReadBuffer:                                                                ;
 	JP		NZ,erPermanentNoWait		; Report if Status not OK          ;
 	RET                                                                    ;
 ;--------------------------- Read Buffer ----------------------------------;
-
 ;--------------------------- Set Current Disk Read Only --------------------;
 ;set current disk to read only                                              ;
  SetDiskReadOnly:                                                           ;
@@ -1746,7 +1739,7 @@ ReadBuffer:                                                                ;
 	                                                                        ;
 	LD		A,(currentDisk)				; Get the current disk              ;
 	LD		B,A							; Move into B                       ;
-	CALL	SetVectorBit					; Set the bit                       ;
+	CALL	SetVectorBit					; Set the bit                   ;
 	LD		(readOnlyVector),HL			; Update the Vector                 ;
 	                                                                        ;
 	LD		HL,(dpbDRM)					; Directory Max Value               ;
@@ -1757,6 +1750,34 @@ ReadBuffer:                                                                ;
 	LD		(HL),D                                                          ;
 	RET                                                                     ;
 ;--------------------------- Set disk Read Only ----------------------------;
+;------------------------- Reselect Disk if Necessary ----------------------;
+ ;check current fcb to see if reselection necessary                         ;
+ ReselectDisk:                                                              ;
+	LD		A,TRUE                                                          ;
+	LD		(fResel),A					; Mark as possible reselect         ;
+	LD		HL,(paramDE)				; Point at current FCB              ;
+	LD		A,(HL)						; Load disk drive (0 = current)     ;
+	AND		01FH						; Mask out user Number ??           ;
+	DEC		A							; Normalized to 0..29, or 255       ;
+	LD		(paramE),A					; Save drive code                   ;
+	CP		30                                                              ;
+	JP		NC,NoSelect					; Skip drive >= 30                  ;
+											                                ;
+	LD		A,(currentDisk)				; Determine the current drive       ;
+	LD		(entryDisk),A				; Save it                           ;
+	LD		A,(HL)                                                          ;
+	LD		(fcbDisk),A					; Get calling disk                  ;
+	AND		11100000B                                                       ;
+	LD		(HL),A						; Preserve User Number              ;
+	CALL	SelectCurrent				; Select the new disk               ;
+	                                                                        ;
+ NoSelect:                                                                  ;
+	LD		A,(currentUserNumber)		; Get user code 0...31              ;
+	LD		HL,(paramDE)				; Point at disk number              ;
+	OR		M							; Combine                           ;
+	LD		(HL),A						; FCB[0] = user number & disk       ;
+	RET                                                                     ;
+;------------------------- Reselect Disk if Necessary ----------------------;
 
 
 ;=========================== Disk Utilities ================================;
@@ -1834,6 +1855,143 @@ Right:                                                                     ;
 	DJNZ	Right						;  to its original alignment       ;
 	RET                                                                    ;
 ;--------------------- Set/Reset Disk Map Allocation Bit ------------------;
+;--------------------- Initialize Extent Number MSB -----------------------;
+ ;clear the Extent number field for user open/make (S2)                    ;
+ InitializeExtentNumberMSB:                                                ;
+	CALL	GetExtentNumberMSB                                             ;
+	LD		(HL),0								; Set it to = 0            ;
+	RET                                                                    ;
+;--------------------- Initialize Extent Number MSB -----------------------;
+;--------------------- Get Extent Number MSB| Write Protect ---------------;
+; Get S2 value                                                             ;
+;  Returns:	A = S2 Value (bit 7 write protect, bits 0-6 Ext MSB)           ;
+;			HL = Address of S2 for the FCB pointed to by paramDE           ;
+ GetWriteProtectValue:							; S2 bit 7                 ;
+ GetExtentNumberMSB:							; S2 bits 0-6              ;
+	LD		HL,(paramDE)						; FCB address              ;
+	LD		DE,fcbS2Index						; Index to value           ;
+	ADD		HL,DE								; Address of value         ;
+	LD		A,(HL)								; load into ACC            ;
+	RET	                                                                   ;
+;--------------------- Get Extent Number MSB| Write Protect ---------------;
+;--------------------------- Set File Write Flag----------------------------;
+;Set file write flag in FCB in (paramDE)									;
+ SetFileWriteFlag:                                                          ;
+	CALL	GetWriteProtectValue		; A= Value, HL = Address of fcbS2   ;
+	OR		writeFlagMask				; Set the flag , bit 7 of S2        ;
+	LD		(HL),A						; Put into FCB                      ;
+	RET	                                                                    ;
+;--------------------------- Set File Write Flag----------------------------;
+;-------------------------- Compare FCB Extents ----------------------------;
+; Enters:	A containing Target FCB EXT value								;
+;			HL Points at Possible FCB EXT value								;
+;compare extent# in A with that in C, return nonzero if they do not match	;
+CompareExtents:																;
+	PUSH	BC							; Save Callers Registers			;
+	PUSH	AF							; Save Target FCB EXT value    		;
+	LD		A,(dpbEXM)					; Load the Extent Mask         		;
+	CPL									; Complement for And           		;
+	LD		B,A							; Put negated Mask into B      		;
+	LD		A,(HL)						; Get Possible FCBs EXT        		;
+	AND		B							; Apply the Mask               		;
+	LD		C,A							; Low bits removed from C      		;
+	POP		AF							; Restore Target FCB EXT value 		;
+	AND		B							; Apply the Mask               		;
+	SUB		C							; Test if Equal ( Z Flag)      		;
+	AND		maxExtValue					; Limit Size ?                 		;
+	POP		BC							; Restore Callers Registers    		;
+	RET                                                                		;
+;-------------------------- Compare FCB Extents ----------------------------;
+;---------------------Search for Directory Record --------------------------;
+;        directoryFlag  ????????											;
+;  Search for directory record of length C.									;
+; Target is pointed to by paramDE. The whole directory is searched.			;
+; If not found then dirEntryIndex is set to -1, else it points to the		;
+; matched directory record													;
+; Entry:	C = Search Length                                               ;
+; Exit		dirEntryIndex  =	Matched directory index, if found			;
+;								-1 (EOD) if there is no match				;
+SearchForDirectoryRecord:                                                   ;
+	LD		A,0FFH                                                          ;
+	LD		(directoryFlag),A			; Initialize directory Flag         ;
+	LD		HL,searchLength                                                 ;
+	LD		(HL),C						; Save Search Length                ;
+	LD		HL,(paramDE)				; Active FCB                        ;
+	LD		(searchAddress),HL			; Start of search                   ;
+	CALL	SetEndDirectory				; DirEntryIndex = -1                ;
+	CALL	Home						; Reset Disk,Track, & Sector        ;
+	                                                                        ;
+GetNextDirectoryRecord:														;
+	LD		C,FALSE                                                         ;
+	CALL	ReadDirectory				; Read next Dir Record              ;
+	CALL	AtEndOfDirectory                                                ;
+	JP		Z,NoDirRecordsMatch				; Done if at EOD                ;
+                                                                            ;
+	LD		HL,(searchAddress)			; Get Current Dir Entry             ;
+	EX		DE,HL						; DE=beginning of Directory Entry   ;
+	LD		A,(DE)						; User Number                       ;
+	CP		emptyDir					; Is Dir entry is empty             ;
+	JP		Z,GetNextDirectoryRecord1	; Skip if empty                     ;
+	                                                                        ;
+; Check to be sure we are sill in the Directory                             ;
+	PUSH	DE							; Save search address               ;
+	CALL	StillInDirectory			; Still in the directorY            ;
+	POP		DE							; Recall address                    ;
+	JP		NC,NoDirRecordsMatch		; Get out if past directory			;
+	                                                                        ;
+GetNextDirectoryRecord1:													;
+	CALL	GetCurrentDirectoryRecord	; Point at next directory record    ;
+	LD		A,(searchLength)                                                ;
+	LD		C,A							; SearchLength to c (down)          ;
+	LD		B,0							; Character Index (up)              ;
+	                                                                        ;
+TestNextPosition:															;
+	LD		A,(DE)                                                          ;
+	CP		QMARK						; ? is always a char match          ;
+	JP		Z,SetNextPosition				; Done with this if it is ?		;
+                                                                            ;
+	LD		A,B                                                             ;
+	CP		fcbS1Index					; At File S1 position ?             ;
+	JP		Z,SetNextPosition				; Done with this if it is ?		;
+ ; not the fcbS1Index field, extent field?                                  ;
+	CP		fcbExtIndex					; Past File Type position ?         ;
+	LD		A,(DE)						; Get next character                ;
+	JP		Z,CheckExtents				; Skip to search extent             ;
+	SUB		M							; Do they match ?                   ;
+	AND		07FH						; Strip MSBit                       ;
+	JP		NZ,GetNextDirectoryRecord	; Skip if not matched               ;
+	JP		SetNextPosition				; Matched the character             ;
+;                                                                           ;
+CheckExtents:																;
+	CALL	CompareExtents				; Matching EXTs is work             ;
+	JP		NZ,GetNextDirectoryRecord	; Get out if not matched            ;
+	                                                                        ;
+SetNextPosition:															;
+	INC		DE							; Pointer to Looking FOR            ;
+	INC		HL							; Pointer to Looking IN             ;
+	INC		B							; Character Index in FCB            ;
+	DEC		C							; Length of search                  ;
+	JP		NZ,TestNextPosition 											;
+; Match Found, entire name matches                                          ;
+	LD		A,(dirEntryIndex)			; Get current Directory Index       ;
+	AND		dirEntryMask				; Apply the mask                    ;
+	LD		(exitParameterByte),A		; Put 0...3. Match FOund            ;
+                                                                            ;
+	LD		HL,directoryFlag			; Point at Directory Flag           ;
+	LD		A,(HL)						; Get value                         ;
+	RLA									; Set Carry if Flag = -1            ;
+	RET		NC							; Return with flag still -1         ;
+	                                                                        ;
+	XOR		A							; Else Clear the flag               ;
+	LD		(HL),A                                                          ;
+	RET									;  and exit                         ;
+;------                                                                     ;
+ NoDirRecordsMatch:                                                         ;
+	CALL	SetEndDirectory				; Set End of Directory -1           ;
+	LD		A,-1						; Put Failure Code                  ;
+	LD		(exitParameterByte),A		;  into return parameter            ;
+	RET                                                                     ;
+;---------------------Search for Directory Record --------------------------;
 
 ;=========================== File Utilities ================================;
 
@@ -1844,24 +2002,34 @@ SetEndDirectory:                                                            ;
 	LD		(dirEntryIndex),HL                                              ;
 	RET                                                                     ;
 ;--------------------------- Set End of Directory indicator ----------------;
+;--------------------------- Are we at End Of Directory --------------------;
+; Tests to see if we are at the End Of the Directory                        ;
+;                                                                           ;
+; exits With Z Flag Set if at EOD (dirEntryIndex = -1)                      ;
+;			 Z Flag reset if still in directory                             ;
+                                                                            ;
+AtEndOfDirectory:                                                           ;
+	LD		HL,dirEntryIndex			; Point at LSB of Dir index         ;
+	LD		A,(HL)						; Get it                            ;
+	INC		HL							; Point at MSB	of Dir Index		;
+	CP		M							; LSB = MSB ?                       ;
+	RET		NZ							;  exit if not if different         ;
+										; Same.  are they = 0ffh?           ;
+	INC		A							;  if yes, A= 0, set Z flag         ;
+	RET                                                                     ;
+;--------------------------- Are we at End Of Directory --------------------;
 ;--------------------------- Get Directory Element -------------------------;
 ; compute the address of a directory element in Directory Buffer            ;
 ; Returns:  HL = Address of the specific directory Record                   ;
-GetDirElementAddress:														;
-;	PUSH	BC							; Save BC
-;	LD		BC,(dirBlockIndex)
-;	LD		HL,(caDirectoryDMA)			; Get the Directory Buffer base     ;
-;	ADD		HL,BC
-;	POP		BC							; Restore
-	
-	PUSH	BC							; Save BC
+GetCurrentDirectoryRecord:													;
+	PUSH	BC							; Save BC                           ;
 	LD		HL,(caDirectoryDMA)			; Get the Directory Buffer base     ;
 	LD		A,(dirBlockIndex)			; Get the index value               ;
 	LD		C,A                                                             ;
 	XOR		A							; Set to Zero and reset CY          ;
 	LD		B,A                                                             ;
 	ADC		HL,BC						; Compute the Entry Location        ;
-	POP		BC							; Restore	
+	POP		BC							; Restore	                        ;
 	RET                                                                     ;
 ;--------------------------- Get Directory Element -------------------------;
 ;--------------------------- Set Directory Entry ---------------------------;
@@ -1887,7 +2055,7 @@ SetDirectoryEntry:                                                          ;
 ;			CY Reset if dirEntryIndex  > Directory Max Value                ;
 ;			HL = (address of Index Value) + 1                               ;
 ;			DE = Directory Index Value                                      ;
-StillInDirectory:                                                           ;
+StillInDirectory:															;
 	LD		HL,(dirEntryIndex)                                              ;
 	EX		DE,HL 						; DE = directory counter            ;
 	LD		HL,(caDirMaxValue)			; HL = caDirMaxValue              	;
@@ -1898,7 +2066,154 @@ StillInDirectory:                                                           ;
 	SBC		A,(HL)						; Set CY if dirEntryIndex           ;
 	RET										;  <= Directory Max Value       ;
 ;--------------------------- Are we sill in the Directory ------------------;
-                                                                            
+;--------------------------- Scan Disk Map ---------------------------------;
+; Will Set/Reset the Allocation Map bit(s) for the current directory entry. ;
+;                                                                           ;
+; On Entry  C = TRUE	Set the Map bits for each block found in FCB        ;
+;           C = FALSE	reset the Map bits for each block found in FCB      ;
+                                                                            ;
+ScanDiskMap:                                                                ;
+	PUSH	BC							; Save the Set/Reset Info           ;
+	CALL	GetCurrentDirectoryRecord	; HL points at the directory record ;
+	LD		DE,fcbDiskMapIndex			; DE is the index to the FCBs Map   ;
+	ADD		HL,DE						; HL is now at start of the MAP     ;
+	LD		C,fcbLength-fcbDiskMapIndex+1; Size of Disk Allocation Map + 1  ;
+	                                                                        ;                                                                            ;
+ScanDiskMap0:                                                               ;
+	POP		DE							; Recall the set/reset Info         ;
+	DEC		C                                                               ;
+	RET		Z							; Loop once for each disk map entry ;
+                                                                            ;
+	PUSH	DE							; Save the Set/Reset Info           ;
+	LD		A,(byteAllocationFlag)		; Is Map Byte or Word sized         ;
+	OR		A                                                               ;
+	JR		Z,ScanDiskMapWord			; Skip if Word Sized                ;
+;  Byte Allocation scan operation                                           ;
+	PUSH	BC							; Save counter                      ;
+	PUSH	HL							; Save map address                  ;
+	LD		C,(HL)                                                          ;
+	LD		B,0							; BC=block# for Byte                ;
+	JR		ScanDiskMap2                                                    ;
+; Word scan operation                                                       ;
+ScanDiskMapWord:                                                            ;
+	DEC		C							; Adjust counter for 2 bytes        ;
+	PUSH	BC							; Save counter                      ;
+	LD		B,(HL)                                                          ;
+	INC		HL                                                              ;
+	LD		C,(HL)						; BC=block# for Word                ;
+	PUSH	HL							; Save map address                  ;
+	                                                                        ;
+; Arrive here with BC=block#, E=0/1	                                        ;
+ ScanDiskMap2:                                                              ;
+	LD		A,C                                                             ;
+	OR		B							; Skip if = 0000 (No Block)         ;
+	CALL	NZ,SetResetMapBit			; bit set to 0/1 its in C           ;
+	POP		HL                                                              ;
+	INC		HL							; to next bit position              ;
+	POP		BC							; recall counter                    ;
+	JP		ScanDiskMap0				; for another item                  ;
+                                                                            ;
+;--------------------------- Scan Disk Map ---------------------------------;
+;--------------------------- Get Closest Disk Block ------------------------;
+; Find the closest available disk block, and mark in Map as allocated       ;
+; Enter	BC	= Block number to base the search on                            ;
+; Exit	HL	= 0000 if There are no available open blocks                    ;
+;			= block number of available and marked block                    ;
+                                                                            ;
+GetClosestBlock:                                                            ;
+			PUSH	BC					; save the starting Block #         ;
+						                                                    ;
+			LD		HL,(dpbDSM)			; Maximum allocation value          ;
+			CALL	DivideHLby8			; Length of Map	                    ;
+			EX		DE,HL				; put size into DE			        ;
+			POP		HL					; Block number into HL              ;
+			CALL	DivideHLby8			; Length of Map                     ;
+			EX		DE,HL				; Size in HL, Start in DE           ;
+			XOR		A					; Reset CY                          ;
+			SBC		HL,DE				; Size for right                    ;
+; DE = Start Index                                                          ;
+; DE = Left Size                                                            ;
+; HL	= Right Size                                                        ;
+			PUSH	HL					; Save right size                   ;
+			PUSH	DE					; Save left size & Start Index      ;
+			LD		A,0FFH				; Full Octet                        ;
+                                                                            ;
+			LD		HL,(caAllocVector)	; Start of Map                      ;
+			ADD		HL,DE				; Determine initial Octet			;
+; Set up Left side                                                          ;
+			POP		BC					; Left size                         ;
+			INC		BC					; adjust                            ;
+			PUSH	HL					; Save initial Octet                ;
+			LD		DE,-1				; Flag as Left register set         ;
+; HL = Initial Octet                                                        ;
+; BC = Left Size                                                            ;
+			EXX							; Use alternate registers           ;
+			LD		DE,0000H			; Flag as Right register set        ;
+			POP		HL					; Get Initial Octet                 ;
+			POP		BC					; Get Right Size                    ;
+			INC		BC					; adjust                            ;
+LookRight:                                                                  ;
+			CPI							; UnSet Bit?                        ;
+			JR		NZ,FoundFreeOctet	;  Then get out of search           ;
+			JP		PO,NoMoreRight		; Exhausted Map to the right        ;
+			                                                                ;
+			EXX							; Switch to the Left                ;
+			CPD							; UnSet Bit?                        ;
+			JR		NZ,FoundFreeOctet	;  Then get out of search           ;
+			JP		PO,NoMoreLeft		; Exhausted Map to the right        ;
+			EXX							; switch to right                   ;
+			JR		LookRight			; Keep on looking                   ;
+;			----------------			                                    ;
+NoMoreLeft:                                                                 ;
+			EXX							; Switch to Right                   ;
+NoMoreLeftLoop:                                                             ;
+			CPI                                                             ;
+			JR		NZ,FoundFreeOctet	;  Then get out of search           ;
+			JP		PO,NoFreeBlocks		; Exhausted Map to the right		;
+			JR		NoMoreLeftLoop		; Keep looking                      ;
+			HALT                                                            ;
+NoMoreRight:                                                                ;
+			EXX							; Switch to Left                    ;
+NoMoreRightLoop:                                                            ;
+			CPD                                                             ;
+			JR		NZ,FoundFreeOctet	;  Then get out of search           ;
+			JP		PO,NoFreeBlocks		; Exhausted Map to the right        ;
+			JR		NoMoreRightLoop		; Keep looking                      ;
+			HALT                                                            ;
+NoFreeBlocks:                                                               ;
+			LD		HL,0000H			; Return 0000 in HL                 ;
+			RET                                                             ;
+;			----------------			                                    ;
+FoundFreeOctet:                                                             ;
+			CP		E					; Left or Right                     ;
+			JR		Z,FoundFreeOctet1	;  it was left                      ;
+			DEC		HL					; Adjust for direction              ;
+			JR		FoundFreeOctet2                                         ;
+			                                                                ;
+FoundFreeOctet1:                                                            ;
+			INC		HL					; Adjust for direction              ;
+FoundFreeOctet2:                                                            ;
+			LD		BC,00				; need to keep track of bit         ;
+FoundFreeOctet3:                                                            ;
+			RLC		(HL)                                                    ;
+			INC		BC                                                      ;
+			JR		C,FoundFreeOctet3	; Loop if Bit 7 set                 ;
+			SET		0,(HL)				; Make map bit set                  ;
+			LD		B,C					; Put count in B                    ;
+FoundFreeOctet4:                                                            ;
+			RRC		(HL)                                                    ;
+			DJNZ	FoundFreeOctet4		; Restore the Octet                 ;
+			DEC		BC					; adjust for Zero based value       ;
+			PUSH	BC					; Save the bit index                ;
+			LD		BC,(caAllocVector)	; Get Map start                     ;
+			XOR		A					; Clear CY                          ;
+			SBC		HL,BC				; Get how far in the map            ;
+			CALL	MultiplyHLby8			; Calculate the Octet           ;
+			POP		BC					; Restore index into Octet          ;
+			ADD		HL,BC				; This is the Block Number          ;
+			RET                                                             ;
+;--------------------------- Get Closest Disk Block ------------------------;
+
 ;=========================== Directory Utilities ===========================;
 
 ;=========================== General   Utilities ===========================;
@@ -1945,21 +2260,6 @@ ShiftLeftHLbyB:                                                            ;
 
 ;=========================== General   Utilities ===========================;
 
- ;---------------
-;---------------
- ;---------------
- ; return zero flag if at end of directory
- ; non zero if not at end (end of dir if dirEntryIndex = 0ffffh)
- EndOfDirectory:
-	LD		HL,dirEntryIndex
-	LD		A,(HL)								; may be 0ffh
-	INC		HL
-	CP		M								; low(dirEntryIndex) = high(dirEntryIndex)?
-	RET	NZ; non zero returned if different
-											; high and low the same, = 0ffh?
-	INC		A								; 0ffh becomes 00 if so
-	RET
- ;---------------
 ;--------------------------- Read Directory Record -------------------------;
 ; read a directory entry into the directory buffer                          ;
 ReadDirRecord:                                                              ;
@@ -2115,14 +2415,14 @@ ComputeCheckSum1:                                                           ;
  ;set file Attributes for current fcb
  SetAttributes:
 	LD		C,fcbExtIndex
-	CALL	Search4DirElement				; through file type
+	CALL	SearchForDirectoryRecord				; through file type
  SetAttributes1:
-	CALL	EndOfDirectory
+	CALL	AtEndOfDirectory
 	RET	Z; exit at end of dir
 	LD		C,0
 	LD		E,fcbExtIndex					;copy name
 	CALL	CopyDir
-	CALL	Search4NextDirElement
+	CALL	GetNextDirectoryRecord
 	JP		SetAttributes1
  ;
  ;*****************************************************************
@@ -2130,19 +2430,10 @@ ComputeCheckSum1:                                                           ;
  ;*****************************************************************
  ;********************** File  Routines ***************************
  ;*****************************************************************
- ;open file
- ; IN  - (DE)	FCB Address
- ; OUT - (A)	Directory Code
- ;	0-3 = success ; 0FFH = File Not Found
- vOpenFile:					;
-	CALL	ClearModuleNum					; clear the module number
-	CALL	Reselect						; do we need to reselect disk?
-	JP		OpenFile
-	;ret ;jmp goback
  ;-----------------------------------------------------------------
  ;close file
  vCloseFile:									; func16: (16 - 10) Close File
-	CALL	Reselect
+	CALL	ReselectDisk
 	JP		CloseDirEntry
  ;-----------------------------------------------------------------
  ;search for first occurrence of a file
@@ -2156,11 +2447,11 @@ ComputeCheckSum1:                                                           ;
 	CP		QMARK							; no reselect if ?
 	JP	Z,QMarkSelect						; skip reselect if so
 
-	CALL	ClearModuleNum					; module number zeroed
-	CALL	Reselect
+	CALL	InitializeExtentNumberMSB					; module number zeroed
+	CALL	ReselectDisk
 	LD		C,nameLength
  QMarkSelect:								; qselect:
-	CALL	Search4DirElement
+	CALL	SearchForDirectoryRecord
 	JP		CopyDirEntryToUser				; copy directory entry to user
  ;-----------------------------------------------------------------
  ;search for next occurrence of a file name
@@ -2169,15 +2460,15 @@ ComputeCheckSum1:                                                           ;
  vFindNext:									; func18: (18 - 12) Search for next
 	LD	HL,(searchAddress)
 	LD	(paramDE),HL
-	CALL	Reselect
-	CALL	Search4NextDirElement
+	CALL	ReselectDisk
+	CALL	GetNextDirectoryRecord
 	JP		CopyDirEntryToUser				; copy directory entry to user
  ;-----------------------------------------------------------------
  ;search for next occurrence of a file name
  ; OUT - (A)	Directory Code
  ;delete a file
  vDeleteFile:								; func18: (19 - 13) Delete File
-	CALL	Reselect
+	CALL	ReselectDisk
 	CALL	DeleteFile
 	JP		DirLocationToReturnLoc
  ;-----------------------------------------------------------------
@@ -2185,7 +2476,7 @@ ComputeCheckSum1:                                                           ;
  ;IN  - (DE) FCB address
  ;OUT - (A) 00 = success and data available. else no read and no data
  vReadSeq:									; func20: (20 - 14) read sequential
-	CALL	Reselect
+	CALL	ReselectDisk
 	CALL	ReadSeq
 	RET
  ;-----------------------------------------------------------------
@@ -2193,7 +2484,7 @@ ComputeCheckSum1:                                                           ;
  ;IN  - (DE) FCB address
  ;OUT - (A) 00 = success and data available. else no read and no data
  vWriteSeq:									; func21 (21 - 15) write sequention
-	CALL	Reselect
+	CALL	ReselectDisk
 	CALL	DiskWriteSeq
 	RET
  ;-----------------------------------------------------------------
@@ -2202,8 +2493,8 @@ ComputeCheckSum1:                                                           ;
  ; OUT - (A)	Directory Code
  ;	0-3 = success ; 0FFH = File Not Found
  vMakeFile:									; func22 (22 - 16) Make file
-	CALL	ClearModuleNum					; set S2 to Zero
-	CALL	Reselect
+	CALL	InitializeExtentNumberMSB					; set S2 to Zero
+	CALL	ReselectDisk
 	JP		MakeNewFile
  ;-----------------------------------------------------------------
  ; Rename file
@@ -2211,7 +2502,7 @@ ComputeCheckSum1:                                                           ;
  ; OUT - (A)	Directory Code
  ;	0-3 = success ; 0FFH = File Not Found
  vRenameFile:								; func23 (23 - 17) Rename File
-	CALL	Reselect
+	CALL	ReselectDisk
 	CALL	Rename
 	JP		DirLocationToReturnLoc
  ;-----------------------------------------------------------------
@@ -2220,7 +2511,7 @@ ComputeCheckSum1:                                                           ;
  ;-----------------------------------------------------------------
  ;check current directory element for read/only status
  CheckRODirectory:
-	CALL	GetDirElementAddress			; address of element
+	CALL	GetCurrentDirectoryRecord			; address of element
  ;	JMP	CheckROFile
  ;------------
  ;check current buff(dptr) or fcb(0) for r/o status
@@ -2335,7 +2626,8 @@ IsDiskWriteProtected:
 	LD		C,L								; BC=prev block#
  ; BC = 0000, or previous block #
  FirstBlock:
-	CALL	GetClosestBlock					; block # to HL
+;	CALL	GetClosestBlockXX					; block # to HL
+	CALL	GetClosestBlock
  ; arrive here with block# or zero
 	LD		A,L
 	OR		H
@@ -2403,7 +2695,7 @@ IsDiskWriteProtected:
 	DEC		C
 	JP	NZ,DiskWrite5
 	PUSH	AF								; save current File Record value
-	CALL	GetModuleNum					; HL=.fcb(fcbS2Index), A=fcb(fcbS2Index)
+	CALL	GetExtentNumberMSB					; HL=.fcb(fcbS2Index), A=fcb(fcbS2Index)
  ; reset the file write flag to mark as written fcb
 	AND		7FH								; not writeFlagMask
 	LD		(HL),A								; fcb(fcbS2Index) = fcb(fcbS2Index) and 7fh
@@ -2440,7 +2732,7 @@ IsDiskWriteProtected:
 	LD		(fcbCopiedFlag),A					; set true if actually copied
 	CALL	CloseDirEntry					; close current extent
  ; exitParameterByte remains at enddir if we cannot open the next ext
-	CALL	EndOfDirectory
+	CALL	AtEndOfDirectory
 	RET	Z; return if end
 	LD	HL,(paramDE)							; increment extent number
 	LD		BC,fcbExtIndex
@@ -2474,8 +2766,8 @@ IsDiskWriteProtected:
 
  OpenNextExt1:
 	LD		C,nameLength
-	CALL	Search4DirElement				; next extent found?
-	CALL	EndOfDirectory
+	CALL	SearchForDirectoryRecord				; next extent found?
+	CALL	AtEndOfDirectory
 	JP	NZ,OpenNextExt2
  ; end of file encountered
 	LD		A,(readModeFlag)
@@ -2484,13 +2776,13 @@ IsDiskWriteProtected:
  ; try to extend the current file
 	CALL	MakeNewFile
  ; cannot be end of directory
-	CALL	EndOfDirectory
+	CALL	AtEndOfDirectory
 	JP	Z,OpenNextExtError				; with exitParameterByte = 1
 	JP		OpenNextExt3
 
  ; not end of file, open
  OpenNextExt2:
-	CALL	OpenFileCopyFCB
+	CALL	CopyDirRecordToFCB
  OpenNextExt3:
 	CALL	SetRecordVars					; Set Record parameters
 	XOR		A
@@ -2509,7 +2801,7 @@ IsDiskWriteProtected:
 	CALL	CheckWrite						; may be write protected
  ; search up to the extent field
 	LD		C,fcbExtIndex					; extent number field index
-	CALL	Search4DirElement
+	CALL	SearchForDirectoryRecord
  ; copy position 0
 	LD	HL,(paramDE)
 	LD		A,(HL)								; HL=.fcb(0), A=fcb(0)
@@ -2518,7 +2810,7 @@ IsDiskWriteProtected:
 	LD		(HL),A								; fcb(fcbDiskMapIndex)=fcb(0)
  ; assume the same disk drive for new named file
  Rename1:
-	CALL	EndOfDirectory
+	CALL	AtEndOfDirectory
 	RET	Z; stop at end of dir
  ; not end of directory, rename next element
 	CALL	CheckRODirectory				; may be read-only file
@@ -2526,7 +2818,7 @@ IsDiskWriteProtected:
 	LD		E,fcbExtIndex
 	CALL	CopyDir
  ; element renamed, move to next
-	CALL	Search4NextDirElement
+	CALL	GetNextDirectoryRecord
 	JP		Rename1
  ;-----------------------------------------------------------------
  ;create a new file by creating a directory entry then opening the file
@@ -2537,8 +2829,8 @@ IsDiskWriteProtected:
 	LD		HL,emptyFCB
 	LD	(paramDE),HL							; paramDE = .empty
 	LD		C,1
-	CALL	Search4DirElement				; length 1 match on empty entry
-	CALL	EndOfDirectory					; zero flag set if no space
+	CALL	SearchForDirectoryRecord				; length 1 match on empty entry
+	CALL	AtEndOfDirectory					; zero flag set if no space
 	POP		HL								; recall paramDE address
 	LD	(paramDE),HL							; in case we return here
 	RET	Z; return with error condition 255 if not found
@@ -2566,19 +2858,19 @@ IsDiskWriteProtected:
  DeleteFile:
 	CALL	CheckWrite						; write protected ?
 	LD		C,fcbExtIndex					; extent number field
-	CALL	Search4DirElement				; search through file type
+	CALL	SearchForDirectoryRecord				; search through file type
  DeleteFile1:
 						; loop while directory matches
-	CALL	EndOfDirectory
+	CALL	AtEndOfDirectory
 	RET	Z; exit if end
  ; set each non zero disk map entry to 0 in the allocation vector
 	CALL	CheckRODirectory				; ro disk error if found
-	CALL	GetDirElementAddress			; HL=.buff(dptr)
+	CALL	GetCurrentDirectoryRecord			; HL=.buff(dptr)
 	LD		(HL),emptyDir
 	LD		C,FALSE
 	CALL	ScanDiskMap						; alloc elts set to 0
 	CALL	WriteDir						; write the directory
-	CALL	Search4NextDirElement			; to next element
+	CALL	GetNextDirectoryRecord			; to next element
 	JP		DeleteFile1						; for another record
  ;-----------------------------------------------------------------
  ;locate the directory element and re-write it
@@ -2588,15 +2880,15 @@ IsDiskWriteProtected:
 	CALL	IsDiskWriteProtected						; return TRUE (0) if checksum change
 	RET	NZ; skip close if r/o disk
  ; check file write flag - 0 indicates written
-	CALL	GetModuleNum					; fcb(fcbS2Index) in A
+	CALL	GetWriteProtectValue					; fcb(fcbS2Index) in A
 	AND		writeFlagMask
 	RET	NZ; return if bit remains set
 	LD		C,nameLength
-	CALL	Search4DirElement				; locate file
-	CALL	EndOfDirectory
+	CALL	SearchForDirectoryRecord				; locate file
+	CALL	AtEndOfDirectory
 	RET	Z; return if not found
  ; merge the disk map at paramDE with that at buff(dptr)
-	CALL	GetDirElementAddress
+	CALL	GetCurrentDirectoryRecord
 	LD		BC,fcbDiskMapIndex
 	ADD		HL,BC
 	EX	DE,HL ; DE is .buff(dptr+16)
@@ -2730,59 +3022,7 @@ IsDiskWriteProtected:
 	DEC		HL								; back to input form
 	RET
  ;-----------------------------------------------------------------
- ;compute closest disk block number from current block
- ;given allocation vector position BC, find the zero bit closest to this position
- ;by searching left and right.
- ;if found, set the bit to one and return the bit position in hl.
- ;if not found (i.e., we pass 0 on the left, or dpbDSM on the right), return 0000 in hl
- GetClosestBlock:
-	LD		D,B
-	LD		E,C								; copy of starting position to de
- TestLeft:
-	LD		A,C
-	OR		B
-	JP	Z,TestRight						; skip if left=0000
- ; left not at position zero, bit zero?
-	DEC		BC
-	PUSH	DE
-	PUSH	BC								; left,right pushed
-	CALL	GetAllocBit
-	RRA
-	JP	NC,ReturnBlockNumber				; return block number if zero
- ; bit is one, so try the right
-	POP		BC
-	POP		DE								; left, right restored
- TestRight:
-	LD	HL,(dpbDSM)							; value of maximum allocation#
-	LD		A,E
-	SUB		L
-	LD		A,D
-	SBC		A,H								; right=dpbDSM?
-	JP	NC,ReturnBlockZero					; return block 0000 if so
-	INC		DE
-	PUSH	BC
-	PUSH	DE								; left, right pushed
-	LD		B,D
-	LD		C,E								; ready right for call
-	CALL	GetAllocBit
-	RRA
-	JP	NC,ReturnBlockNumber				; return block number if zero
-	POP		DE
-	POP		BC								; restore left and right pointers
-	JP		TestLeft						; for another attempt
- ReturnBlockNumber:
-	RLA
-	INC		A								; bit back into position and set to 1
-											; 	D contains the number of shifts required to reposition
-	CALL	RotateAndReplace				; move bit back to position and store
-	POP		HL
-	POP		DE								; HL returned value, DE discarded
-	RET
-
- ; cannot find an available bit, return 0000
- ReturnBlockZero:
-	LD		HL,0000H
-	RET
+ 
  ;-----------------------------------------------------------------
  ;compute disk block number from current fcb
  GetBlockNumber:
@@ -2828,196 +3068,8 @@ IsDiskWriteProtected:
 	LD		(exitParameterByte),A
 	RET
  ;---------------------
- ;clear the module number field for user open/make (S2)
- ClearModuleNum:
-	CALL	GetModuleNum
-	LD		(HL),0								; fcb(fcbS2Index)=0
-	RET
- ;---------------------
- ;get data module number (high order bit is fwf -file write flag)
- GetModuleNum:
-	LD	HL,(paramDE)
-	LD		DE,fcbS2Index
-	ADD		HL,DE								; HL=.fcb(fcbS2Index)
-	LD		A,(HL)
-	RET										; A=fcb(fcbS2Index)
- ;---------------------
- ;check current fcb to see if reselection necessary
- Reselect:
-	LD		A,TRUE
-	LD		(fResel),A							;mark possible reselect
-	LD	HL,(paramDE)
-	LD		A,(HL)								; drive select code
-	AND		00011111B						; non zero is auto drive select
-	DEC		A								; drive code normalized to 0..30, or 255
-	LD		(paramE),A							; save drive code
-	CP		30
-	JP	NC,NoSelect
-											; auto select function, save currentDisk
-	LD		A,(currentDisk)
-	LD		(entryDisk),A						; entryDisk=currentDisk
-	LD		A,(HL)
-	LD		(fcbDisk),A							; save drive code
-	AND		11100000B
-	LD		(HL),A								; preserve hi bits
-	CALL	SelectCurrent
- NoSelect:									; noselect:
 
-	LD		A,(currentUserNumber)				; set user code 0...31
-	LD	HL,(paramDE)
-	OR		M
-	LD		(HL),A
-	RET
- ;---------------------
- ;search for the directory entry, copy to fcb
- OpenFile:
-	LD		C,nameLength
-	CALL	Search4DirElement
-	CALL	EndOfDirectory
-	RET	Z; return with exitParameterByte=255 if end
 
- ; not end of directory, copy fcb information
- OpenFileCopyFCB:
-	CALL	GetExtentAddress				; HL=.fcb(fcbExtIndex)
-	LD		A,(HL)
-	PUSH	AF
-	PUSH	HL								; save extent#
-	CALL	GetDirElementAddress
-	EX	DE,HL ; DE = .buff(dptr)
-	LD	HL,(paramDE)							; HL=.fcb(0)
-	LD		C,NEXT_RECORD					; length of move operation
-	PUSH	DE								; save .buff(dptr)
-	CALL	Move							; from .buff(dptr) to .fcb(0)
- ; note that entire fcb is copied, including indicators
-	CALL	SetFileWriteFlag				; sets file write flag
-	POP		DE
-	LD		HL,fcbExtIndex
-	ADD		HL,DE								; HL=.buff(dptr+fcbExtIndex)
-	LD		C,(HL)								; C = directory extent number
-	LD		HL,fcbRCIndex					; point at the record Count field
-	ADD		HL,DE								; HL=.buff(dptr+fcbRCIndex)
-	LD		B,(HL)								; B holds directory record count
-	POP		HL
-	POP		AF
-	LD		(HL),A								; restore extent number
- ; HL = .user extent#, B = dir rec cnt, C = dir extent#
- ; if user ext < dir ext then user := 128 records
- ; if user ext = dir ext then user := dir records
- ; if user ext > dir ext then user := 0 records
-	LD		A,C
-	CP		M
-	LD		A,B								; ready dir fcbRCIndex
-	JP	Z,OpenRecordCount					; if same, user gets dir fcbRCIndex
-	LD		A,0
-	JP	C,OpenRecordCount					; user is larger
-	LD		A,RecordsPerExtent				; directory is larger >>>RecordsPerExtent
- OpenRecordCount:							;Acc has record count to fill
-	LD	HL,(paramDE)
-	LD		DE,fcbRCIndex
-	ADD		HL,DE
-	LD		(HL),A
-	RET
-
- ;---------------------
- ;search for directory element of length C at info
- Search4DirElement:
-	LD		A,0FFH
-	LD		(directoryFlag),A					; changed if actually found
-	LD		HL,searchLength
-	LD		(HL),C								; searchLength = C
-	LD	HL,(paramDE)
-	LD	(searchAddress),HL					; searchAddress = paramDE
-	CALL	SetEndDirectory					; dirEntryIndex = enddir
-	CALL	Home							; to start at the beginning
-	JP		Search4NextDirElement
- ;---------------------
- ;search for the next directory element, assuming a previous
- ;call on search which sets searchAddress and searchLength
- Search4NextDirElement:
-	LD		C,FALSE
-	CALL	ReadDirectory					; read next dir element
-	CALL	EndOfDirectory
-	JP	Z,SearchDone						; skip to end if so
- ; not end of directory, scan for match
-	LD	HL,(searchAddress)
-	EX	DE,HL ; DE=beginning of user fcb
-	LD	A,(DE)								; first character
-	CP		emptyDir						; keep scanning if Dir entry is empty
-	JP	Z,Search4NextDirElement1
- ; not emptyDir, may be end of logical directory
-	PUSH	DE								; save search address
-	CALL	StillInDirectory				; past logical end?
-	POP		DE								; recall address
-	JP	NC,SearchDone						; artificial stop
- Search4NextDirElement1:
-	CALL	GetDirElementAddress			; HL = buffa+dptr
-	LD		A,(searchLength)
-	LD		C,A								; length of search to c
-	LD		B,0								; bcounts up, c counts down
- Search4NextLoop:
-	LD		A,C
-	OR		A
-	JP	Z,EndDirElementSearch
-	LD	A,(DE)
-	CP		QMARK
-	JP	Z,Search4NextOK					; ? matches all
- ; scan next character if not fcbS1Index
-	LD		A,B
-	CP		fcbS1Index
-	JP	Z,Search4NextOK
- ; not the fcbS1Index field, extent field?
-	CP		fcbExtIndex						; may be extent field
-	LD	A,(DE)								; fcb character
-	JP	Z,Search4Ext						; skip to search extent
-	SUB		M
-	AND		07FH							; mask-out flags/extent modulus
-	JP	NZ,Search4NextDirElement			; skip if not matched
-	JP		Search4NextOK					;matched character
-
- ; A has fcb character attempt an extent # match
- Search4Ext:
-	PUSH	BC								; save counters
-	LD		C,(HL)								; directory character to c
-	CALL	CompareExtents					; compare user/dir char
-	POP		BC								; recall counters
-	JP	NZ,Search4NextDirElement			; skip if no match
-
- ; current character matches
- Search4NextOK:
-	INC		DE
-	INC		HL
-	INC		B
-	DEC		C
-	JP		Search4NextLoop
-
- ; entire name matches, return dir position
- EndDirElementSearch:
-	LD		A,(dirEntryIndex)
-	AND		dirEntryMask
-	LD		(exitParameterByte),A
- ; exitParameterByte = low(dirEntryIndex) and 11b
-	LD		HL,directoryFlag
-	LD		A,(HL)
-	RLA
-	RET	NC; directoryFlag=0ffh?
- ; yes, change it to 0 to mark as found
-	XOR		A
-	LD		(HL),A								; directoryFlag=0
-	RET
-
- ; end of directory, or empty name
- SearchDone:
-	CALL	SetEndDirectory					; may be artifical end
-	LD		A,0FFH
-	LD		(exitParameterByte),A
-	RET
- ;---------------------
- ;Set file write flag
- SetFileWriteFlag:
-	CALL	GetModuleNum					; HL=.fcb(fcbS2Index), A=fcb(fcbS2Index)
-	OR		writeFlagMask					; set fwf (file write flag) to "1"
-	LD		(HL),A								; fcb(fcbS2Index)=fcb(fcbS2Index) or 80h
-	RET										; also returns non zero in accumulator
  ;---------------------
  ;set exitParameterByte to 1
  SetLowReturnTo1:
@@ -3025,23 +3077,6 @@ IsDiskWriteProtected:
 	LD		(exitParameterByte),A
 	RET
  ;---------------------
- ;compare extent# in A with that in C, return nonzero if they do not match
- CompareExtents:
-	PUSH	BC								; save C's original value
-	PUSH	AF
-	LD		A,(dpbEXM)
-	CPL
-	LD		B,A
-											; B has negated form of extent mask
-	LD		A,C
-	AND		B
-	LD		C,A								; low bits removed from C
-	POP		AF
-	AND		B								; low bits removed from A
-	SUB		C
-	AND		maxExtValue						; set flags
-	POP		BC								; restore original values
-	RET
  ;---------------------
  ;copy the directory entry to the user buffer
  CopyDirEntryToUser:
@@ -3049,7 +3084,7 @@ IsDiskWriteProtected:
 	EX	DE,HL ; source is directory buffer
 	LD	HL,(initDAMAddress)					; destination is user dma address
 	LD		C,cpmRecordSize					; copy entire record
-	JP		Move
+	JP		MoveX
  ;---------------------
  ;copy the whole file control block
  CopyFCB:
@@ -3064,9 +3099,9 @@ IsDiskWriteProtected:
 	LD	HL,(paramDE)							; HL = source for data
 	ADD		HL,BC
 	EX	DE,HL ; DE=.fcb(C), source for copy
-	CALL	GetDirElementAddress			; HL=.buff(dptr), destination
+	CALL	GetCurrentDirectoryRecord			; HL=.buff(dptr), destination
 	POP		BC								; DE=source, HL=dest, C=length
-	CALL	Move							; data moved
+	CALL	MoveX							; data moved
  ;enter from close to seek and copy current element
  SeekAndCopy:								; seek$copy:
 	CALL	SeekDir							; seek$dir ;to the directory element
@@ -3177,16 +3212,16 @@ IsDiskWriteProtected:
 	JP		ShiftLeftHLbyC0
  ;*****************************************************************
  ;move data length of length C from source DE to HL
- Move:
+ MoveX:
 	INC		C
- Move0:
+ MoveX0:
 	DEC		C
 	RET	Z
 	LD	A,(DE)
 	LD		(HL),A
 	INC		DE
 	INC		HL
-	JP		Move0
+	JP		MoveX0
 
  ;********** Console OUT Routines*******************??????
  
@@ -3251,14 +3286,6 @@ ReAlignMap1:                                                                 ;
 		DJNZ	ReAlignMapLoop                                               ;
 		RET                                                                  ;
 ;============================ Set/Reset Vector Bit ==========================;		
-
-
-;? ;********************************************************
-;? ;return version number
-;? vGetVersion:								; func12 (12 - 0C)	 Get Verson
-;?	LD		A,VERSION
-;?	LD		(exitParameterByte),A 				;exitParameterByte = VERSION (high = 00)
-;?	RET
  ;************Error message World*************************
  errSelect:
 	LD		HL,evSelection
