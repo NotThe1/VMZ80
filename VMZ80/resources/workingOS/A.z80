@@ -1,7 +1,9 @@
 ; A.Z80
 ; 8
 OPEN_FILE	EQU	0FH
+CLOSE_FILE	EQU	10H
 BDOS		EQU	00005H
+XX	EQU	080H
 
 TPA			EQU		0100H
 
@@ -12,7 +14,11 @@ Start:
 			LD		DE,FCB
 			CALL	BDOS
 			NOP
+			LD		C,CLOSE_FILE
+			LD		DE,FCB
+			CALL	BDOS
 			HALT
+			LD	A,0FFH-XX
 			
 FCB:
 			DB		2
@@ -26,5 +32,13 @@ FCB:
 			DW		0000H
 			
 ;DOLLARInclude ./HeaderForA.Z80
-			DS		0100H
+		DS		0100H
+			DB		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+			DB		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+			DB		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+			DB		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+			DB		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+			DB		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+			DB		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+			DB		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 Stack:
