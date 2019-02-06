@@ -1,7 +1,7 @@
 ;     File created by MakeZ80Source on Tue Sep 18 12:41:03 EDT 2018 from:
 ;     C:\Users\admin\Dropbox\Resources\CPM\CurrentOS\8080\BDOSX.asm
  ; BDOS.Z80
- ;  in process Search For first (11H)
+ ;  in process Search For First (11H)
 
  ; 2019-02-04 Fixed bdosStack problem 
  ; 2019-01-10	Last rev before remaking  FInd nearest Block
@@ -1017,6 +1017,61 @@ vResetSystem:
  vCloseFile:
 	CALL	ReselectDisk
 	JP		CloseDirEntry
+;---------------------Search for First Name Match - 11 (17) ----------------;
+;  This function scans down the file directory for the first entry that     ;
+; matches the file name, type, and extent in the FCB addressed by DE.       ;
+; The file name, type, and extent may contain a "?" (ASCII 3FH) in one or   ;
+; more character positions. Where a "?" occurs, the BDOS will match any     ;
+; character in the corresponding position in the file directory. This is    ;
+; known as ambiguous file name matching.                                    ;
+;  The first byte of an FCB normally contains the logical disk number code. ;
+; A value of 0 indicates the default disk, while 1 means disk A, 2 is B,    ;
+; and so on up to a possible maximum of 16 for disk P. However, if this     ;
+; byte contains a "?", the BDOS will search the default logical disk and    ;
+; will match the file name and type regardless of the user number. This     ;
+; function is normally used in conjunction with the Search Next function.   ;
+; Search First, in the process of matching a file, leaves certain           ;
+; variables in the BDOS set, ready for a subsequent Search Next.            ;
+;  Both Search First and Search Next return a directory code in the         ;
+; A register. With Search First, A = OFFH when no files match the FCB,      ;
+; if a file match is found, A will have a value of 0, I, 2, or 3.           ;
+;                                                                           ;
+;  To locate the particular directory entry that either the Search First    ;
+; or Search Next function matched, multiply the directory code returned     ;
+; in A by the length of a directory entry (32 bytes). This is easily done   ;
+; by adding the A register to itself five times. Then add the DMA address   ;
+; to get the actual address where the matched directory entry is stored.    ;
+;  There are many occasions when you may need to write a program that will  ;
+; accept an ambiguous file name and operate on all of the file names that   ;
+; match it. (The DIR and ERA commands built into the CCP are examples that  ;
+; use ambiguous file names.) To do this, you must use several BDOS          ;
+; functions: the Set DMA Address function (code 26), this function          ;
+; (Search First), and Search Next (code 18). All of this is shown in the    ;
+; subroutine given in Figure 5-17.                                          ;
+;                                                                           ;
+;                                                                           ;
+;			Function Code	:	C  = 11FH                                   ;
+;			Entry Parameters:	DE = Address of File Control Block			;
+;			Exit Parameters :	A  = Directory Code							;
+;																			;
+;---------------------Search for First Name Match - 11 (17) ----------------;
+ vFindFirst:
+	LD		C,0							; Length assuming '?' true
+	LD		HL,(paramDE)				; Get the FCB
+	LD		A,(HL)						; DIsk/User No
+	CP		QMARK						; Does it contain '?' ?
+	JP		Z,QMarkFind					;  if Yes, skip disk reselect
+										;  and reset of EXT
+										
+	CALL	InitializeExtentNumberMSB	; Set Ext to 0
+	CALL	ReselectDisk				; Use FCB to set currentDisk
+	LD		C,nameLength				; Match name,type and extent
+	
+ QMarkFind:
+	CALL	SearchForDirectoryRecord	; Find the directory record
+	JP		CopyDirEntryToUserDMA		; Move it to the User's buffer
+	
+ ;-----------------------------------------------------------------
 
 ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1708,9 +1763,10 @@ CopyDirRecordToFCB:                                                        	;
 	CALL	IsDiskWriteProtected		; Return Z set if writable          ;
 	RET		NZ							; Skip close if r/o disk            ;
 ; check file write flag - 0 indicates written                               ;
-	CALL	GetWriteProtectValue		; Get file's RO flag                ;
-	AND		writeFlagMask				; Apply the RO Flag for S2          ;
-	RET		NZ							; Skip close if r/o file            ;
+	CALL	GetWriteFileFlagValue		; Get file's WriteFileFlag          ;
+	BIT		7,A							;  Has it changed ?					;
+;	AND		writeFlagMask				; Apply the RO Flag for S2          ;
+	RET		NZ							; Skip close if clean file          ;
 	                                                                        ;
 	LD		C,nameLength                                                    ;
 	CALL	SearchForDirectoryRecord	; Find the file's directory record  ;
@@ -2037,7 +2093,7 @@ InitializeExtentNumberMSB:                                                 ;
 ; Get S2 value                                                             ;
 ;  Returns:	A = S2 Value (bit 7 write protect, bits 0-6 Ext MSB)           ;
 ;			HL = Address of S2 for the FCB pointed to by paramDE           ;
-GetWriteProtectValue:							; S2 bit 7                 ;
+GetWriteFileFlagValue:							; S2 bit 7                 ;
 GetExtentNumberMSB:								; S2 bits 0-6              ;
 	LD		HL,(paramDE)						; FCB address              ;
 	LD		DE,fcbS2Index						; Index to value           ;
@@ -2049,19 +2105,23 @@ GetExtentNumberMSB:								; S2 bits 0-6              ;
 ;Set file write flag in FCB in (paramDE)									;
 ; Used to indicate the FCB is clean. No need to write on close				;
 SetFileWriteFlag:                                                           ;
-	CALL	GetWriteProtectValue		; A= Value, HL = Address of fcbS2   ;
-	OR		writeFlagMask				; Set the flag , bit 7 of S2        ;
-	LD		(HL),A						; Put into FCB                      ;
-	RET	                                                                    ;
+	CALL	GetWriteFileFlagValue		; A= Value, HL = Address of fcbS2   ;
+	SET		7,(HL)						; Set the FileWriteFlag				;
+	RET																		;
+;?	OR		writeFlagMask				; Set the flag , bit 7 of S2        ;
+;?	LD		(HL),A						; Put into FCB                      ;
+;?	RET	                                                                    ;
 ;--------------------------- Set File Write Flag----------------------------;
 ;--------------------------- Reset File Write Flag--------------------------;
 ;Reset file write flag in FCB in (paramDE)									;
 ; Used to indicate the FCB is dirty. Need to write on close					;
 ResetFileWriteFlag:                                                         ;
-	CALL	GetWriteProtectValue		; A= Value, HL = Address of fcbS2   ;
-	AND		0FFH-writeFlagMask			; Remove the flag bit		        ;
-	LD		(HL),A						; Put into FCB                      ;
-	RET	                                                                    ;
+	CALL	GetWriteFileFlagValue		; A= Value, HL = Address of fcbS2   ;
+	RES		7,(HL)						; Reset the FileWriteFlag			;
+	RET																		;
+;?	AND		0FFH-writeFlagMask			; Remove the flag bit		        ;
+;?	LD		(HL),A						; Put into FCB                      ;
+;?	RET	                                                                    ;
 ;--------------------------- Reset File Write Flag--------------------------;
 ;-------------------------- Compare FCB Extents ----------------------------;
 ; Enters:	A containing Target FCB EXT value								;
@@ -2254,7 +2314,6 @@ SetDirectoryEntry:                                                          ;
 	LD	(HL),E                                                              ;
 	RET                                                                     ;
 ;--------------------------- Set Directory Entry ---------------------------;
-
 ;--------------------------- Are we sill in the Directory ------------------;
 ;Returns	:                                                               ;
 ;			CY Set   if dirEntryIndex <= Directory Max Value                ;
@@ -2419,12 +2478,26 @@ FoundFreeOctet4:                                                            ;
 			ADD		HL,BC				; This is the Block Number          ;
 			RET                                                             ;
 ;--------------------------- Get Closest Disk Block ------------------------;
+;---------------------------- Copy Dir Entry To User's Buffer --------------;
+CopyDirEntryToUserDMA:                                                      ;
+	LD		HL,(caDirectoryDMA)			; Point at Directory buffer         ;
+	LD		DE,(initDAMAddress)			; Point at User's Buffer            ;
+	LD		BC,cpmRecordSize			; The entire record                 ;
+	LDIR								; Move it                           ;
+	RET                                                                     ;
+;?	LD		HL,(caDirectoryDMA)			; Get pointer to Directory buffer   ;
+;?	EX		DE,HL						; put it into DE                    ;
+;?	LD		HL,(initDAMAddress)			; destination is user dma address   ;
+;?	LD		C,cpmRecordSize					; copy entire record            ;
+;?	JP		MoveX                                                           ;
+;---------------------------- Copy Dir Entry To User's Buffer --------------;
 
 ;=========================== Directory Utilities ===========================;
 
 ; GU 
 
 ;=========================== General   Utilities ===========================;
+
 ;--------------------------- Rotate HL right by value in C ----------------;
                                                                            ;
 ; HL = Value to be rotated Right                                           ;
@@ -2662,26 +2735,7 @@ ComputeCheckSum1:                                                           ;
  ;*****************************************************************
  ;********************** File  Routines ***************************
  ;*****************************************************************
- ;-----------------------------------------------------------------
- ;search for first occurrence of a file
- ; In - (DE)	FCB Address
- ; OUT - (A)	Directory Code
- ;	0-3 = success ; 0FFH = File Not Found
- vFindFirst:									; func17: (17 - 11) Search for first
-	LD		C,0								; length assuming '?' true
-	LD	HL,(paramDE)
-	LD		A,(HL)
-	CP		QMARK							; no reselect if ?
-	JP	Z,QMarkSelect						; skip reselect if so
-
-	CALL	InitializeExtentNumberMSB					; module number zeroed
-	CALL	ReselectDisk
-	LD		C,nameLength
- QMarkSelect:								; qselect:
-	CALL	SearchForDirectoryRecord
-	JP		CopyDirEntryToUser				; copy directory entry to user
- ;-----------------------------------------------------------------
- ;search for next occurrence of a file name
+  ;search for next occurrence of a file name
  ; OUT - (A)	Directory Code
  ;	0-3 = success ; 0FFH = File Not Found
  vFindNext:									; func18: (18 - 12) Search for next
@@ -2689,7 +2743,7 @@ ComputeCheckSum1:                                                           ;
 	LD	(paramDE),HL
 	CALL	ReselectDisk
 	CALL	GetNextDirectoryRecord
-	JP		CopyDirEntryToUser				; copy directory entry to user
+	JP		CopyDirEntryToUserDMA				; copy directory entry to user
  ;-----------------------------------------------------------------
  ;search for next occurrence of a file name
  ; OUT - (A)	Directory Code
@@ -3157,14 +3211,6 @@ ComputeCheckSum1:                                                           ;
 	LD		(exitParameterByte),A
 	RET
  ;---------------------
- ;---------------------
- ;copy the directory entry to the user buffer
- CopyDirEntryToUser:
-	LD	HL,(caDirectoryDMA)
-	EX	DE,HL ; source is directory buffer
-	LD	HL,(initDAMAddress)					; destination is user dma address
-	LD		C,cpmRecordSize					; copy entire record
-	JP		MoveX
  ;---------------------
  ;copy the whole file control block
  CopyFCB:

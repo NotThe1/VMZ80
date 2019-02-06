@@ -2,6 +2,7 @@
 ; 8
 OPEN_FILE	EQU	0FH
 CLOSE_FILE	EQU	10H
+FIND_FIRST	EQU	11H
 BDOS		EQU	00005H
 XX	EQU	080H
 
@@ -10,10 +11,10 @@ TPA			EQU		0100H
 			ORG		TPA			
 Start:
 			LD		SP,Stack
-			LD		C,OPEN_FILE
+			LD		C,FIND_FIRST
 			LD		DE,FCB
 			CALL	BDOS
-			NOP
+			HALT
 			LD		C,CLOSE_FILE
 			LD		DE,FCB
 			CALL	BDOS
@@ -21,7 +22,7 @@ Start:
 			LD	A,0FFH-XX
 			
 FCB:
-			DB		2
+			DB		'?'
 			DB		'COPY    '
 			DB		'ASM'
 			DW		0000H
