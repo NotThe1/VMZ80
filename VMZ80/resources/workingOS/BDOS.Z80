@@ -1,7 +1,7 @@
 ;     File created by MakeZ80Source on Tue Sep 18 12:41:03 EDT 2018 from:
 ;     C:\Users\admin\Dropbox\Resources\CPM\CurrentOS\8080\BDOSX.asm
  ; BDOS.Z80
- ;  in process Search For First (11H)
+ ;  in process Search For Next (12H)
 
  ; 2019-02-04 Fixed bdosStack problem 
  ; 2019-01-10	Last rev before remaking  FInd nearest Block
