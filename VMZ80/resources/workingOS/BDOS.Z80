@@ -1,7 +1,7 @@
 ;     File created by MakeZ80Source on Tue Sep 18 12:41:03 EDT 2018 from:
 ;     C:\Users\admin\Dropbox\Resources\CPM\CurrentOS\8080\BDOSX.asm
  ; BDOS.Z80
- ;  in process Search For Next (12H)
+ ;  in process Delete File (13H)
 
  ; 2019-02-04 Fixed bdosStack problem 
  ; 2019-01-10	Last rev before remaking  FInd nearest Block
@@ -1071,9 +1071,116 @@ vResetSystem:
 	CALL	SearchForDirectoryRecord	; Find the directory record
 	JP		CopyDirEntryToUserDMA		; Move it to the User's buffer
 	
- ;-----------------------------------------------------------------
+;---------------------Search for Next Name Match - 12 (18) -----------------;
+;	This function searches down the file directory for the next file name,  ;
+; type, and extent that match the FCB specified in a previous Search First  ;
+; function call. Search First and Search Next are the only BDOS functions   ;
+; that must be used together. As you can see, the Search Next function      ;
+; does not require an FCB address as an input parameter-all the necessary   ;
+; information will have been left in the BDOS on the Search First call.     ;
+; Like Search First, Search Next returns a directory code in the A register,;
+; in this case, if A = OFFH, it means that there are no more files that     ;
+; match the file control block. If A is not OFFH, it will be a value of     ;
+; 0, 1, 2, or 3, indicating the relative directory entry number.            ;
+;                                                                           ;
+;  There are two ways of using the Search First/ Next calls. Consider a     ;
+; simple file copying program that takes as input an ambiguous file name.   ;
+; You could scan the file directory, matching all of the possible file      ;
+; names, possibly displaying them on the console, and storing the names of  ;
+; the files to be copied in a table inside your program. This would have    ;
+; the advantage of enabling you to present the file names to the operator   ;
+; before any copying occurred. You could even arrange for the operator to   ;
+; select which files to copy on a file-by-file basis. One disadvantage      ;
+; would be that you could not accurately predict how many files might be    ;
+; selected. On some hard disk systems you might have to accommodate several ;
+; thousand file names.                                                      ;
+;  The alternative way of handling the problem would be to match one file   ;
+; name, copy it, then match the next file name, copy it, and so on. If you  ;
+; gave the operator the choice of selecting which files to copy, this person;
+; would have to wait at the terminal as each file was being copied, but the ;
+; program would not need to have large table areas set aside to hold file   ;
+; names. This solution to the problem is slightly more complicated, as you  ;
+; can see from the logic in Figure 5-17.                                    ;
+;  The subroutine in Figure 5-17, Get Next File (GNF), contains all of the  ;
+; necessary logic to search down a directory for both alternatives described;
+; It does require that you indicate on entry whether it should search for   ;
+; the first or next file match, by setting A to zero or some nonzero value  ;
+; respectively.                                                             ;
+;  You can see from Figure 5-17 that whenever the subroutine is called to   ;
+; get the next file, you must execute a Search First function to re-find    ;
+; the  previous file. Only then can a Search Next be issued. As with all    ;     
+; functions that return a directory code in A, if this value is not OFFH, it;
+; will be the relative directory entry number in the directory record       ;
+; currently in memory. This directory record will have been read into memory;
+; at whatever address was specified at the last Set DMA Address function    ;
+; call. Notwithstanding its odd name, the DMA Address is simply the address ;
+; into which any record input from disk will be placed. If the Set DMA      ;
+; Address function has not been used to change the value, then the CP/M     ;
+; default DMA address, location 0080H, will be used to hold the directory   ;
+; record.                                                                   ;
+;  The actual code for locating the address of the particular directory     ;
+;  entry matched by the Search First/ Next functions is shown in Figure 5-17;
+;  near the label GNFC. The method involves multiplying the directory code  ;
+;  by 32 and then adding this product to the current DMA address.	        ;
+;                                                                           ;
+;                                                                           ;
+;			Function Code	:	C  = 12FH                                   ;
+;			Entry Parameters:	None , Assume previous Search First Call	;
+;			Exit Parameters :	A  = Directory Code							;
+;																			;
+;---------------------Search for Next Name Match - 12 (18) -----------------;
+ vFindNext:
+	LD		HL,(searchAddress)			; Get Current Dir Entry
+	LD		(paramDE),HL				; Get the user's FCB
+	CALL	ReselectDisk				; Reselect if needed
+	CALL	GetNextDirectoryRecord		; Go find the next directory record
+	JP		CopyDirEntryToUserDMA		; Copy directory entry to user
 
-;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+;--------------------------------Delete File - 13 (19) ---------------------;
+; This function logically deletes from the file directory files that match  ;
+; the FCB addressed by DE. It does so by replacing the first byte of each   ;
+; relevant directory entry (remember, a single file can have several        ;
+; entries, one for each extent) by the value OE5H. This flags the directory ;
+; entry as being available for use.                                         ;
+;                                                                           ;
+;  Like the previous two functions, Search First and Search Next, this      ;
+; function can take an ambiguous file name and type as part of the          ;
+; File Control Block, but unlike those functions, the logical disk select   ;
+; code cannot be a"?". This function returns a directory code in A in the   ;
+; same way as the previous file operations.                                 ;
+;                                                                           ;
+;                                                                           ;
+;			Function Code	:	C  = 13FH                                   ;
+;			Entry Parameters:	DE = Address of File Control Block			;
+;			Exit Parameters :	A  = Directory Code							;
+;																			;
+;--------------------------------Delete File - 13 (19) ---------------------;
+ vDeleteFile:
+	CALL	ReselectDisk				; Reselect if needed
+	CALL	DeleteFile
+	JP		DirLocationToReturnLoc		; Return directory Index to caller
+
+DeleteFile:
+	CALL	CheckWrite					; Terminate with error if Disk R/O
+	LD		C,fcbExtIndex				; Load the extent number field
+	CALL	SearchForDirectoryRecord	; Look for directory entry
+	
+DeleteFileLoop:
+	CALL	AtEndOfDirectory			; Have we worked thru all entries
+	RET		Z							;  exit if we have
+; set each non zero disk map entry to 0 in the allocation vector
+	CALL	CheckRODirectory			; Terminate with error if File R/O
+	CALL	GetCurrentDirectoryRecord	; Point to Directory Entry
+	LD		(HL),emptyDir				; Mark as Empty
+	LD		C,FALSE						; Set flag for remove
+	CALL	ScanDiskMap					; Reclaim Bisk Blocks, set to 0
+	CALL	WriteDir					; Update the directory
+	CALL	GetNextDirectoryRecord		; Look for more
+	JP		DeleteFileLoop				; Loop 
+;-----------------------------------------------------------------
+
+;------
+
 ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ;---------------------------- Get Active Disks - 18 (24) --------------------;
 ; This function returns a bit map, called the login vector, in register pair ;
@@ -1968,13 +2075,6 @@ IsDiskWriteProtected:                                                       ;
 	LD		B,A                                                             ;
 	CALL	IsBitSet					; Check the bit                     ;
 	RET									; NZ if Disk is RO                  ;
-;?	LD		HL,(readOnlyVector)			; Get Read Only Vector              ;
-;?	LD		A,(currentDisk)                                                 ;
-;?	LD		C,A                                                             ;
-;?	CALL	ShiftRightHLbyC                                                 ;
-;?	LD		A,L                                                             ;
-;?	AND		1BH								; 01BH                          ;
-;?	RET										; non zero if nowrite           ;
 ;--------------------------- Is Disk Write Protected -----------------------;
 
 ;------------------------- Reselect Disk if Necessary ----------------------;
@@ -2144,7 +2244,6 @@ CompareExtents:																;
 	RET                                                                		;
 ;-------------------------- Compare FCB Extents ----------------------------;
 ;---------------------Search for Directory Record --------------------------;
-;        directoryFlag  ????????											;
 ;  Search for directory record of length C.									;
 ; Target is pointed to by paramDE. The whole directory is searched.			;
 ; If not found then dirEntryIndex is set to -1, else it points to the		;
@@ -2154,7 +2253,7 @@ CompareExtents:																;
 ;								-1 (EOD) if there is no match				;
 SearchForDirectoryRecord:                                                   ;
 	LD		A,0FFH                                                          ;
-	LD		(directoryFlag),A			; Initialize directory Flag         ;
+	LD		(directoryIndex),A			; Initialize directory Index        ;
 	LD		HL,searchLength                                                 ;
 	LD		(HL),C						; Save Search Length                ;
 	LD		HL,(paramDE)				; Active FCB                        ;
@@ -2218,7 +2317,7 @@ SetNextPosition:															;
 	AND		dirEntryMask				; Apply the mask                    ;
 	LD		(exitParameterByte),A		; Put 0...3. Match FOund            ;
                                                                             ;
-	LD		HL,directoryFlag			; Point at Directory Flag           ;
+	LD		HL,directoryIndex			; Point at Directory Flag           ;
 	LD		A,(HL)						; Get value                         ;
 	RLA									; Set Carry if Flag = -1            ;
 	RET		NC							; Return with flag still -1         ;
@@ -2485,12 +2584,31 @@ CopyDirEntryToUserDMA:                                                      ;
 	LD		BC,cpmRecordSize			; The entire record                 ;
 	LDIR								; Move it                           ;
 	RET                                                                     ;
-;?	LD		HL,(caDirectoryDMA)			; Get pointer to Directory buffer   ;
-;?	EX		DE,HL						; put it into DE                    ;
-;?	LD		HL,(initDAMAddress)			; destination is user dma address   ;
-;?	LD		C,cpmRecordSize					; copy entire record            ;
-;?	JP		MoveX                                                           ;
 ;---------------------------- Copy Dir Entry To User's Buffer --------------;
+;--------------------- Return last Directory Index to Caller ---------------;
+DirLocationToReturnLoc:                                                     ;
+	LD		A,(directoryIndex)			; Get last directory Index          ;
+	LD		(exitParameterByte),A		; Save for return to Caller         ;
+	RET                                                                     ;
+;--------------------- Return last Directory Index to Caller ---------------;
+;--------------------------- Check OK to Write to Disk ---------------------;
+ CheckWrite:                                                                ;
+	CALL	IsDiskWriteProtected		; Is this disk Write Protected?     ;
+	RET		Z							; OK to write                       ;
+	JP		errReadOnlyDisk				; Report read only disk error		;
+;--------------------------- Check OK to Write to Disk ---------------------;
+;--------------------------- Check File Write Protect Status ---------------;
+ CheckRODirectory:                                                          ;
+	CALL	GetCurrentDirectoryRecord	; Use Entry in Directory Buffer     ;
+; Use HL as the directory entry in Question                                 ;
+ CheckROFile:                                                               ;
+	LD		DE,fcbROfileIndex			; Index into FC for RO              ;
+	ADD		HL,DE						; point at the byte                 ;
+	LD		A,(HL)                                                          ;
+	RLA									; Set CY if RO bit set              ;
+	RET		NC							; Return OK                         ;
+	JP		errReadOnlyFile				; Report to read only File          ;
+;--------------------------- Check File Write Protect Status ---------------;
 
 ;=========================== Directory Utilities ===========================;
 
@@ -2734,25 +2852,8 @@ ComputeCheckSum1:                                                           ;
 
  ;*****************************************************************
  ;********************** File  Routines ***************************
- ;*****************************************************************
-  ;search for next occurrence of a file name
- ; OUT - (A)	Directory Code
- ;	0-3 = success ; 0FFH = File Not Found
- vFindNext:									; func18: (18 - 12) Search for next
-	LD	HL,(searchAddress)
-	LD	(paramDE),HL
-	CALL	ReselectDisk
-	CALL	GetNextDirectoryRecord
-	JP		CopyDirEntryToUserDMA				; copy directory entry to user
  ;-----------------------------------------------------------------
- ;search for next occurrence of a file name
- ; OUT - (A)	Directory Code
- ;delete a file
- vDeleteFile:								; func18: (19 - 13) Delete File
-	CALL	ReselectDisk
-	CALL	DeleteFile
-	JP		DirLocationToReturnLoc
- ;-----------------------------------------------------------------
+  ;-----------------------------------------------------------------
  ;read sequential
  ;IN  - (DE) FCB address
  ;OUT - (A) 00 = success and data available. else no read and no data
@@ -2789,27 +2890,7 @@ ComputeCheckSum1:                                                           ;
  ;-----------------------------------------------------------------
  ;-----------------------------------------------------------------
  ;*****************************************************************
- ;-----------------------------------------------------------------
- ;check current directory element for read/only status
- CheckRODirectory:
-	CALL	GetCurrentDirectoryRecord			; address of element
- ;	JMP	CheckROFile
- ;------------
- ;check current buff(dptr) or fcb(0) for r/o status
- CheckROFile:
-	LD		DE,fcbROfileIndex
-	ADD		HL,DE								; offset to ro bit
-	LD		A,(HL)
-	RLA
-	RET	NC; return if not set
-	JP		errReadOnlyFile					; exit to read only disk message
- ;-----------------------------------------------------------------
- ;check for write protected disk
- CheckWrite:
-	CALL	IsDiskWriteProtected
-	RET		Z					; OK to write
-	JP		errReadOnlyDisk					; read only disk error
- ;-----------------------------------------------------------------
+
  ;-----------------------------------------------------------------
  ;sequential disk read operation
  ReadSeq:
@@ -3126,33 +3207,7 @@ ComputeCheckSum1:                                                           ;
  ; and set the file write flag to "1"
 	JP		SetFileWriteFlag
  ;-----------------------------------------------------------------
- ;delete the currently addressed file
- DeleteFile:
-	CALL	CheckWrite						; write protected ?
-	LD		C,fcbExtIndex					; extent number field
-	CALL	SearchForDirectoryRecord				; search through file type
- DeleteFile1:
-						; loop while directory matches
-	CALL	AtEndOfDirectory
-	RET	Z; exit if end
- ; set each non zero disk map entry to 0 in the allocation vector
-	CALL	CheckRODirectory				; ro disk error if found
-	CALL	GetCurrentDirectoryRecord			; HL=.buff(dptr)
-	LD		(HL),emptyDir
-	LD		C,FALSE
-	CALL	ScanDiskMap						; alloc elts set to 0
-	CALL	WriteDir						; write the directory
-	CALL	GetNextDirectoryRecord			; to next element
-	JP		DeleteFile1						; for another record
- ;-----------------------------------------------------------------
 
- ;-----------------------------------------------------------------
-;? ;enter from CloseDirEntry to seek and copy current element
-;? SeekCopy:
-;?	CALL	SeekDir							; to the directory element
-;?	JP		WriteDir						; write the directory element
-;?	;ret
-;? ;-----------------------------------------------------------------
  ;-----------------------------------------------------------------
  ;-----------------------------------------------------------------
 
@@ -3195,13 +3250,8 @@ ComputeCheckSum1:                                                           ;
  ; *** Absolute CPM Record now has current record number - Starting record number + index into block
 	RET
  ;-----------------------------------------------------------------
- ;---------------------
- ;copy directory location to exitParameterByte
- DirLocationToReturnLoc:
-	LD		A,(directoryFlag)
-	LD		(exitParameterByte),A
-	RET
- ;---------------------
+;---------------------------------- Is Bit Set ------------------------------;
+
 
 
  ;---------------------
@@ -3579,7 +3629,7 @@ ReAlignMap1:                                                                 ;
  caSkewTable:		DW	0000H				; tranv address of translate vector
  fcbCopiedFlag:		DB	00H					; fcb$copied set true if CopyFCB called
  readModeFlag:		DB	00H					; rmf read mode flag for OpenNextExt
- directoryFlag:		DB	00H					; dirloc directory flag in rename, etc.
+ directoryIndex:		DB	00H					; dirloc directory flag in rename, etc.
  seqReadFlag:		DB	00H					; seqio  1 if sequential i/o
  diskMapIndex:		DB	00H					; dminx  local for DiskWrite
  searchLength:		DB	00H					; searchl search length

@@ -1,29 +1,65 @@
 ; A.Z80
 ; 8
-OPEN_FILE	EQU	0FH
-CLOSE_FILE	EQU	10H
-FIND_FIRST	EQU	11H
-BDOS		EQU	00005H
-XX	EQU	080H
+BDOS		EQU		00005H
+OPEN_FILE	EQU		0FH
+CLOSE_FILE	EQU		10H
+FIND_FIRST	EQU		11H
+FIND_NEXT	EQU		12H
+READ_SEQ	EQU		14H
+SET_DMA		EQU		1Ah
+defaultBuffer	EQU		080H
 
 TPA			EQU		0100H
 
 			ORG		TPA			
 Start:
 			LD		SP,Stack
+			
+			LD		DE,defaultBuffer
+			LD		C,SET_DMA
+			CALL	BDOS
+			NOP
 			LD		C,FIND_FIRST
 			LD		DE,FCB
 			CALL	BDOS
+			
+			LD		HL,defaultBuffer
+			ADD		A,A					; Return Code * 2
+			ADD		A,A					; Return Code * 4
+			ADD		A,A					; Return Code * 8
+			ADD		A,A					; Return Code * 16
+			ADD		A,A					; Return Code * 32
+			LD		E,A
+			LD		D,0
+			ADD		HL,DE				; point at dir entry
+			LD		DE,FCB1				; point at FCB
+			LD		BC,32				; load count
+			LDIR						; Move to FCB1
+read:			
+			LD		DE,defaultBuffer
+			LD		C,SET_DMA
+			CALL	BDOS
+			
+			LD		DE,defaultBuffer
+			LD		C,READ_SEQ
+			CALL	BDOS
+			NOP
+			INC		A
+			JR		NZ,read
+			
+			
+			
+			
 			HALT
 			LD		C,CLOSE_FILE
 			LD		DE,FCB
 			CALL	BDOS
 			HALT
-			LD	A,0FFH-XX
+			
 			
 FCB:
-			DB		'?'
-			DB		'COPY    '
+			DB		00
+			DB		'SD1     '
 			DB		'ASM'
 			DW		0000H
 			DW		0000H
@@ -31,6 +67,8 @@ FCB:
 			DW		0000H
 			DW		0000H
 			DW		0000H
+			DB		10H
+FCB1:
 			
 ;DOLLARInclude ./HeaderForA.Z80
 		DS		0100H
