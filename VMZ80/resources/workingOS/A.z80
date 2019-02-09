@@ -6,7 +6,8 @@ CLOSE_FILE	EQU		10H
 FIND_FIRST	EQU		11H
 FIND_NEXT	EQU		12H
 READ_SEQ	EQU		14H
-SET_DMA		EQU		1Ah
+RENAME_FILE	EQU		17H
+SET_DMA		EQU		1AH
 defaultBuffer	EQU		080H
 
 TPA			EQU		0100H
@@ -14,63 +15,24 @@ TPA			EQU		0100H
 			ORG		TPA			
 Start:
 			LD		SP,Stack
-			
-			LD		DE,defaultBuffer
-			LD		C,SET_DMA
-			CALL	BDOS
-			NOP
-			LD		C,FIND_FIRST
+			LD		C,RENAME_FILE
 			LD		DE,FCB
 			CALL	BDOS
-			
-			LD		HL,defaultBuffer
-			ADD		A,A					; Return Code * 2
-			ADD		A,A					; Return Code * 4
-			ADD		A,A					; Return Code * 8
-			ADD		A,A					; Return Code * 16
-			ADD		A,A					; Return Code * 32
-			LD		E,A
-			LD		D,0
-			ADD		HL,DE				; point at dir entry
-			LD		DE,FCB1				; point at FCB
-			LD		BC,32				; load count
-			LDIR						; Move to FCB1
-read:			
-			LD		DE,defaultBuffer
-			LD		C,SET_DMA
-			CALL	BDOS
-			
-			LD		DE,defaultBuffer
-			LD		C,READ_SEQ
-			CALL	BDOS
 			NOP
-			INC		A
-			JR		NZ,read
-			
-			
-			
-			
 			HALT
-			LD		C,CLOSE_FILE
-			LD		DE,FCB
-			CALL	BDOS
-			HALT
-			
-			
+
 FCB:
-			DB		00
-			DB		'SD1     '
-			DB		'ASM'
-			DW		0000H
-			DW		0000H
-			DW		0000H
-			DW		0000H
-			DW		0000H
-			DW		0000H
-			DB		10H
-FCB1:
 			
-;DOLLARInclude ./HeaderForA.Z80
+			DB		00
+			DB		'ABCFE   '
+			DB		'XYZ'
+			DB		0,0,0,0
+
+			DB		00
+			DB		'SD2     '
+			DB		'ASM'
+			DB		0,0,0,0
+			
 		DS		0100H
 			DB		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 			DB		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
@@ -81,3 +43,5 @@ FCB1:
 			DB		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 			DB		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 Stack:
+
+;DOLLARInclude ./HeaderForA.Z80

@@ -1,7 +1,7 @@
 ;     File created by MakeZ80Source on Tue Sep 18 12:41:03 EDT 2018 from:
 ;     C:\Users\admin\Dropbox\Resources\CPM\CurrentOS\8080\BDOSX.asm
  ; BDOS.Z80
- ;  in process Make File (16H)
+ ;  in process Rename File (17H)
 
  ; 2019-02-04 Fixed bdosStack problem 
  ; 2019-01-10	Last rev before remaking  FInd nearest Block
@@ -1196,14 +1196,69 @@ DeleteFileLoop:
 ;			Entry Parameters:	DE = Address of File Control Block			;
 ;			Exit Parameters :	A  = Directory Code							;
 ;																			;
-;--------------------------------- Make File - 16 (22) ---------------------;
+;---------------------------- Make File - 16 (22) --------------------------;
 vMakeFile:
 	CALL	InitializeExtentNumberMSB	; Clear the Extent number
 	CALL	ReselectDisk				; Reselect if needed
 	JP		MakeNewFile					; Go Make it
 
+;-------------------------- Rename File - 17 (23) --------------------------;
+;  This function renames an existing file name and type to a new name and   ;
+; type. It is unusual in that it uses a single FCB to store both the old    ;
+; file name and type (in the first 16 bytes) and the new file name and type ;
+; (in the second 16 bytes).                                                 ;
+;  This function returns a normal directory code if the file rename was     ;
+; completed successfully or a value of OFFH if the old file name could not  ;
+; be found.                                                                 ;
+;                                                                           ;
+;  The Rename File function only checks that the old file name and type     ;
+; exist; it makes no check to ensure that the new name and type combination ;
+; does not already exist. Therefore, you should try to open the new file    ;
+; name and type. If you succeed, do not attempt the rename operation.       ;
+; CP/M will create more than one file of the same name and type, and you    ;
+; stand to lose the information in both files as you attempt to sort out    ;
+; the problem.                                                              ;
+;  Never use ambiguous file names in a rename operation; it produces strange;
+; effects and may result in files being irreparably damaged. This function  ;
+; will change all occurrences of the old file name to the new name.         ;
+;                                                                           ;
+;                                                                           ;
+;			Function Code	:	C  = 17FH                                   ;
+;			Entry Parameters:	DE = Address of File Control Block			;
+;			Exit Parameters :	A  = Directory Code							;
+;																			;
+;-------------------------- Rename File - 17 (23) --------------------------;
+vRenameFile:
+	CALL	ReselectDisk				; Reselect if needed
+	CALL	Rename
+	JP		DirLocationToReturnLoc		; Return directory Index to caller
 
-;------
+Rename:
+	CALL	CheckWrite					; Terminate with error if Disk R/O
+	LD		C,fcbExtIndex				; Match user#, Name & Type only
+	CALL	SearchForDirectoryRecord
+	
+; Move the old use number to the new entry (2nd half of FCB)
+	LD		HL,(paramDE)				; FCB pointer
+	LD		A,(HL)						; First byte of Dir entry
+	LD		DE,fcbDiskMapIndex			; Use second half of FCB
+	ADD		HL,DE						; Point at the second half of FCB
+	LD		(HL),A						; Put into new name user position
+
+RenameLoop:
+	CALL	AtEndOfDirectory			; have we checked the whole dir
+	RET		Z							;  exit if yes
+; process this match
+	CALL	CheckRODirectory			; Terminate with error if File R/O
+	LD		C,fcbDiskMapIndex			; Set starting position
+	LD		E,fcbExtIndex				; Set Length
+	CALL	CopyDir						; copy from FCB to dir entry
+ ; element renamed, move to next
+	CALL	GetNextDirectoryRecord		; Look for more dir entries
+	JP		RenameLoop					; Loop
+ 
+
+
 
 ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ;---------------------------- Get Active Disks - 18 (24) --------------------;
@@ -2018,7 +2073,6 @@ MakeNewFile:                                                                ;
 ;----------------------------------- Make new File -------------------------;
 
 ; DIO
-;  +++++ ;
 
  ;---------------
  ; set a "1" value in currentDisk position of BC
@@ -2954,16 +3008,6 @@ ComputeCheckSum1:                                                           ;
 	RET
  ;-----------------------------------------------------------------
  ;-----------------------------------------------------------------
- ; Rename file
- ; In - (DE)	FCB Address
- ; OUT - (A)	Directory Code
- ;	0-3 = success ; 0FFH = File Not Found
- vRenameFile:								; func23 (23 - 17) Rename File
-	CALL	ReselectDisk
-	CALL	Rename
-	JP		DirLocationToReturnLoc
- ;-----------------------------------------------------------------
- ;-----------------------------------------------------------------
  ;*****************************************************************
 
  ;-----------------------------------------------------------------
@@ -3221,33 +3265,6 @@ ComputeCheckSum1:                                                           ;
  OpenNextExtError:
 	CALL	SetLowReturnTo1					; exitParameterByte = 1
 	JP		SetFileWriteFlag				; ensure that it will not be closed
- ;-----------------------------------------------------------------
- ;rename the file described by the first half of the currently addressed FCB.
- ;the new name is contained in the last half of the FCB. The file name and type
- ;are changed, but the reel number is ignored.  the user number is identical
- Rename:
-	CALL	CheckWrite						; may be write protected
- ; search up to the extent field
-	LD		C,fcbExtIndex					; extent number field index
-	CALL	SearchForDirectoryRecord
- ; copy position 0
-	LD	HL,(paramDE)
-	LD		A,(HL)								; HL=.fcb(0), A=fcb(0)
-	LD		DE,fcbDiskMapIndex
-	ADD		HL,DE								; HL=.fcb(fcbDiskMapIndex)
-	LD		(HL),A								; fcb(fcbDiskMapIndex)=fcb(0)
- ; assume the same disk drive for new named file
- Rename1:
-	CALL	AtEndOfDirectory
-	RET	Z; stop at end of dir
- ; not end of directory, rename next element
-	CALL	CheckRODirectory				; may be read-only file
-	LD		C,fcbDiskMapIndex
-	LD		E,fcbExtIndex
-	CALL	CopyDir
- ; element renamed, move to next
-	CALL	GetNextDirectoryRecord
-	JP		Rename1
  ;-----------------------------------------------------------------
  ;-----------------------------------------------------------------
 
