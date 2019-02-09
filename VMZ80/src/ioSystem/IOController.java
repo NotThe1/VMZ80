@@ -153,11 +153,11 @@ public class IOController {
 //				log.errorf("Status timeout for address %02X%n", address);
 //			} // try
 			
-			long startMilli = System.currentTimeMillis();
+//			long startMilli = System.currentTimeMillis();
 			while (deviceStatus.statusToCPU.size()==0) {
 				// Wait until response is there
 			}//while
-			log.infof("IO time = %d%n", System.currentTimeMillis()-startMilli);
+//			log.infof("IO time = %d%n", System.currentTimeMillis()-startMilli);
 
 			return deviceStatus.statusToCPU.poll();
 

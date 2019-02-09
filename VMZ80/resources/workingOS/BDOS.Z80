@@ -1,7 +1,7 @@
 ;     File created by MakeZ80Source on Tue Sep 18 12:41:03 EDT 2018 from:
 ;     C:\Users\admin\Dropbox\Resources\CPM\CurrentOS\8080\BDOSX.asm
  ; BDOS.Z80
- ;  in process Delete File (13H)
+ ;  in process Make File (16H)
 
  ; 2019-02-04 Fixed bdosStack problem 
  ; 2019-01-10	Last rev before remaking  FInd nearest Block
@@ -1177,7 +1177,31 @@ DeleteFileLoop:
 	CALL	WriteDir					; Update the directory
 	CALL	GetNextDirectoryRecord		; Look for more
 	JP		DeleteFileLoop				; Loop 
-;-----------------------------------------------------------------
+
+;--------------------------------- Make File - 16 (22) ---------------------;
+;  This function creates a new file of the specified name and type. You must;
+; first ensure that no file of the same name and type already exists on the ;
+; same logical disk, either by trying to open the file (if this succeeds,   ;
+; the file already exists) or by unconditionally erasing the file.          ;
+;  In addition to creating the file and its associated file directory entry,;
+; this function also effectively opens the file so that it is ready for     ;
+; records to be written to it.                                              ;
+;  This function returns a normal directory code if the file creation has   ;
+; completed successfully or a value of OFFH if there is insufficient        ;
+; disk or directory space.                                                  ;
+;  Note that this function cannot accept an ambiguous file name in the FCB. ;
+;                                                                           ;
+;                                                                           ;
+;			Function Code	:	C  = 16FH                                   ;
+;			Entry Parameters:	DE = Address of File Control Block			;
+;			Exit Parameters :	A  = Directory Code							;
+;																			;
+;--------------------------------- Make File - 16 (22) ---------------------;
+vMakeFile:
+	CALL	InitializeExtentNumberMSB	; Clear the Extent number
+	CALL	ReselectDisk				; Reselect if needed
+	JP		MakeNewFile					; Go Make it
+
 
 ;------
 
@@ -1959,7 +1983,41 @@ CloseDirEntryEnd:                                                           ;
 	DEC		M							; Set Exit value to 0FFH            ;
 	RET                                                                     ;
 ;---------------------------- Close Directory Entry ------------------------;
+;----------------------------------- Make new File -------------------------;
+;create a new file by creating a directory entry then opening the file      ;
+MakeNewFile:                                                                ;
+	CALL	CheckWrite					; Terminate with error if Disk R/O  ;
+	LD		HL,(paramDE)				; Get the FCB                       ;
+	PUSH	HL							; FCB                               ;
+	LD		HL,emptyFCB                                                     ;
+	LD		(paramDE),HL				; Find the first empty dir record   ;
+	LD		C,1                                                             ;
+	CALL	SearchForDirectoryRecord	; 0F5H in first position            ;
+	CALL	AtEndOfDirectory			; Check if at end of directory      ;
+	POP		HL							; Recall the FCB pointer            ;
+	LD		(paramDE),HL				;  in case we return here           ;
+	RET		Z							; Exit with No Dir space error      ;
+; fill Allocation Map with Zeros	                                        ;
+	LD		DE,nameLength                                                   ;
+	ADD		HL,DE						; Start of fill                     ;
+	LD		(HL),00						; Prime the values                  ;
+	PUSH	HL                                                              ;
+	POP		DE							; Copy to DE                        ;
+	INC		DE							; adjust the to pointer             ;
+	LD		BC,fcbLength-nameLength-1	; number of bytes to fill           ;
+	LDIR                                                                    ;
+                                                                            ;
+	LD		HL,(paramDE)				; get FCB                           ;
+	LD		DE,fcbS1Index				; Get the S1 index                  ;
+	ADD		HL,DE						; Point to S1                       ;
+	LD		(HL),0						; Set to 0                          ;
+	CALL	SetDirectoryEntry			; Update directory entry            ;
+	CALL	CopyFCB						; Update dir entry to Disk          ;
+; and set the file write flag to "1"                                        ;
+	JP		SetFileWriteFlag			; Set the clean entry flag          ;
+;----------------------------------- Make new File -------------------------;
 
+; DIO
 ;  +++++ ;
 
  ;---------------
@@ -2357,7 +2415,7 @@ WriteBuffer:                                                                ;
 	JP		NZ,erPermanentNoWait		; Error if not 00                   ;
 	RET                                                                     ;
 ;----------------------------------- Write Buffer --------------------------;
-
+; FU
 ;=========================== File Utilities ================================;
 
 ;=========================== Directory Utilities ===========================;
@@ -2609,10 +2667,34 @@ DirLocationToReturnLoc:                                                     ;
 	RET		NC							; Return OK                         ;
 	JP		errReadOnlyFile				; Report to read only File          ;
 ;--------------------------- Check File Write Protect Status ---------------;
+;------------------------- Copy FCB To Directory record --------------------;
+; On Entry:                                                                 ;
+;			C = Starting position                                           ;
+;			E = length of copy                                              ;
+;copy the whole file control block                                          ;
+CopyFCB:                                                                    ;
+	LD		C,0                                                             ;
+	LD		E,fcbLength						; Copy all of the FCB		    ;
+; On Entry:                                                                 ;
+;			C = Starting position                                           ;
+;			E = length of copy                                              ;
+CopyDir:                                                                    ;
+	LD		D,0								; Make length a word value      ;
+	PUSH	DE								; Length                        ;
+	LD		B,0								; Make index a word             ;
+	LD		HL,(paramDE)					; HL = source for data          ;
+	ADD		HL,BC                                                           ;
+	EX		DE,HL                                                           ;
+	CALL	GetCurrentDirectoryRecord		; HL pointer to Dir Record      ;
+	EX		DE,HL                                                           ;
+	POP		BC								; Length                        ;
+	LDIR                                                                    ;
+	CALL	SeekDir							; Seek to the dir entry         ;
+	JP		WriteDir						; Write the directory element   ;
+;------------------------- Copy FCB from Directory record ------------------;
 
 ;=========================== Directory Utilities ===========================;
-
-; GU 
+; DU 
 
 ;=========================== General   Utilities ===========================;
 
@@ -2680,6 +2762,7 @@ ShiftLeftHLbyB:                                                            ;
 	RET                                                                     ;
 ;----------------------------- Merge ---------------------------------------;
 
+; GU 
 
 ;=========================== General   Utilities ===========================;
 
@@ -2870,14 +2953,6 @@ ComputeCheckSum1:                                                           ;
 	CALL	DiskWriteSeq
 	RET
  ;-----------------------------------------------------------------
- ; Make file
- ; In - (DE)	FCB Address
- ; OUT - (A)	Directory Code
- ;	0-3 = success ; 0FFH = File Not Found
- vMakeFile:									; func22 (22 - 16) Make file
-	CALL	InitializeExtentNumberMSB					; set S2 to Zero
-	CALL	ReselectDisk
-	JP		MakeNewFile
  ;-----------------------------------------------------------------
  ; Rename file
  ; In - (DE)	FCB Address
@@ -3174,38 +3249,6 @@ ComputeCheckSum1:                                                           ;
 	CALL	GetNextDirectoryRecord
 	JP		Rename1
  ;-----------------------------------------------------------------
- ;create a new file by creating a directory entry then opening the file
- MakeNewFile:
-	CALL	CheckWrite						; may be write protected
-	LD	HL,(paramDE)
-	PUSH	HL								; save fcb address, look for e5
-	LD		HL,emptyFCB
-	LD	(paramDE),HL							; paramDE = .empty
-	LD		C,1
-	CALL	SearchForDirectoryRecord				; length 1 match on empty entry
-	CALL	AtEndOfDirectory					; zero flag set if no space
-	POP		HL								; recall paramDE address
-	LD	(paramDE),HL							; in case we return here
-	RET	Z; return with error condition 255 if not found
-	EX	DE,HL ; DE = paramDE address
- ; clear the remainder of the fcb
-	LD		HL,nameLength
-	ADD		HL,DE								; HL=.fcb(nameLength)
-	LD		C,fcbLength-nameLength			; number of bytes to fill
-	XOR		A								; clear accumulator to 00 for fill
- MakeNewFile1:
-	LD		(HL),A
-	INC		HL
-	DEC		C
-	JP	NZ,MakeNewFile1
-	LD		HL,fcbS1Index
-	ADD		HL,DE								; HL = .fcb(fcbS1Index)
-	LD		(HL),A								; fcb(fcbS1Index) = 0
-	CALL	SetDirectoryEntry				; may have extended the directory
- ; now copy entry to the directory
-	CALL	CopyFCB
- ; and set the file write flag to "1"
-	JP		SetFileWriteFlag
  ;-----------------------------------------------------------------
 
  ;-----------------------------------------------------------------
@@ -3261,27 +3304,6 @@ ComputeCheckSum1:                                                           ;
 	LD		(exitParameterByte),A
 	RET
  ;---------------------
- ;---------------------
- ;copy the whole file control block
- CopyFCB:
-	LD		C,0
-	LD		E,fcbLength						; start at 0, to fcblen-1
-	JP		CopyDir
- ;---------------------
- ;copy fcb information starting at C for E bytes into the currently addressed directory entry
- CopyDir:
-	PUSH	DE								; save length for later
-	LD		B,0								; double index to BC
-	LD	HL,(paramDE)							; HL = source for data
-	ADD		HL,BC
-	EX	DE,HL ; DE=.fcb(C), source for copy
-	CALL	GetCurrentDirectoryRecord			; HL=.buff(dptr), destination
-	POP		BC								; DE=source, HL=dest, C=length
-	CALL	MoveX							; data moved
- ;enter from close to seek and copy current element
- SeekAndCopy:								; seek$copy:
-	CALL	SeekDir							; seek$dir ;to the directory element
-	JP	WriteDir							; write the directory element
  ;---------------------
  ;Return the  disk map Index for current File Record in the ACC
  ;  account for multiple extents in 1 physical Directory entry
@@ -3387,18 +3409,18 @@ ComputeCheckSum1:                                                           ;
 	ADD		HL,HL
 	JP		ShiftLeftHLbyC0
  ;*****************************************************************
- ;move data length of length C from source DE to HL
- MoveX:
-	INC		C
- MoveX0:
-	DEC		C
-	RET	Z
-	LD	A,(DE)
-	LD		(HL),A
-	INC		DE
-	INC		HL
-	JP		MoveX0
-
+;? ;move data length of length C from source DE to HL
+;? MoveX:
+;?	INC		C
+;? MoveX0:
+;?	DEC		C
+;?	RET	Z
+;?	LD	A,(DE)
+;?	LD		(HL),A
+;?	INC		DE
+;?	INC		HL
+;?	JP		MoveX0
+;?
  ;********** Console OUT Routines*******************??????
  
 ;---------------------------------- Is Bit Set ------------------------------;
@@ -3585,7 +3607,7 @@ ReAlignMap1:                                                                 ;
  ;     ************************
  ;     *** Initialized Data ***
 
- emptyFCB:			DB	emptyDir			; efcb 0E5 = available dir entry
+emptyFCB:			DB	emptyDir			; efcb 0E5 = available dir entry
  readOnlyVector:		DW	0					; rodsk read only disk vector
  loggedDisks:		DW	0					; dlog	 logged-in disks
  initDAMAddress:		DW	DMABuffer			; dmaad tbuff initial dma address
