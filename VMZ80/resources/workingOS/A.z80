@@ -8,6 +8,7 @@ FIND_NEXT	EQU		12H
 READ_SEQ	EQU		14H
 RENAME_FILE	EQU		17H
 SET_DMA		EQU		1AH
+SET_RANDREC	EQU		024H
 defaultBuffer	EQU		080H
 
 TPA			EQU		0100H
@@ -15,7 +16,13 @@ TPA			EQU		0100H
 			ORG		TPA			
 Start:
 			LD		SP,Stack
-			LD		C,RENAME_FILE
+			
+			LD		C,OPEN_FILE
+			LD		DE,FCB
+			CALL	BDOS
+			NOP
+
+			LD		C,SET_RANDREC
 			LD		DE,FCB
 			CALL	BDOS
 			NOP
@@ -23,15 +30,16 @@ Start:
 
 FCB:
 			
-			DB		00
-			DB		'ABCFE   '
-			DB		'XYZ'
-			DB		0,0,0,0
-
-			DB		00
-			DB		'SD2     '
-			DB		'ASM'
-			DB		0,0,0,0
+DISK:		DB		00
+NAME:		DB		'SD      '
+TYPE:		DB		'PRN'
+EXT:		DB		0
+RESV:		DB		0,0
+RC:			DB		0
+ALLOC:		DW		0,0,0,0,0,0,0,0
+REC_SEQ:	DB		0
+REC_RANDOM:	DW		0000H
+REC_RAN_O:	DB		00
 			
 		DS		0100H
 			DB		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
