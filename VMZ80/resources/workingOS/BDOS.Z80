@@ -1,7 +1,7 @@
 ;     File created by MakeZ80Source on Tue Sep 18 12:41:03 EDT 2018 from:
 ;     C:\Users\admin\Dropbox\Resources\CPM\CurrentOS\8080\BDOSX.asm
  ; BDOS.Z80
- ;  in process vReadSeq - 14 (20)
+ ;  in process vWriteSeq - 15 (21)
 
  ; 2019-02-04 Fixed bdosStack problem 
  ; 2019-01-10	Last rev before remaking  FInd nearest Block
@@ -1150,7 +1150,7 @@ vResetSystem:
 ; same way as the previous file operations.                                 ;
 ;                                                                           ;
 ;                                                                           ;
-;			Function Code	:	C  = 13H                                   ;
+;			Function Code	:	C  = 13H                                    ;
 ;			Entry Parameters:	DE = Address of File Control Block			;
 ;			Exit Parameters :	A  = Directory Code							;
 ;																			;
@@ -1214,23 +1214,15 @@ DeleteFileLoop:
 ;								  <> 0  => No data read, Probably EOF		;
 ;																			;
 ;----------------------------Read Sequential - 14 (20) ---------------------;
- ;read sequential
- ;IN  - (DE) FCB address
- ;OUT - (A) 00 = success and data available. else no read and no data
- vReadSeq:
+vReadSeq:
 	CALL	ReselectDisk				; Reselect if needed
-;	CALL	ReadSeq
-	
-;----------
+;ReadSeq:
+	LD		A,SEQ_ACCESS
+	LD		(diskAccessType),A			; Set flag as sequential Disk I/O
 
- ;sequential disk read operation
-ReadSeq:
-	LD		A,1
-	LD		(seqDiskIOFlag),A			; Set flag for sequential read
- ;---
 DiskRead:
 	LD		A,TRUE
-	LD		(readModeFlag),A			; Set Read mode flag
+	LD		(readModeFlag),A			; Set Flag for read
 	
 	CALL	SetRecordVars				; Set variables for current FCB
 	LD		A,(currentFileRecord)
@@ -1239,19 +1231,19 @@ DiskRead:
 	JP		C,RecordOK					; skip if  yes
  ; not enough records in the extent
 	CP		RecordsPerExtent			; Is record count the Max ?
-	JP		NZ,DiskEOF					;  No, Exit with EOF
+	JP		NZ,NothingRead					;  No, Exit with EOF
 	
 	CALL	OpenNextExt					; Need to open the next extent
 	XOR		A
 	LD		(currentFileRecord),A		; Reset the record count
 	LD		A,(exitParameterByte)		; Was it a good Open
 	OR		A
-	JP		NZ,DiskEOF					;  exit if No
+	JP		NZ,NothingRead					;  exit if No
 	
  RecordOK:
 	CALL	GetBlockNumber				; Put it in absoluteCPMRecord
 	CALL	WasBlockAllocated			; Was it a good Allocation ?
-	JP		Z,DiskEOF					; get out if not allocated 
+	JP		Z,NothingRead					; get out if not allocated 
 	
 	CALL	SetActualRecordAdd			; Absolute CPM Record
 	CALL	Seek						; Go to proper track,sector
@@ -1259,12 +1251,178 @@ DiskRead:
 	CALL	UpdateRecordVariables		; update Record info
 	RET
 	
- DiskEOF:
-	JP		SetExitParamTo1				; exitParameterByte = 1
-	;ret
+ NothingRead:
+	JP		SetExitParamTo1				; No Data read 
 
-;----------
+;----------------------------Write Sequential - 15 (21) --------------------;
+;	This function writes a record from the address specified in the last Set;
+; DMA (code 26, lAH) function call to the file defined in the FCB. The      ;
+; sequential record number in the FCB (RC) is updated by 1 so that          ;
+; the next call to Write Sequential will write to the next record position  ;
+; in the file. If necessary, a new extent will be opened to receive the new ;
+; record.                                                                   ;
+;  This function is directly analogous to the Read Sequential function,     ;
+; writing instead of reading. The file specified in the FCB must first be   ;
+; activated by an Open File (code 15,OFH) or create File call (code 22,16H).;
+;  A directory code of OOH is returned in A to indicate that the Write was  ;
+; successful, a nonzero value is returned if the Write could not be         ;
+; completed because the disk was full.                                      ;
+;                                                                           ;
+;  As with the Read Sequential function (code 20, 14H), you can achieve     ;
+; a simple form of random writing to the file by manipulating the           ;
+; sequential record number (RC). However, you can only overwrite existing   ;
+; records in the file, and if you want to move to another extent, you       ;
+; must close the file and reopen it with the FCB$EXTENT field set to the    ;
+; correct value.                                                            ;
+;  The only logical error condition that can occur when writing to a file   ;
+; is insufficient room on the disk to accommodate the next extent of the    ;
+; file. Any hardware errors detected will be handled by the disk driver     ;
+; built into the BIOS or BDOS.                                              ;
+;                                                                           ;
+;                                                                           ;
+;			Function Code	:	C  = 15H                                    ;
+;			Entry Parameters:	DE = Address of File Control Block			;
+;			Exit Parameters :	A  = 0  => Success							;
+;								  <> 0  => No data read, Probably EOF		;
+;																			;
+;----------------------------Write Sequential - 15 (21) --------------------;
+
+ vWriteSeq:
+	CALL	ReselectDisk				; Reselect if needed
+;	CALL	DiskWriteSeq
 ;	RET
+;====================
+ ;sequential disk write
+DiskWriteSeq:
+	LD		A,SEQ_ACCESS
+	LD		(diskAccessType),A			; Set flag as sequential Disk I/O
+
+DiskWrite:
+	LD		A,FALSE
+	LD		(readModeFlag),A			; Set Flag for Write
+	
+	CALL	CheckWrite					; Terminate with error if Disk R/O
+	LD		HL,(paramDE)				; Put FCB in HL
+	CALL	CheckROFile					; Terminate with error if File R/O
+	CALL	SetRecordVars				; Set variables for current FCB
+	LD		A,(currentFileRecord)		; Get current record number
+	CP		highestRecordNumber + 1		; Is it still in the same extent?
+	JP		NC,SetExitParamTo1			; Exit with NO WRITE set
+
+	CALL	GetBlockNumber				; Compute disk block number
+	CALL	WasBlockAllocated			; Is it really allocated ?
+	LD		C,WriteAllocated			; Assume a normal write operation
+	JP		NZ,HaveWriteBlock				;  Skip if block already allocated
+ ; not allocated -
+ ; the argument to getblock is the starting position for the disk search
+ ; and should be the last allocated block for this file,
+ ; or the value 0 if no space has been allocated
+
+	CALL	GetDiskMapIndex				; Disk Map Index in ACC
+	LD		(diskMapIndex),A			; Save it
+	LD		BC,0000h					; Anticipate using 0000
+	OR		A							; Is it block 0?
+	JR		Z,FindAvailableBlock		;  skip if yes
+
+	LD		C,A							;  else a previous block exists
+	DEC		BC							; Adjust the index
+	CALL	GetDiskMapValue				; Put previous block # into HL
+	LD		B,H							; Move previous block
+	LD		C,L							;  number into BC
+	
+FindAvailableBlock:
+	CALL	GetClosestBlock				; Block number in HL
+	LD		A,L							; If no available blocks HL
+	OR		H							;  HL set to 0000H
+	JR		NZ,FoundAvailableBlock		; Skip if found
+	
+	LD		A,2							; Load return value
+	LD		(exitParameterByte),A		; Save for caller
+	RET									; Exit with exitParameterByte=2
+
+FoundAvailableBlock:
+	LD		(absoluteCPMRecord),HL		; Save the block number
+	EX		DE,HL						; block number to DE (E)
+	LD		HL,(paramDE)				; HL at FCB
+	LD		BC,fcbDiskMapIndex			; Index to start of FCB Map
+	ADD		HL,BC						; HL=.start of FCB Map
+	
+	
+	LD		A,(diskMapIndex)			; Get target block index
+	LD		C,A							; Map index to C
+	LD		B,0							; Set MSB to 00
+	ADD		HL,BC						; Calculate 8 bit block's location
+	LD		A,(byteAllocationFlag)		; Get allocation size flag
+	OR		A							; Test it	
+	JR		Z,Allocate16Bit				; Skip if allocating word
+
+	LD		(HL),E						; Update the Map
+	JP		MarkNewBlock				; Skip 16 bit calculations
+
+Allocate16Bit:
+	ADD		HL,BC						; Adjust for 16 bit value
+	LD		(HL),D						; Save MSB
+	INC		HL
+	LD		(HL),E						; SAVE LSB
+MarkNewBlock:
+;	CALL	ResetFileWriteFlag
+	CALL	GetWriteFileFlagValue		; HL = Address of fcbS2
+	RES		7,(HL)						; Reset the FileWriteFlag
+	LD		C,WriteCleanBuffer			; Marked as unallocated write
+
+HaveWriteBlock:
+	LD		A,(exitParameterByte)
+	OR		A
+	RET		NZ							; Exit if non zero returned value ??
+	
+	PUSH	BC							; Write flag (in C)
+	CALL	SetActualRecordAdd			; Set absoluteCPMRecord
+	CALL	Seek						; Seek to o proper file position
+	POP		BC							; Write flag (in C)
+	PUSH	BC							; Write flag (in C)
+	CALL	WriteBuffer					; Write buffer and check result
+	POP		BC							; Write flag (in C)
+
+	LD		A,(currentFileRecord)		; Get the current record
+	LD		HL,fcbRecordCount			; Get the starting FCB record count
+	CP		M							; Current File Record > fcbRecordCount
+	JP		C,DiskWrite1				;  skip if yes
+ 	LD		(HL),A						; update the FCB RC
+	INC		M							; fcbRecordCount = current File Record+1
+	LD		C,WriteCleanBuffer			; Marked as unallocated write
+DiskWrite1:
+; A has current File Record, C=2 if new block or new record#
+	DEC		C
+	DEC		C							; Check if C = unallocated write
+	JP		NZ,DiskWrite2				; Skip if C not unallocated write
+	PUSH	AF							; currentFileRecord
+	CALL	GetWriteFileFlagValue		; HL points to FCB s2
+	RES		7,(HL)						; Reset WriteFileFlag
+	POP		AF							; currentFileRecord
+DiskWrite2:
+; check for end of extent, if found attempt
+; to open next extent in preparation for next write
+	CP		highestRecordNumber			; Space for more records ?
+	JP		NZ,DiskWriteCleanup			;  finish up if Yes
+
+	LD		A,(diskAccessType)			; Is this using Random Access
+	OR		A
+	JP		Z,DiskWriteCleanup			;  finish up if Yes
+
+	CALL	UpdateRecordVariables		; Update variables from I/O in  FCB
+	CALL	OpenNextExt					; Acc = 0 OK, Acc = 1 Failed
+	LD		HL,exitParameterByte
+	LD		A,(HL)						; Put Open  result in parameter
+	OR		A							; Is it 00
+	JP		NZ,DiskWriteCleanup0		;  no, skip currentRecord update
+	DEC		A							; A gets FF
+	LD		(currentFileRecord),A		; Update currentFileRecord
+	
+ DiskWriteCleanup0:
+	LD		(HL),0						; Set exitParameterByte
+ DiskWriteCleanup:
+	JP		UpdateRecordVariables		; update variables from I/O in  FCB
+
 
 ;--------------------------------- Make File - 16 (22) ---------------------;
 ;  This function creates a new file of the specified name and type. You must;
@@ -1758,7 +1916,7 @@ vGetDiskParamBlock:							; func31 (31 - 1F)
  ;(fcbS2Index has been set to 11000000b if previous bad seek)
  RandomSeek:
   	XOR		A
-	LD		(seqDiskIOFlag),A						; marked as random access operation
+	LD		(diskAccessType),A						; marked as random access operation
 	PUSH	BC								; save r/w flag
 	LD	HL,(paramDE)
 	EX	DE,HL ; DE will hold base of fcb
@@ -2213,7 +2371,7 @@ MergeMapLoop:                                                               ;
 	                                                                        ;
 CloseDirEntryEnd:                                                           ;
 	LD		A,TRUE                                                          ;
-	LD		(fcbCopiedFlag),A			;Set copied flag as true            ;
+	LD		(fcbCopiedFlag),A			; Set copied flag as true           ;
 ;/	CALL	SeekCopy					; ok to "Write Dir" here            ;
 	CALL	SeekDir						; Set up parameters for a Disk I/O  ;
 	JP		WriteDir					; Write the directory element       ;
@@ -2643,7 +2801,7 @@ SetNextPosition:															;
                                                                             ;
 ;---------------------------- Write Current Directory Entry ----------------;
 ;----------------------------------- Write Buffer --------------------------;
-; Write buffer and check condition. Current drive,Track, Sector and DMA     ;
+; Write buffer and check result. Current drive,Track, Sector and DMA		;
 ; Are set up prior to calling this routine                                  ;
 ;                                                                           ;
 ; On Entry: C = 0 => normal write operation		WriteAllocated              ;
@@ -2659,7 +2817,7 @@ WriteBuffer:                                                                ;
 ;update variables from I/O in  FCB                                          ;
  UpdateRecordVariables:                                                     ;
 	CALL	GetFcbRecordDetails			; DE => FCB RC, HL => CurrentRecord ;
-	LD		A,(seqDiskIOFlag)			; If Seq IO it is set to 1			;			
+	LD		A,(diskAccessType)			; If Seq IO it is set to 1			;			
 	LD		C,A							;  and move it to C                 ;
 	LD		A,(currentFileRecord)		; Get NEXT_RECORD                   ;
 	ADD		A,C							; Update record count               ;
@@ -2948,7 +3106,7 @@ CopyDir:                                                                    ;
 	JP		WriteDir						; Write the directory element   ;
 ;------------------------- Copy FCB from Directory record ------------------;
 ;-------------------------------- Get Block Number -------------------------;
- ;compute disk block number from current fcb                                ;
+ ;compute disk block number from current FCB                                ;
  GetBlockNumber:                                                            ;
 	CALL	GetDiskMapIndex				;Return Alloc block index           ;
 	LD		C,A                                                             ;
@@ -3027,6 +3185,67 @@ SetActualRecordAddLoop:                                                     ;
 ; - Starting record number + index into block                               ;
 	RET                                                                     ;
 ;----------------------------- Set Actual Record Add -----------------------;
+;-------------------------------- Open Next Extent -------------------------;
+ ;close the current extent  and open the next one if possible.              ;
+ ;readModeFlag is true if in read mode                                      ;
+ OpenNextExt:                                                               ;
+	XOR		A							; Set to 00                         ;
+	LD		(fcbCopiedFlag),A			; Clear Flag                        ;
+	CALL	CloseDirEntry				; Close current extent.             ;
+	CALL	AtEndOfDirectory			; Is the directory full?            ;
+	RET		Z							;  exit it yes                      ;
+                                                                            ;
+	CALL	GetExtentAddress			; HL at FCB's EXT                   ;
+	LD		A,(HL)						; Get previous EXT value            ;
+	INC		A							; Add one to it                     ;
+	AND		maxExtValue					; Limit to max value                ;
+	LD		(HL),A						; Put it back into the FCB          ;
+	JR		Z,OpenNextModule			;  if = 0, need to open new Module  ;
+                                                                            ;
+	LD		B,A							; put Ext value in B                ;
+	LD		A,(dpbEXM)					; Get the Extent Mask               ;
+	AND		B							; Mask out unwanted bits            ;
+; if result is zero, then not in the same group                             ;
+	LD		HL,fcbCopiedFlag			; Point at Copied Flag              ;
+	AND		M							;  00 in Acc if not written         ;
+	JR		Z,OpenNextExt1				;  go to next physical extent if 0  ;
+	JR		UpdateFCB					;  else continue                    ;
+                                                                            ;
+OpenNextModule:                                                             ;
+	LD		BC,fcbS2Index-fcbExtIndex	; Index difference between EXT & S2 ;
+	ADD		HL,BC						; Add to HL( at EXT) gives S2       ;
+	INC		M							; Increment the Module number       ;
+	LD		A,(HL)						; get the new Module number         ;
+	AND		moduleMask					; Mask out unwanted bits            ;
+	JR		Z,OpenNextExtError			; If overflow to zero, error exit   ;
+                                                                            ;
+OpenNextExt1:                                                               ;
+	LD		C,nameLength				; Set search/match size             ;
+	CALL	SearchForDirectoryRecord	; Find the file's directory record  ;
+	CALL	AtEndOfDirectory			; At end of Directory ?             ;
+	JR		NZ,UpdateFCB				;  No, then keep going              ;
+	                                                                        ;
+	LD		A,(readModeFlag)			;  else at EOD                      ;
+	INC		A							; 0ffh becomes 00 if read           ;
+	JR		Z,OpenNextExtError			; All done if a read                ;
+                                                                            ;
+	CALL	MakeNewFile					; With write we can extend file     ;
+	CALL	AtEndOfDirectory			; Is there room in the directory ?  ;
+	JR		Z,OpenNextExtError			;  no, exitParameterByte = 1        ;
+	JR		OpenNextExt3                                                    ;
+                                                                            ;
+UpdateFCB:                                                                  ;
+	CALL	CopyDirRecordToFCB			; Update FCB                        ;
+OpenNextExt3:                                                               ;
+	CALL	SetRecordVars				; Set variables for current FCB     ;
+	XOR		A                                                               ;
+	LD		(exitParameterByte),A		; Set exitParameterByte = 0         ;
+	RET                                                                     ;
+                                                                            ;
+OpenNextExtError:                                                           ;
+	CALL	SetExitParamTo1				; ExitParameterByte = 1             ;
+	JP		SetFileWriteFlag			; Ensure that it will not be closed ;
+;-------------------------------- Open Next Extent -------------------------;
 
 ;=========================== Directory Utilities ===========================;
 ; DU 
@@ -3250,229 +3469,10 @@ ComputeCheckSum1:                                                           ;
  ;-----------------------------------------------------------------
   ;-----------------------------------------------------------------
  ;-----------------------------------------------------------------
- ;write sequential
- ;IN  - (DE) FCB address
- ;OUT - (A) 00 = success and data available. else no read and no data
- vWriteSeq:									; func21 (21 - 15) write sequention
-	CALL	ReselectDisk
-	CALL	DiskWriteSeq
-	RET
- ;-----------------------------------------------------------------
+  ;-----------------------------------------------------------------
  ;-----------------------------------------------------------------
  ;*****************************************************************
 
- ;-----------------------------------------------------------------
- ;sequential disk write
- DiskWriteSeq:
-	LD		A,1
-	LD		(seqDiskIOFlag),A
- ;--------
- ;disk write
- DiskWrite:
-	LD		A,FALSE
-	LD		(readModeFlag),A
-											; write record to currently selected file
-	CALL	CheckWrite						; in case write protected
-	LD	HL,(paramDE)							; HL = .fcb(0)
-	CALL	CheckROFile						; may be a read-only file
-	CALL	SetRecordVars					; set local Record parameters
-	LD		A,(currentFileRecord)
-	CP		highestRecordNumber + 1			; Still in the same extent?
-	JP	C,DiskWrite1						; skip if in the same Extent
-	CALL	SetExitParamTo1
-	RET										; Exit ???????????
-
- ; can write the next record, so continue
- DiskWrite1:
-	CALL	GetBlockNumber					; sets up actual block number
-	CALL	WasBlockAllocated
-	LD		C,WriteAllocated				; assume a normal write operation for WriteBuffer
-	JP	NZ,DiskWrite3
- ; not allocated -
- ; the argument to getblock is the starting position for the disk search
- ; and should be the last allocated block for this file,
- ; or the value 0 if no space has been allocated
-
-	CALL	GetDiskMapIndex					; return with Disk Map index in Acc
-	LD		(diskMapIndex),A					; save for later
-	LD		BC,0000h						; may use block zero
-	OR		A
-	JP	Z,FirstBlock						; skip if no previous block
- ; previous block exists
-	LD		C,A
-	DEC		BC								; previous block # in BC
-	CALL	GetDiskMapValue					; previous block # to HL
-	LD		B,H
-	LD		C,L								; BC=prev block#
- ; BC = 0000, or previous block #
- FirstBlock:
-;	CALL	GetClosestBlockXX					; block # to HL
-	CALL	GetClosestBlock
- ; arrive here with block# or zero
-	LD		A,L
-	OR		H
-	JP	NZ,BlockOK
- ; cannot find a block to allocate
-	LD		A,2
-	LD		(exitParameterByte),A
-	RET										; exitParameterByte=2
-
- BlockOK:
-	LD	(absoluteCPMRecord),HL					; allocated block number is in HL
-	EX	DE,HL ; block number to DE
-	LD	HL,(paramDE)
-	LD		BC,fcbDiskMapIndex
-	ADD		HL,BC								; HL=.fcb(fcbDiskMapIndex)
-	LD		A,(byteAllocationFlag)
-	OR		A								; set flags for byteAllocationFlag byte dm
-	LD		A,(diskMapIndex)					; recall dm index
-	JP	Z,Allocate16Bit					; skip if allocating word
- ; else allocate using a byte value
-	CALL	AddAtoHL
-	LD		(HL),E								; byteAllocationFlag byte alloc
-	JP		DiskWrite2						; to continue
-
- Allocate16Bit:								; allocate a word value
-
-	LD		C,A
-	LD		B,0								; double(diskMapIndex)
-	ADD		HL,BC
-	ADD		HL,BC								; HL=.fcb(diskMapIndex*2)
-	LD		(HL),D
-	INC		HL
-	LD		(HL),E								; double wd
- ; disk write to previously unallocated block
- DiskWrite2:
-	LD		C,WriteCleanBuffer				; marked as unallocated write
-	CALL	ResetFileWriteFlag
- ; continue the write operation of no allocation error
- ; C = 0 if normal write, 1 if directory write, 2 if to prev unalloc block
-
- DiskWrite3:
-	LD		A,(exitParameterByte)
-	OR		A
-	RET	NZ; stop if non zero returned value
-
-	PUSH	BC								; save write flag ( in C see above)
-	CALL	SetActualRecordAdd				; Absolute CPM Record set to actual record number
-	CALL	Seek							; to proper file position
-	POP		BC								; get write flag
-	PUSH	BC								; restore/save write flag (C=2 if new block)
-	CALL	WriteBuffer						; written to disk
-	POP		BC								; C = 2 if a new block was allocated, 0 if not
-											; increment record count if fcbRecordCount<=current File Record
-	LD		A,(currentFileRecord)
-	LD		HL,fcbRecordCount
-	CP		M 								; current File Record-fcbRecordCount
-	JP	C,DiskWrite4
- ; fcbRecordCount <= current File Record
-	LD		(HL),A
-	INC		M								; fcbRecordCount = current File Record+1
-	LD		C,2								; mark as record count incremented
- DiskWrite4:
- ; A has current File Record, C=2 if new block or new record#
-	DEC		C
-	DEC		C
-	JP	NZ,DiskWrite5
-	PUSH	AF								; save current File Record value
-	CALL	GetExtentNumberMSB					; HL=.fcb(fcbS2Index), A=fcb(fcbS2Index)
- ; reset the file write flag to mark as written fcb
-	AND		7FH								; not writeFlagMask
-	LD		(HL),A								; fcb(fcbS2Index) = fcb(fcbS2Index) and 7fh
-	POP		AF								; restore current File Record
- DiskWrite5:
- ; check for end of extent, if found attempt to open next extent in preparation for next write
-	CP		highestRecordNumber				; current File Record=highestRecordNumber?
-	JP	NZ,DiskWrite7						; skip if not
- ; may be random access write, if so we are done
-	LD		A,(seqDiskIOFlag)
-	OR		A
-	JP	Z,DiskWrite7						; skip next extent open op
- ; update current fcb before going to next extent
-	CALL	UpdateRecordVariables				;update variables from I/O in  fcb
-	CALL	OpenNextExt						; readModeFlag=false
- ; current File Record remains at highestRecordNumber causing eof if no more directory space is available
-	LD		HL,exitParameterByte
-	LD		A,(HL)
-	OR		A
-	JP	NZ,DiskWrite6						; no space
- ; space available, set current File Record=255
-	DEC		A
-	LD		(currentFileRecord),A						; goes to 00 next time
- DiskWrite6:
-	LD		(HL),0								; exitParameterByte = 00 for returned value
- DiskWrite7:
-	JP		UpdateRecordVariables				; update variables from I/O in  fcb
-	;ret
- ;-----------------------------------------------------------------
- ;close the current extent  and open the next one if possible.
- ;readModeFlag is true if in read mode
- OpenNextExt:					; open$reel
-	XOR		A
-	LD		(fcbCopiedFlag),A					; set true if actually copied
-	CALL	CloseDirEntry					; close current extent
- ; exitParameterByte remains at enddir if we cannot open the next ext
-	CALL	AtEndOfDirectory
-	RET	Z; return if end
-	LD	HL,(paramDE)							; increment extent number
-	LD		BC,fcbExtIndex
-	ADD		HL,BC								; HL=.fcb(fcbExtIndex)
-	LD		A,(HL)
-	INC		A
-	AND		maxExtValue
-	LD		(HL),A								; fcb(fcbExtIndex)=++1
-	JP	Z,OpenNextModule					; move to next module if zero
-											; may be in the same extent group
-	LD		B,A
-	LD		A,(dpbEXM)
-	AND		B
- ; if result is zero, then not in the same group
-	LD		HL,fcbCopiedFlag				; true if the fcb was copied to directory
-	AND		M 								; produces a 00 in accumulator if not written
-	JP	Z,OpenNextExt1					; go to next physical extent
-											; result is non zero, so we must be in same logical ext
-	JP		OpenNextExt2					; to copy fcb information
- ; extent number overflow, go to next module
-
- OpenNextModule:
-	LD		BC,fcbS2Index-fcbExtIndex	;RATS
-	ADD		HL,BC								; HL=.fcb(fcbS2Index)
-	INC		M								; fcb(fcbS2Index)=++1
-											; module number incremented, check for overflow
-	LD		A,(HL)
-	AND		moduleMask						; mask high order bits
-	JP	Z,OpenNextExtError				; cannot overflow to zero
- ; otherwise, ok to continue with new module
-
- OpenNextExt1:
-	LD		C,nameLength
-	CALL	SearchForDirectoryRecord				; next extent found?
-	CALL	AtEndOfDirectory
-	JP	NZ,OpenNextExt2
- ; end of file encountered
-	LD		A,(readModeFlag)
-	INC		A								; 0ffh becomes 00 if read
-	JP	Z,OpenNextExtError				; sets exitParameterByte = 1
- ; try to extend the current file
-	CALL	MakeNewFile
- ; cannot be end of directory
-	CALL	AtEndOfDirectory
-	JP	Z,OpenNextExtError				; with exitParameterByte = 1
-	JP		OpenNextExt3
-
- ; not end of file, open
- OpenNextExt2:
-	CALL	CopyDirRecordToFCB
- OpenNextExt3:
-	CALL	SetRecordVars					; Set Record parameters
-	XOR		A
-	LD		(exitParameterByte),A					; exitParameterByte = 0
-	RET										; with exitParameterByte = 0
-
- ; cannot move to next extent of this file
- OpenNextExtError:
-	CALL	SetExitParamTo1					; exitParameterByte = 1
-	JP		SetFileWriteFlag				; ensure that it will not be closed
  ;-----------------------------------------------------------------
  ;-----------------------------------------------------------------
 
@@ -3770,13 +3770,15 @@ emptyFCB:			DB	emptyDir			; efcb 0E5 = available dir entry
  ;
 
  ;     ************************
+SEQ_ACCESS			EQU		01H			; Indicates sequential access to file
+RANDOM_ACCESS		EQU		00H			; Indicates random access to file
+diskAccessType:		DB		00H			; Set to 1 if sequential disk operation
 
  caSkewTable:		DW	0000H				; tranv address of translate vector
  fcbCopiedFlag:		DB	00H					; fcb$copied set true if CopyFCB called
- readModeFlag:		DB	00H					; rmf read mode flag for OpenNextExt
+ readModeFlag:		DB	00H					; rmf read mode flag for Open NextExt
  directoryIndex:		DB	00H					; dirloc directory flag in rename, etc.
- seqDiskIOFlag:		DB	00H					; Set to 1 if sequential disk operation
- diskMapIndex:		DB	00H					; dminx  local for DiskWrite
+ diskMapIndex:		DB	00H					; dminx  local for Disk_Write
  searchLength:		DB	00H					; searchl search length
  searchAddress:		DW	0000H				; searcha search address
  ;tinfo:	ds	word							; temp for info in "make"
