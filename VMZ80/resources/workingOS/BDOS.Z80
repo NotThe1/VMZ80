@@ -1,7 +1,7 @@
 ;     File created by MakeZ80Source on Tue Sep 18 12:41:03 EDT 2018 from:
 ;     C:\Users\admin\Dropbox\Resources\CPM\CurrentOS\8080\BDOSX.asm
  ; BDOS.Z80
- ;  in process vWriteSeq - 15 (21)
+ ;  in process vReadRandom - 21 (33)
 
  ; 2019-02-04 Fixed bdosStack problem 
  ; 2019-01-10	Last rev before remaking  FInd nearest Block
@@ -42,7 +42,6 @@ bcWrite		EQU		BIOSStart+3*14		; Write Disk function                ;
 bcListst	EQU		BIOSStart+3*15		; List Status function               ;
 bcSectran	EQU		BIOSStart+3*16		; Sector Translate                   ;
 ;************************ BIOS Function Constants ***************************;
-
 ;============================================================================;
 ;	BDOS                                                                     ;
 ; Calling into   :                                                           ;
@@ -1701,7 +1700,77 @@ vGetDiskParamBlock:							; func31 (31 - 1F)
 	LD		HL,(caDiskParamBlock)
 	LD		(exitParameterWord),HL
 	RET
- 
+
+;------------------------- Read Random - 21 (33) ---------------------------;
+; This function reads a specific CP/M record (128 bytes) from a random file ;
+; that is, a file in which records can be accessed directly. It assumes that;
+; you have already opened the file, set the DMA address using the BDOS      ;
+; Set DMA function, and set the specific record to be read into the random  ;
+; record number in the FCB. This function computes the extent of the        ;
+; specified record number and attempts to open it and read the correct CP/M ;
+; record into the DMA address.                                              ;
+;  The random record number in the FCB is three bytes long (at relative     ;
+; bytes 33, 34, and 35). Byte 33 is the least significant byte, 34 is the   ;
+; middle byte, and 35 the most significant. CP/M uses only the most         ;
+; significant byte (35) for computing the overall file size (function 35).  ;
+; You must set this byte to 0 when setting up the FCB. Bytes 33 and 34      ;
+; are used together for the Read Random, so you can access from record      ;
+; 0 to 65535 (a maximum file size of 8,388,480 bytes).                      ;
+;  This function returns with A set to 0 to indicate that the operation has ;
+; been completed successfully, or A set to a nonzero value if an error has  ;
+; occurred. The error codes are as follows:                                 ;
+;		A = 01 (attempt to read unwritten record)                           ;
+;		A = 03 (CP/M could not close current extent)                        ;
+;		A = 04 (attempt to read unwritten extent)                           ;
+;		A = 06 (attempt to read beyond end of disk)                         ;
+;		                                                                    ;
+;  Unlike the Read Sequential BOOS function (code 20, l4H), which updates   ;
+; the current (sequential) record number in the FCB, the Read Random        ;
+; function leaves the record number unchanged, so that a subsequent Write   ;
+; Random will replace the record just read.                                 ;
+;  You can follow a Read Random with a Write Sequential (code 21, l5H).     ;
+; This will rewrite the record just read, but will then update the          ;
+; sequential record number. Or you may choose to use a Read Sequential after;
+; the Read Random. In this case, the same record will be reread and the     ;
+; sequential record number will be incremented. In short, the file can be   ;
+; sequentially read or written once the Read Random has been used to        ;
+; position to the required place in the file.                               ;
+;                                                                           ;
+; To use the Read Random function, you must first open the base extent of   ;
+; the file, that is, extent O. Even though there may be no actual data      ;
+; records in this extent, opening permits the file to be processed          ;
+; correctly.                                                                ;
+;  One problem that is not immediately obvious with random files is that    ;
+; they can easily be created with gaps in the file. If you were to create   ;
+; the file with record number 0 and record number 5000, there would be no   ;
+; intervening file extents. Should you attempt to read or copy the file     ;
+; sequentially, even using CP/M's file copy utility, only the first extent  ;
+; (and in this case, record 0) would get copied. A Read Sequential function ;
+; would return an "end of file" error after reading record O. You must      ;
+; therefore be conscious of the type of the file that you try and read.     ;
+;                                                                           ;
+;                                                                           ;
+;                                                                           ;
+;			Function Code	:   C  = 21H                                    ;
+;			Entry Parameters:  DE = Address of File Control Block			;
+;			Exit Parameters :	A = 01 (attempt to read unwritten record)   ;
+;								A = 03 (CP/M could not close current extent);
+;								A = 04 (attempt to read unwritten extent)   ;
+;								A = 05 (CP/M cannot create new extent)		;
+;								A = 06 (attempt to read beyond end of disk) ;
+;																			;
+;------------------------- Read Random - 21 (33) ---------------------------;
+ vReadRandom:
+	CALL	ReselectDisk				; Reselect if needed	
+;	JP		RandomDiskRead
+
+RandomDiskRead:
+	LD		C,TRUE						; Identify as a Read
+	CALL	RandomSeek					; Set up correct Dir entry etc.
+	CALL	Z,DiskRead					; Go Read
+	RET
+
+
 ;------------------------- Get File Size - 23 (35) -------------------------;
 ;  This function returns the virtual size of the specified file. It does so ;
 ; by setting the random record number (bytes 33-35) in the specified FCB to ;
@@ -1854,18 +1923,6 @@ vGetDiskParamBlock:							; func31 (31 - 1F)
 ;-----------------------------------------------------------------
 
  ;*****************************************************************
- ;random disk read
- ;IN  - (DE) FCB address
- ;OUT - (A) 01 = Reading unwritten data
- ;	 02 = N/U
- ;	 03 = Cannot close current extent
- ;	 04 = Seek to unwriten Extent
- ;	 05 = N/U
- ;	 06 = Seek past Physical end of Disk
- vReadRandom:								; func33 (33 - 21) Read Random record
-	CALL	ReselectDisk
-	JP		RandomDiskRead					; to perform the disk read
- ;*****************************************************************
  ;write random record
  ;IN  - (DE) FCB address
  ;OUT - (A) 01 = Reading unwritten data
@@ -1896,12 +1953,6 @@ vGetDiskParamBlock:							; func31 (31 - 1F)
  ;*****************************************************************
  ;******************< Random I/O Stuff ****************************
  ;*****************************************************************
- ;random disk read
- RandomDiskRead:								; randiskread
-	LD		C,TRUE							; marked as read operation
-	CALL	RandomSeek
-	CALL	Z,DiskRead						; if seek successful
-	RET
  ;*****************************************************************
  ;random disk write
  RandomDiskWrite:							; randiskwrite
@@ -1910,117 +1961,6 @@ vGetDiskParamBlock:							; func31 (31 - 1F)
 	CALL	Z,DiskWrite						; if seek successful
 	RET
  ;*****************************************************************
- ;*****************************************************************
- ;random access seek operation, C=0ffh if read mode
- ;fcb is assumed to address an active file control block
- ;(fcbS2Index has been set to 11000000b if previous bad seek)
- RandomSeek:
-  	XOR		A
-	LD		(diskAccessType),A						; marked as random access operation
-	PUSH	BC								; save r/w flag
-	LD	HL,(paramDE)
-	EX	DE,HL ; DE will hold base of fcb
-	LD		HL,recordRandom
-	ADD		HL,DE								; HL=.fcb(RANDOM_REC_FIELD)
-	LD		A,(HL)
-	AND		7FH
-	PUSH	AF								; record number
-	LD		A,(HL)
-	RLA										; cy=lsb of extent#
-	INC		HL
-	LD		A,(HL)
-	RLA
-	AND		11111B							; A=ext#
-	LD		C,A								; C holds extent number, record stacked
-	LD		A,(HL)
-	RRA
-	RRA
-	RRA
-	RRA
-	AND		1111B							; mod#
-	LD		B,A								; B holds module#, C holds ext#
-	POP		AF								; recall sought record #
-											;check to insure that high byte of ran rec = 00
-	INC		HL
-	LD		L,(HL)								; l=high byte (must be 00)
-	INC		L
-	DEC		L
-	LD		L,06							; zero flag, l=6
-											; produce error 6, seek past physical eod
-	JP	NZ,RandomSeekError
-											; otherwise, high byte = 0, A = sought record
-	LD		HL,recordSeq
-	ADD		HL,DE								; HL = .fcb(NEXT_RECORD)
-	LD		(HL),A								; sought rec# stored away
-											; arrive here with B=mod#, C=ext#, DE=.fcb, rec stored
-											; the r/w flag is still stacked.  compare fcb values
-	LD		HL,fcbExtIndex						; extent number field
-	ADD		HL,DE
-	LD		A,C								; A=seek ext#
-	SUB		M
-	JP	NZ,RandomSeekClose					; tests for = extents
-											; extents match, check mod#
-	LD		HL,fcbS2Index
-	ADD		HL,DE
-	LD		A,B								; B=seek mod#
-											; could be overflow at eof, producing module#
-											; of 90H or 10H, so compare all but fwf
-	SUB		M
-	AND		7FH
-	JP	Z,RandomSeekExit				; same?
- RandomSeekClose:
-	PUSH	BC
-	PUSH	DE								; save seek mod#,ext#, .fcb
-	CALL	CloseDirEntry					; current extent closed
-	POP		DE
-	POP		BC								; recall parameters and fill
-	LD		L,03							; cannot close error #3
-	LD		A,(exitParameterByte)
-	INC		A
-	JP	Z,RandomSeekErrorBadSeek
-	LD		HL,fcbExtIndex
-	ADD		HL,DE
-	LD		(HL),C								; fcb(fcbExtIndex)=ext#
-	LD		HL,fcbS2Index
-	ADD		HL,DE
-	LD		(HL),B								; fcb(fcbS2Index)=mod#
-	CALL	OpenFile						; is the file present?
-	LD		A,(exitParameterByte)
-	INC		A
-	JP	NZ,RandomSeekExit					; open successful?
-											; cannot open the file, read mode?
-	POP		BC								; r/w flag to c (=0ffh if read)
-	PUSH	BC								; everyone expects this item stacked
-	LD		L,04							; seek to unwritten extent #4
-	INC		C								; becomes 00 if read operation
-	JP	Z,RandomSeekErrorBadSeek			; skip to error if read operation
-	CALL	MakeNewFile						; write operation, make new extent
-	LD		L,05							; cannot create new extent #5
-	LD		A,(exitParameterByte)
-	INC		A
-	JP	Z,RandomSeekErrorBadSeek			; no dir space
- ; file make operation successful
- RandomSeekExit:								; seekok:
-	POP		BC								; discard r/w flag
-	XOR		A
-	LD		(exitParameterByte),A
-	RET										; with zero set
-
- RandomSeekErrorBadSeek:
- ; fcb no longer contains a valid fcb, mark with 11000000b in fcbS2Index field so that it
- ; appears as overflow with file write flag set
-	PUSH	HL								; save error flag
-	CALL	GetExtentNumberMSB					; HL = .fcbS2Index
-	LD		(HL),11000000B
-	POP		HL								; and drop through
- RandomSeekError:							; seekerr:
-	POP		BC								; discard r/w flag
-	LD		A,L
-	LD		(exitParameterByte),A					; exitParameterByte=#, nonzero
- ; SetFileWriteFlag returns non-zero accumulator for err
-	JP		SetFileWriteFlag				; flag set, so subsequent close ok
-	;ret
- ;
  ;*****************************************************************
  ;*****************************************************************
 ;--------------------------- Get Random Record Position --------------------;
@@ -2827,6 +2767,99 @@ WriteBuffer:                                                                ;
 	LD		(HL),A						;  and FCB RC                       ;
 	RET                                                                     ;
 ;---------------------------- Update Record Vars ---------------------------;
+;-------------------------------- Random Seek ------------------------------;
+;  Record # = |000M EEEE| |ERRR RRRR|                                       ;
+;		M => Module                                                         ;
+;		E => Extent                                                         ;
+;		R => Record in Extent                                               ;
+RandomSeek:                                                                 ;
+	XOR		A                                                               ;
+	LD		(diskAccessType),A			; Set random access                 ;
+	PUSH	BC							; Save Read(TRUE) / Write (FALSE)   ;
+	LD		HL,(paramDE)				; Get the FCB                       ;
+	PUSH	HL                                                              ;
+	POP		IX							; IX has the FCB address            ;
+	LD		A,(IX +recordRandomLSB)		; Get LSB from Random Record        ;
+	AND		7FH							; Strip E , left with |0RRR RRRR|   ;
+	PUSH	AF							; recordSEQ                         ;
+	LD		A,(IX +recordRandomLSB)		; Get LSB from Random Record        ;
+	RLA									; CY = bit 7 from LSB (M's LSBit)   ;
+	LD		A,(IX +recordRandomMSB)		; Get MSB from Random Record        ;
+	PUSH	AF							; Random record's MSB               ;
+	RLA									; Shift LSBit into E |00ME EEEE|    ;
+	AND		01FH						; Extent mask                       ;
+	LD		C,A							; Extent is in C                    ;
+	POP		AF							; Random record's MSB               ;
+	RRA                                                                     ;
+	RRA                                                                     ;
+	RRA                                                                     ;
+	RRA									; MSB's Hi Nibble                   ;
+	AND		00FH						;  moved to Lo Nibble               ;
+	LD		B,A							; S2' value in B                    ;
+	POP		AF							; recordSEQ                         ;
+	                                                                        ;
+	LD		L,(IX + recordRandomOVF)                                        ;
+	INC		L							; Insure that high byte             ;
+	DEC		L							;  of ran rec = 00                  ;
+	LD		L,06					; "attempt to read beyond end of disk"  ;
+	JP		NZ,RandomSeekError                                              ;
+                                                                            ;
+	LD		(IX + recordSeq),A			; Put target record # in FCB	    ;
+	LD		A,(IX + fcbExtIndex)		; Target EXT in A, FCB EXT in C     ;
+	CP		C							; Are we in the right directory ?	;
+	JP		NZ,RandomSeekClose			;  Skip if not                      ;
+											                                ;
+	LD		A,(IX + fcbS2Index)			; Target S2 in A, FCB S2 in C       ;
+	CP		B							; Still in the right directory ?    ;
+	AND		7FH							; Mask out MSBit                    ;
+	JP		Z,RandomSeekExit			;  Exit if yes                      ;
+	                                                                        ;
+RandomSeekClose:                                                            ;
+	PUSH	BC							; Save EXT                          ;
+	PUSH	DE							; Save FCB                          ;
+	CALL	CloseDirEntry				; Close this directory entry        ;
+	POP		DE							; FCB                               ;
+	POP		BC							; EXT                               ;
+	LD		L,03					; "CP/M could not close current extent" ;
+	LD		A,(exitParameterByte)		; Get result from Close             ;
+	INC		A                                                               ;
+	JP		Z,RandomSeekErrorBadSeek	; Error exit if 0FFH                ;
+	                                                                        ;
+	LD		(IX + fcbExtIndex),C		; Update FCB Ext value              ;
+	LD		(IX + fcbS2Index),B			; Update FCB S2 value               ;
+	CALL	OpenFile					; Open the targeted Dir entry       ;
+	LD		A,(exitParameterByte)		; is the file present?              ;
+	INC		A                                                               ;
+	JP		NZ,RandomSeekExit			; Exit if open successful	        ;
+; cannot open the file, read mode?                                          ;
+	POP		BC							; Get Read/Write flag               ;
+	PUSH	BC							; Read/Write flag                   ;
+	LD		L,04					; "attempt to read unwritten extent"    ;
+	INC		C							; Becomes 00 if read operation      ;
+	JP		Z,RandomSeekErrorBadSeek	; Error exit if read operation      ;
+	                                                                        ;
+	CALL	MakeNewFile					; Make Directory Entry              ;
+	LD		L,05						; "cannot create new extent"        ;
+	LD		A,(exitParameterByte)		; Get result from Make              ;
+	INC		A                                                               ;
+	JP		Z,RandomSeekErrorBadSeek	;  Exit if failed on Make           ;
+                                                                            ;
+RandomSeekExit:                                                             ;
+	POP		BC							; Balance Stack                     ;
+	XOR		A							; Success                           ;
+	LD		(exitParameterByte),A                                           ;
+	RET	                                                                    ;
+                                                                            ;
+RandomSeekErrorBadSeek:                                                     ;
+	LD		(IX + fcbS2Index),0C0H		; Set Write protect & overflow      ;
+RandomSeekError:                                                            ;
+	POP		BC							; Balance Stack                     ;
+	LD		A,L							; Get error code                    ;
+	LD		(exitParameterByte),A		;  and return it to caller          ;
+	JP		SetFileWriteFlag			; Set flag for following close      ;
+;-------------------------------- Random Seek ------------------------------;
+
+
 
 ; FU
 ;=========================== File Utilities ================================;
@@ -3709,9 +3742,12 @@ ReAlignMap1:                                                                 ;
  writeFlagMask		EQU		80h				; file write flag is high order fcbS2Index
  nameLength			EQU		15				;  name length
 
- emptyDir			EQU		0E5H			; empty empty directory entry
- recordSeq			EQU		fcbLength		; nxtrec
- recordRandom		EQU		recordSeq + 1	;ranrec random record field (2 bytes)
+emptyDir			EQU		0E5H			; empty empty directory entry
+recordSeq			EQU		fcbLength		; Next Sequential Record
+recordRandom		EQU		recordSeq + 1	; Random record field (2 bytes)
+recordRandomLSB		EQU		recordRandom 	; LSB of Random Record
+recordRandomMSB		EQU		recordRandom + 1	; MSB of Random Record
+recordRandomOVF		EQU		recordRandom + 2	; Random Record Overflow
  ;
  ;	reserved file indicators
  ;	equ	11				; reserved
