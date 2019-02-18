@@ -1,7 +1,7 @@
 ;     File created by MakeZ80Source on Tue Sep 18 12:41:03 EDT 2018 from:
 ;     C:\Users\admin\Dropbox\Resources\CPM\CurrentOS\8080\BDOSX.asm
  ; BDOS.Z80
- ;  in process vReadRandom - 21 (33)
+ ;  in process Clean up
 
  ; 2019-02-04 Fixed bdosStack problem 
  ; 2019-01-10	Last rev before remaking  FInd nearest Block
@@ -721,31 +721,31 @@ ReadNext0:                                                                   ;
 	POP		BC							; Restore Current Index and Max Count;
 ;Is It Carriage Return                                                       ;
 	CP		CR                                                               ;
-	JP		Z,EndRead					; End the read if yes                ;
+	JR		Z,EndRead					; End the read if yes                ;
 	CP		LF                                                               ;
 ;Is It Linefeed                                                              ;
-	JP		Z,EndRead					; End the read if yes                ;
+	JR		Z,EndRead					; End the read if yes                ;
 ;Is It BackSpace                                                             ;
 	CP		CTRL_H															 ;
-	JP		Z,BSspaceBS	                                                     ;
+	JR		Z,BSspaceBS	                                                     ;
 IsItRubout:                                                                  ;
 	CP		RUBOUT						; Non destructive delete             ;
-	JP		Z,ItIsRubout                                                     ;
+	JR		Z,ItIsRubout                                                     ;
 IsPhysicalEOL:                                                               ;
 	CP		CTRL_E                                                           ;
-	JP		Z,ItIsPhysicalEOL	                                             ;
+	JR		Z,ItIsPhysicalEOL	                                             ;
 IsItPrintToggle:                                                             ;
 	CP		CTRL_P                                                           ;
-	JP		Z,ItIsPrintToggle	                                             ;
+	JR		Z,ItIsPrintToggle	                                             ;
 IsItDeleteTheLineX:                                                          ;
 	CP		CTRL_X                                                           ;
-	JP		Z,DeleteTheLine				; If CTRL_X go delete the line       ;
+	JR		Z,DeleteTheLine				; If CTRL_X go delete the line       ;
 IsItDeleteTheLineU:                                                          ;
 	CP		CTRL_U                                                           ;
 	JP		Z,IgnoreTheLine				; If CTRL_U ignore the line          ;
 ;Retype the line                                                             ;
 	CP		CTRL_R 														  	 ;
-	JP		Z,RepeatLine                                                     ;
+	JR		Z,RepeatLine                                                     ;
 
 ;....................... Echo input back to the Console  ....................;
 ; Full Duplex								                                 ;
@@ -769,13 +769,13 @@ ReadEchoRubOut:                                                              ;
 ; check for Warm Boot                                                        ;
 	CP		CTRL_C                                                           ;
 	LD		A,B							; Get Line position                  ;
-	JP		NZ,AreWeAtEndOfBuffer		; Skip if not CTRL_C                 ;
+	JR		NZ,AreWeAtEndOfBuffer		; Skip if not CTRL_C                 ;
 	CP		1							; Beginning of the Line?             ;
 	JP		Z,WarmBoot					;   if yes do the Boot               ;
 ; Check to see if we are at the end of the buffer                            ;
 AreWeAtEndOfBuffer:                                                          ;
 	CP		C							; Over Max ?					     ;
-	JP		C,ReadNext					;  no, Go for more				     ;
+	JR		C,ReadNext					;  no, Go for more				     ;
 																			 ;
 ; At the end of read                                  					     ;
 EndRead:                                                                     ;
@@ -794,26 +794,26 @@ BSspaceBS:				  													 ;
 	PUSH	BC                                                               ;
 	PUSH	HL                                                               ;
 	CALL	BackUp                                                           ;
-	JP		ReadNext0                                                        ;
+	JR		ReadNext0                                                        ;
 ;.......................... Backspace SPACE BackSpace .......................;	
 ;.......................... It is RubOut ....................................;
 ItIsRubout:                                                                  ;
 ; RUBOUT if possible                                                         ;
 	LD		A,B							; Are we at the start of the line    ;
 	OR		A                                                                ;
-	JP		Z,ReadNext					; then ignore and go for next char   ;
+	JR		Z,ReadNext					; then ignore and go for next char   ;
 ;adjust pointers back one                                                    ;
 	LD		A,(HL)                      ; ACC = current character            ;
 	DEC		B							; Adjust the index			    	 ;
 	DEC		HL							; Adjust the pointer                 ;
-	JP		ReadEchoRubOut				; Echo back - Full Duplex            ;
+	JR		ReadEchoRubOut				; Echo back - Full Duplex            ;
 ;.......................... It is RubOut ....................................;
 ;.......................... It is PhysicalEOL ...............................;
 ItIsPhysicalEOL:                                                             ;
 	PUSH	BC							; Save Current Index and Max Count   ;
 	PUSH	HL							; Save pointer                       ;
 	CALL	showCRLF					; Make new line                      ;
-	JP		ReadNext0					;   and go for next char   			 ;
+	JR		ReadNext0					;   and go for next char   			 ;
 ;.......................... It is PhysicalEOL ...............................;
 ;.......................... It is PrintToggle ...............................;
 ItIsPrintToggle:															 ;
@@ -827,7 +827,7 @@ ItIsPrintToggle:															 ;
 IsItPrintToggle1:                                                            ;
 	LD		(HL),A						; Set the Flags new Value	         ;
 	POP		HL							; Restore pointer                    ;
-	JP		ReadNext					;   and for another char             ;
+	JR		ReadNext					;   and for another char             ;
 ;.......................... It is PrintToggle ...............................;
 ;.......................... RepeatLine ......................................;
 RepeatLine:                                                                  ;
@@ -1059,7 +1059,7 @@ vResetSystem:
 	LD		HL,(paramDE)				; Get the FCB
 	LD		A,(HL)						; DIsk/User No
 	CP		QMARK						; Does it contain '?' ?
-	JP		Z,QMarkFind					;  if Yes, skip disk reselect
+	JR		Z,QMarkFind					;  if Yes, skip disk reselect
 										;  and reset of EXT
 										
 	CALL	InitializeExtentNumberMSB	; Set Ext to 0
@@ -1230,19 +1230,19 @@ DiskRead:
 	JP		C,RecordOK					; skip if  yes
  ; not enough records in the extent
 	CP		RecordsPerExtent			; Is record count the Max ?
-	JP		NZ,NothingRead					;  No, Exit with EOF
+	JR		NZ,NothingRead					;  No, Exit with EOF
 	
 	CALL	OpenNextExt					; Need to open the next extent
 	XOR		A
 	LD		(currentFileRecord),A		; Reset the record count
 	LD		A,(exitParameterByte)		; Was it a good Open
 	OR		A
-	JP		NZ,NothingRead					;  exit if No
+	JR		NZ,NothingRead					;  exit if No
 	
  RecordOK:
 	CALL	GetBlockNumber				; Put it in absoluteCPMRecord
 	CALL	WasBlockAllocated			; Was it a good Allocation ?
-	JP		Z,NothingRead					; get out if not allocated 
+	JR		Z,NothingRead					; get out if not allocated 
 	
 	CALL	SetActualRecordAdd			; Absolute CPM Record
 	CALL	Seek						; Go to proper track,sector
@@ -1356,7 +1356,7 @@ FoundAvailableBlock:
 	JR		Z,Allocate16Bit				; Skip if allocating word
 
 	LD		(HL),E						; Update the Map
-	JP		MarkNewBlock				; Skip 16 bit calculations
+	JR		MarkNewBlock				; Skip 16 bit calculations
 
 Allocate16Bit:
 	ADD		HL,BC						; Adjust for 16 bit value
@@ -1385,7 +1385,7 @@ HaveWriteBlock:
 	LD		A,(currentFileRecord)		; Get the current record
 	LD		HL,fcbRecordCount			; Get the starting FCB record count
 	CP		M							; Current File Record > fcbRecordCount
-	JP		C,DiskWrite1				;  skip if yes
+	JR		C,DiskWrite1				;  skip if yes
  	LD		(HL),A						; update the FCB RC
 	INC		M							; fcbRecordCount = current File Record+1
 	LD		C,WriteCleanBuffer			; Marked as unallocated write
@@ -1393,7 +1393,7 @@ DiskWrite1:
 ; A has current File Record, C=2 if new block or new record#
 	DEC		C
 	DEC		C							; Check if C = unallocated write
-	JP		NZ,DiskWrite2				; Skip if C not unallocated write
+	JR		NZ,DiskWrite2				; Skip if C not unallocated write
 	PUSH	AF							; currentFileRecord
 	CALL	GetWriteFileFlagValue		; HL points to FCB s2
 	RES		7,(HL)						; Reset WriteFileFlag
@@ -1402,18 +1402,18 @@ DiskWrite2:
 ; check for end of extent, if found attempt
 ; to open next extent in preparation for next write
 	CP		highestRecordNumber			; Space for more records ?
-	JP		NZ,DiskWriteCleanup			;  finish up if Yes
+	JR		NZ,DiskWriteCleanup			;  finish up if Yes
 
 	LD		A,(diskAccessType)			; Is this using Random Access
 	OR		A
-	JP		Z,DiskWriteCleanup			;  finish up if Yes
+	JR		Z,DiskWriteCleanup			;  finish up if Yes
 
 	CALL	UpdateRecordVariables		; Update variables from I/O in  FCB
 	CALL	OpenNextExt					; Acc = 0 OK, Acc = 1 Failed
 	LD		HL,exitParameterByte
 	LD		A,(HL)						; Put Open  result in parameter
 	OR		A							; Is it 00
-	JP		NZ,DiskWriteCleanup0		;  no, skip currentRecord update
+	JR		NZ,DiskWriteCleanup0		;  no, skip currentRecord update
 	DEC		A							; A gets FF
 	LD		(currentFileRecord),A		; Update currentFileRecord
 	
@@ -1496,7 +1496,7 @@ RenameLoop:
 	CALL	CopyDir						; copy from FCB to dir entry
 ; element renamed, look for more
 	CALL	GetNextDirectoryRecord		; Look for more dir entries
-	JP		RenameLoop					; Loop
+	JR		RenameLoop					; Loop
 
 ;---------------------------- Get Active Disks - 18 (24) --------------------;
 ; This function returns a bit map, called the login vector, in register pair ;
@@ -1683,7 +1683,7 @@ SetAttributesLoop:
 	LD		E,fcbExtIndex				; Set Length
 	CALL	CopyDir						; copy from FCB to dir entry
 	CALL	GetNextDirectoryRecord		; Go find the next directory record
-	JP		SetAttributesLoop			; Loop
+	JR		SetAttributesLoop			; Loop
 	
 ;------------------ Get Disk Parameter Block Address - 1F (31) --------------;
 ;  This function returns the address of the disk parameter block (DPB) for   ;
@@ -1756,21 +1756,60 @@ vGetDiskParamBlock:							; func31 (31 - 1F)
 ;			Exit Parameters :	A = 01 (attempt to read unwritten record)   ;
 ;								A = 03 (CP/M could not close current extent);
 ;								A = 04 (attempt to read unwritten extent)   ;
-;								A = 05 (CP/M cannot create new extent)		;
 ;								A = 06 (attempt to read beyond end of disk) ;
 ;																			;
 ;------------------------- Read Random - 21 (33) ---------------------------;
  vReadRandom:
 	CALL	ReselectDisk				; Reselect if needed	
-;	JP		RandomDiskRead
 
-RandomDiskRead:
 	LD		C,TRUE						; Identify as a Read
 	CALL	RandomSeek					; Set up correct Dir entry etc.
 	CALL	Z,DiskRead					; Go Read
 	RET
-
-
+;------------------------- Write Random - 22 (34) --------------------------;
+; This function writes a specific CP/M record (128 bytes) into a random     ;
+; file. It is initiated in much the same way as the companion function,     ;
+; Read Random (code 33,21H). It assumes that you have already opened the    ;
+; file, set the DMAaddress to the address in memory containing the record to;
+; be written to disk, and set the random record number in the FCB to the    ;
+; specified record being written. This function also computes the extent in ;
+; which the specified record number lies and opens the extent (creating it  ;
+; if it does not already exist). The error codes returned in A by this call ;
+; are the same as those for Read Random, with the addition of error         ;
+; code 05, which indicates a full directory.                                ;
+;  Like the Read Random (but unlike the Write Sequential), this function    ;
+; does not update the logical extent and sequential (current) record number ;
+; in the FCB. Therefore, any subsequent sequential operation will access    ;
+; the record just written by the Read Random call, but these functions will ;
+; update the sequential record number. The Write Random can therefore be    ;
+; used to position to the required place in the file, which can then be     ;
+; accessed sequentially.                                                    ;
+;                                                                           ;
+;  In order to use the Write Random, you must first open the base extent    ;
+; (extent 0) of the file. Even though there may be no data records in this  ;
+; extent, opening permits the file to be processed correctly.               ;
+;  As explained in the notes for the Read Random function, you can easily   ;
+; create a random file with gaps in it. If you were to create a file with   ;
+; record number 0 and record number 5000, there would be no intervening     ;
+; file extents.                                                             ;
+;                                                                           ;
+;			Function Code	:   C  = 24H                                    ;
+;			Entry Parameters:  DE = Address of File Control Block			;
+;			Exit Parameters :	A = 01 (attempt to read unwritten record)   ;
+;								A = 03 (CP/M could not close current extent);
+;								A = 04 (attempt to read unwritten extent)   ;
+;								A = 05 (CP/M cannot create new extent)		;
+;								A = 06 (attempt to read beyond end of disk) ;
+;																			;
+;------------------------- Write Random - 22 (34) --------------------------;
+ vWriteRandom:
+	CALL	ReselectDisk				; Reselect if needed
+	
+	LD		C,FALSE						; Identify as a Write
+	CALL	RandomSeek
+	CALL	Z,DiskWrite					; Go Write
+	RET
+	
 ;------------------------- Get File Size - 23 (35) -------------------------;
 ;  This function returns the virtual size of the specified file. It does so ;
 ; by setting the random record number (bytes 33-35) in the specified FCB to ;
@@ -1800,12 +1839,9 @@ RandomDiskRead:
 ;			Exit Parameters :	Random record field set in FCB				;
 ;																			;
 ;------------------------- Get File Size - 23 (35) -------------------------;
- vComputeFileSize:
+vComputeFileSize:
 	CALL	ReselectDisk				; Reselect if needed
-;	JP		GetFileSize
-	
- ;compute logical file size for current fcb
-; GetFileSize:
+
 	LD		C,fcbExtIndex				; Set search/match length
 	CALL	SearchForDirectoryRecord	; Set directoryIndex
 ; zero the receiving FCB Random Record field
@@ -1819,37 +1855,38 @@ RandomDiskRead:
 	INC		HL							; Random Record overflow pointer
 	LD		(HL),D						; Set Random Record overflow = 0
 	
- GetFileSize1:
+GetFileSize1:
 	CALL	AtEndOfDirectory			; Any more dir entries ?
-	JP		Z,GetFileSizeExit			;  exit if no
+	JR		Z,GetFileSizeExit			;  exit if no
 	
 	CALL	GetCurrentDirectoryRecord	; HL points at Directory entry
 	LD		DE,fcbRCIndex				; FCB Record Count index
 	CALL	GetRandomRecordPosition
+;??????????????????????????????????????????????????????????????????????????????;
  ; A=0000 000? BC = mmmm eeee errr rrrr compare with memory, larger?
 	POP		HL
-	PUSH	HL								; recall, replace .fcb(Random record Field)
-	LD		E,A								; save cy
+	PUSH	HL							; recall, replace .fcb(Random record Field)
+	LD		E,A							; save cy
 	LD		A,C
 	SUB		M
-	INC		HL								; ls byte
+	INC		HL							; ls byte
 	LD		A,B
 	SBC		A,(HL)
-	INC		HL								; middle byte
+	INC		HL							; middle byte
 	LD		A,E
-	SBC		A,(HL)								; carry if .fcb(random record field) > directory
-	JP	C,GetFileSize2							; for another try
-											; fcb is less or equal, fill from directory
+	SBC		A,(HL)						; carry if .fcb(random record field) > directory
+	JR		C,GetFileSize2				; for another try
+										; fcb is less or equal, fill from directory
 	LD		(HL),E
 	DEC		HL
 	LD		(HL),B
 	DEC		HL
 	LD		(HL),C
- GetFileSize2:								; getnextsize:
+GetFileSize2:							; getnextsize:
 	CALL	GetNextDirectoryRecord
-	JP		GetFileSize1
- GetFileSizeExit:							; setsize:
-	POP		HL								; discard .fcb(random record field)
+	JR		GetFileSize1
+GetFileSizeExit:						; setsize:
+	POP		HL							; discard .fcb(random record field)
 	RET
 	
 ;------------------ Set Random Record Number - 24 (36) ---------------------;
@@ -1857,15 +1894,15 @@ RandomDiskRead:
 ; value for the last record read or written sequentially to the file.       ;
 ;                                                                           ;
 ;  This function provides you with a convenient way to build an index file  ;
-;  so that you can randomly access a sequential file. Open the sequential   ;
-;  file, and as you read each record, extract the appropriate key field from;
-;  the data record. Make the BDOS Set Random Record request and create a new;
+; so that you can randomly access a sequential file. Open the sequential    ;
+; file, and as you read each record, extract the appropriate key field from ;
+; the data record. Make the BDOS Set Random Record request and create a new ;
 ; data record with just the key field and the random record number. Write   ;
 ; the new data record out to the index file.                                ;
 ;  Once you have done this for each record in the file, your index file     ;
 ; provides a convenient method, given a search key value, of finding the    ;
 ; appropriate CP/M record in which the data lies.                           ;
-;  You can also use this function as a means offinding out where you are    ;
+;  You can also use this function as a means of finding out where you are   ;
 ; currently positioned in a sequential file-either to relate a CP/M record  ;
 ; number to the position, or simply as a place-marker to allow a            ;
 ; repositioning to the same place later.                                    ;
@@ -1877,22 +1914,19 @@ RandomDiskRead:
 ;																			;
 ;------------------ Set Random Record Number - 24 (36) ---------------------;
  vSetRandomRecord:
-;	JP		SetRandomRecord
-; SetRandomRecord:
 	LD		HL,(paramDE)				; FCB
-	LD		DE,recordSeq				; Sequential record pointer
-	CALL	GetRandomRecordPosition			; DE=paramDE, A=cy, BC=mmmm eeee errr rrrr
+	LD		DE,recordSeq				; Sequential record index
+	CALL	GetRandomRecordPosition
+; A = Overflow, B = randomRecord MSB, C = randomRecord LSB
 	LD		HL,recordRandom
-	ADD		HL,DE								; HL = .FCB(RANDOM_REC_FIELD)
+	ADD		HL,DE						; HL = .FCB(RANDOM_REC_FIELD)
 	LD		(HL),C
 	INC		HL
 	LD		(HL),B
 	INC		HL
-	LD		(HL),A								; to RANDOM_REC_FIELD
+	LD		(HL),A						; to RANDOM_REC_FIELD
 	RET
 
- ;*****************************************************************
- 
 ;------------------------ Reset Logical Disk Drive - 25 (37) ----------------;
 ;  This function resets individual disk drives. It is a more precise version ;
 ; of the Reset Disk System function (code 13,ODH), in that you can set       ;
@@ -1917,107 +1951,37 @@ RandomDiskRead:
  vResetDrive:
 	LD		A,-1						; Error return
 	RET
+	
+;------------------------------ Access Drive - 26 (38) ----------------------;
+;								NOT SUPPORTED								 ;
+;------------------------------ Access Drive - 26 (38) ----------------------;
 
+;------------------------------ Free   Drive - 27 (39) ----------------------;
+;								NOT SUPPORTED								 ;
+;------------------------------ Free   Drive - 27 (39) ----------------------;
 
-
-;-----------------------------------------------------------------
-
- ;*****************************************************************
- ;write random record
- ;IN  - (DE) FCB address
- ;OUT - (A) 01 = Reading unwritten data
- ;	 02 = N/U
- ;	 03 = Cannot close current extent
- ;	 04 = Seek to unwriten Extent
- ;	 05 = Cannot create new Extent because of directory overflow
- ;	 06 = Seek past Physical end of Disk
- vWriteRandom:								; func34 (34 - 22) Write Random record
-	CALL	ReselectDisk
-	JP		RandomDiskWrite					; to perform the disk write
-	;ret ;jmp goback
-;? ;*****************************************************************
-;? ;Reset Drive
-;? ;IN  - (DE) Drive Vector
-;? ;OUT - (A) 00
-;? vResetDrive:								; func37 (37 - 25) Reset Drive
-;? ; Not Yet Implemented   **************
-;?	RET
- ;*****************************************************************
- ;*****************************************************************
- ;Write Random With Zero Fill
- ;IN  - (DE) FCB address
- ;OUT - (A) Return Code		see Function 34
- vWriteRandom0Fill:								; func40 (40 - 28) Reset Drive
+;---------------- Write Random with Zero Fill - 28 (40) --------------------;
+;  This function is an extension to the Write Random function described     ;
+; previously. In addition to performing the Write Random, it will also fill ;
+; each new allocation block with OOH's. Digital Research added this function;
+; to assist Microsoft with the production of its COBOL compiler-it makes the;
+; logic of the file handling code easier. It also is an economical way to   ;
+; completely fill a random file with OOH's. You need only write one record  ;
+; per allocation block, the BDOS will clear the rest of the block for you.  ;
+;                                                                           ;
+;                                                                           ;
+;			Function Code	:	C  = 24H                                    ;
+;			Entry Parameters:	DE = Address of File Control Block			;
+;			Exit Parameters :	A = Return Code								;
+;																			;
+;---------------- Write Random with Zero Fill - 28 (40) --------------------;
+vWriteRandom0Fill:
  ; Not Yet Implemented   **************
 	RET
- ;*****************************************************************
- ;******************< Random I/O Stuff ****************************
- ;*****************************************************************
- ;*****************************************************************
- ;random disk write
- RandomDiskWrite:							; randiskwrite
-	LD		C,FALSE							; marked as read operation
-	CALL	RandomSeek
-	CALL	Z,DiskWrite						; if seek successful
-	RET
- ;*****************************************************************
- ;*****************************************************************
- ;*****************************************************************
-;--------------------------- Get Random Record Position --------------------;
-; on Entry :
-;			HL = pointer to directory entry
-;			DE = fcbRCIndex/seqRecord index
-GetRandomRecordPosition:
-	EX		DE,HL						; DE = pointer to directory entry
-	ADD		HL,DE
- ; DE=.buf(dptr) or .fcb(0), HL = .f(NEXT_RECORD/fcbRCIndex)
-	LD		C,(HL)						; C = record count
-	LD		B,0							; Make count a word value
-	
-	LD		HL,fcbExtIndex				; FCB Extent index
-	ADD		HL,DE
-	LD		A,(HL)						; ACC has Extent value
-	RRCA
-	AND		80H							; A=e000 0000
-	ADD		A,C
-	LD		C,A
-	LD		A,0
-	ADC		A,B
-	LD		B,A
- ; BC = 0000 000? errrr rrrr
-	LD		A,(HL)
-	RRCA
-	AND		LO_NIBBLE_MASK
-	ADD		A,B
-	LD		B,A
-										; BC = 000? eeee errrr rrrr
-	LD		HL,fcbS2Index
-	ADD		HL,DE
-	LD		A,(HL)							; A=XXX? mmmm
-	ADD		A,A
-	ADD		A,A
-	ADD		A,A
-	ADD		A,A							; cy=? A=mmmm 0000
-	PUSH	AF
-	ADD		A,B
-	LD		B,A
- ; cy=?, BC = mmmm eeee errr rrrr
-	PUSH	AF							; possible second carry
-	POP		HL							; cy = lsb of L
-	LD		A,L							; cy = lsb of A
-	POP		HL							; cy = lsb of L
-	OR		L 							; cy/cy = lsb of A
-	AND		1 							; A = 0000 000? possible carry-out
-	RET
-;--------------------------- Get Random Record Position --------------------;
 
- 
-
- ;*****************************************************************
- ;********************** Disk  I/O ********************************
- ;*****************************************************************
-  ;-----------------------------------------------------------------
- ;-----------------------------------------------------------------
+;*****************************************************************
+;********************** Disk  I/O ********************************
+;*****************************************************************
 ;--------------------------- Select  Drive ---------------------------------;
 ; Establish the disk found in (paramE) as the current disk drive            ;
 SelectCurrent:                                                              ;
@@ -2026,7 +1990,7 @@ SelectCurrent:                                                              ;
 	CP		M							; Are the the same ?                ;
 	RET		Z							; Exit if yes, nothing to do        ;
 	LD		(HL),A						;  else update curretDisk and       ;
-	JP		Select						;  select it                        ;
+	JR		Select						;  select it                        ;
 ;--------------------------- Select  Drive ---------------------------------;
 ;--------------------------- Select Login Drive ----------------------------;
  ; select Login Drive                                                       ;
@@ -2215,9 +2179,9 @@ CopyDirRecordToFCB:                                                        	;
 	LD		A,C							; Get the Dir's EXT                	;
 	CP		M							; Does it match the FCB'd          	;
 	LD		A,B							; Get the Dir's  record count      	;
-	JP		Z,OpenSetRecordCount		; If same EXT value, use it.       	;
+	JR		Z,OpenSetRecordCount		; If same EXT value, use it.       	;
 	LD		A,0							;   else prepare for RC = 0        	;
-	JP		C,OpenSetRecordCount		; If FCB EXT > Dir EXTr            	;
+	JR		C,OpenSetRecordCount		; If FCB EXT > Dir EXTr            	;
 	LD		A,RecordsPerExtent			;   else max record count out      	;
  OpenSetRecordCount:                                                       	;
 	LD		HL,(paramDE)				; Get FCB's address                	;
@@ -2255,22 +2219,22 @@ CopyDirRecordToFCB:                                                        	;
 MergeAllocationMaps:                                                        ;
 	LD		A,(byteAllocationFlag)                                          ;
 	OR		A                                                               ;
-	JP		Z,MergeWordMaps				; Process Word size Block Numbers   ;
+	JR		Z,MergeWordMaps				; Process Word size Block Numbers   ;
 ; process byte size Map	                                                    ;
 	LD		A,(HL)						; FCB Block number                  ;
 	OR		A							; Is it 0 ?                         ;
 	LD		A,(DE)						;  anticipate yes                   ;
-	JP		NZ,MergeFCBisNot0			;  Skip if no	                    ;
+	JR		NZ,MergeFCBisNot0			;  Skip if no	                    ;
 	LD		(HL),A						; Move Dir Entry Value to FCB		;
 MergeFCBisNot0:                                                             ;
 	OR		A							; Is Dir Entry Value = 0 ?          ;
-	JP		NZ,MergeDirEntryNot0		; Skip if no                        ;
+	JR		NZ,MergeDirEntryNot0		; Skip if no                        ;
 	LD		A,(HL)						;  else move FCB map value          ;
 	LD		(DE),A						;  to Dir Entry Value 	            ;
  MergeDirEntryNot0:                                                         ;
 	CP		M							; Do FCB and Dir match values       ;
-	JP		NZ,CloseDirEntryError		;  If not then report error         ;
-	JP		MergeMapLoop				; Go see if there is more           ;
+	JR		NZ,CloseDirEntryError		;  If not then report error         ;
+	JR		MergeMapLoop				; Go see if there is more           ;
                                                                             ;
 MergeWordMaps:                                                              ;
 	CALL	Merge						; If FCB map value = 0 move Dir's   ;
@@ -2279,18 +2243,18 @@ MergeWordMaps:                                                              ;
 	EX		DE,HL						; HL = FCB Map pointer, DE = Dir's  ;
 	LD		A,(DE)						; Does the FCB Map value            ;
 	CP		M							;  = Dir record Map pointer ?       ;
-	JP		NZ,CloseDirEntryError		;  If not then report error         ;
+	JR		NZ,CloseDirEntryError		;  If not then report error         ;
 	INC		DE                                                              ;
 	INC		HL							; move on to the MSB                ;
 	LD		A,(DE)                                                          ;
 	CP		M							; do the check for equality         ;
-	JP		NZ,CloseDirEntryError		;  If not then report error         ;
+	JR		NZ,CloseDirEntryError		;  If not then report error         ;
 	DEC		C							; Extra count for 2 bytes           ;
 MergeMapLoop:                                                               ;
 	INC		DE							; Advance to the next positions     ;
 	INC		HL							; in The Maps                       ;
 	DEC		C							; Are we done ?                     ;
-	JP	NZ,MergeAllocationMaps			;  No, do it again                  ;
+	JR		NZ,MergeAllocationMaps		;  No, do it again                  ;
                                                                             ;
 ; Check the EXT                                                             ;
 	LD		BC,-(fcbLength-fcbExtIndex)	;Adjust to get Ext pointer          ;
@@ -2299,7 +2263,7 @@ MergeMapLoop:                                                               ;
 	ADD		HL,BC						; DE = FCB EXT Pointer              ;
 	LD		A,(DE)						; FCB's extent number               ;
 	CP		M							; Is it < Dir Record EXT ?          ;
-	JP		C,CloseDirEntryEnd			;  we are done if yes               ;
+	JR		C,CloseDirEntryEnd			;  we are done if yes               ;
 	LD		(HL),A						; Else replace the Dir Record EXT   ;
 ; Update directory record count field                                       ;
 	LD		BC,fcbRCIndex-fcbExtIndex	; Need to adjust to the record Count;
@@ -2358,41 +2322,41 @@ MakeNewFile:                                                                ;
 
 ; DIO
 
- ;---------------
- ; set a "1" value in currentDisk position of BC
- ; return in HL
- SetCurrentDiskBit:
-	PUSH	BC								; save input parameter
-	LD		A,(currentDisk)
-	LD		C,A								; ready parameter for shift
-	LD		HL,1								; number to shift
-	CALL	ShiftLeftHLbyC							; HL = mask to integrate
-	POP		BC								; original mask
-	LD		A,C
-	OR		L
-	LD		L,A
-	LD		A,B
-	OR		H
-	LD		H,A								; HL = mask or rol(1,currentDisk)
-	RET
- ;--------------
-
-;--------------------------- Scan      Map ----------------------------------;
- ;-----------------------------------
- ; byte value from ALLOC is in register A, with shift count
- ; in register C (to place bit back into position), and
- ; target ALLOC position in registers HL, rotate and replace
- RotateAndReplace:
-	RRCA
-	DEC	D
-	JP	NZ,RotateAndReplace					; back into position
-	LD	(HL),A									; back to ALLOC
-	RET
- ;-----------------------------------
-
- ;*****************************************************************
-
- ;*****************************************************************
+;- ;---------------
+;- ; set a "1" value in currentDisk position of BC
+;- ; return in HL
+;- SetCurrentDiskBit:
+;-	PUSH	BC								; save input parameter
+;-	LD		A,(currentDisk)
+;-	LD		C,A								; ready parameter for shift
+;-	LD		HL,1								; number to shift
+;-	CALL	ShiftLeftHLbyC							; HL = mask to integrate
+;-	POP		BC								; original mask
+;-	LD		A,C
+;-	OR		L
+;-	LD		L,A
+;-	LD		A,B
+;-	OR		H
+;-	LD		H,A								; HL = mask or rol(1,currentDisk)
+;-	RET
+;- ;--------------
+;-
+;-;--------------------------- Scan      Map ----------------------------------;
+;- ;-----------------------------------
+;- ; byte value from ALLOC is in register A, with shift count
+;- ; in register C (to place bit back into position), and
+;- ; target ALLOC position in registers HL, rotate and replace
+;- RotateAndReplace:
+;-	RRCA
+;-	DEC	D
+;-	JP	NZ,RotateAndReplace					; back into position
+;-	LD	(HL),A									; back to ALLOC
+;-	RET
+;- ;-----------------------------------
+;-
+;- ;*****************************************************************
+;-
+;- ;*****************************************************************
 ;=========================== Disk Utilities ================================;
 ;--------------------------- Home The Current Disk ------------------------;
 ;move to home position, then offset to start of dir                        ;
@@ -2484,7 +2448,7 @@ IsDiskWriteProtected:                                                       ;
 	DEC		A							; Normalized to 0..29, or 255       ;
 	LD		(paramE),A					; Save drive code                   ;
 	CP		30                                                              ;
-	JP		NC,NoSelect					; Skip drive >= 30                  ;
+	JR		NC,NoSelect					; Skip drive >= 30                  ;
 											                                ;
 	LD		A,(currentDisk)				; Determine the current drive       ;
 	LD		(entryDisk),A				; Save it                           ;
@@ -2530,7 +2494,7 @@ SetRecordVars:                                                             ;
 	LD		DE,fcbRCIndex				; Offset to Record Count           ;
 	ADD		HL,DE                                                          ;
 	EX		DE,HL						; DE Points to Record Count        ;
-	LD		HL,recordSeq-fcbRCIndex                                      ;
+	LD		HL,recordSeq-fcbRCIndex                                        ;
 	ADD		HL,DE						; HL Points to Current Record      ;
 	RET                                                                    ;
 ;----------------------Get File Record Count and Current Record------------;
@@ -2661,19 +2625,19 @@ GetNextDirectoryRecord:														;
 	LD		C,FALSE                                                         ;
 	CALL	ReadDirectory				; Read next Dir Record              ;
 	CALL	AtEndOfDirectory                                                ;
-	JP		Z,NoDirRecordsMatch				; Done if at EOD                ;
+	JR		Z,NoDirRecordsMatch				; Done if at EOD                ;
                                                                             ;
 	LD		HL,(searchAddress)			; Get Current Dir Entry             ;
 	EX		DE,HL						; DE=beginning of Directory Entry   ;
 	LD		A,(DE)						; User Number                       ;
 	CP		emptyDir					; Is Dir entry is empty             ;
-	JP		Z,GetNextDirectoryRecord1	; Skip if empty                     ;
+	JR		Z,GetNextDirectoryRecord1	; Skip if empty                     ;
 	                                                                        ;
 ; Check to be sure we are sill in the Directory                             ;
 	PUSH	DE							; Save search address               ;
 	CALL	StillInDirectory			; Still in the directorY            ;
 	POP		DE							; Recall address                    ;
-	JP		NC,NoDirRecordsMatch		; Get out if past directory			;
+	JR		NC,NoDirRecordsMatch		; Get out if past directory			;
 	                                                                        ;
 GetNextDirectoryRecord1:													;
 	CALL	GetCurrentDirectoryRecord	; Point at next directory record    ;
@@ -2684,30 +2648,30 @@ GetNextDirectoryRecord1:													;
 TestNextPosition:															;
 	LD		A,(DE)                                                          ;
 	CP		QMARK						; ? is always a char match          ;
-	JP		Z,SetNextPosition				; Done with this if it is ?		;
+	JR		Z,SetNextPosition				; Done with this if it is ?		;
                                                                             ;
 	LD		A,B                                                             ;
 	CP		fcbS1Index					; At File S1 position ?             ;
-	JP		Z,SetNextPosition				; Done with this if it is ?		;
+	JR		Z,SetNextPosition				; Done with this if it is ?		;
  ; not the fcbS1Index field, extent field?                                  ;
 	CP		fcbExtIndex					; Past File Type position ?         ;
 	LD		A,(DE)						; Get next character                ;
-	JP		Z,CheckExtents				; Skip to search extent             ;
+	JR		Z,CheckExtents				; Skip to search extent             ;
 	SUB		M							; Do they match ?                   ;
 	AND		07FH						; Strip MSBit                       ;
-	JP		NZ,GetNextDirectoryRecord	; Skip if not matched               ;
-	JP		SetNextPosition				; Matched the character             ;
+	JR		NZ,GetNextDirectoryRecord	; Skip if not matched               ;
+	JR		SetNextPosition				; Matched the character             ;
 ;                                                                           ;
 CheckExtents:																;
 	CALL	CompareExtents				; Matching EXTs is work             ;
-	JP		NZ,GetNextDirectoryRecord	; Get out if not matched            ;
+	JR		NZ,GetNextDirectoryRecord	; Get out if not matched            ;
 	                                                                        ;
 SetNextPosition:															;
 	INC		DE							; Pointer to Looking FOR            ;
 	INC		HL							; Pointer to Looking IN             ;
 	INC		B							; Character Index in FCB            ;
 	DEC		C							; Length of search                  ;
-	JP		NZ,TestNextPosition 											;
+	JR		NZ,TestNextPosition 											;
 ; Match Found, entire name matches                                          ;
 	LD		A,(dirEntryIndex)			; Get current Directory Index       ;
 	AND		dirEntryMask				; Apply the mask                    ;
@@ -2776,9 +2740,10 @@ RandomSeek:                                                                 ;
 	XOR		A                                                               ;
 	LD		(diskAccessType),A			; Set random access                 ;
 	PUSH	BC							; Save Read(TRUE) / Write (FALSE)   ;
-	LD		HL,(paramDE)				; Get the FCB                       ;
-	PUSH	HL                                                              ;
-	POP		IX							; IX has the FCB address            ;
+;?	LD		HL,(paramDE)				; Get the FCB                       ;
+;?	PUSH	HL                                                              ;
+;?	POP		IX							; IX has the FCB address            ;
+	LD		IX,(paramDE)				; Get the FCB						;
 	LD		A,(IX +recordRandomLSB)		; Get LSB from Random Record        ;
 	AND		7FH							; Strip E , left with |0RRR RRRR|   ;
 	PUSH	AF							; recordSEQ                         ;
@@ -2802,17 +2767,17 @@ RandomSeek:                                                                 ;
 	INC		L							; Insure that high byte             ;
 	DEC		L							;  of ran rec = 00                  ;
 	LD		L,06					; "attempt to read beyond end of disk"  ;
-	JP		NZ,RandomSeekError                                              ;
+	JR		NZ,RandomSeekError                                              ;
                                                                             ;
 	LD		(IX + recordSeq),A			; Put target record # in FCB	    ;
 	LD		A,(IX + fcbExtIndex)		; Target EXT in A, FCB EXT in C     ;
 	CP		C							; Are we in the right directory ?	;
-	JP		NZ,RandomSeekClose			;  Skip if not                      ;
+	JR		NZ,RandomSeekClose			;  Skip if not                      ;
 											                                ;
 	LD		A,(IX + fcbS2Index)			; Target S2 in A, FCB S2 in C       ;
 	CP		B							; Still in the right directory ?    ;
 	AND		7FH							; Mask out MSBit                    ;
-	JP		Z,RandomSeekExit			;  Exit if yes                      ;
+	JR		Z,RandomSeekExit			;  Exit if yes                      ;
 	                                                                        ;
 RandomSeekClose:                                                            ;
 	PUSH	BC							; Save EXT                          ;
@@ -2823,26 +2788,26 @@ RandomSeekClose:                                                            ;
 	LD		L,03					; "CP/M could not close current extent" ;
 	LD		A,(exitParameterByte)		; Get result from Close             ;
 	INC		A                                                               ;
-	JP		Z,RandomSeekErrorBadSeek	; Error exit if 0FFH                ;
+	JR		Z,RandomSeekErrorBadSeek	; Error exit if 0FFH                ;
 	                                                                        ;
 	LD		(IX + fcbExtIndex),C		; Update FCB Ext value              ;
 	LD		(IX + fcbS2Index),B			; Update FCB S2 value               ;
 	CALL	OpenFile					; Open the targeted Dir entry       ;
 	LD		A,(exitParameterByte)		; is the file present?              ;
 	INC		A                                                               ;
-	JP		NZ,RandomSeekExit			; Exit if open successful	        ;
+	JR		NZ,RandomSeekExit			; Exit if open successful	        ;
 ; cannot open the file, read mode?                                          ;
 	POP		BC							; Get Read/Write flag               ;
 	PUSH	BC							; Read/Write flag                   ;
 	LD		L,04					; "attempt to read unwritten extent"    ;
 	INC		C							; Becomes 00 if read operation      ;
-	JP		Z,RandomSeekErrorBadSeek	; Error exit if read operation      ;
+	JR		Z,RandomSeekErrorBadSeek	; Error exit if read operation      ;
 	                                                                        ;
 	CALL	MakeNewFile					; Make Directory Entry              ;
 	LD		L,05						; "cannot create new extent"        ;
 	LD		A,(exitParameterByte)		; Get result from Make              ;
 	INC		A                                                               ;
-	JP		Z,RandomSeekErrorBadSeek	;  Exit if failed on Make           ;
+	JR		Z,RandomSeekErrorBadSeek	;  Exit if failed on Make           ;
                                                                             ;
 RandomSeekExit:                                                             ;
 	POP		BC							; Balance Stack                     ;
@@ -2858,7 +2823,53 @@ RandomSeekError:                                                            ;
 	LD		(exitParameterByte),A		;  and return it to caller          ;
 	JP		SetFileWriteFlag			; Set flag for following close      ;
 ;-------------------------------- Random Seek ------------------------------;
-
+;--------------------------- Get Random Record Position -------------------;?
+; on Entry :                                                               ;?
+;			HL = pointer to directory entry                                ;?
+;			DE = fcbRCIndex/seqRecord index                                ;?
+GetRandomRecordPosition:                                                   ;?
+	EX		DE,HL						; DE = pointer to directory entry  ;?
+	ADD		HL,DE                                                          ;?
+ ; DE=.buf(dptr) or .fcb(0), HL = .f(NEXT_RECORD/fcbRCIndex)               ;?
+	LD		C,(HL)						; C = record count                 ;?
+	LD		B,0							; Make count a word value          ;?
+	                                                                       ;?
+	LD		HL,fcbExtIndex				; FCB Extent index                 ;?
+	ADD		HL,DE                                                          ;?
+	LD		A,(HL)						; ACC has Extent value             ;?
+	RRCA                                                                   ;?
+	AND		80H							; A=e000 0000                      ;?
+	ADD		A,C                                                            ;?
+	LD		C,A                                                            ;?
+	LD		A,0                                                            ;?
+	ADC		A,B                                                            ;?
+	LD		B,A                                                            ;?
+ ; BC = 0000 000? errrr rrrr                                               ;?
+	LD		A,(HL)                                                         ;?
+	RRCA                                                                   ;?
+	AND		LO_NIBBLE_MASK                                                 ;?
+	ADD		A,B                                                            ;?
+	LD		B,A                                                            ;?
+										; BC = 000? eeee errrr rrrr        ;?
+	LD		HL,fcbS2Index                                                  ;?
+	ADD		HL,DE                                                          ;?
+	LD		A,(HL)						; A=XXX? mmmm                      ;?
+	ADD		A,A                                                            ;?
+	ADD		A,A                                                            ;?
+	ADD		A,A                                                            ;?
+	ADD		A,A							; cy=? A=mmmm 0000                 ;?
+	PUSH	AF                                                             ;?
+	ADD		A,B                                                            ;?
+	LD		B,A                                                            ;?
+ ; cy=?, BC = mmmm eeee errr rrrr                                          ;?
+	PUSH	AF							; possible second carry            ;?
+	POP		HL							; cy = lsb of L                    ;?
+	LD		A,L							; cy = lsb of A                    ;?
+	POP		HL							; cy = lsb of L                    ;?
+	OR		L 							; cy/cy = lsb of A                 ;?
+	AND		1 							; A = 0000 000? possible carry-out ;?
+	RET                                                                    ;?
+;--------------------------- Get Random Record Position -------------------;?
 
 
 ; FU
@@ -2979,7 +2990,7 @@ ScanDiskMapWord:                                                            ;
 	POP		HL                                                              ;
 	INC		HL							; to next bit position              ;
 	POP		BC							; recall counter                    ;
-	JP		ScanDiskMap0				; for another item                  ;
+	JR		ScanDiskMap0				; for another item                  ;
                                                                             ;
 ;--------------------------- Scan Disk Map ---------------------------------;
 ;--------------------------- Get Closest Disk Block ------------------------;
@@ -3197,15 +3208,12 @@ WasBlockAllocated:                                                          ;
  ; result = absolute CPMRecord * ( 2**BSH)                                  ;
 SetActualRecordAdd:                                                         ;
 	LD		A,(dpbBSH)					; Block Shift to loop control       ;
-	LD		B,A
+	LD		B,A																;
 	LD		HL,(absoluteCPMRecord)                                          ;
                                                                             ;
 SetActualRecordAddLoop:                                                     ;
 	ADD		HL,HL                                                           ;
 	DJNZ	SetActualRecordAddLoop                                          ;
-;?	DEC		A								; shl(absolute CPMRecord,dpbBSH);
-;?	JP	NZ,SetActualRecordAddLoop                                           ;
-                                                                            ;
 ; HL has Record number for start of the block;                              ;
 	LD		A,(dpbBLM)					; Get block mask to get current     ;
 	LD		C,A							;  File Record mod Block            ;
@@ -3426,7 +3434,8 @@ Seek0:                                                                      ;
 	                                                                        ;
 	ADD		HL,DE						; Gets the sector in the track      ;
 	PUSH	HL							; Save Index Sector                 ;
-	                                                                        ;
+																			;
+	PUSH	IX							; Save IX							;
 	LD		IX,(caTrack)                                                    ;
 	LD		(IX + 0),C                                                      ;
 	LD		(IX + 1),B					; Save the Gross Track              ;
@@ -3439,6 +3448,7 @@ Seek0:                                                                      ;
 	LD		IX,(caSector)                                                   ;
 	LD		(IX + 0),L                                                      ;
 	LD		(IX + 1),H					; Save the Block Start              ;
+	POP		IX							; Restore IX							;
 	                                                                        ;
 	LD		HL,(dpbOFF)					; Get directory Offset (tracks)		;
 	ADD		HL,BC						;  to add to the gross Track        ;
@@ -3480,7 +3490,7 @@ ComputeCheckSum1:                                                           ;
 	ADD		HL,DE						; Address of this record in vector  ;
 	POP		BC							; Retrieve New/Validate Flag        ;
 	INC		C                                                               ;
-	JP		Z,SetNewCheckSum			; Set the Value if Flag was TRUE    ;
+	JR		Z,SetNewCheckSum			; Set the Value if Flag was TRUE    ;
 	                                                                        ;
 	CP		M							; Else we are checking the value    ;
 	RET		Z							; Exit if OK                        ;
@@ -3495,76 +3505,48 @@ ComputeCheckSum1:                                                           ;
 	LD		(HL),A                                                          ;
 	RET                                                                     ;
 ;--------------------------- Check Sum Utility -----------------------------;
- ;*****************************************************************
 
- ;*****************************************************************
- ;********************** File  Routines ***************************
- ;-----------------------------------------------------------------
-  ;-----------------------------------------------------------------
- ;-----------------------------------------------------------------
-  ;-----------------------------------------------------------------
- ;-----------------------------------------------------------------
- ;*****************************************************************
-
- ;-----------------------------------------------------------------
- ;-----------------------------------------------------------------
-
- ;-----------------------------------------------------------------
- ;-----------------------------------------------------------------
-
- 
-
-
-;---------------------------------- Is Bit Set -----------------------------;
-
-
-
- ;---------------------
- ;set exitParameterByte to 1
-
- ;---------------------
- ;---------------------
- ;*****************************************************************
- ;************************ Utilities ******************************
- ;*****************************************************************
- AddAtoHL:
-	ADD		A,L
-	LD		L,A
-	RET	NC
-	INC		H
-	RET
- ;----------
- DEminusHL2HL:
-	LD		A,E
-	SUB		L
-	LD		L,A
-	LD		A,D
-	SBC		A,H
-	LD		H,A
-	RET
- ;-------------
- ShiftRightHLbyC:
-	INC		C
- ShiftRightHLbyC0:
-	DEC		C
-	RET	Z
-	LD		A,H
-	OR		A
-	RRA
-	LD		H,A
-	LD		A,L
-	RRA
-	LD		L,A
-	JP		ShiftRightHLbyC0
- ;-------
- ShiftLeftHLbyC:
-	INC		C
- ShiftLeftHLbyC0:
-	DEC		C
-	RET	Z; exit when done
-	ADD		HL,HL
-	JP		ShiftLeftHLbyC0
- ;*****************************************************************
+;*****************************************************************
+;************************ Utilities ******************************
+;*****************************************************************
+;_ AddAtoHL:
+;_	ADD		A,L
+;_	LD		L,A
+;_	RET	NC
+;_	INC		H
+;_	RET
+;_ ;----------
+;_ DEminusHL2HL:
+;_	LD		A,E
+;_	SUB		L
+;_	LD		L,A
+;_	LD		A,D
+;_	SBC		A,H
+;_	LD		H,A
+;_	RET
+;_ ;-------------
+;_ ShiftRightHLbyC:
+;_	INC		C
+;_ ShiftRightHLbyC0:
+;_	DEC		C
+;_	RET	Z
+;_	LD		A,H
+;_	OR		A
+;_	RRA
+;_	LD		H,A
+;_	LD		A,L
+;_	RRA
+;_	LD		L,A
+;_	JP		ShiftRightHLbyC0
+;_ ;-------
+;_ ShiftLeftHLbyC:
+;_	INC		C
+;_ ShiftLeftHLbyC0:
+;_	DEC		C
+;_	RET	Z; exit when done
+;_	ADD		HL,HL
+;_	JP		ShiftLeftHLbyC0
+;_ ;*****************************************************************
 ;? ;move data length of length C from source DE to HL
 ;? MoveX:
 ;?	INC		C
@@ -3610,7 +3592,7 @@ SetVectorBit:                                                               ;;
                                                                             ;;
 		POP		BC						; Get the bit position              ;;
 		SET		7,H                                                         ;;
-		JR		ReAlignVector				;                                    ;
+		JR		ReAlignVector				;                                ;
 ;---------------------------------- Set Vector Bit -------------------------;;
 ;---------------------------------- Reset Vector Bit -----------------------;;		
 ; Enter  HL  contains the bit map vector                                    ;;
@@ -3627,7 +3609,7 @@ ResetVectorBit:                                                             ;;
 ;---------------------------------- Set VectorBit --------------------------;;
 ; Adjusts the HL register to its Original Alignment after IsBitSet           ;
 		                                                                     ;
-ReAlignVector:                                                                  ;
+ReAlignVector:                                                               ;
 		INC		B                                                            ;
 ReAlignMapLoop:                                                              ;
  		SCF								; Set carry flag, expect LSBit = 1   ;
@@ -3639,7 +3621,9 @@ ReAlignMap1:                                                                 ;
 		RL		H						; ditto                              ;
 		DJNZ	ReAlignMapLoop                                               ;
 		RET                                                                  ;
-;============================ Set/Reset Vector Bit ==========================;		
+;============================ Set/Reset Vector Bit ==========================;
+;============================= Error message World ==========================;
+;																			;		
  ;************Error message World*************************
  errSelect:
 	LD		HL,evSelection
@@ -3706,7 +3690,9 @@ ReAlignMap1:                                                                 ;
 	CALL	Print							; error mssage tail
 	JP		ConIn							; to get the input character
 	;ret
- ;**************Error Messages*******************************
+;============================= Error message World ==========================;
+
+
  emDisk0:			DB		'Bdos Err On '
  emDisk:				DB		' : $'
  emPermanent:		DB		'Bad Sector$'

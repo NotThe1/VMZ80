@@ -8,74 +8,125 @@
 0008: 0100             READ_SEQ   EQU    14H
 0009: 0100             RENAME_FILE EQU    17H
 0010: 0100             SET_DMA    EQU    1AH
-0011: 0100             SET_RANDREC EQU    024H
-0012: 0100             defaultBuffer EQU    080H
-0013: 0100
-0014: 0100             TPA        EQU    0100H
-0015: 0100
-0016: 0100                        ORG    TPA
-0017: 0100             Start:
-0018: 0100 31 BA 02               LD     SP,Stack
-0019: 0103
-0020: 0103 0E 0F                  LD     C,OPEN_FILE
-0021: 0105 11 16 01               LD     DE,FCB
-0022: 0108 CD 05 00               CALL   BDOS
-0023: 010B 00                     NOP
-0024: 010C
-0025: 010C 0E 24                  LD     C,SET_RANDREC
-0026: 010E 11 16 01               LD     DE,FCB
-0027: 0111 CD 05 00               CALL   BDOS
-0028: 0114 00                     NOP
-0029: 0115 76                     HALT
-0030: 0116
-0031: 0116             FCB:
-0032: 0116
-0033: 0116 00          DISK:      DB     00
-0034: 0117 53 44 20 20 20 20 20 20     NAME:      DB     'SD      '
-0035: 011F 50 52 4E     TYPE:      DB     'PRN'
-0036: 0122 00          EXT:       DB     0
-0037: 0123 00 00       RESV:      DB     0,0
-0038: 0125 00          RC:        DB     0
-0039: 0126 00 0000 0000 0000 0000 0000 0000 0000 00    ALLOC:     DW     0,0,0,0,0,0,0,0
-0040: 0128 00          REC_SEQ:   DB     0
-0041: 0129 00 00       REC_RANDOM: DW     0000H
-0042: 012B 00          REC_RAN_O: DB     00
-0043: 012C
-0044: 012C                        DS     0100H
-0045: 022C 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00                DB     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-0046: 023C 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00                DB     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-0047: 024C 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00                DB     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-0048: 025C 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00                DB     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-0049: 026C 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00                DB     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-0050: 027C 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00                DB     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-0051: 028C 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00                DB     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-0052: 029C 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00                DB     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-0053: 02AC             Stack:
-0054: 02AC
-0055: 02AC         ;DOLLARInclude ./HeaderForA.Z80
+0011: 0100             GET_SIZE   EQU    023H
+0012: 0100             SET_RANDREC EQU    024H
+0013: 0100             defaultBuffer EQU    080H
+0014: 0100
+0015: 0100             recordRandom EQU    20 + 1               ; Random record field (2 bytes)
+0016: 0100             recordRandomLSB EQU    recordRandom         ; LSB of Random Record
+0017: 0100             recordRandomMSB EQU    recordRandom + 1     ; MSB of Random Record
+0018: 0100             recordRandomOVF EQU    recordRandom + 2     ; Random Record Overflow
+0019: 0100
+0020: 0100             TPA        EQU    0100H
+0021: 0100
+0022: 0100                        ORG    TPA
+0023: 0100             Start:
+0024: 0100 31 D4 02               LD     SP,Stack
+0025: 0103
+0026: 0103             GetFileSizeExit:
+0027: 0103         ;	POP		BC							; Get S2(B) and EXT(C)
+0028: 0103 01 1F 3F               LD     BC,03F1FH
+0029: 0106 11 00 00               LD     DE,0000H
+0030: 0109 21 00 00               LD     HL,0000H
+0031: 010C DD 21 30 01               LD     IX,FCB               ; point at FCB
+0032: 0110
+0033: 0110 3A 2F 01               LD     A,(lastRC)
+0034: 0113 6F                     LD     L,A                  ; put RC into L
+0035: 0114 78                     LD     A,B                  ; get S2
+0036: 0115 E6 70                  AND    070H                 ; Check for overflow
+0037: 0117 28 04                  JR     Z,NoOverFlow
+0038: 0119 DD 36 17 01               LD     (IX+recordRandomOVF),01H ; Set overflow flag
+0039: 011D             NoOverFlow:
+0040: 011D CB 20                  SLA    B                    ; xxxS SSS0
+0041: 011F CB 20                  SLA    B                    ; xxSS SS00
+0042: 0121 CB 20                  SLA    B                    ; xSSS S000
+0043: 0123 CB 20                  SLA    B                    ; SSSS 0000
+0044: 0125
+0045: 0125         ;	LD		L,(lastRC)					; 0RRR|RRRR
+0046: 0125 79                     LD     A,C                  ; get EXT (000E|EEEE)
+0047: 0126 CB 3F                  SRL    A                    ; 0000|EEEE -> C
+0048: 0128 30 02                  JR     NC,NoExtLSB
+0049: 012A CB FD                  SET    7,L                  ; ERRR|RRRR
+0050: 012C             NoExtLSB:
+0051: 012C 80                     ADD    A,B                  ; SSSS|EEEE
+0052: 012D 67                     LD     H,A                  ;
+0053: 012E         ; HL = SSSS|EEEE||ERRR|RRRR
+0054: 012E
+0055: 012E             GFSE1:                          ; L has ERRR RRRR
+0056: 012E C9                     RET
+0057: 012F             lastRC:
+0058: 012F 7F                     DB     07FH                 ; RC of last dir entry
+0059: 0130
+0060: 0130
+0061: 0130         ;			LD		C,OPEN_FILE
+0062: 0130         ;			LD		DE,FCB
+0063: 0130         ;			CALL	BDOS
+0064: 0130         ;			NOP
+0065: 0130         ;
+0066: 0130         ;			LD		C,GET_SIZE
+0067: 0130         ;			LD		DE,FCB
+0068: 0130         ;			CALL	BDOS
+0069: 0130         ;			NOP
+0070: 0130         ;			HALT
+0071: 0130
+0072: 0130             FCB:
+0073: 0130
+0074: 0130 00          DISK:      DB     00
+0075: 0131 42 20 20 20 20 20 20 20     NAME:      DB     'B       '
+0076: 0139 41 52 4B     TYPE:      DB     'ARK'
+0077: 013C 00          EXT:       DB     0
+0078: 013D 00 00       RESV:      DB     0,0
+0079: 013F 00          RC:        DB     0
+0080: 0140 00 0000 0000 0000 0000 0000 0000 0000 00    ALLOC:     DW     0,0,0,0,0,0,0,0
+0081: 0142 00          REC_SEQ:   DB     0
+0082: 0143 00 00       REC_RANDOM: DW     0000H
+0083: 0145 00          REC_RAN_O: DB     00
+0084: 0146
+0085: 0146                        DS     0100H
+0086: 0246 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00                DB     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+0087: 0256 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00                DB     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+0088: 0266 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00                DB     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+0089: 0276 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00                DB     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+0090: 0286 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00                DB     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+0091: 0296 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00                DB     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+0092: 02A6 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00                DB     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+0093: 02B6 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00                DB     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+0094: 02C6             Stack:
+0095: 02C6
+0096: 02C6         ;DOLLARInclude ./HeaderForA.Z80
            ************************   Xref   ************************
-0000: $               029C
-0039: ALLOC           0126
-0003: BDOS            0005   0022 0027
+0000: $               02B6
+0080: ALLOC           0140
+0003: BDOS            0005
 0005: CLOSE_FILE      0010
-0012: defaultBuffer   0080
-0033: DISK            0116
-0036: EXT             0122
-0031: FCB             0116   0021 0026
+0013: defaultBuffer   0080
+0074: DISK            0130
+0077: EXT             013C
+0072: FCB             0130   0031
 0006: FIND_FIRST      0011
 0007: FIND_NEXT       0012
-0034: NAME            0117
-0004: OPEN_FILE       000F   0020
-0038: RC              0125
+0011: GET_SIZE        0023
+0026: GetFileSizeExit 0103
+0055: GFSE1           012E
+0057: lastRC          012F   0033
+0075: NAME            0131
+0050: NoExtLSB        012C   0048
+0039: NoOverFlow      011D   0037
+0004: OPEN_FILE       000F
+0079: RC              013F
 0008: READ_SEQ        0014
-0042: REC_RAN_O       0139
-0041: REC_RANDOM      0137
-0040: REC_SEQ         0136
+0083: REC_RAN_O       0153
+0082: REC_RANDOM      0151
+0081: REC_SEQ         0150
+0015: recordRandom    0015   0016 0017 0018
+0016: recordRandomLSB 0015
+0017: recordRandomMSB 0016
+0018: recordRandomOVF 0017   0038
 0009: RENAME_FILE     0017
-0037: RESV            0123
+0078: RESV            013D
 0010: SET_DMA         001A
-0011: SET_RANDREC     0024   0025
-0053: Stack           02BA   0018
-0017: Start           0100
-0014: TPA             0100   0016
-0035: TYPE            011F
+0012: SET_RANDREC     0024
+0094: Stack           02D4   0024
+0023: Start           0100
+0020: TPA             0100   0022
+0076: TYPE            0139
