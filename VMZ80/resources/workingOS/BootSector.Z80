@@ -2,7 +2,8 @@
 ;     C:\Users\admin\Dropbox\Resources\CPM\CurrentOS\8080\BootSector.asm
  ; BootSector.Z80 
  ; Build 2.01
- 
+
+ ; 2018-02-19 BDOS 1.0 designation 
  ; 2018-11-22 begin  Z80 idiom update
  ; 2017-04-07 Added equates for message IO : BOOT_CON_ADDRESS
  ;				 , and default IOBYTE : IOBYTE_DEFAULT
@@ -88,9 +89,9 @@ BootMessage:                                                                 ;
  	DB		'BootStrap loader '                                              ;
 	DB		'CP/M 2.2 (Z80) '                                                ;
 	DB		CR,LF                                                            ;
-	DB		'Build 0.C '                                                     ;
+	DB		'Build 0.D '                                                     ;
 	DB		CR,LF                                                            ;
-	DB		'CCP 0.A |  BDOS 0.B | BIOS 1.0'                                 ;
+	DB		'CCP 0.A |  BDOS 1.0 | BIOS 1.0'                                 ;
 	DB		CR,LF,CR,LF,EndOfMessage                                         ;
 	                                                                         ;
 FailedBootMessage:                                                           ;

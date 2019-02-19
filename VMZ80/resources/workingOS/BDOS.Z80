@@ -2,7 +2,7 @@
 ;     C:\Users\admin\Dropbox\Resources\CPM\CurrentOS\8080\BDOSX.asm
  ; BDOS.Z80
  ;  in process Clean up
-
+ ; 2019-02-29 Version 1.0
  ; 2019-02-04 Fixed bdosStack problem 
  ; 2019-01-10	Last rev before remaking  FInd nearest Block
  ; 2019-01-11 - BDOS 0.B  - Function 0-A Refactored to Z80 idiom
@@ -983,8 +983,8 @@ vResetSystem:
 ;																			;
 ;---------------------------- Open File - F (15) ---------------------------;
  vOpenFile:
-	CALL	InitializeExtentNumberMSB		; Clear the Extent number
-	CALL	ReselectDisk						; do we need to reselect disk?
+	CALL	InitializeExtentNumberMSB	; Clear the Extent number
+	CALL	ReselectDisk				; do we need to reselect disk?
 	JP		OpenFile
 
 ;---------------------------- Close File - 10 (16) -------------------------;
@@ -1365,9 +1365,9 @@ Allocate16Bit:
 	INC		HL
 	LD		(HL),E						; SAVE LSB
 MarkNewBlock:
-;	CALL	ResetFileWriteFlag
-	CALL	GetWriteFileFlagValue		; HL = Address of fcbS2
-	RES		7,(HL)						; Reset the FileWriteFlag
+	CALL	ResetFileWriteFlag
+;	CALL	GetWriteFileFlagValue		; HL = Address of fcbS2
+;	RES		7,(HL)						; Reset the FileWriteFlag
 	LD		C,WriteCleanBuffer			; Marked as unallocated write
 
 HaveWriteBlock:
@@ -1396,8 +1396,9 @@ DiskWrite1:
 	DEC		C							; Check if C = unallocated write
 	JR		NZ,DiskWrite2				; Skip if C not unallocated write
 	PUSH	AF							; currentFileRecord
-	CALL	GetWriteFileFlagValue		; HL points to FCB s2
-	RES		7,(HL)						; Reset WriteFileFlag
+	CALL	ResetFileWriteFlag
+;	CALL	GetWriteFileFlagValue		; HL points to FCB s2
+;	RES		7,(HL)						; Reset WriteFileFlag
 	POP		AF							; currentFileRecord
 DiskWrite2:
 ; check for end of extent, if found attempt
@@ -2194,10 +2195,16 @@ CopyDirRecordToFCB:                                                        	;
 	CALL	IsDiskWriteProtected		; Return Z set if writable          ;
 	RET		NZ							; Skip close if r/o disk            ;
 ; check file write flag - 0 indicates written                               ;
-	CALL	GetWriteFileFlagValue		; Get file's WriteFileFlag          ;
-	BIT		7,A							;  Has it changed ?					;
-;	AND		writeFlagMask				; Apply the RO Flag for S2          ;
+
+	PUSH	IX
+	LD		IX,(paramDE)				; FCB address
+	BIT		7,(IX + fcbS2Index)			; Has WFF changed ?	
+	POP		IX
 	RET		NZ							; Skip close if clean file          ;
+
+;	CALL	GetWriteFileFlagValue		; Get file's WriteFileFlag          ;
+;	BIT		7,A							;  Has it changed ?					;
+;	RET		NZ							; Skip close if clean file          ;
 	                                                                        ;
 	LD		C,nameLength                                                    ;
 	CALL	SearchForDirectoryRecord	; Find the file's directory record  ;
@@ -2336,7 +2343,7 @@ Home:                                                                       ;
 	LD		(HL),A                                                          ;
 	INC		HL                                                              ;
 	LD		(HL),A                                                          ;
-	LD	HL,(caSector)                                                       ;
+	LD		HL,(caSector)                                                      ;
 	LD		(HL),A                                                          ;
 	INC		HL                                                              ;
 	LD		(HL),A                                                          ;
@@ -2502,43 +2509,54 @@ Right:                                                                      ;
 ;--------------------- Initialize Extent Number MSB ------------------------;
  ;clear the Extent number field for user open/make (S2)                     ;
 InitializeExtentNumberMSB:                                                  ;
-	CALL	GetExtentNumberMSB                                              ;
-	LD		(HL),0								; Set it to = 0             ;
-	RET                                                                     ;
+	PUSH	IX
+	LD		IX,(paramDE)				; FCB address
+	LD		(IX + fcbS2Index),0			; Clear value
+	POP		IX
+	RET
+;	CALL	GetExtentNumberMSB                                              ;
+;	LD		(HL),0								; Set it to = 0             ;
+;	RET                                                                     ;
 ;--------------------- Initialize Extent Number MSB ------------------------;
 ;--------------------- Get Extent Number MSB| Write Protect ----------------;
 ; Get S2 value                                                              ;
 ;  Returns:	A = S2 Value (bit 7 write protect, bits 0-6 Ext MSB)            ;
 ;			HL = Address of S2 for the FCB pointed to by paramDE            ;
-GetWriteFileFlagValue:							; S2 bit 7                  ;
-GetExtentNumberMSB:								; S2 bits 0-6               ;
-	LD		HL,(paramDE)						; FCB address               ;
-	LD		DE,fcbS2Index						; Index to value            ;
-	ADD		HL,DE								; Address of value          ;
-	LD		A,(HL)								; load into ACC             ;
-	RET	                                                                    ;
+;GetWriteFileFlagValue:							; S2 bit 7                  ;
+;;GetExtentNumberMSB:							; S2 bits 0-6               ;
+;	LD		HL,(paramDE)						; FCB address               ;
+;	LD		DE,fcbS2Index						; Index to value            ;
+;	ADD		HL,DE								; Address of value          ;
+;	LD		A,(HL)								; load into ACC             ;
+;	RET	                                                                    ;
 ;--------------------- Get Extent Number MSB| Write Protect ----------------;
 ;--------------------------- Set File Write Flag----------------------------;
 ;Set file write flag in FCB in (paramDE)									;
 ; Used to indicate the FCB is clean. No need to write on close				;
-SetFileWriteFlag:                                                           ;
-	CALL	GetWriteFileFlagValue		; A= Value, HL = Address of fcbS2   ;
-	SET		7,(HL)						; Set the FileWriteFlag				;
-	RET																		;
-;?	OR		writeFlagMask				; Set the flag , bit 7 of S2        ;
-;?	LD		(HL),A						; Put into FCB                      ;
-;?	RET	                                                                    ;
+SetFileWriteFlag:															;
+	PUSH	IX
+	LD		IX,(paramDE)				; FCB address
+	SET		7,(IX + fcbS2Index)			; Set Flag
+	POP		IX
+	RET
+
+;	CALL	GetWriteFileFlagValue		; A= Value, HL = Address of fcbS2   ;
+;	SET		7,(HL)						; Set the FileWriteFlag				;
+;	RET																		;
 ;--------------------------- Set File Write Flag----------------------------;
 ;--------------------------- Reset File Write Flag--------------------------;
 ;Reset file write flag in FCB in (paramDE)									;
 ; Used to indicate the FCB is dirty. Need to write on close					;
 ResetFileWriteFlag:                                                         ;
-	CALL	GetWriteFileFlagValue		; A= Value, HL = Address of fcbS2   ;
-	RES		7,(HL)						; Reset the FileWriteFlag			;
-	RET																		;
-;?	AND		0FFH-writeFlagMask			; Remove the flag bit		        ;
-;?	LD		(HL),A						; Put into FCB                      ;
-;?	RET	                                                                    ;
+	PUSH	IX
+	LD		IX,(paramDE)				; FCB address
+	RES		7,(IX + fcbS2Index)			; Reset Flag
+	POP		IX
+	RET
+
+;	CALL	GetWriteFileFlagValue		; A= Value, HL = Address of fcbS2   ;
+;	RES		7,(HL)						; Reset the FileWriteFlag			;
+;	RET																		;
 ;--------------------------- Reset File Write Flag--------------------------;
 ;-------------------------- Compare FCB Extents ----------------------------;
 ; Enters:	A containing Target FCB EXT value								;
