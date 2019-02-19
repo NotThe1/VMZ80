@@ -23,211 +23,211 @@ VERSION			EQU		20H				; Version 2.0
 STACK_SIZE		EQU		20H				; Make stack big enough
 EOD				EQU		-1				; End of Directory
 
-;************************ BIOS Function Constants ***************************;
-bcBoot		EQU		BIOSStart+3*0		; Cold Boot function	             ;
-bcWboot		EQU		BIOSStart+3*1		; Warm Boot function                 ;
-bcConst		EQU		BIOSStart+3*2		; Console Status function            ;
-bcConin		EQU		BIOSStart+3*3		; Console Input function             ;
-bcConout	EQU		BIOSStart+3*4		; Console Output function            ;
-bcList		EQU		BIOSStart+3*5		; List Output function               ;
-bcPunch		EQU		BIOSStart+3*6		; Punch Output function              ;
-bcReader	EQU		BIOSStart+3*7		; Reader Input function              ;
-bcHome		EQU		BIOSStart+3*8		; Disk Home function                 ;
-bcSeldsk	EQU		BIOSStart+3*9		; Select Disk function               ;
-bcSettrk	EQU		BIOSStart+3*10		; Set Track function                 ;
-bcSetsec	EQU		BIOSStart+3*11		; Set Sector function                ;
-bcSetdma	EQU		BIOSStart+3*12		; Set DMA function                   ;
-bcRead		EQU		BIOSStart+3*13		; Read Disk function                 ;
-bcWrite		EQU		BIOSStart+3*14		; Write Disk function                ;
-bcListst	EQU		BIOSStart+3*15		; List Status function               ;
-bcSectran	EQU		BIOSStart+3*16		; Sector Translate                   ;
-;************************ BIOS Function Constants ***************************;
-;============================================================================;
-;	BDOS                                                                     ;
-; Calling into   :                                                           ;
-;					Register  C - Contains BDOS Function Code                ;
-;					Register  A - Holds the Byte argument if any             ;
-;					Register DE - Holds the Word argument if any             ;
-; Returning from :                                                           ;
-;					Register  A - The Byte return value if any               ;
-;					Register HL - The Word return value if any               ;
-;                   ( Register A=L and B=H)                                  ;
-;============================================================================;
+;************************ BIOS Function Constants **************************;
+bcBoot		EQU		BIOSStart+3*0		; Cold Boot function	            ;
+bcWboot		EQU		BIOSStart+3*1		; Warm Boot function                ;
+bcConst		EQU		BIOSStart+3*2		; Console Status function           ;
+bcConin		EQU		BIOSStart+3*3		; Console Input function            ;
+bcConout	EQU		BIOSStart+3*4		; Console Output function           ;
+bcList		EQU		BIOSStart+3*5		; List Output function              ;
+bcPunch		EQU		BIOSStart+3*6		; Punch Output function             ;
+bcReader	EQU		BIOSStart+3*7		; Reader Input function             ;
+bcHome		EQU		BIOSStart+3*8		; Disk Home function                ;
+bcSeldsk	EQU		BIOSStart+3*9		; Select Disk function              ;
+bcSettrk	EQU		BIOSStart+3*10		; Set Track function                ;
+bcSetsec	EQU		BIOSStart+3*11		; Set Sector function               ;
+bcSetdma	EQU		BIOSStart+3*12		; Set DMA function                  ;
+bcRead		EQU		BIOSStart+3*13		; Read Disk function                ;
+bcWrite		EQU		BIOSStart+3*14		; Write Disk function               ;
+bcListst	EQU		BIOSStart+3*15		; List Status function              ;
+bcSectran	EQU		BIOSStart+3*16		; Sector Translate                  ;
+;************************ BIOS Function Constants **************************;
+;===========================================================================;
+;	BDOS                                                                    ;
+; Calling into   :                                                          ;
+;					Register  C - Contains BDOS Function Code               ;
+;					Register  A - Holds the Byte argument if any            ;
+;					Register DE - Holds the Word argument if any            ;
+; Returning from :                                                          ;
+;					Register  A - The Byte return value if any              ;
+;					Register HL - The Word return value if any              ;
+;                   ( Register A=L and B=H)                                 ;
+;===========================================================================;
 
 
 	ORG	BDOSBase
 
-;===========================BDOS Entry=======================================;
-;BDOSEntry:                                                                  ;
-																			 ;
-																			 ;
- BdosStart:                                                                  ;
-;	LD		A,C                                                              ;
-; 	LD		(FunctionValue),A			; Save the function number           ;
-																			 ;
-; Save Calling Arguments                                                     ;
-	LD		(paramDE),DE				; Save the Word Argument             ;
-	LD		A,E	                                                             ;
-	LD		(paramE),A					; Save the Byte argument             ;
-; Save users Stack pointer                                                   ;
-	LD		(usersStack),SP         	; Save the User's stack				 ;
-	LD		SP,bdosStack				; We will use our own stack			 ;
-	                                                                         ;
-; initialize variables                                                       ;
-	LD		HL,0000H                                                         ;
-	LD		(exitParameterWord),HL		; Assume all is well for return      ;
-	XOR		A                                                                ;
-	LD		(fcbDisk),A					; Initialize to 00                   ;
-	LD		(fResel),A					; Clear re selection flag            ;
-	                                                                         ;
-; Set up for return to caller when Function Completes                        ;
-	LD		HL,ReturnToCaller                                                ;
-	PUSH	HL							;Set up to ReturnToCaller            ;
-	                                                                         ;
-; is it a valid function number ?	                                         ;
-;	LD		A,(FunctionValue)			; Get the Function Number            ;
-	LD		A,C                                                              ;
-	CP		functionCount				; make sure its a good number        ;
-	RET		NC							; exit if not a valid function       ;
-																			 ;
-; Calculate the index and get vector to go to	                             ;
-	LD		C,E							; Assume byte argument               ;
-	LD		HL,functionTable			; Get table base                     ;
-	LD		E,A							; Function number in E               ;
-	LD		D,0                                                              ;
-	ADD		HL,DE						; Have byte location                 ;
-	ADD		HL,DE						;  but we want a Word offset         ;
-	LD		E,(HL)						; Get LSB of vector                  ;
-	INC		HL                                                               ;
-	LD		D,(HL)						; Get MSB of vector                  ;
-	EX		DE,HL						; Vector now in HL                   ;
-																			 ;
-; Vector to Function is in HL                                                ;
-	JP		(HL) 						; Put it into the Program Counter    ;
-;===========================BDOS Entry=======================================;
-;===========================BDOS Exit =======================================;
-;arrive here at end of processing to return to user                          ;
-ReturnToCaller:                                                              ;
-	LD		A,(fResel)					; get re-selection flag              ;
-	OR		A							; is it set?                         ;
-	JR		Z,ReturnToCaller1                                                ;
- ;re-selection  may have taken place                                         ;
-	LD		HL,(paramDE)                                                     ;
-	LD		(HL),0                                                           ;
-	LD		A,(fcbDisk)                                                      ;
-	OR		A							; Disk = 0?                          ;
-	JR		Z,ReturnToCaller1			; exit if yes                  		 ;
-																			 ;
-	LD		(HL),A                                                           ;
-	LD		A,(entryDisk)				; get back original Disk             ;
-	LD		(paramE),A					; and select it                      ;
-	CALL	SelectCurrent                                                    ;
-																			 ;
-ReturnToCaller1:                                                             ;
-	LD		HL,(usersStack)                                                  ;
-	LD		SP,HL						; restore callers stack              ;
-	LD		HL,(exitParameterWord)                                           ;
-	LD		A,L                                                              ;
-	LD		B,H							; BA = exitParameterWord             ;
-	RET                                                                      ;
-;===========================BDOS Exit =======================================;
+;===========================BDOS Entry======================================;
+;BDOSEntry:                                                                 ;
+																			;
+																			;
+ BdosStart:                                                                 ;
+;	LD		A,C                                                             ;
+; 	LD		(FunctionValue),A			; Save the function number          ;
+																			;
+; Save Calling Arguments                                                    ;
+	LD		(paramDE),DE				; Save the Word Argument            ;
+	LD		A,E	                                                            ;
+	LD		(paramE),A					; Save the Byte argument            ;
+; Save users Stack pointer                                                  ;
+	LD		(usersStack),SP         	; Save the User's stack				;
+	LD		SP,bdosStack				; We will use our own stack			;
+	                                                                        ;
+; initialize variables                                                      ;
+	LD		HL,0000H                                                        ;
+	LD		(exitParameterWord),HL		; Assume all is well for return     ;
+	XOR		A                                                               ;
+	LD		(fcbDisk),A					; Initialize to 00                  ;
+	LD		(fResel),A					; Clear re selection flag           ;
+	                                                                        ;
+; Set up for return to caller when Function Completes                       ;
+	LD		HL,ReturnToCaller                                               ;
+	PUSH	HL							;Set up to ReturnToCaller           ;
+	                                                                        ;
+; is it a valid function number ?	                                        ;
+;	LD		A,(FunctionValue)			; Get the Function Number           ;
+	LD		A,C                                                             ;
+	CP		functionCount				; make sure its a good number       ;
+	RET		NC							; exit if not a valid function      ;
+																			;
+; Calculate the index and get vector to go to	                            ;
+	LD		C,E							; Assume byte argument              ;
+	LD		HL,functionTable			; Get table base                    ;
+	LD		E,A							; Function number in E              ;
+	LD		D,0                                                             ;
+	ADD		HL,DE						; Have byte location                ;
+	ADD		HL,DE						;  but we want a Word offset        ;
+	LD		E,(HL)						; Get LSB of vector                 ;
+	INC		HL                                                              ;
+	LD		D,(HL)						; Get MSB of vector                 ;
+	EX		DE,HL						; Vector now in HL                  ;
+																			;
+; Vector to Function is in HL                                               ;
+	JP		(HL) 						; Put it into the Program Counter   ;
+;===========================BDOS Entry======================================;
+;===========================BDOS Exit ======================================;
+;arrive here at end of processing to return to user                         ;
+ReturnToCaller:                                                             ;
+	LD		A,(fResel)					; get re-selection flag             ;
+	OR		A							; is it set?                        ;
+	JR		Z,ReturnToCaller1                                               ;
+ ;re-selection  may have taken place                                        ;
+	LD		HL,(paramDE)                                                    ;
+	LD		(HL),0                                                          ;
+	LD		A,(fcbDisk)                                                     ;
+	OR		A							; Disk = 0?                         ;
+	JR		Z,ReturnToCaller1			; exit if yes                  		;
+																			;
+	LD		(HL),A                                                          ;
+	LD		A,(entryDisk)				; get back original Disk            ;
+	LD		(paramE),A					; and select it                     ;
+	CALL	SelectCurrent                                                   ;
+																			;
+ReturnToCaller1:                                                            ;
+	LD		HL,(usersStack)                                                 ;
+	LD		SP,HL						; restore callers stack             ;
+	LD		HL,(exitParameterWord)                                          ;
+	LD		A,L                                                             ;
+	LD		B,H							; BA = exitParameterWord            ;
+	RET                                                                     ;
+;===========================BDOS Exit ======================================;
 
-;++++++++++++++++++++++++++++ Function Vector Table +++++++++++++++++++++++++;
-functionTable:                                                               ;
-	DW		vSystemReset				;   0 - System Reset                 ;
-	DW		vConsoleIn					;   1 - Console Input                ;
-	DW		vConsoleOut					;   2 - Console Output               ;
-	DW		vReaderIn					;   3 - Reader Input                 ;
-	DW		vPunchOut                   ;   4 - Punch Output                 ;
-	DW		vListOut					;   5 - List Output                  ;
-	DW		vDirectConIO				;   6 - Direct Console I/O           ;
-	DW		vGetIOBYTE					;   7 - Get I/O Byte                 ;
-	DW		vSetIOBYTE					;   8 - Set I/O Byte                 ;
-	DW		vPrintString				;   9 - Print String                 ;
-	DW		vReadString					;   A - Read Console String          ;
-	DW		vGetConsoleStatus			;   B - Get Console Status           ;
-diskf	EQU	($-functionTable)/2			; disk functions                     ;
-	DW		vGetVersion					;   C - Return Version Number        ;
-	DW		vResetSystem				;   D - Reset Disk System            ;
-	DW		vSelectDisk					;   E - Select Disk                  ;
-	DW		vOpenFile					;   F - Open File                    ;
-	DW		vCloseFile					;  10 - Close File                   ;
-	DW		vFindFirst					;  11 - Search For First             ;
-	DW		vFindNext					;  12 - Search for Next              ;
-	DW		vDeleteFile					;  13 - Delete File                  ;
-	DW		vReadSeq					;  14 - Read Sequential              ;
-	DW		vWriteSeq					;  15 - Write Sequential             ;
-	DW		vMakeFile					;  16 - Make File                    ;
-	DW		vRenameFile					;  17 - Rename File                  ;
-	DW		vGetLoginVector				;  18 - Return Login Vector          ;
-	DW		vGetCurrentDisk				;  19 - Return Current Disk          ;
-	DW		vSetDMA						;  1A - Set DMA address              ;
-	DW		vGetAllocAddr				;  1B - Get ADDR (ALLOC)             ;
-	DW		vWriteProtectDisk			;  1C - Write Protect Disk           ;
-	DW		vGetReadOnlyMap				;  1D - Get Read/Only MAP	         ;
-	DW		vSetFileAttributes			;  1E - Set File Attributes ??       ;
-	DW		vGetDiskParamBlock			;  1F - Get ADDR (Disk Parameters)   ;
-	DW		vGetSetUserNumber			;  20 - Set/Get User Code            ;
-	DW		vReadRandom					;  21 - Read Random                  ;
-	DW		vWriteRandom				;  22 - Write Random                 ;
-	DW		vComputeFileSize			;  23 - Compute File Size            ;
-	DW		vSetRandomRecord			;  24 - Set Random Record            ;
-	DW		vResetDrive					;  25 - Reset Drive                  ;
-	DW		DUMMY						;  26 - Access Drive (not supported) ;
-	DW		DUMMY						;  27 - Free Drive (not supported)   ;
-	DW		vWriteRandom0Fill			;  28 - Write random w/Fill          ;
-functionCount	EQU	($-functionTable)/2 ; Number of  functions               ;
-																			 ;
-DUMMY:                                                                       ;
-	HALT                                                                     ;
-;++++++++++++++++++++++++++++ Function Vector Table +++++++++++++++++++++++++;
+;++++++++++++++++++++++++++++ Function Vector Table ++++++++++++++++++++++++;
+functionTable:                                                              ;
+	DW		vSystemReset				;   0 - System Reset                ;
+	DW		vConsoleIn					;   1 - Console Input               ;
+	DW		vConsoleOut					;   2 - Console Output              ;
+	DW		vReaderIn					;   3 - Reader Input                ;
+	DW		vPunchOut                   ;   4 - Punch Output                ;
+	DW		vListOut					;   5 - List Output                 ;
+	DW		vDirectConIO				;   6 - Direct Console I/O          ;
+	DW		vGetIOBYTE					;   7 - Get I/O Byte                ;
+	DW		vSetIOBYTE					;   8 - Set I/O Byte                ;
+	DW		vPrintString				;   9 - Print String                ;
+	DW		vReadString					;   A - Read Console String         ;
+	DW		vGetConsoleStatus			;   B - Get Console Status          ;
+diskf	EQU	($-functionTable)/2			; disk functions                    ;
+	DW		vGetVersion					;   C - Return Version Number       ;
+	DW		vResetSystem				;   D - Reset Disk System           ;
+	DW		vSelectDisk					;   E - Select Disk                 ;
+	DW		vOpenFile					;   F - Open File                   ;
+	DW		vCloseFile					;  10 - Close File                  ;
+	DW		vFindFirst					;  11 - Search For First            ;
+	DW		vFindNext					;  12 - Search for Next             ;
+	DW		vDeleteFile					;  13 - Delete File                 ;
+	DW		vReadSeq					;  14 - Read Sequential             ;
+	DW		vWriteSeq					;  15 - Write Sequential            ;
+	DW		vMakeFile					;  16 - Make File                   ;
+	DW		vRenameFile					;  17 - Rename File                 ;
+	DW		vGetLoginVector				;  18 - Return Login Vector         ;
+	DW		vGetCurrentDisk				;  19 - Return Current Disk         ;
+	DW		vSetDMA						;  1A - Set DMA address             ;
+	DW		vGetAllocAddr				;  1B - Get ADDR (ALLOC)            ;
+	DW		vWriteProtectDisk			;  1C - Write Protect Disk          ;
+	DW		vGetReadOnlyMap				;  1D - Get Read/Only MAP	        ;
+	DW		vSetFileAttributes			;  1E - Set File Attributes ??      ;
+	DW		vGetDiskParamBlock			;  1F - Get ADDR (Disk Parameters)  ;
+	DW		vGetSetUserNumber			;  20 - Set/Get User Code           ;
+	DW		vReadRandom					;  21 - Read Random                 ;
+	DW		vWriteRandom				;  22 - Write Random                ;
+	DW		vComputeFileSize			;  23 - Compute File Size           ;
+	DW		vSetRandomRecord			;  24 - Set Random Record           ;
+	DW		vResetDrive					;  25 - Reset Drive                 ;
+	DW		DUMMY						;  26 - Access Drive (not supported);
+	DW		DUMMY						;  27 - Free Drive (not supported)  ;
+	DW		vWriteRandom0Fill			;  28 - Write random w/Fill         ;
+functionCount	EQU	($-functionTable)/2 ; Number of  functions              ;
+																			;
+DUMMY:                                                                      ;
+	HALT                                                                    ;
+;++++++++++++++++++++++++++++ Function Vector Table ++++++++++++++++++++++++;
 
-;-------------------------- System Reset - 0 (0) ----------------------------;
-;  The system reset function makes CP/M do a complete reset, exactly the     ;
-; same as the warm boot function invoked when you transfer control to the    ;
-; WARMBOOT point. In addition to resetting the BDOS, this function reloads   ;
-; the CCP, rebuilds the allocation vectors for the currently logged disks,   ;
-; sets the DMA address (used byCP/M to address the disk read/write buffer)   ;
-; to 80H, marks all disks as being Read/Write status, and transfers control  ;
-; to the  CCP. The CCP then outputs its prompt to the console.               ;
-;																			 ;
-;			Function Code	 :	C = 00H                                      ;
-;			Entry Parameters:	None                                         ;
-;			Exit Parameters :	Does Not Return								 ;
-;																			 ;
-;-------------------------- System Reset - 0 (0) ----------------------------;
+;-------------------------- System Reset - 0 (0) ---------------------------;
+;  The system reset function makes CP/M do a complete reset, exactly the    ;
+; same as the warm boot function invoked when you transfer control to the   ;
+; WARMBOOT point. In addition to resetting the BDOS, this function reloads  ;
+; the CCP, rebuilds the allocation vectors for the currently logged disks,  ;
+; sets the DMA address (used byCP/M to address the disk read/write buffer)  ;
+; to 80H, marks all disks as being Read/Write status, and transfers control ;
+; to the  CCP. The CCP then outputs its prompt to the console.              ;
+;																			;
+;			Function Code	 :	C = 00H                                     ;
+;			Entry Parameters:	None                                        ;
+;			Exit Parameters :	Does Not Return								;
+;																			;
+;-------------------------- System Reset - 0 (0) ---------------------------;
 vSystemReset:
 	JP		bcWboot						; do a Warm Boot
 		
-;****************************************************************************;
-;								IOByte device I/O							 ;
-;****************************************************************************;
+;***************************************************************************;
+;								IOByte device I/O							;
+;***************************************************************************;
 			
 
-;-------------------------- Read Console Byte - 1 (1) -----------------------;
-;  This function reads the next byte of data from the console keyboard and   ;
-; puts it into register A. If the character input is a graphic character, it ;
-; will be echoed back to the console. The only control characters that are   ;
-; echoed are  CARRIAGE RETURN, LINE FEED, BACKSPACE, and TAB. In the case    ;
-; of a TAB character, the BDOS outputs as many spaces as are required to     ;
-; move the cursor to the next multiple of eight columns. All of the other    ;
-; control characters, including CONTROL-C, are input but are not echoed.     ;
-;  This function also checks for CONTROL-S (XOFF) to see if console output   ;
-; should be suspended, and for CONTROL-P (printer echo toggle) to see if     ;
-; console output should also be sent to the list device. If CONTROL-S is     ;
-; found, further output will be suspended until you type another character.  ;
-; CONTROL-P will enable the echoing of console output the first time it is   ;
-; pressed and disable it the second time. If there is no incoming data       ;
-; character, this function will wait until there is one.                     ;
-;                                                                            ;
-; This is a blocking function                                                ;
-;																			 ;
-;																			 ;
-;			Function Code	:	C = 01H                                      ;
-;			Entry Parameters:	None                                         ;
-;			Exit Parameters :	A = Data byte from console					 ;
-;																			 ;
-;-------------------------- Read Console Byte - 1 (1) -----------------------;
+;-------------------------- Read Console Byte - 1 (1) ----------------------;
+;  This function reads the next byte of data from the console keyboard and  ;
+; puts it into register A. If the character input is a graphic character, it;
+; will be echoed back to the console. The only control characters that are  ;
+; echoed are  CARRIAGE RETURN, LINE FEED, BACKSPACE, and TAB. In the case   ;
+; of a TAB character, the BDOS outputs as many spaces as are required to    ;
+; move the cursor to the next multiple of eight columns. All of the other   ;
+; control characters, including CONTROL-C, are input but are not echoed.    ;
+;  This function also checks for CONTROL-S (XOFF) to see if console output  ;
+; should be suspended, and for CONTROL-P (printer echo toggle) to see if    ;
+; console output should also be sent to the list device. If CONTROL-S is    ;
+; found, further output will be suspended until you type another character. ;
+; CONTROL-P will enable the echoing of console output the first time it is  ;
+; pressed and disable it the second time. If there is no incoming data      ;
+; character, this function will wait until there is one.                    ;
+;                                                                           ;
+; This is a blocking function                                               ;
+;																			;
+;																			;
+;			Function Code	:	C = 01H                                     ;
+;			Entry Parameters:	None                                        ;
+;			Exit Parameters :	A = Data byte from console					;
+;																			;
+;-------------------------- Read Console Byte - 1 (1) ----------------------;
 vConsoleIn:
 	CALL	ConIn						; Don't come back without input
 	CALL	IsPrintableASCII			; CR,LF,TAB,BACK_SPACE or GE SPACE
@@ -242,9 +242,9 @@ vConsoleIn:
 	RET					
 
 ;------------------------- Write Console Byte - 2 (2) -----------------------;
-;  This function outputs the data byte in register E to the console. As with ;
-; function 1, if the data byte is a TAB character, it will be expanded by    ;
-; the BDOS to the next column that is a multiple of eight. The BDOS also     ;
+;  This function outputs the data byte in register E to the console. As      ;
+; with function 1, if the data byte is a TAB character, it will be expanded  ;
+; by the BDOS to the next column that is a multiple of eight. The BDOS also  ;
 ; checks to see if there is an incoming character, and if there is,          ;
 ; checks to see if it is a CONTROL-S ,in which case console output is        ;
 ; suspended or CONTROL-P, in which case echoing of console output to the     ;
@@ -260,78 +260,78 @@ vConsoleOut:
 	CALL	TabOut
 	RET
 
-;--------------------------- Read Reader Byte - 3 (3) -----------------------;
-;   function reads the next character from the logical "reader" device into  ;
-; register A. In practice, the physical device that is accessed depends      ;
-; entirely on how your BIOS is configured. In some systems, there is no      ;
-; reader at all; this function will return some arbitrary value such as lAH  ;
-; (the ASCII CONTROL-Z character, used by CP/M to denote "End of File').     ;
-; Control is not returned to the calling program until a character has been  ;
-; read.                                                                      ;
-;                                                                            ;
-; This is a blocking function                                                ;
-;																			 ;
-;			Function Code	:	C = 03H                                      ;
-;			Entry Parameters:	None										 ;
-;			Exit Parameters :	A = Character Input							 ;
-;																			 ;
-;--------------------------- Read Reader Byte - 3 (3) -----------------------;
+;--------------------------- Read Reader Byte - 3 (3) ----------------------;
+;   function reads the next character from the logical "reader" device into ;
+; register A. In practice, the physical device that is accessed depends     ;
+; entirely on how your BIOS is configured. In some systems, there is no     ;
+; reader at all; this function will return some arbitrary value such as lAH ;
+; (the ASCII CONTROL-Z character, used by CP/M to denote "End of File').    ;
+; Control is not returned to the calling program until a character has been ;
+; read.                                                                     ;
+;                                                                           ;
+; This is a blocking function                                               ;
+;																			;
+;			Function Code	:	C = 03H                                     ;
+;			Entry Parameters:	None										;
+;			Exit Parameters :	A = Character Input							;
+;																			;
+;--------------------------- Read Reader Byte - 3 (3) ----------------------;
 vReaderIn:
 	CALL	bcReader
 	LD		(exitParameterWord),A
 	RET
 
-;--------------------------- Write Punch Byte - 4 (4) -----------------------;
-;  This function is a counterpart to the Read "Reader" Byte It outputs the   ;
-; specified character from register E to the logical punch device. Again,    ;
-; the actual physical device used, if any, is determined by the BIOS.        ;
-; There is no set standard for this device; in some systems the punch        ;
-; device is a "bit bucket," so called because it absorbs all data that you   ;
-; output to it.                                                              ;
-;																			 ;
-;			Function Code	:	C = 04H                                      ;
-;			Entry Parameters:	E = Data byte to be output					 ;
-;			Exit Parameters :	None										 ;
-;																			 ;
-;--------------------------- Write Punch Byte - 4 (4) -----------------------;
+;--------------------------- Write Punch Byte - 4 (4) ----------------------;
+;  This function is a counterpart to the Read "Reader" Byte It outputs the  ;
+; specified character from register E to the logical punch device. Again,   ;
+; the actual physical device used, if any, is determined by the BIOS.       ;
+; There is no set standard for this device; in some systems the punch       ;
+; device is a "bit bucket," so called because it absorbs all data that you  ;
+; output to it.                                                             ;
+;																			;
+;			Function Code	:	C = 04H                                     ;
+;			Entry Parameters:	E = Data byte to be output					;
+;			Exit Parameters :	None										;
+;																			;
+;--------------------------- Write Punch Byte - 4 (4) ----------------------;
 ;BDOS put parameter in C before entering this routine
  vPunchOut:
 	CALL	bcPunch
 	RET
 
-;---------------------------- Write List Byte - 5 (5) -----------------------;
-;  This function outputs the specified byte in register E to the logical     ;
-; list device. As with the reader and the punch, the physical device used    ;
-; depends entirely on the BIOS.                                              ;
-;																			 ;
-;			Function Code	:	C = 05H                                      ;
-;			Entry Parameters:	E = Data byte to be output					 ;
-;			Exit Parameters :	None										 ;
-;																			 ;
-;---------------------------- Write List Byte - 5 (5) -----------------------;
+;---------------------------- Write List Byte - 5 (5) ----------------------;
+;  This function outputs the specified byte in register E to the logical    ;
+; list device. As with the reader and the punch, the physical device used   ;
+; depends entirely on the BIOS.                                             ;
+;																			;
+;			Function Code	:	C = 05H                                     ;
+;			Entry Parameters:	E = Data byte to be output					;
+;			Exit Parameters :	None										;
+;																			;
+;---------------------------- Write List Byte - 5 (5) ----------------------;
 ;BDOS put parameter in C before entering this routine
  vListOut:								; func5 (05 - 05) List Output
 	CALL	bcList						; direct call to BIOS
 	RET
 
-;--------------------------- Direct Console I/O - 6 (6) ---------------------;
-;  This function serves double duty: it both inputs and outputs characters   ;
-; from the console. However, it bypasses the normal control characters and   ;
-; line editing features (such as CONTROL-P and CONTROL-S) normally           ;
-; associated with console I( O. Hence the name "direct" (or "unadorned" as   ;
-; Digital Research describes it). If the value in register E is not OFFH,    ;
-; then E contains a valid ASCII character that is output to the console.     ;
-;  This function works well provided you never have to send a value ofOFFH   ;
-; or expect to receive a value ofOOH. If you do need to send or receive pure ;
-; binary data, you cannot use this function, since these values are likely   ;
-; to be part of the data stream.                                             ;
-;                                                                            ;
-;			Function Code	:	C = 06H                                      ;
-;			Entry Parameters:	E = 0FFH for Input					  		 ;
-;								E = Other than 0FFH for Output				 ;
-;			Exit Parameters :	A = Input byte or status					 ;
-;																			 ;
-;--------------------------- Direct Console I/O - 6 (6) ---------------------;
+;--------------------------- Direct Console I/O - 6 (6) --------------------;
+;  This function serves double duty: it both inputs and outputs characters  ;
+; from the console. However, it bypasses the normal control characters and  ;
+; line editing features (such as CONTROL-P and CONTROL-S) normally          ;
+; associated with console I( O. Hence the name "direct" (or "unadorned" as  ;
+; Digital Research describes it). If the value in register E is not OFFH,   ;
+; then E contains a valid ASCII character that is output to the console.    ;
+;  This function works well provided you never have to send a value ofOFFH  ;
+; or expect to receive a value ofOOH. If you do need to send or receive     ;
+;  pure binary data, you cannot use this function, since these values are   ;
+;  likely to be part of the data stream.                                    ;
+;                                                                           ;
+;			Function Code	:	C = 06H                                     ;
+;			Entry Parameters:	E = 0FFH for Input					  		;
+;								E = Other than 0FFH for Output				;
+;			Exit Parameters :	A = Input byte or status					;
+;																			;
+;--------------------------- Direct Console I/O - 6 (6) --------------------;
 ;BDOS put parameter in C before entering this routine
  vDirectConIO:
 	LD		A,C
@@ -350,64 +350,64 @@ vDirectConIO1:
 	LD		(exitParameterByte),A		; Save it
 	RET
 
-;--------------------------- Get IOBYTE Setting - 7 (7) ---------------------;
-; This function places the current value of the IOBYTE in register A.        ;
-;                                                                            ;
-; The IOBYTE structure:                                                      ;
-;								+-------+-------+-------+-------+            ;
-;						Bit No. | 7 : 6 | 5 : 4 | 3 : 2 | 1 : 0 |            ;
-;								+-------+-------+-------+-------+            ;
-;				Logical Device     List | Punch | Reader|Console             ;
-;                                                                            ;
-;                                                                            ;
-;			Function Code	:	C = 07H                                      ;
-;			Entry Parameters:	None					  		  			 ;
-;			Exit Parameters :	A = Current IOBYTE value					 ;
-;																			 ;
-;--------------------------- Get IOBYTE Setting - 7 (7) ---------------------;
+;--------------------------- Get IOBYTE Setting - 7 (7) --------------------;
+; This function places the current value of the IOBYTE in register A.       ;
+;                                                                           ;
+; The IOBYTE structure:                                                     ;
+;								+-------+-------+-------+-------+           ;
+;						Bit No. | 7 : 6 | 5 : 4 | 3 : 2 | 1 : 0 |           ;
+;								+-------+-------+-------+-------+           ;
+;				Logical Device     List | Punch | Reader|Console            ;
+;                                                                           ;
+;                                                                           ;
+;			Function Code	:	C = 07H                                     ;
+;			Entry Parameters:	None					  		  			;
+;			Exit Parameters :	A = Current IOBYTE value					;
+;																			;
+;--------------------------- Get IOBYTE Setting - 7 (7) --------------------;
  vGetIOBYTE:
 	LD		A,(IOBYTE)					; Get the IOBYTE
 	LD		(exitParameterWord),A		; Return it to caller
 	RET	
-;--------------------------- Set IOBYTE Setting - 8 (8) ---------------------;
-; This function sets the IOBYTE         									 ;
-;                                                                            ;
-; The IOBYTE structure:                                                      ;
-;								+-------+-------+-------+-------+            ;
-;						Bit No. | 7 : 6 | 5 : 4 | 3 : 2 | 1 : 0 |            ;
-;								+-------+-------+-------+-------+            ;
-;				Logical Device     List | Punch | Reader|Console             ;
-;                                                                            ;
-;                                                                            ;
-;			Function Code	:	C = 08H                                      ;
-;			Entry Parameters:	E = New IOBYTE value	  		  			 ;
-;			Exit Parameters :	None                                         ;
-;																			 ;
-;--------------------------- Get IOBYTE Setting - 8 (8) ---------------------;
+;--------------------------- Set IOBYTE Setting - 8 (8) --------------------;
+; This function sets the IOBYTE         									;
+;                                                                           ;
+; The IOBYTE structure:                                                     ;
+;								+-------+-------+-------+-------+           ;
+;						Bit No. | 7 : 6 | 5 : 4 | 3 : 2 | 1 : 0 |           ;
+;								+-------+-------+-------+-------+           ;
+;				Logical Device     List | Punch | Reader|Console            ;
+;                                                                           ;
+;                                                                           ;
+;			Function Code	:	C = 08H                                     ;
+;			Entry Parameters:	E = New IOBYTE value	  		  			;
+;			Exit Parameters :	None                                        ;
+;																			;
+;--------------------------- Get IOBYTE Setting - 8 (8) --------------------;
 ;BDOS put parameter in C before entering this routine
  vSetIOBYTE:
 	LD		HL,IOBYTE					; point at The IOBYTE
 	LD		(HL),C						; Place new vale in it
 	RET
 
-;---------------------- Display $ terminated String - 9 (9) -----------------;
-;  This function outputs a string of characters to the console device. The   ;
-; address of this string is in registers DE. You must make sure that the last;
-; character of the string is "$"; the BDOS uses this character as a marker   ;
-; for the end of the string.                                                 ;
-;  The "$" itself does not get output to the console.                        ;
-;                                                                            ;
-; While the BDOS is outputting the string, it expands tabs as previously     ;
-; described, checks to see if there is an incoming character, and checks for ;
-; CONTROL-S (XOFF, which stops the output until another character is entered);
-; or CONTROL-P (which turns on or off echoing of console characters to       ;
-; the printer).                                                              ;
-;                                                                            ;
-;			Function Code	:	C = 09H                                      ;
-;			Entry Parameters:	DE = Address of the first byte of the string ;
-;			Exit Parameters :	None							             ;
-;																			 ;
-;---------------------- Display $ terminated String - 9 (9) -----------------;
+;---------------------- Display $ terminated String - 9 (9) ----------------;
+;  This function outputs a string of characters to the console device. The  ;
+; address of this string is in registers DE. You must make sure that the    ;
+; last character of the string is "$"; the BDOS uses this character as a    ;
+; marker for the end of the string. The "$" itself does not get output to   ;
+; the console.                                                              ;
+;                                                                           ;
+; While the BDOS is outputting the string, it expands tabs as previously    ;
+; described, checks to see if there is an incoming character, and checks    ;
+; for  CONTROL-S (XOFF, which stops the output until another character is   ;
+; entered) or CONTROL-P (which turns on or off echoing of console characters;
+; to  the printer).                                                         ;    
+;                                                                           ;
+;			Function Code	:	C = 09H                                     ;
+;			Entry Parameters:	DE = Address of the first byte of the string;
+;			Exit Parameters :	None							            ;
+;																			;
+;---------------------- Display $ terminated String - 9 (9) ----------------;
 vPrintString:
 	LD		HL,(paramDE)				; Get address of the string
 	LD		C,L
@@ -415,95 +415,96 @@ vPrintString:
 	CALL	Print						; out to console
 	RET
 
-;-------------------------- Read Console String - A (10) --------------------;
-;  This function reads a string of characters from the console device        ;
-; and stores them in a buffer (address in DE) that you define. Full line     ;
-; editing is possible: the operator can backspace, cancel the line and start ;
-; over, and use all the normal control functions. What you will ultimately   ;
-; see in the buffer is the final version of the character string entered,    ;
-; without any of the errors or control characters used to do the line editing;
-;                                                                            ;
-;  The buffer that you define has a special format. The first byte in the    ;
-; buffer tells the BDOS the maximum number of characters to be accepted.     ;
-; The second byte is reserved for the BDOS to tell you how many characters   ;
-; were actually placed in the buffer. The following bytes contain            ;
-; the characters of the string. Character input will cease either when a     ;
-; CARRIAGE RETURN is entered or when the maximum number of characters,       ;
-; as specified in the buffer, has been received. The CARRIAGE RETURN is not  ;
-; stored in the buffer as a character-it just serves as a terminator. If     ;
-; the first character entered is a CARRIAGE RETURN, then the BDOS sets       ;
-; the "characters input" byte to O. If you attempt to input more than the    ;
-; maximum number of characters, the "characters input" count will be the     ;
-; same as the maximum value allowed.                                         ;
-;                                                                            ;
-;			Function Code	:	C = 0AH                                      ;
-;			Entry Parameters:	DE = Address string buffer					 ;
-;			Exit Parameters :	String Buffer with console bytes in it       ;
-;																			 ;
-;-------------------------- Read Console String - A (10) --------------------;
+;-------------------------- Read Console String - A (10) -------------------;
+;  This function reads a string of characters from the console device       ;
+; and stores them in a buffer (address in DE) that you define. Full line    ;
+; editing is possible: the operator can backspace, cancel the line and      ;
+; start over, and use all the normal control functions. What you will       ;
+; ultimately see in the buffer is the final version of the character string ;
+; entered, without any of the errors or control characters used to do the   ;
+; line editing;                                                             ;
+;                                                                           ;
+;  The buffer that you define has a special format. The first byte in the   ;
+; buffer tells the BDOS the maximum number of characters to be accepted.    ;
+; The second byte is reserved for the BDOS to tell you how many characters  ;
+; were actually placed in the buffer. The following bytes contain           ;
+; the characters of the string. Character input will cease either when a    ;
+; CARRIAGE RETURN is entered or when the maximum number of characters,      ;
+; as specified in the buffer, has been received. The CARRIAGE RETURN is not ;
+; stored in the buffer as a character-it just serves as a terminator. If    ;
+; the first character entered is a CARRIAGE RETURN, then the BDOS sets      ;
+; the "characters input" byte to O. If you attempt to input more than the   ;
+; maximum number of characters, the "characters input" count will be the    ;
+; same as the maximum value allowed.                                        ;
+;                                                                           ;
+;			Function Code	:	C = 0AH                                     ;
+;			Entry Parameters:	DE = Address string buffer					;
+;			Exit Parameters :	String Buffer with console bytes in it      ;
+;																			;
+;-------------------------- Read Console String - A (10) -------------------;
  vReadString:
 	CALL	ReadString
 	RET
 
-;------------------------- Read Console Status - B (11) ---------------------;
-; This function tells you whether a console input character is waiting to be ;
-;processed. Unlike the Console Input functions, which will wait until there  ;
-;is input,this function simply checks and returns immediately.               ;
-;                                                                            ;
-;			Function Code	:	C = 0BH                                      ;
-;			Entry Parameters:	None										 ;
-;			Exit Parameters :	A = 00H if no incoming Data					 ;
-;								A = FFH	if incoming Data					 ;
-;																			 ;
-;------------------------- Read Console Status - B (11) ---------------------;
+;------------------------- Read Console Status - B (11) --------------------;
+; This function tells you whether a console input character is waiting to   ;
+; be processed. Unlike the Console Input functions, which will wait until   ;
+; there is input,this function simply checks and returns immediately.       ;
+;                                                                           ;
+;			Function Code	:	C = 0BH                                     ;
+;			Entry Parameters:	None										;
+;			Exit Parameters :	A = 00H if no incoming Data					;
+;								A = FFH	if incoming Data					;
+;																			;
+;------------------------- Read Console Status - B (11) --------------------;
 vGetConsoleStatus:
 	CALL	ConBreak
 	LD		(exitParameterByte),A
 	RET
 
-;--------------------------- Get CP/M Version - C (12) ----------------------;
-;  This function tells you which version of CP/M you are currently running.  ;
-; A two-byte value is returned:                                              ;
-;	H = OOH for CP/M, H = OlH for MP/M                                       ;
-;	L = OOH for all releases before CP/M 2.0                                 ;
-;	L = 20H for CP/M 2.0,21 H for 2.1, 22H for 2.2,                          ;
-;		and so on for any subsequent releases.                               ;
-;                                                                            ;
-; This information is of interest only if your program has some version      ;
-; specific logic built into it. For example, CP/M version 1.4 does not       ;
-; support the same Random File Input/ Output operations that CP/M 2.2 does.  ;
-; Therefore, if your program uses Random I/O, put this check at the          ;
-; beginning to ensure that it is indeed running under the appropriate        ;
-; version of CP/M.                                                           ;
-;                                                                            ;
-;			Function Code	:	C = 0CH                                      ;
-;			Entry Parameters:	None										 ;
-;			Exit Parameters :	HL =Version Number Code						 ;
-;								A = FFH	if incoming Data					 ;
-;																			 ;
-;--------------------------- Get CP/M Version - C (12) ----------------------;
+;--------------------------- Get CP/M Version - C (12) ---------------------;
+;  This function tells you which version of CP/M you are currently running. ;
+; A two-byte value is returned:                                             ;
+;	H = OOH for CP/M, H = OlH for MP/M                                      ;
+;	L = OOH for all releases before CP/M 2.0                                ;
+;	L = 20H for CP/M 2.0,21 H for 2.1, 22H for 2.2,                         ;
+;		and so on for any subsequent releases.                              ;
+;                                                                           ;
+; This information is of interest only if your program has some version     ;
+; specific logic built into it. For example, CP/M version 1.4 does not      ;
+; support the same Random File Input/ Output operations that CP/M 2.2 does. ;
+; Therefore, if your program uses Random I/O, put this check at the         ;
+; beginning to ensure that it is indeed running under the appropriate       ;
+; version of CP/M.                                                          ;
+;                                                                           ;
+;			Function Code	:	C = 0CH                                     ;
+;			Entry Parameters:	None										;
+;			Exit Parameters :	HL =Version Number Code						;
+;								A = FFH	if incoming Data					;
+;																			;
+;--------------------------- Get CP/M Version - C (12) ---------------------;
  vGetVersion:								; func12 (12 - 0C)	 Get Version
 	LD		A,VERSION
 	LD		(exitParameterByte),A 			;exitParameterByte = VERSION
 	RET
 	
-;--------------------------- Get/Set User Number - 20 (32) ------------------;
-;  This subroutine either sets or gets the current user number. The current  ;
-; user number determines which file directory entries are matched during all ;
-; disk file operations. When you call this function, the contents of the     ;
-; E register specify what action is to be taken. IfE=OFFH, then the function ;
-; will return the current user number in the A register. If you set E to a   ;
-; number in the range 0 to 15 (that is, a valid user number), the function   ;
-; will set the current user number to this value.                            ;
-;                                                                            ;
-;			Function Code	:	C = 0CH                                      ;
-;			Entry Parameters:	E = 0FFH to get User Number  				 ;
-;								  = 0 to 15 to set User Number				 ;
-;			Exit Parameters :	A = Current user Number if E was set to 0FFH ;
-;								A = FFH	if incoming Data					 ;
-;																			 ;
-;                                                                            ;
-;--------------------------- Get/Set User Number - 20 (32) ------------------;
+;--------------------------- Get/Set User Number - 20 (32) -----------------;
+;  This subroutine either sets or gets the current user number. The current ;
+; user number determines which file directory entries are matched during all;
+; disk file operations. When you call this function, the contents of the    ;
+; E register specify what action is to be taken. IfE=OFFH, then the function;
+; will return the current user number in the A register. If you set E to a  ;
+; number in the range 0 to 15 (that is, a valid user number), the function  ;
+; will set the current user number to this value.                           ;
+;                                                                           ;
+;			Function Code	:	C = 0CH                                     ;
+;			Entry Parameters:	E = 0FFH to get User Number  				;
+;								  = 0 to 15 to set User Number				;
+;			Exit Parameters :	A = Current user Number if E was set to 0FFH;
+;								A = FFH	if incoming Data					;
+;																			;
+;                                                                           ;
+;--------------------------- Get/Set User Number - 20 (32) -----------------;
 vGetSetUserNumber:
     LD		A,(paramE)
 	CP		0FFH
@@ -517,420 +518,420 @@ SetUserNumber:
 	LD		(currentUserNumber),A
 	RET
 
-;****************************************************************************;
-;								Character Support Routines					 ;
-;****************************************************************************;
+;***************************************************************************;
+;								Character Support Routines					;
+;***************************************************************************;
 
 
-;-------------------- Return a Character from the console -------------------;
-;return byte from buffer or read from the console                            ;
-ConIn:                                                                       ;
-	LD		HL,keyboardByte 			; is there a Byte waiting?           ;
-	LD		A,(HL)                                                           ;
-	LD		(HL),0                                                           ;
-	OR		A                                                                ;
-	RET		NZ                                                               ;
-																			 ;
-	JP		bcConin				 		; Go get byte from Console           ;
-;-------------------- Return a Character from the console -------------------;
+;-------------------- Return a Character from the console ------------------;
+;return byte from buffer or read from the console                           ;
+ConIn:                                                                      ;
+	LD		HL,keyboardByte 			; is there a Byte waiting?          ;
+	LD		A,(HL)                                                          ;
+	LD		(HL),0                                                          ;
+	OR		A                                                               ;
+	RET		NZ                                                              ;
+																			;
+	JP		bcConin				 		; Go get byte from Console          ;
+;-------------------- Return a Character from the console ------------------;
 
-;----------- Is the Character ASCII printable, CR,LF,TAB,BACKSPACE ----------;
-; Resets Carry Flag if ASCII Printable, CR,LF,TAB,BackSpace or GE SPACE      ;
-IsPrintableASCII:                                                            ;
-	CP	CR                                                                   ;
-	RET	Z; carriage return?                                                  ;
-	CP	LF                                                                   ;
-	RET	Z; line feed?                                                        ;
-	CP	TAB                                                                  ;
-	RET	Z; TAB?                                                              ;
-	CP	CTRL_H                                                               ;
-	RET	Z; backspace?                                                        ;
-	CP	SPACE						; Reset Carry if ASCII printable         ;
-	RET								                                         ;
-;----------- Is the Character ASCII printable, CR,LF,TAB,BACKSPACE ----------;
+;----------- Is the Character ASCII printable, CR,LF,TAB,BACKSPACE ---------;
+; Resets Carry Flag if ASCII Printable, CR,LF,TAB,BackSpace or GE SPACE     ;
+IsPrintableASCII:                                                           ;
+	CP	CR                                                                  ;
+	RET	Z; carriage return?                                                 ;
+	CP	LF                                                                  ;
+	RET	Z; line feed?                                                       ;
+	CP	TAB                                                                 ;
+	RET	Z; TAB?                                                             ;
+	CP	CTRL_H                                                              ;
+	RET	Z; backspace?                                                       ;
+	CP	SPACE						; Reset Carry if ASCII printable        ;
+	RET								                                        ;
+;----------- Is the Character ASCII printable, CR,LF,TAB,BACKSPACE ---------;
 
-;------------------ Print character from (BC) until  $ found ----------------;
-Print:                                                                       ;
-	LD		A,(BC)						; Get the next character             ;
-	CP		DOLLAR						; Is it the end ?                    ;
-	RET	Z								;  exit if yes                       ;
-	INC		BC							; Update the pointer                 ;
-	PUSH	BC							; Save it                            ;
-	LD		C,A							; Does Byte require                  ;
-	CALL	TabOut						;  special attention - check         ;
-	POP		BC							; Retrieve the pointer				 ;		
-	JR		Print						; Loop back                          ;
-;------------------ Print character from (BC) until  $ found ----------------;
+;------------------ Print character from (BC) until  $ found ---------------;
+Print:                                                                      ;
+	LD		A,(BC)						; Get the next character            ;
+	CP		DOLLAR						; Is it the end ?                   ;
+	RET	Z								;  exit if yes                      ;
+	INC		BC							; Update the pointer                ;
+	PUSH	BC							; Save it                           ;
+	LD		C,A							; Does Byte require                 ;
+	CALL	TabOut						;  special attention - check        ;
+	POP		BC							; Retrieve the pointer				;		
+	JR		Print						; Loop back                         ;
+;------------------ Print character from (BC) until  $ found ---------------;
 
-;-- Send printable character to console. Precede with Caret if needed -------;
-; character is in Reg C                                                      ;
-CaretOut:                                                                    ;
-	LD		A,C                                                              ;
-	CALL	IsPrintableASCII                                                 ;
-	JR		NC,TabOut					; Skip if Caret not needed           ;
-; send preceding up arrow                                                    ;
-	PUSH	AF							; Save the character                 ;
-	LD		C,CARET                                                          ;
-	CALL	ConsoleOut					; Send Caret to Console              ;
-	POP		AF							; Get the character                  ;
-	OR		40H							; Make the graphic a letter          ;
-	LD		C,A							; Set up to print                    ;
-; fall thru to TabbOut                                                       ;
-;-- Send printable character to console. Precede with Caret if needed -------;
+;-- Send printable character to console. Precede with Caret if needed ------;
+; character is in Reg C                                                     ;
+CaretOut:                                                                   ;
+	LD		A,C                                                             ;
+	CALL	IsPrintableASCII                                                ;
+	JR		NC,TabOut					; Skip if Caret not needed          ;
+; send preceding up arrow                                                   ;
+	PUSH	AF							; Save the character                ;
+	LD		C,CARET                                                         ;
+	CALL	ConsoleOut					; Send Caret to Console             ;
+	POP		AF							; Get the character                 ;
+	OR		40H							; Make the graphic a letter         ;
+	LD		C,A							; Set up to print                   ;
+; fall thru to TabbOut                                                      ;
+;-- Send printable character to console. Precede with Caret if needed ------;
 
-;------------- Send printable character to console. Expand if TAB -----------;
-; character is in Reg C                                                      ;
- TabOut:                                                                     ;
-	LD		A,C                                                              ;
-	CP		TAB							; Is it a TAB                        ;
-	JP		NZ,ConsoleOut				; Go directly to ConsoleOut if not   ;
-	                                                                         ;
- ; TAB encountered                                                           ;
- TabOut0:                                                                    ;
-	LD		C,SPACE						; Expand TABs with SPACEs            ;
-	CALL	ConsoleOut					; Send to Console                    ;
-	LD		A,(columnPosition)			; Get Column position                ;
-	AND		111b						; (ColumnPosition mod 8) = 0 ?       ;
-	JR		NZ,TabOut0					; Do again if not                    ;
-	RET                                                                      ;
-;------------- Send printable character to console. Expand if TAB -----------;
+;------------- Send printable character to console. Expand if TAB ----------;
+; character is in Reg C                                                     ;
+ TabOut:                                                                    ;
+	LD		A,C                                                             ;
+	CP		TAB							; Is it a TAB                       ;
+	JP		NZ,ConsoleOut				; Go directly to ConsoleOut if not  ;
+	                                                                        ;
+ ; TAB encountered                                                          ;
+ TabOut0:                                                                   ;
+	LD		C,SPACE						; Expand TABs with SPACEs           ;
+	CALL	ConsoleOut					; Send to Console                   ;
+	LD		A,(columnPosition)			; Get Column position               ;
+	AND		111b						; (ColumnPosition mod 8) = 0 ?      ;
+	JR		NZ,TabOut0					; Do again if not                   ;
+	RET                                                                     ;
+;------------- Send printable character to console. Expand if TAB ----------;
 
-;-------------------------- Send character to console -----------------------;
-; C  = Character to be output                                                ;
-ConsoleOut:                                                                  ;
-; Look for CNTL_S from keyboard and save it in keyboardByte                  ;
-	PUSH	BC							; Save character and Count           ;
-	CALL	ConBreak					; Check for screen stop key stroke   ;
-	POP		BC	                                                             ;
-	PUSH	BC							; Get/save character                 ;
-; Send character to Console	                                                 ;
-	CALL	bcConout					; Send character to the console      ;
-	POP		BC                                                               ;
-	PUSH	BC							; Get/save character                 ;
-; is the data to be output to print device?                                  ;
-	LD		A,(printEchoFlag)                                                ;
-	OR		A                                                                ;
-	CALL	NZ,bcList					; Send it to printer, if so          ;
-	POP		BC							; Get the character                  ;
-																			 ;
-	LD		A,C							; Put character to ACC               ;
-	LD		HL,columnPosition			; A = char, HL = .columnPosition     ;
-	INC		M							; increment the ColumnPosition       ;
-																			 ;
-	CP		SPACE                                                            ;
-	RET		NC							; Exit if ASCII printable            ;
-	                                                                         ;
-	CP		LF                                                               ;
-	RET		NZ							; Exit if not a Line Feed            ;
-										                                     ;
-	LD		(HL),0						;  else force columnPosition = 0     ;
-	RET	                                                                     ;
-;-------------------------- Send character to console -----------------------;
+;-------------------------- Send character to console ----------------------;
+; C  = Character to be output                                               ;
+ConsoleOut:                                                                 ;
+; Look for CNTL_S from keyboard and save it in keyboardByte                 ;
+	PUSH	BC							; Save character and Count          ;
+	CALL	ConBreak					; Check for screen stop key stroke  ;
+	POP		BC	                                                            ;
+	PUSH	BC							; Get/save character                ;
+; Send character to Console	                                                ;
+	CALL	bcConout					; Send character to the console     ;
+	POP		BC                                                              ;
+	PUSH	BC							; Get/save character                ;
+; is the data to be output to print device?                                 ;
+	LD		A,(printEchoFlag)                                               ;
+	OR		A                                                               ;
+	CALL	NZ,bcList					; Send it to printer, if so         ;
+	POP		BC							; Get the character                 ;
+																			;
+	LD		A,C							; Put character to ACC              ;
+	LD		HL,columnPosition			; A = char, HL = .columnPosition    ;
+	INC		M							; increment the ColumnPosition      ;
+																			;
+	CP		SPACE                                                           ;
+	RET		NC							; Exit if ASCII printable           ;
+	                                                                        ;
+	CP		LF                                                              ;
+	RET		NZ							; Exit if not a Line Feed           ;
+										                                    ;
+	LD		(HL),0						;  else force columnPosition = 0    ;
+	RET	                                                                    ;
+;-------------------------- Send character to console ----------------------;
 
-;--------------------  Check for Status and Control S or C ------------------;
-;  Returns:																	 ;
-;			ACC = 0FFH if Saved keyboard byte or CNTL_S entered from console ;
-;			ACC = 00   No data Pending										 ;
-;			DOES NOT RETURN if CTRL_C is entered from the keyboard           ;
-;                                                                            ;
- ConBreak:                                                                   ;
-	LD		A,(keyboardByte)                                                 ;
-	OR		A							; If there is a char waiting         ;
-	JR		NZ,ConBreak1 				;  return with FF in ACC             ;
-	                                                                         ;
-	CALL	bcConst						; Get status                         ;
-	CP		00H							; If 00 => No data pending	         ;
-	RET		Z							; Return 00 No data pending          ;
-	                                                                         ;
-	CALL	bcConin						; Read the byte                      ;
-	                                                                         ;
-	CP		CTRL_P                                                           ;
-	JR		NZ,CheckCTL_S                                                    ;
-;<><><><><><><><><><><><><> Toggle Print Echo Flag<><><><><><><>             ;
-	LD		HL,printEchoFlag                                                 ;
-	LD		A,TRUE                                                           ;
-	CP		(HL)                                                             ;
-	JR		NZ,ToggleFlag1                                                   ;
-	LD		A,FALSE                                                          ;
-ToggleFlag1:                                                                 ;
-	LD		(HL),A                                                           ;
-	JR		NothingWaiting                                                   ;
-;<><><><><><><><><><><><><> Toggle Print Echo Flag<><><><><><><>             ;
-CheckCTL_S:		                                                             ;
-	CP		CTRL_S						; If it is not Stop Screen, save     ;
-	JR		NZ,ConBreak0				;   and and return 0FFH              ;
-																			 ;
-	CALL	bcConin						; Else Read next byte                ;
-	CP		CTRL_C                                                           ;
-	JP		Z,WarmBoot					; do WarmBoot if  CTRL_C             ;
- NothingWaiting:                                                             ;
-	XOR		A                                                                ;
-	RET									; Set ACC = 0 and return             ;
- ConBreak0:                                                                  ;
-	LD		(keyboardByte),A			; save the byte                      ;
- ConBreak1:                                                                  ;
-	LD		A,TRUE						; return with true set in ACC        ;
-	RET                                                                      ;
-;--------------------  Check for Status and Control S or C ------------------;
+;--------------------  Check for Status and Control S or C -----------------;
+;  Returns:																	;
+;			ACC = 0FFH if Saved keyboard byte or CNTL_S entered from console;
+;			ACC = 00   No data Pending										;
+;			DOES NOT RETURN if CTRL_C is entered from the keyboard          ;
+;                                                                           ;
+ ConBreak:                                                                  ;
+	LD		A,(keyboardByte)                                                ;
+	OR		A							; If there is a char waiting        ;
+	JR		NZ,ConBreak1 				;  return with FF in ACC            ;
+	                                                                        ;
+	CALL	bcConst						; Get status                        ;
+	CP		00H							; If 00 => No data pending	        ;
+	RET		Z							; Return 00 No data pending         ;
+	                                                                        ;
+	CALL	bcConin						; Read the byte                     ;
+	                                                                        ;
+	CP		CTRL_P                                                          ;
+	JR		NZ,CheckCTL_S                                                   ;
+;<><><><><><><><><><><><><> Toggle Print Echo Flag<><><><><><><>            ;
+	LD		HL,printEchoFlag                                                ;
+	LD		A,TRUE                                                          ;
+	CP		(HL)                                                            ;
+	JR		NZ,ToggleFlag1                                                  ;
+	LD		A,FALSE                                                         ;
+ToggleFlag1:                                                                ;
+	LD		(HL),A                                                          ;
+	JR		NothingWaiting                                                  ;
+;<><><><><><><><><><><><><> Toggle Print Echo Flag<><><><><><><>            ;
+CheckCTL_S:		                                                            ;
+	CP		CTRL_S						; If it is not Stop Screen, save    ;
+	JR		NZ,ConBreak0				;   and and return 0FFH             ;
+																			;
+	CALL	bcConin						; Else Read next byte               ;
+	CP		CTRL_C                                                          ;
+	JP		Z,WarmBoot					; do WarmBoot if  CTRL_C            ;
+ NothingWaiting:                                                            ;
+	XOR		A                                                               ;
+	RET									; Set ACC = 0 and return            ;
+ ConBreak0:                                                                 ;
+	LD		(keyboardByte),A			; save the byte                     ;
+ ConBreak1:                                                                 ;
+	LD		A,TRUE						; return with true set in ACC       ;
+	RET                                                                     ;
+;--------------------  Check for Status and Control S or C -----------------;
 
-;------------------------  Console Output Utilities -------------------------;
-showHashCRLF:                                                                ;
-	LD		C,HASH_TAG                                                       ;
-	CALL	ConsoleOut					; Send # to console                  ;
-	CALL	showCRLF                                                         ;
-showHashCRLF1:                                                               ;
-	LD		A,columnPosition                                                 ;
-	LD		HL,startingColumn                                                ;
-	CP		A,M                                                              ;
-	RET		NC                                                               ;
-	LD		C,SPACE                                                          ;
-	CALL	ConsoleOut                                                       ;
-	JR		showHashCRLF1                                                    ;
-;------------------------  Console Output Utilities -------------------------;
+;------------------------  Console Output Utilities ------------------------;
+showHashCRLF:                                                               ;
+	LD		C,HASH_TAG                                                      ;
+	CALL	ConsoleOut					; Send # to console                 ;
+	CALL	showCRLF                                                        ;
+showHashCRLF1:                                                              ;
+	LD		A,columnPosition                                                ;
+	LD		HL,startingColumn                                               ;
+	CP		A,M                                                             ;
+	RET		NC                                                              ;
+	LD		C,SPACE                                                         ;
+	CALL	ConsoleOut                                                      ;
+	JR		showHashCRLF1                                                   ;
+;------------------------  Console Output Utilities ------------------------;
 
-;------------------------  Send Carriage Return and Line Feed ---------------;
-showCRLF:                                                                    ;
-	LD		C,CR                                                             ;
-	CALL	ConsoleOut                                                       ;
-	LD		C,LF                                                             ;
-  	JP		ConsoleOut					; exit via ConsoleOuts RET           ;
-;------------------------  Send Carriage Return and Line Feed ---------------;
+;------------------------  Send Carriage Return and Line Feed --------------;
+showCRLF:                                                                   ;
+	LD		C,CR                                                            ;
+	CALL	ConsoleOut                                                      ;
+	LD		C,LF                                                            ;
+  	JP		ConsoleOut					; exit via ConsoleOuts RET          ;
+;------------------------  Send Carriage Return and Line Feed --------------;
 
-;------------------------- Read a $ terminated String -----------------------;
- ;read to paramDE address (max length, current length, buffer)               ;
-ReadString:                                                                  ;
-	LD		A,(columnPosition)                                               ;
-	LD		(startingColumn),A			; Save start for CTRL_X and CTRL_R   ;
-	LD		HL,(paramDE)				; Get the start of the String        ;
-	LD		C,(HL)						; Get Max Count  					 ;
-	INC		HL							; Point at actual bytes read         ;
-	LD		B,0							; Initialize Current Count           ;
-																			 ;
-	; B = Current Count                                                      ;
-	; C = Maximum characters                                                 ;
-	; HL= Insertion Pointer                                                  ;
-																			 ;
- ; read next character, BC, HL active                                        ;
-ReadNext:                                                                    ;
-	PUSH	BC							; Save Current Index and Max Count   ;
-	PUSH	HL							; Save pointer                       ;
-ReadNext0:                                                                   ;
-	CALL	ConIn						; Get the next Character             ;
-	AND		ASCII_MASK					; Mask parity bit                    ;
-	POP		HL							; Restore Pointer					 ;
-	POP		BC							; Restore Current Index and Max Count;
-;Is It Carriage Return                                                       ;
-	CP		CR                                                               ;
-	JR		Z,EndRead					; End the read if yes                ;
-	CP		LF                                                               ;
-;Is It Linefeed                                                              ;
-	JR		Z,EndRead					; End the read if yes                ;
-;Is It BackSpace                                                             ;
-	CP		CTRL_H															 ;
-	JR		Z,BSspaceBS	                                                     ;
-IsItRubout:                                                                  ;
-	CP		RUBOUT						; Non destructive delete             ;
-	JR		Z,ItIsRubout                                                     ;
-IsPhysicalEOL:                                                               ;
-	CP		CTRL_E                                                           ;
-	JR		Z,ItIsPhysicalEOL	                                             ;
-IsItPrintToggle:                                                             ;
-	CP		CTRL_P                                                           ;
-	JR		Z,ItIsPrintToggle	                                             ;
-IsItDeleteTheLineX:                                                          ;
-	CP		CTRL_X                                                           ;
-	JR		Z,DeleteTheLine				; If CTRL_X go delete the line       ;
-IsItDeleteTheLineU:                                                          ;
-	CP		CTRL_U                                                           ;
-	JP		Z,IgnoreTheLine				; If CTRL_U ignore the line          ;
-;Retype the line                                                             ;
-	CP		CTRL_R 														  	 ;
-	JR		Z,RepeatLine                                                     ;
+;------------------------- Read a $ terminated String ----------------------;
+ ;read to paramDE address (max length, current length, buffer)              ;
+ReadString:                                                                 ;
+	LD		A,(columnPosition)                                              ;
+	LD		(startingColumn),A			; Save start for CTRL_X and CTRL_R  ;
+	LD		HL,(paramDE)				; Get the start of the String       ;
+	LD		C,(HL)						; Get Max Count  					;
+	INC		HL							; Point at actual bytes read        ;
+	LD		B,0							; Initialize Current Count          ;
+																			;
+	; B = Current Count                                                     ;
+	; C = Maximum characters                                                ;
+	; HL= Insertion Pointer                                                 ;
+																			;
+ ; read next character, BC, HL active                                       ;
+ReadNext:                                                                   ;
+	PUSH	BC							; Save Current Index and Max Count  ;
+	PUSH	HL							; Save pointer                      ;
+ReadNext0:                                                                  ;
+	CALL	ConIn						; Get the next Character            ;
+	AND		ASCII_MASK					; Mask parity bit                   ;
+	POP		HL							; Restore Pointer					;
+	POP		BC							; Current Index and Max Count		;
+;Is It Carriage Return                                                      ;
+	CP		CR                                                              ;
+	JR		Z,EndRead					; End the read if yes               ;
+	CP		LF                                                              ;
+;Is It Linefeed                                                             ;
+	JR		Z,EndRead					; End the read if yes               ;
+;Is It BackSpace                                                            ;
+	CP		CTRL_H															;
+	JR		Z,BSspaceBS	                                                    ;
+IsItRubout:                                                                 ;
+	CP		RUBOUT						; Non destructive delete            ;
+	JR		Z,ItIsRubout                                                    ;
+IsPhysicalEOL:                                                              ;
+	CP		CTRL_E                                                          ;
+	JR		Z,ItIsPhysicalEOL	                                            ;
+IsItPrintToggle:                                                            ;
+	CP		CTRL_P                                                          ;
+	JR		Z,ItIsPrintToggle	                                            ;
+IsItDeleteTheLineX:                                                         ;
+	CP		CTRL_X                                                          ;
+	JR		Z,DeleteTheLine				; If CTRL_X go delete the line      ;
+IsItDeleteTheLineU:                                                         ;
+	CP		CTRL_U                                                          ;
+	JP		Z,IgnoreTheLine				; If CTRL_U ignore the line         ;
+;Retype the line                                                            ;
+	CP		CTRL_R 														  	;
+	JR		Z,RepeatLine                                                    ;
 
-;....................... Echo input back to the Console  ....................;
-; Full Duplex								                                 ;
-; A = Character to display	                                                 ; 
-; B = current char count                                                     ;
-; C = maximum buffer length                                                  ;
-; HL= buffer pointer                                                         ;
-;ReadEcho                                                                    ;
-	INC		B							; Increment byte count		         ;
-	INC		HL							; Advance the Pointer                ;
-	LD		(HL),A						; Put char in buffer                 ;
-																		     ;
-ReadEchoRubOut:                                                              ;
-  	PUSH	BC							; Save index and length              ;
-	PUSH	HL							; Save the Pointer                   ;
-	LD		C,A							; Get char                           ;
-	CALL	CaretOut					; Output to Console (^ if needed)    ;
-	POP		HL							; Restore the Pointer                ;
-	POP		BC							; Restore index and length           ;
-	LD		A,(HL)						; Recall char                        ;
-; check for Warm Boot                                                        ;
-	CP		CTRL_C                                                           ;
-	LD		A,B							; Get Line position                  ;
-	JR		NZ,AreWeAtEndOfBuffer		; Skip if not CTRL_C                 ;
-	CP		1							; Beginning of the Line?             ;
-	JP		Z,WarmBoot					;   if yes do the Boot               ;
-; Check to see if we are at the end of the buffer                            ;
-AreWeAtEndOfBuffer:                                                          ;
-	CP		C							; Over Max ?					     ;
-	JR		C,ReadNext					;  no, Go for more				     ;
-																			 ;
-; At the end of read                                  					     ;
-EndRead:                                                                     ;
-; 	POP		HL                                                               ;
-	LD		HL,(paramDE)                                                     ;
-	INC		HL                                                               ;
-																			 ;
-	LD		(HL),B						; Actual length at Pos 0 of Buffer   ;
-	LD		C,CR                                                             ;
-	JP		ConsoleOut					; Send CR to the Console			 ;
-;....................... Echo input back to the Console  ....................;
-;.......................... Backspace SPACE BackSpace .......................;
-BSspaceBS:				  													 ;
-	DEC		B                                                                ;
-	DEC		HL                                                               ;
-	PUSH	BC                                                               ;
-	PUSH	HL                                                               ;
-	CALL	BackUp                                                           ;
-	JR		ReadNext0                                                        ;
-;.......................... Backspace SPACE BackSpace .......................;	
-;.......................... It is RubOut ....................................;
-ItIsRubout:                                                                  ;
-; RUBOUT if possible                                                         ;
-	LD		A,B							; Are we at the start of the line    ;
-	OR		A                                                                ;
-	JR		Z,ReadNext					; then ignore and go for next char   ;
-;adjust pointers back one                                                    ;
-	LD		A,(HL)                      ; ACC = current character            ;
-	DEC		B							; Adjust the index			    	 ;
-	DEC		HL							; Adjust the pointer                 ;
-	JR		ReadEchoRubOut				; Echo back - Full Duplex            ;
-;.......................... It is RubOut ....................................;
-;.......................... It is PhysicalEOL ...............................;
-ItIsPhysicalEOL:                                                             ;
-	PUSH	BC							; Save Current Index and Max Count   ;
-	PUSH	HL							; Save pointer                       ;
-	CALL	showCRLF					; Make new line                      ;
-	JR		ReadNext0					;   and go for next char   			 ;
-;.......................... It is PhysicalEOL ...............................;
-;.......................... It is PrintToggle ...............................;
-ItIsPrintToggle:															 ;
-	PUSH	HL							; Save pointer                       ;
-; Toggle the printEcho Flag                                                  ;
-	LD		HL,printEchoFlag			; Point at the flag                  ;
-	LD		A,TRUE						; Load ACC with TRUE                 ;
-	CP		(HL)						; Is the flag true?                  ;
-	JR		NZ,IsItPrintToggle1			; Skip if not                        ;
-	LD		A,FALSE						;   else. load ACC with FALSE        ;
-IsItPrintToggle1:                                                            ;
-	LD		(HL),A						; Set the Flags new Value	         ;
-	POP		HL							; Restore pointer                    ;
-	JR		ReadNext					;   and for another char             ;
-;.......................... It is PrintToggle ...............................;
-;.......................... RepeatLine ......................................;
-RepeatLine:                                                                  ;
-	PUSH	BC							; Save Current Index and Max Count   ;
-	PUSH	HL							;  for exit                          ;
-	CALL	showHashCRLF				; Display Hash, new Line			 ;
-	                                                                         ;
-	LD		HL,(paramDE)				; Get start of Buffer                ;
-	INC		HL							; Skip past character count          ;
-																			 ;
-LL1:                                                                         ;
-	INC		HL							; Point at next char to display      ;
-	PUSH	BC							; Save counter, in B                 ;
-	PUSH	HL							; Save buffer pointer                ;
-	LD		C,M							; Get the next character             ;
-	CALL	CaretOut					; Display it                         ;
-	POP		HL							; Restore                            ;
-	POP		BC							;  the counter and pointer           ;
-	DJNZ	LL1							; loop if still more to show         ;
-	POP		HL							; Restore values                     ;
-	POP		BC							;  from routine entry                ;
-	JP		ReadNext					; Done here !                        ;
-;.......................... RepeatLine ......................................;	
-;.......................... Delete The Line .................................;
-DeleteTheLine:                                                               ;
-	POP		HL							; Adjust Stack                       ;
-                               ;                                             ;
-DeleteTheLine1:                                                              ;
-	LD		A,(startingColumn)                                               ;
-	LD		HL,columnPosition                                                ;
-	CP		M							; Start of line ?                    ;
-	JP		NC,ReadString				;  If yes get out and go for more    ;
-	DEC		M							; Adjust the ColumnPosition          ;
-	CALL	BackUp						; Clear 1 column                     ;
-	JR		DeleteTheLine1				; Loop for more                      ;
-;.......................... Delete The Line .................................;
-;------------------------ Back-up one screen position -----------------------;
-BackUp:                                                                      ;
-  	CALL	BackUp1						; Send Backspace                     ;
-	LD		C,SPACE						; Overwrite with SPACE               ;
-	CALL	bcConout					; Overwrite with SPACE				 ;
-;does not affect column count                                                ;
-BackUp1:                                                                     ;
-	LD		C,CTRL_H                                                         ;
-	JP		bcConout					; Send Backspace                     ;
-;------------------------ Back-up one screen position -----------------------;
-;.......................... Ignore The Line .................................;
-IgnoreTheLine:                                                               ;
-	CALL	showHashCRLF				; Display Hash, new Line			 ;
-	LD		C,SPACE						; We want to add a few spaces        ;
-	CALL	bcConout					;  to the console                    ;
-	LD		C,SPACE                                                          ;
-	CALL	bcConout                                                         ;
-	JP		ReadString					; Start all over                     ;
-;.......................... Ignore The Line .................................;
+;....................... Echo input back to the Console  ...................;
+; Full Duplex								                                ;
+; A = Character to display	                                                ; 
+; B = current char count                                                    ;
+; C = maximum buffer length                                                 ;
+; HL= buffer pointer                                                        ;
+;ReadEcho                                                                   ;
+	INC		B							; Increment byte count		        ;
+	INC		HL							; Advance the Pointer               ;
+	LD		(HL),A						; Put char in buffer                ;
+																		    ;
+ReadEchoRubOut:                                                             ;
+  	PUSH	BC							; Save index and length             ;
+	PUSH	HL							; Save the Pointer                  ;
+	LD		C,A							; Get char                          ;
+	CALL	CaretOut					; Output to Console (^ if needed)   ;
+	POP		HL							; Restore the Pointer               ;
+	POP		BC							; Restore index and length          ;
+	LD		A,(HL)						; Recall char                       ;
+; check for Warm Boot                                                       ;
+	CP		CTRL_C                                                          ;
+	LD		A,B							; Get Line position                 ;
+	JR		NZ,AreWeAtEndOfBuffer		; Skip if not CTRL_C                ;
+	CP		1							; Beginning of the Line?            ;
+	JP		Z,WarmBoot					;   if yes do the Boot              ;
+; Check to see if we are at the end of the buffer                           ;
+AreWeAtEndOfBuffer:                                                         ;
+	CP		C							; Over Max ?					    ;
+	JR		C,ReadNext					;  no, Go for more				    ;
+																			;
+; At the end of read                                  					    ;
+EndRead:                                                                    ;
+; 	POP		HL                                                              ;
+	LD		HL,(paramDE)                                                    ;
+	INC		HL                                                              ;
+																			;
+	LD		(HL),B						; Actual length at Pos 0 of Buffer  ;
+	LD		C,CR                                                            ;
+	JP		ConsoleOut					; Send CR to the Console			;
+;....................... Echo input back to the Console  ...................;
+;.......................... Backspace SPACE BackSpace ......................;
+BSspaceBS:				  													;
+	DEC		B                                                               ;
+	DEC		HL                                                              ;
+	PUSH	BC                                                              ;
+	PUSH	HL                                                              ;
+	CALL	BackUp                                                          ;
+	JR		ReadNext0                                                       ;
+;.......................... Backspace SPACE BackSpace ......................;	
+;.......................... It is RubOut ...................................;
+ItIsRubout:                                                                 ;
+; RUBOUT if possible                                                        ;
+	LD		A,B							; Are we at the start of the line   ;
+	OR		A                                                               ;
+	JR		Z,ReadNext					; then ignore and go for next char  ;
+;adjust pointers back one                                                   ;
+	LD		A,(HL)                      ; ACC = current character           ;
+	DEC		B							; Adjust the index			    	;
+	DEC		HL							; Adjust the pointer                ;
+	JR		ReadEchoRubOut				; Echo back - Full Duplex           ;
+;.......................... It is RubOut ...................................;
+;.......................... It is PhysicalEOL ..............................;
+ItIsPhysicalEOL:                                                            ;
+	PUSH	BC							; Save Current Index and Max Count  ;
+	PUSH	HL							; Save pointer                      ;
+	CALL	showCRLF					; Make new line                     ;
+	JR		ReadNext0					;   and go for next char   			;
+;.......................... It is PhysicalEOL ..............................;
+;.......................... It is PrintToggle ..............................;
+ItIsPrintToggle:															;
+	PUSH	HL							; Save pointer                      ;
+; Toggle the printEcho Flag                                                 ;
+	LD		HL,printEchoFlag			; Point at the flag                 ;
+	LD		A,TRUE						; Load ACC with TRUE                ;
+	CP		(HL)						; Is the flag true?                 ;
+	JR		NZ,IsItPrintToggle1			; Skip if not                       ;
+	LD		A,FALSE						;   else. load ACC with FALSE       ;
+IsItPrintToggle1:                                                           ;
+	LD		(HL),A						; Set the Flags new Value	        ;
+	POP		HL							; Restore pointer                   ;
+	JR		ReadNext					;   and for another char            ;
+;.......................... It is PrintToggle ..............................;
+;.......................... RepeatLine .....................................;
+RepeatLine:                                                                 ;
+	PUSH	BC							; Save Current Index and Max Count  ;
+	PUSH	HL							;  for exit                         ;
+	CALL	showHashCRLF				; Display Hash, new Line			;
+	                                                                        ;
+	LD		HL,(paramDE)				; Get start of Buffer               ;
+	INC		HL							; Skip past character count         ;
+																			;
+LL1:                                                                        ;
+	INC		HL							; Point at next char to display     ;
+	PUSH	BC							; Save counter, in B                ;
+	PUSH	HL							; Save buffer pointer               ;
+	LD		C,M							; Get the next character            ;
+	CALL	CaretOut					; Display it                        ;
+	POP		HL							; Restore                           ;
+	POP		BC							;  the counter and pointer          ;
+	DJNZ	LL1							; loop if still more to show        ;
+	POP		HL							; Restore values                    ;
+	POP		BC							;  from routine entry               ;
+	JP		ReadNext					; Done here !                       ;
+;.......................... RepeatLine .....................................;	
+;.......................... Delete The Line ................................;
+DeleteTheLine:                                                              ;
+	POP		HL							; Adjust Stack                      ;
+                               ;                                            ;
+DeleteTheLine1:                                                             ;
+	LD		A,(startingColumn)                                              ;
+	LD		HL,columnPosition                                               ;
+	CP		M							; Start of line ?                   ;
+	JP		NC,ReadString				;  If yes get out and go for more   ;
+	DEC		M							; Adjust the ColumnPosition         ;
+	CALL	BackUp						; Clear 1 column                    ;
+	JR		DeleteTheLine1				; Loop for more                     ;
+;.......................... Delete The Line ................................;
+;------------------------ Back-up one screen position ----------------------;
+BackUp:                                                                     ;
+  	CALL	BackUp1						; Send Backspace                    ;
+	LD		C,SPACE						; Overwrite with SPACE              ;
+	CALL	bcConout					; Overwrite with SPACE				;
+;does not affect column count                                               ;
+BackUp1:                                                                    ;
+	LD		C,CTRL_H                                                        ;
+	JP		bcConout					; Send Backspace                    ;
+;------------------------ Back-up one screen position ----------------------;
+;.......................... Ignore The Line ................................;
+IgnoreTheLine:                                                              ;
+	CALL	showHashCRLF				; Display Hash, new Line			;
+	LD		C,SPACE						; We want to add a few spaces       ;
+	CALL	bcConout					;  to the console                   ;
+	LD		C,SPACE                                                         ;
+	CALL	bcConout                                                        ;
+	JP		ReadString					; Start all over                    ;
+;.......................... Ignore The Line ................................;
 
-;------------------------- Read a $ terminated String -----------------------;
+;------------------------- Read a $ terminated String ----------------------;
 
 ;****************************************************************************
 ;                           DATA AREA                                       *
 ;****************************************************************************
 
-;------------------------------Non Disk Data Area ---------------------------;
-usersStack:			DS	2				; entry stack pointer                ;
-																			 ;
-keyboardByte:		DB	00				; Saved keyboard character           ;
-																			 ;
-printEchoFlag:		DB	00				; Controlled by ^P                   ;
-																			 ;
-; FunctionValue:DB	00H					; Reg C on BDOS Entry                ;
-startingColumn:		DB	0				; Starting col pos after read        ;
-columnPosition:		DB	0				; Current Column position            ;
-																			 ;
-paramE:				DS	BYTE			; Byte Argument for BDOS Call        ;
-paramDE:			DS	WORD			; Word Argument for BDOS Call	     ;
-exitParameterByte:						; Byte returned Value                ;
-exitParameterWord:	DS	WORD				; Word                           ;
-																			 ;
-																			 ;
-;------------------------------------ Data Area -----------------------------;
+;------------------------------Non Disk Data Area --------------------------;
+usersStack:			DS	2				; entry stack pointer               ;
+																			;
+keyboardByte:		DB	00				; Saved keyboard character          ;
+																			;
+printEchoFlag:		DB	00				; Controlled by ^P                  ;
+																			;
+; FunctionValue:DB	00H					; Reg C on BDOS Entry               ;
+startingColumn:		DB	0				; Starting col pos after read       ;
+columnPosition:		DB	0				; Current Column position           ;
+																			;
+paramE:				DS	BYTE			; Byte Argument for BDOS Call       ;
+paramDE:			DS	WORD			; Word Argument for BDOS Call	    ;
+exitParameterByte:						; Byte returned Value               ;
+exitParameterWord:	DS	WORD				; Word                          ;
+																			;
+																			;
+;------------------------------------ Data Area ----------------------------;
 
 
 
-;****************************************************************************;
-;								Disk I/O									 ;
-;****************************************************************************;
+;***************************************************************************;
+;								Disk I/O									;
+;***************************************************************************;
 
-;---------------------------- Reset Disk System - D (13) --------------------;
-;  This function requests CP/M to completely reset the disk file system.     ;
-; CP/M then resets its internal tables, selects logical disk A as the        ;
-; default disk, resets the DMAaddress back to 0080H (the address of the      ;
-; buffer used by the BDOS to read and write to the disk), and marks all      ;
-; logical disks as having Read/Write status. The BDOS will then have to log  ;
-; in each logical disk as each disk is accessed. This involves reading the   ;
-; entire file directory for the disk and rebuilding the allocation vectors   ;
-; which keep track of which allocation blocks are free and which             ;
-; are used for file storage.                                                 ;
-;                                                                            ;
-;			Function Code	:	C = 0DH                                      ;
-;			Entry Parameters:	None										 ;
-;			Exit Parameters :	None										 ;
-;																			 ;
-;---------------------------- Reset Disk System - D (13) --------------------;
+;---------------------------- Reset Disk System - D (13) -------------------;
+;  This function requests CP/M to completely reset the disk file system.    ;
+; CP/M then resets its internal tables, selects logical disk A as the       ;
+; default disk, resets the DMAaddress back to 0080H (the address of the     ;
+; buffer used by the BDOS to read and write to the disk), and marks all     ;
+; logical disks as having Read/Write status. The BDOS will then have to log ;
+; in each logical disk as each disk is accessed. This involves reading the  ;
+; entire file directory for the disk and rebuilding the allocation vectors  ;
+; which keep track of which allocation blocks are free and which            ;
+; are used for file storage.                                                ;
+;                                                                           ;
+;			Function Code	:	C = 0DH                                     ;
+;			Entry Parameters:	None										;
+;			Exit Parameters :	None										;
+;																			;
+;---------------------------- Reset Disk System - D (13) -------------------;
 vResetSystem:
   	LD		HL,0
 	LD		(readOnlyVector),HL			; Clear the vectors for 
@@ -1311,7 +1312,7 @@ DiskWrite:
 	CALL	GetBlockNumber				; Compute disk block number
 	CALL	WasBlockAllocated			; Is it really allocated ?
 	LD		C,WriteAllocated			; Assume a normal write operation
-	JP		NZ,HaveWriteBlock				;  Skip if block already allocated
+	JP		NZ,HaveWriteBlock			;  Skip if block already allocated
  ; not allocated -
  ; the argument to getblock is the starting position for the disk search
  ; and should be the last allocated block for this file,
@@ -1468,7 +1469,7 @@ vMakeFile:
 ; will change all occurrences of the old file name to the new name.         ;
 ;                                                                           ;
 ;                                                                           ;
-;			Function Code	:	C  = 17H                                   ;
+;			Function Code	:	C  = 17H									;
 ;			Entry Parameters:	DE = Address of File Control Block			;
 ;			Exit Parameters :	A  = Directory Code							;
 ;																			;
@@ -1498,133 +1499,134 @@ RenameLoop:
 	CALL	GetNextDirectoryRecord		; Look for more dir entries
 	JR		RenameLoop					; Loop
 
-;---------------------------- Get Active Disks - 18 (24) --------------------;
-; This function returns a bit map, called the login vector, in register pair ;
-; HL, indicating which logical disk drives have been selected since the last ;
-; warm boot or Reset Disk function (code 13, ODH). The least significant bit ;
-; of L corresponds to disk A, while the highest order bit in H maps disk P.  ;
-; The bit corresponding to the specific logical disk is set to 1 if the      ;
-; disk has been selected or to 0 if the disk is not currently on-line.       ;
-;  Logical disks can be selected programmatically through any file operation ;
-; that sets the drive field to a nonzero value, through the Select Disk      ;
-; function (code 14, OEH), or by the operator entering an "X:" command       ;
-; where "X" is equal to A, B, ... , P.                                       ;
-;                                                                            ;
-;			Function Code	:	C = 018H                                     ;
-;			Entry Parameters:	None										 ;
-;			Exit Parameters :	HL = Active disk map (login vector)			 ;
-;																			 ;
-;---------------------------- Get Active Disks - 18 (24) --------------------;
+;---------------------------- Get Active Disks - 18 (24) -------------------;
+; This function returns a bit map, called the login vector, in register     ;
+; pair  HL, indicating which logical disk drives have been selected since   ;
+; the last  warm boot or Reset Disk function (code 13, ODH). The least      ;
+; significant bit of L corresponds to disk A, while the highest order bit   ;
+; in H maps disk P. The bit corresponding to the specific logical disk is   ;
+; set to 1 if the disk has been selected or to 0 if the disk is not         ;
+; currently on-line.                                                        ;
+;  Logical disks can be selected programmatically through any file          ;
+; operation  that sets the drive field to a nonzero value, through the      ;
+; Select Disk function (code 14, OEH), or by the operator entering an       ;
+; "X:" command where "X" is equal to A, B, ... , P.                         ;             
+;                                                                           ;
+;			Function Code	:	C = 018H                                    ;
+;			Entry Parameters:	None										;
+;			Exit Parameters :	HL = Active disk map (login vector)			;
+;																			;
+;---------------------------- Get Active Disks - 18 (24) -------------------;
 vGetLoginVector:
 	LD		HL,(loggedDisks)
 	LD		(exitParameterWord),HL
 	RET
 	
-;---------------------------- Get Current Disk- 19 (25) ---------------------;
-;   This function returns the current default disk set by the last Select    ;
-; Disk function call (code 14, OEH) or by the operator entering the          ;
-; "X:"command (where "X" is A, B, ..., P) to the CCP.                        ;
-;                                                                            ;
-;  This function returns the current default disk in coded form.             ;
-; Register A= 0 if drive A is the current drive, I if drive B, and so on.    ;
-; If you need to convert this to the corresponding ASCII character, simply   ;
-; add 41H to register A. Use this function when you convert a file name and  ;
-; type in an FCB to an ASCII string in order to display it. If the first     ;
-; byte of the FCB is OOH, the current default drive is to be used.           ;
-; You must therefore use this function to determine the logical disk letter  ;
-; for the default drive.                                                     ;
-;                                                                            ;
-;			Function Code	:	C = 019H                                     ;
-;			Entry Parameters:	None										 ;
-;			Exit Parameters :	A = Current Disk (0=A,1=B...,F=P)			 ;
-;																			 ;
-;---------------------------- Get Current Disk- 19 (25) ---------------------;
+;---------------------------- Get Current Disk- 19 (25) --------------------;
+;   This function returns the current default disk set by the last Select   ;
+; Disk function call (code 14, OEH) or by the operator entering the         ;
+; "X:"command (where "X" is A, B, ..., P) to the CCP.                       ;
+;                                                                           ;
+;  This function returns the current default disk in coded form.            ;
+; Register A= 0 if drive A is the current drive, I if drive B, and so on.   ;
+; If you need to convert this to the corresponding ASCII character, simply  ;
+; add 41H to register A. Use this function when you convert a file name and ;
+; type in an FCB to an ASCII string in order to display it. If the first    ;
+; byte of the FCB is OOH, the current default drive is to be used.          ;
+; You must therefore use this function to determine the logical disk letter ;
+; for the default drive.                                                    ;
+;                                                                           ;
+;			Function Code	:	C = 019H                                    ;
+;			Entry Parameters:	None										;
+;			Exit Parameters :	A = Current Disk (0=A,1=B...,F=P)			;
+;																			;
+;---------------------------- Get Current Disk- 19 (25) --------------------;
 vGetCurrentDisk:
 	LD		A,(currentDisk)
 	LD		(exitParameterByte),A
 	RET
 	
-;---------------------------- Set DMA Address - 1A (26) ---------------------;
-;  This function sets the BDOS's direct memory access (DMA) address to a new ;
-; value. The name is an historic relic dating back to the Intel Development  ;
-; System on which CP/M was originally developed. This machine, by virtue of  ;
-; its hardware, could read data from a diskette directly into memory or      ;
-; write data to a diskette directly from memory. The name DMA address now    ;
-; applies to the address of the buffer to and from which data is             ;
-; transferred whenever a diskette Read, Write, or directory operation is     ;
-; performed. Whenever CP/M first starts up (cold boot) m a warm boot or      ;
-; Reset Disk operation occurs, the DMA address is reset to its default       ;
-; value of 0080H.                                                            ;
-;                                                                            ;
-;			Function Code	:	C = 0A9H                                     ;
-;			Entry Parameters:	DE = DMA Address							 ;
-;			Exit Parameters :	None										 ;
-;																			 ;
-;---------------------------- Set DMA Address - 1A (26) ---------------------;
+;---------------------------- Set DMA Address - 1A (26) --------------------;
+;  This function sets the BDOS's direct memory access (DMA) address to a new;
+; value. The name is an historic relic dating back to the Intel Development ;
+; System on which CP/M was originally developed. This machine, by virtue of ;
+; its hardware, could read data from a diskette directly into memory or     ;
+; write data to a diskette directly from memory. The name DMA address now   ;
+; applies to the address of the buffer to and from which data is            ;
+; transferred whenever a diskette Read, Write, or directory operation is    ;
+; performed. Whenever CP/M first starts up (cold boot) m a warm boot or     ;
+; Reset Disk operation occurs, the DMA address is reset to its default      ;
+; value of 0080H.                                                           ;
+;                                                                           ;
+;			Function Code	:	C = 0A9H                                    ;
+;			Entry Parameters:	DE = DMA Address							;
+;			Exit Parameters :	None										;
+;																			;
+;---------------------------- Set DMA Address - 1A (26) --------------------;
 vSetDMA:
 	LD		HL,(paramDE)
 	LD		(initDAMAddress),HL
 	JP		SetDataDMA
 
-;---------------------------- Get Allocation Vector - 1B (27) ---------------;
-;  This function returns the base, or starting, address of the allocation    ;
-; vector for the currently selected logical disk. This information,          ;
-; indicating which parts of the disk are assigned, is used by utility        ;
-; programs and the BDOS itself to determine how much unused space is on the  ;
-; logical disk, to locate an unused allocation block in order to extend      ;
-; a file, or to relinquish an allocation block when a file is deleted.       ;
-;                                                                            ;
-;			Function Code	:	C = 01BH                                     ;
-;			Entry Parameters:	None										 ;
-;			Exit Parameters :	HL = Address of allocation vector			 ;
-;																			 ;
-;---------------------------- Get Allocation Vector - 1B (27) ---------------;
+;---------------------------- Get Allocation Vector - 1B (27) --------------;
+;  This function returns the base, or starting, address of the allocation   ;
+; vector for the currently selected logical disk. This information,         ;
+; indicating which parts of the disk are assigned, is used by utility       ;
+; programs and the BDOS itself to determine how much unused space is on the ;
+; logical disk, to locate an unused allocation block in order to extend     ;
+; a file, or to relinquish an allocation block when a file is deleted.      ;
+;                                                                           ;
+;			Function Code	:	C = 01BH                                    ;
+;			Entry Parameters:	None										;
+;			Exit Parameters :	HL = Address of allocation vector			;
+;																			;
+;---------------------------- Get Allocation Vector - 1B (27) --------------;
 vGetAllocAddr:
 	LD		HL,(caAllocVector)
 	LD		(exitParameterWord),HL
 	RET
 
-;---------------------------- Write Protect Disk - 1C (28) ------------------;
-;  This function logically sets the currently selected disk to a Read-Only   ;
-; state. Any attempts to execute a Write Sequential or Write Random function ;
-; to the selected disk will be intercepted by the BDOS, and the following    ;
-; message will appear on the console:                                        ;
-;	BDOS Err on X: R/O                                                       ;
-;	where X: is the selected disk.                                           ;
-;                                                                            ;
-;  Once you have requested Read-Only status for the currently selected       ;
-; logical disk, this status will persist even if you proceed to select       ;
-; other logical disks. In fact, it will remain in force until the next warm  ;
-; boot or Reset Disk System function call.                                   ;
-;  Digital Research documentation refers to this function code as Disk Write ;
-; Protect. The Read-Only description is used here because it corresponds     ;
-; to the error message produced if your program attempts to write on         ;
-; the disk.                                                                  ;
-;                                                                            ;
-;			Function Code	:	C = 01CH                                     ;
-;			Entry Parameters:	None										 ;
-;			Exit Parameters :	None										 ;
-;																			 ;
-;---------------------------- Write Protect Disk - 1C (28) ------------------;
+;---------------------------- Write Protect Disk - 1C (28) -----------------;
+;  This function logically sets the currently selected disk to a Read-Only  ;
+; state. Any attempts to execute a Write Sequential or Write Random function;
+; to the selected disk will be intercepted by the BDOS, and the following   ;
+; message will appear on the console:                                       ;
+;	BDOS Err on X: R/O                                                      ;
+;	where X: is the selected disk.                                          ;
+;                                                                           ;
+;  Once you have requested Read-Only status for the currently selected      ;
+; logical disk, this status will persist even if you proceed to select      ;
+; other logical disks. In fact, it will remain in force until the next warm ;
+; boot or Reset Disk System function call.                                  ;
+;  Digital Research documentation refers to this function code as Disk Write;
+; Protect. The Read-Only description is used here because it corresponds    ;
+; to the error message produced if your program attempts to write on        ;
+; the disk.                                                                 ;
+;                                                                           ;
+;			Function Code	:	C = 01CH                                    ;
+;			Entry Parameters:	None										;
+;			Exit Parameters :	None										;
+;																			;
+;---------------------------- Write Protect Disk - 1C (28) -----------------;
  ;;write protect current disk
 vWriteProtectDisk:
 	JP		SetDiskReadOnly
 
-;---------------------------- Get Read-Only Map - 1D (29) -------------------;
-;  This function returns a bit map in registers H and L showing which logical;
-; disks in the system have been set to Read-Only status, either by the       ;
-; Set Logical Disk to Read-Only function call (code 28, ICH), or by the      ;
-; BDOS itself, because it detected that a diskette had been changed.         ;
-;  The least significant bit of L corresponds to logical disk A, while the   ;
-; most significant bit of H corresponds to disk P. The bit corresponding to  ;
-; the specific logical disk is set to I if the disk has been set to          ;
-; Read-Only status.                                                          ;
-;                                                                            ;
-;			Function Code	:	C = 01DH                                     ;
-;			Entry Parameters:	None										 ;
-;			Exit Parameters :	HL = Read-Only Vector						 ;
-;																			 ;
-;---------------------------- Get Read-Only Map - 1D (29) -------------------;
+;---------------------------- Get Read-Only Map - 1D (29) ------------------;
+;  This function returns a bit map in registers H and L showing which       ;
+; logical disks in the system have been set to Read-Only status, either by  ;
+; the Set Logical Disk to Read-Only function call (code 28, ICH), or by     ;
+; the BDOS itself, because it detected that a diskette had been changed.    ;    
+;  The least significant bit of L corresponds to logical disk A, while the  ;
+; most significant bit of H corresponds to disk P. The bit corresponding to ;
+; the specific logical disk is set to I if the disk has been set to         ;
+; Read-Only status.                                                         ;
+;                                                                           ;
+;			Function Code	:	C = 01DH                                    ;
+;			Entry Parameters:	None										;
+;			Exit Parameters :	HL = Read-Only Vector						;
+;																			;
+;---------------------------- Get Read-Only Map - 1D (29) ------------------;
 vGetReadOnlyMap:
 	LD		HL,(readOnlyVector)
 	LD		(exitParameterWord),HL
@@ -1677,7 +1679,7 @@ vSetFileAttributes:
 
 SetAttributesLoop:
 	CALL	AtEndOfDirectory			; Any more dir entries ?
-	JP		Z,DirLocationToReturnLoc	; Return directory Index to caller							;  exit if yes
+	JP		Z,DirLocationToReturnLoc	; Return directory Index to caller
 ; Directory entry found
 	LD		C,0							; Set starting position
 	LD		E,fcbExtIndex				; Set Length
@@ -1685,17 +1687,17 @@ SetAttributesLoop:
 	CALL	GetNextDirectoryRecord		; Go find the next directory record
 	JR		SetAttributesLoop			; Loop
 	
-;------------------ Get Disk Parameter Block Address - 1F (31) --------------;
-;  This function returns the address of the disk parameter block (DPB) for   ;
-; the last selected logical disk. The DPB describes the physical             ;
-; characteristics of a specific logical disk-information mainly of interest  ;
-; for system utility programs.                                               ;
-;                                                                            ;
-;			Function Code	:	C = 1FH                                      ;
-;			Entry Parameters:	None										 ;
-;			Exit Parameters :	HL = Address of Disk Parameter Block		 ;
-;																			 ;
-;------------------ Get Disk Parameter Block Address - 1F (31) --------------;
+;------------------ Get Disk Parameter Block Address - 1F (31) -------------;
+;  This function returns the address of the disk parameter block (DPB) for  ;
+; the last selected logical disk. The DPB describes the physical            ;
+; characteristics of a specific logical disk-information mainly of interest ;
+; for system utility programs.                                              ;
+;                                                                           ;
+;			Function Code	:	C = 1FH                                     ;
+;			Entry Parameters:	None										;
+;			Exit Parameters :	HL = Address of Disk Parameter Block		;
+;																			;
+;------------------ Get Disk Parameter Block Address - 1F (31) -------------;
 vGetDiskParamBlock:							; func31 (31 - 1F)
 	LD		HL,(caDiskParamBlock)
 	LD		(exitParameterWord),HL
@@ -1862,7 +1864,7 @@ GetFileSize1:
 	CALL	GetCurrentDirectoryRecord	; HL points at Directory entry
 	LD		DE,fcbRCIndex				; FCB Record Count index
 	CALL	GetRandomRecordPosition
-;??????????????????????????????????????????????????????????????????????????????;
+;???????????????????????????????????????????????????????????????????????????;
  ; A=0000 000? BC = mmmm eeee errr rrrr compare with memory, larger?
 	POP		HL
 	PUSH	HL							; recall, replace .fcb(Random record Field)
@@ -1927,38 +1929,38 @@ GetFileSizeExit:						; setsize:
 	LD		(HL),A						; to RANDOM_REC_FIELD
 	RET
 
-;------------------------ Reset Logical Disk Drive - 25 (37) ----------------;
-;  This function resets individual disk drives. It is a more precise version ;
-; of the Reset Disk System function (code 13,ODH), in that you can set       ;
-; specific logical; disks rather than all of them.                           ;
-;  The bit map in DE shows which disks are to be reset. The least significant;
-; bit of; E represents disk A, and the most significant bit of D, disk P.    ;
-; The bits set to 1 indicate the disks to be reset.                          ;
-;  Note that this function returns a zero value in A in order to maintain    ;
-; compatibility with MP/ M.                                                  ;
-;                                                  ;                         ;
-;  Use this function when only specific diskettes need to be changed.        ;
-; Changing a diskette without requesting CP/M to log it in will cause the    ;
-; BDOS to assume that an error has occurred and to set the new diskette to   ;
-; Read-Only status as a protective measure                                   ;
-;                                                                            ;
-;			Function Code	:	C = 25H                                      ;
-;			Entry Parameters:	DE = Logical Drive Bit Vector				 ;
-;			Exit Parameters :	A = 00H										 ;
-;																			 ;
-;------------------------ Reset Logical Disk Drive - 25 (37) ----------------;
+;------------------------ Reset Logical Disk Drive - 25 (37) ---------------;
+;  This function resets individual disk drives. It is a more precise        ;
+; version of the Reset Disk System function (code 13,ODH), in that you      ;
+; can set specific logical; disks rather than all of them.                  ;        
+;  The bit map in DE shows which disks are to be reset. The least           ;
+; significant bit of E represents disk A, and the most significant bit of   ;
+; D, disk P. The bits set to 1 indicate the disks to be reset.              ;           
+;  Note that this function returns a zero value in A in order to maintain   ;
+; compatibility with MP/ M.                                                 ;
+;                                                  ;                        ;
+;  Use this function when only specific diskettes need to be changed.       ;
+; Changing a diskette without requesting CP/M to log it in will cause the   ;
+; BDOS to assume that an error has occurred and to set the new diskette to  ;
+; Read-Only status as a protective measure                                  ;
+;                                                                           ;
+;			Function Code	:	C = 25H                                     ;
+;			Entry Parameters:	DE = Logical Drive Bit Vector				;
+;			Exit Parameters :	A = 00H										;
+;																			;
+;------------------------ Reset Logical Disk Drive - 25 (37) ---------------;
 ;  **************  Not Yet Implemented   **************
  vResetDrive:
 	LD		A,-1						; Error return
 	RET
 	
-;------------------------------ Access Drive - 26 (38) ----------------------;
-;								NOT SUPPORTED								 ;
-;------------------------------ Access Drive - 26 (38) ----------------------;
+;------------------------------ Access Drive - 26 (38) ---------------------;
+;								NOT SUPPORTED								;
+;------------------------------ Access Drive - 26 (38) ---------------------;
 
-;------------------------------ Free   Drive - 27 (39) ----------------------;
-;								NOT SUPPORTED								 ;
-;------------------------------ Free   Drive - 27 (39) ----------------------;
+;------------------------------ Free   Drive - 27 (39) ---------------------;
+;								NOT SUPPORTED								;
+;------------------------------ Free   Drive - 27 (39) ---------------------;
 
 ;---------------- Write Random with Zero Fill - 28 (40) --------------------;
 ;  This function is an extension to the Write Random function described     ;
@@ -1978,10 +1980,6 @@ GetFileSizeExit:						; setsize:
 vWriteRandom0Fill:
  ; Not Yet Implemented   **************
 	RET
-
-;*****************************************************************
-;********************** Disk  I/O ********************************
-;*****************************************************************
 ;--------------------------- Select  Drive ---------------------------------;
 ; Establish the disk found in (paramE) as the current disk drive            ;
 SelectCurrent:                                                              ;
@@ -1996,7 +1994,7 @@ SelectCurrent:                                                              ;
  ; select Login Drive                                                       ;
 Select:                                                                     ;
  	CALL	SelectDisk					; Select the Disk                   ;
-	CALL	Z,errSelect                                                     ;
+	CALL	Z,Error_Select                                                  ;
 	LD		HL,currentDisk													;
 	LD		B,(HL)						; Get Current Disk                  ;
 	LD		HL,(loggedDisks)			; Load Logged Disk MAP              ;
@@ -2011,136 +2009,135 @@ Select:                                                                     ;
 	                                                                        ;
 	JP		InitDisk                                                        ;
 ;--------------------------- Select Login Drive ----------------------------;
-;--------------------------- Select Disk ------------------------------------;
- ;*****************************************************************          ;
- ; select the disk drive given by currentDisk, and fill the base addresses   ;
- ; caTrack - caAllocVector, then fill the values of the disk parameter block ;
-SelectDisk:                                                                  ;
-	LD		A,(currentDisk)				; Get current disk (0=A,1=B...)      ;
-	LD		C,A							; Prepare for BIOS Call              ;
-	CALL	bcSeldsk					; Select the disk                    ;
-	LD		A,H							; Return Pointer to                  ;
-	OR		L							;  Disk Parameter Header             ;
-	RET		Z							; exit if error, with HL = 0000      ;
-                                                                             ;
-	LD		E,(HL)                                                           ;
-	INC		HL                                                               ;
-	LD		D,(HL)						; Skew Table in DE                   ;
-	INC		HL							; HL = DPH + 2, Rel Pos for File     ;
-	LD		(caSkewTable),DE			; Move to Current Skew Table         ;
-	                                                                         ;
-	LD		(caDirMaxValue),HL			; Move to Current Dir max            ;
-	INC		HL                                                               ;
-	INC		HL							; HL = Last Track #                  ;
-	LD		(caTrack),HL				; Move to Current Track #            ;
-	INC		HL                                                               ;
-	INC		HL							; HL = Last Sector #                 ;
-	LD		(caSector),HL				; Move to Current Sector #           ;
-	INC		HL                                                               ;
-	INC		HL                                                               ;
-	LD		DE,caDirectoryDMA                                                ;
-	LD		BC,caListSize                                                    ;
-	LDIR                                                                     ;
-                                                                             ;
-; finish filling in address list                                             ;
-	LD		HL,(caDiskParamBlock)		; Point Disk Parameter Block         ;
-	LD		DE,dpbStart					; Point at BIOS DPB                  ;
-	LD		BC,dpbSize                                                       ;
-	LDIR								; Move DPB to current                ;
-	                                                                         ;
-; Determine if Byte or Word Allocation Table	                             ;
-	LD		HL,(dpbDSM)					; Get max entry number               ;
-	LD		A,H							; If  its 00 then < 255              ;
-	LD		HL,byteAllocationFlag		; Point at the  flag				 ;
-	LD		(HL),TRUE					; Assume its less than 255           ;
-	OR		A							;  is the assumption confirmed ?     ;
-	JR		Z,SelectDisk1				;  skip if yes                       ;
-	LD		(HL),FALSE					; Fix assumption,set flag to false   ;
-	                                                                         ;
-; Set Sign, reset Carry and Zero to indicate success                         ;
- SelectDisk1:                                                                ;
-	LD	A,TRUE                                                               ;
-	OR	A								                                     ;
-	RET                                                                      ;
-;--------------------------- Select Disk ------------------------------------;
-;--------------------------- Initialize Disk --------------------------------;
-InitDisk:                                                                    ;
-	LD		HL,(dpbDSM)					; Maximum allocation value           ;
-	CALL	DivideHLby8					; Length of Map                      ;
-	PUSH	HL							; Save Length                        ;
-	PUSH	HL							; Save for end of MAP                ;
-	POP		BC							; BC = dpbDSM/8                      ;
-; Clear the Allocation Vector	                                             ;
-	LD		HL,(caAllocVector)			; Allocation vector Start            ;
-	LD		(HL),0						; Clear location                     ;
-	LD		DE,(caAllocVector)                                               ;
-	INC		DE							; Allocation vector Start + 1        ;
-	LDIR								; Cascade 00 thru Map                ;
-; Force bits at End of Map                                                   ;
-	EX		DE,HL						; Put last Map byte into DE          ;
-	POP		HL                                                               ;
-	INC		HL                                                               ;
-	CALL	MultiplyHLby8				; Blocks if all bits used            ;
-	LD		BC,(dpbDSM)					; Actual block max                   ;
-	INC		BC							; Now has size of the Map            ;
-	XOR		A							; Clear CY                           ;
-	SBC		HL,BC						; Extra unused bits                  ;
-	CP		L							;  are there any                     ;
-	JR		Z,Mark4Directory                                                 ;
-	LD		B,L							; Number of bits to set              ;
-	EX		DE,HL						; Put last Map byte into HL          ;
-SetBitLoop:                                                                  ;
-	SCF                                                                      ;
-	RL		(HL)						; Set LSB                            ;
-	DJNZ	SetBitLoop					; Loop thru the bits                 ;
-	                                                                         ;
-Mark4Directory:	                                                             ;
-; Mark the reserved space for the directory                                  ;
-	LD		HL,(dpbDABM)				; Directory block reserved bits      ;
-	EX		DE,HL                                                            ;
-	LD		HL,(caAllocVector)			; HL Start of Allocation Vector      ;
-	LD		(HL),E                                                           ;
-	INC		HL                                                               ;
-	LD		(HL),D						; Put reserved blocks in Vector      ;
-; end of Map                                                                 ;
-; Home disk, and set current track and sector to 00                          ;
-	CALL	Home                                                             ;
-	LD		HL,(caDirMaxValue)                                               ;
-	LD		(HL),3                                                           ;
-	INC		HL                                                               ;
-	LD		(HL),0						; Current Max Dir Value = 0003       ;
-	CALL	SetEndDirectory				; dirEntryIndex = EOD (-1)           ;
-                                                                             ;
-InitDisk1:                                                                   ;
-; Process the directory                                                      ;
-	LD		C,TRUE						; Set flag for setting CheckSum	     ;
-	CALL	ReadDirectory				; Get the directory Record           ;
-	CALL	AtEndOfDirectory			; Are we Done ?                      ;
-	RET		Z							;  Exit if Yes                       ;
-; Not end of directory, valid entry?                                         ;
-	CALL	GetCurrentDirectoryRecord	; Calculate location of the element  ;
-	LD		A,emptyDir                                                       ;
-	CP		M							; Is it an Empty Dir Entry           ;
-	JR		Z,InitDisk1					;   Loop back if yes                 ;
-; Not emptyDir, user code the same?                                          ;
-	LD		A,(currentUserNumber)                                            ;
-	CP		M                                                                ;
-	JR		NZ,InitDisk2				; Skip if this entry not the users   ;
-; Same user, check for '$' submit                                            ;
-	INC		HL                                                               ;
-	LD		A,(HL)                                                           ;
-	SUB		DOLLAR						; Is first Char a $                  ;
-	JR		NZ,InitDisk2                                                     ;
-; dollar file found, mark in exitParameterByte                               ;
-	DEC		A							; Set A to FFH                       ;
-	LD		(exitParameterByte),A		; Return it the exit parameter       ;
- InitDisk2:                                                                  ;
-; now scan the disk map for allocated blocks                                 ;
-	LD		C,TRUE						; set to allocated                   ;
-	CALL	ScanDiskMap                                                      ;
-	CALL	SetDirectoryEntry			; Mark directory entry               ;
-	JR		InitDisk1					; Loop for another entry             ;
-;--------------------------- Initialize Disk --------------------------------;
+;--------------------------- Select Disk -----------------------------------;
+; select the disk drive given by currentDisk, and fill the base addresses   ;
+; caTrack - caAllocVector, then fill the values of the disk parameter block ;
+SelectDisk:                                                                 ;
+	LD		A,(currentDisk)				; Get current disk (0=A,1=B...)     ;
+	LD		C,A							; Prepare for BIOS Call             ;
+	CALL	bcSeldsk					; Select the disk                   ;
+	LD		A,H							; Return Pointer to                 ;
+	OR		L							;  Disk Parameter Header            ;
+	RET		Z							; exit if error, with HL = 0000     ;
+                                                                            ;
+	LD		E,(HL)                                                          ;
+	INC		HL                                                              ;
+	LD		D,(HL)						; Skew Table in DE                  ;
+	INC		HL							; HL = DPH + 2, Rel Pos for File    ;
+	LD		(caSkewTable),DE			; Move to Current Skew Table        ;
+	                                                                        ;
+	LD		(caDirMaxValue),HL			; Move to Current Dir max           ;
+	INC		HL                                                              ;
+	INC		HL							; HL = Last Track #                 ;
+	LD		(caTrack),HL				; Move to Current Track #           ;
+	INC		HL                                                              ;
+	INC		HL							; HL = Last Sector #                ;
+	LD		(caSector),HL				; Move to Current Sector #          ;
+	INC		HL                                                              ;
+	INC		HL                                                              ;
+	LD		DE,caDirectoryDMA                                               ;
+	LD		BC,caListSize                                                   ;
+	LDIR                                                                    ;
+                                                                            ;
+; finish filling in address list                                            ;
+	LD		HL,(caDiskParamBlock)		; Point Disk Parameter Block        ;
+	LD		DE,dpbStart					; Point at BIOS DPB                 ;
+	LD		BC,dpbSize                                                      ;
+	LDIR								; Move DPB to current               ;
+	                                                                        ;
+; Determine if Byte or Word Allocation Table	                            ;
+	LD		HL,(dpbDSM)					; Get max entry number              ;
+	LD		A,H							; If  its 00 then < 255             ;
+	LD		HL,byteAllocationFlag		; Point at the  flag				;
+	LD		(HL),TRUE					; Assume its less than 255          ;
+	OR		A							;  is the assumption confirmed ?    ;
+	JR		Z,SelectDisk1				;  skip if yes                      ;
+	LD		(HL),FALSE					; Fix assumption,set flag to false  ;
+	                                                                        ;
+; Set Sign, reset Carry and Zero to indicate success                        ;
+ SelectDisk1:                                                               ;
+	LD	A,TRUE                                                              ;
+	OR	A								                                    ;
+	RET                                                                     ;
+;--------------------------- Select Disk -----------------------------------;
+;--------------------------- Initialize Disk -------------------------------;
+InitDisk:                                                                   ;
+	LD		HL,(dpbDSM)					; Maximum allocation value          ;
+	CALL	DivideHLby8					; Length of Map                     ;
+	PUSH	HL							; Save Length                       ;
+	PUSH	HL							; Save for end of MAP               ;
+	POP		BC							; BC = dpbDSM/8                     ;
+; Clear the Allocation Vector	                                            ;
+	LD		HL,(caAllocVector)			; Allocation vector Start           ;
+	LD		(HL),0						; Clear location                    ;
+	LD		DE,(caAllocVector)                                              ;
+	INC		DE							; Allocation vector Start + 1       ;
+	LDIR								; Cascade 00 thru Map               ;
+; Force bits at End of Map                                                  ;
+	EX		DE,HL						; Put last Map byte into DE         ;
+	POP		HL                                                              ;
+	INC		HL                                                              ;
+	CALL	MultiplyHLby8				; Blocks if all bits used           ;
+	LD		BC,(dpbDSM)					; Actual block max                  ;
+	INC		BC							; Now has size of the Map           ;
+	XOR		A							; Clear CY                          ;
+	SBC		HL,BC						; Extra unused bits                 ;
+	CP		L							;  are there any                    ;
+	JR		Z,Mark4Directory                                                ;
+	LD		B,L							; Number of bits to set             ;
+	EX		DE,HL						; Put last Map byte into HL         ;
+SetBitLoop:                                                                 ;
+	SCF                                                                     ;
+	RL		(HL)						; Set LSB                           ;
+	DJNZ	SetBitLoop					; Loop thru the bits                ;
+	                                                                        ;
+Mark4Directory:	                                                            ;
+; Mark the reserved space for the directory                                 ;
+	LD		HL,(dpbDABM)				; Directory block reserved bits     ;
+	EX		DE,HL                                                           ;
+	LD		HL,(caAllocVector)			; HL Start of Allocation Vector     ;
+	LD		(HL),E                                                          ;
+	INC		HL                                                              ;
+	LD		(HL),D						; Put reserved blocks in Vector     ;
+; end of Map                                                                ;
+; Home disk, and set current track and sector to 00                         ;
+	CALL	Home                                                            ;
+	LD		HL,(caDirMaxValue)                                              ;
+	LD		(HL),3                                                          ;
+	INC		HL                                                              ;
+	LD		(HL),0						; Current Max Dir Value = 0003      ;
+	CALL	SetEndDirectory				; dirEntryIndex = EOD (-1)          ;
+                                                                            ;
+InitDisk1:                                                                  ;
+; Process the directory                                                     ;
+	LD		C,TRUE						; Set flag for setting CheckSum	    ;
+	CALL	ReadDirectory				; Get the directory Record          ;
+	CALL	AtEndOfDirectory			; Are we Done ?                     ;
+	RET		Z							;  Exit if Yes                      ;
+; Not end of directory, valid entry?                                        ;
+	CALL	GetCurrentDirectoryRecord	; Calculate location of the element ;
+	LD		A,emptyDir                                                      ;
+	CP		M							; Is it an Empty Dir Entry          ;
+	JR		Z,InitDisk1					;   Loop back if yes                ;
+; Not emptyDir, user code the same?                                         ;
+	LD		A,(currentUserNumber)                                           ;
+	CP		M                                                               ;
+	JR		NZ,InitDisk2				; Skip if this entry not the users  ;
+; Same user, check for '$' submit                                           ;
+	INC		HL                                                              ;
+	LD		A,(HL)                                                          ;
+	SUB		DOLLAR						; Is first Char a $                 ;
+	JR		NZ,InitDisk2                                                    ;
+; dollar file found, mark in exitParameterByte                              ;
+	DEC		A							; Set A to FFH                      ;
+	LD		(exitParameterByte),A		; Return it the exit parameter      ;
+ InitDisk2:                                                                 ;
+; now scan the disk map for allocated blocks                                ;
+	LD		C,TRUE						; set to allocated                  ;
+	CALL	ScanDiskMap                                                     ;
+	CALL	SetDirectoryEntry			; Mark directory entry              ;
+	JR		InitDisk1					; Loop for another entry            ;
+;--------------------------- Initialize Disk -------------------------------;
 ;----------------------------- Open File -----------------------------------;
 ;search for the directory entry matching FCB at paramDE						;
  OpenFile:																	;
@@ -2320,94 +2317,54 @@ MakeNewFile:                                                                ;
 	JP		SetFileWriteFlag			; Set the clean entry flag          ;
 ;----------------------------------- Make new File -------------------------;
 
-; DIO
-
-;- ;---------------
-;- ; set a "1" value in currentDisk position of BC
-;- ; return in HL
-;- SetCurrentDiskBit:
-;-	PUSH	BC								; save input parameter
-;-	LD		A,(currentDisk)
-;-	LD		C,A								; ready parameter for shift
-;-	LD		HL,1								; number to shift
-;-	CALL	ShiftLeftHLbyC							; HL = mask to integrate
-;-	POP		BC								; original mask
-;-	LD		A,C
-;-	OR		L
-;-	LD		L,A
-;-	LD		A,B
-;-	OR		H
-;-	LD		H,A								; HL = mask or rol(1,currentDisk)
-;-	RET
-;- ;--------------
-;-
-;-;--------------------------- Scan      Map ----------------------------------;
-;- ;-----------------------------------
-;- ; byte value from ALLOC is in register A, with shift count
-;- ; in register C (to place bit back into position), and
-;- ; target ALLOC position in registers HL, rotate and replace
-;- RotateAndReplace:
-;-	RRCA
-;-	DEC	D
-;-	JP	NZ,RotateAndReplace					; back into position
-;-	LD	(HL),A									; back to ALLOC
-;-	RET
-;- ;-----------------------------------
-;-
-;- ;*****************************************************************
-;-
-;- ;*****************************************************************
 ;=========================== Disk Utilities ================================;
-;--------------------------- Home The Current Disk ------------------------;
-;move to home position, then offset to start of dir                        ;
-Home:                                                                      ;
-	CALL	bcHome						; Sets Track to 0, and checks      ;
-										; if Buffer needs to be written    ;
-	LD		HL,dpbOFF					; Number of tracks before directory;
-	LD		C,(HL)                                                         ;
-	INC		HL                                                             ;
-	LD		B,(HL)                                                         ;
-	CALL	bcSettrk					; Point at 1st directory position  ;
-	                                                                       ;
-; Set Current Track and Sector to 00                                       ;
-	XOR		A							; set ACC to 00                    ;
-	LD		HL,(caTrack)				                                   ;
-	LD		(HL),A                                                         ;
-	INC		HL                                                             ;
-	LD		(HL),A                                                         ;
-	LD	HL,(caSector)                                                      ;
-	LD		(HL),A                                                         ;
-	INC		HL                                                             ;
-	LD		(HL),A                                                         ;
-	RET                                                                    ;
-                                                                           ;
-;--------------------------- Home The Current Disk ------------------------;
-;--------------------------- Set DMAs -------------------------------------;
-SetDataDMA:                                                                ;
-	LD		HL,initDAMAddress                                              ;
-	JR		SetDMA						; Skip to complete the call        ;
-;	LD		BC,initDAMAddress                                              ;
-;	JP		bcSetdma					; Call BIOS to set                 ;
-                                                                           ;
-SetDirDMA:                                                                 ;
-	LD		HL,caDirectoryDMA			; Load current directory Buffer    ;
-;	LD		BC,caDirectoryDMA			; Load current directory Buffer    ;
-;	JP		bcSetdma					; Call BIOS to set                 ;
-	                                                                       ;
-SetDMA:									                              	   ;
-	LD		C,(HL)                                                         ;
-	INC		HL                                                             ;
-	LD		B,(HL)							; parameter ready              ;
-	JP		bcSetdma						; call bios to set             ;
-;--------------------------- Set DMAs -------------------------------------;
-;--------------------------- Read Buffer ----------------------------------;
-;reads into current DMA, using current Disk,Track and Sector               ;
-ReadBuffer:                                                                ;
-	CALL	bcRead						; Do the read at the BIOS level    ;
-	OR		A							; Check status                     ;
-	JP		NZ,erPermanentNoWait		; Report if Status not OK          ;
-	RET                                                                    ;
-;--------------------------- Read Buffer ----------------------------------;
+
+;--------------------------- Home The Current Disk -------------------------;
+;move to home position, then offset to start of dir                         ;
+Home:                                                                       ;
+	CALL	bcHome						; Sets Track to 0, and checks       ;
+										; if Buffer needs to be written     ;
+	LD		HL,dpbOFF					; Number of tracks before directory ;
+	LD		C,(HL)                                                          ;
+	INC		HL                                                              ;
+	LD		B,(HL)                                                          ;
+	CALL	bcSettrk					; Point at 1st directory position   ;
+	                                                                        ;
+; Set Current Track and Sector to 00                                        ;
+	XOR		A							; set ACC to 00                     ;
+	LD		HL,(caTrack)				                                    ;
+	LD		(HL),A                                                          ;
+	INC		HL                                                              ;
+	LD		(HL),A                                                          ;
+	LD	HL,(caSector)                                                       ;
+	LD		(HL),A                                                          ;
+	INC		HL                                                              ;
+	LD		(HL),A                                                          ;
+	RET                                                                     ;
+                                                                            ;
+;--------------------------- Home The Current Disk -------------------------;
+;--------------------------- Set DMAs --------------------------------------;
+SetDataDMA:                                                                 ;
+	LD		HL,initDAMAddress                                               ;
+	JR		SetDMA						; Skip to complete the call         ;
+                                                                            ;
+SetDirDMA:                                                                  ;
+	LD		HL,caDirectoryDMA			; Load current directory Buffer     ;
+	                                                                        ;
+SetDMA:									                              	    ;
+	LD		C,(HL)                                                          ;
+	INC		HL                                                              ;
+	LD		B,(HL)							; parameter ready               ;
+	JP		bcSetdma						; call bios to set              ;
+;--------------------------- Set DMAs --------------------------------------;
+;--------------------------- Read Buffer -----------------------------------;
+;reads into current DMA, using current Disk,Track and Sector                ;
+ReadBuffer:                                                                 ;
+	CALL	bcRead						; Do the read at the BIOS level     ;
+	OR		A							; Check status                      ;
+	JP		NZ,Error_BadSector				; Report if Status not OK		;
+	RET                                                                     ;
+;--------------------------- Read Buffer -----------------------------------;
 ;--------------------------- Set Current Disk Read Only --------------------;
 ;set current disk to read only                                              ;
  SetDiskReadOnly:                                                           ;
@@ -2470,97 +2427,97 @@ IsDiskWriteProtected:                                                       ;
 ;=========================== Disk Utilities ================================;
  
 ;=========================== File Utilities ================================;
-;--------------------------- Set Record Variables -------------------------;
-;set variables from currently FCB - Current Record, RC, EXM                ;
-SetRecordVars:                                                             ;
-	CALL	GetFcbRecordDetails			; DE = .RecordCount                ;
-										;  and HL => .CurrentRecord        ;
-	LD		A,(HL)                                                         ;
-	LD		(currentFileRecord),A		; Save current record              ;
-	EX		DE,HL                                                          ;
-	LD		A,(HL)                                                         ;
-	LD		(fcbRecordCount),A			; Save the FCBs RC                 ;
-	CALL	GetExtentAddress			; HL=.FCB(fcbExtIndex)             ;
-	LD		A,(dpbEXM)					; Extent mask                      ;
-	AND		M							; Remove unwanted bits             ;
-	LD		(extentValue),A				; Store the value                  ;
-	RET                                                                    ;
-;--------------------------- Set Record Variables -------------------------;
-;----------------------Get File Record Count and Current Record------------;
-; returns with DE pointing at RC from FCB                                  ;
-;         with HL pointing at Current Record                               ;
- GetFcbRecordDetails:                                                      ;
-	LD		HL,(paramDE)				; Get FCB start                    ;
-	LD		DE,fcbRCIndex				; Offset to Record Count           ;
-	ADD		HL,DE                                                          ;
-	EX		DE,HL						; DE Points to Record Count        ;
-	LD		HL,recordSeq-fcbRCIndex                                        ;
-	ADD		HL,DE						; HL Points to Current Record      ;
-	RET                                                                    ;
-;----------------------Get File Record Count and Current Record------------;
-;----------------------Get FileExtent--------------------------------------;
- ;get current extent field address to (HL)                                 ;
- GetExtentAddress:                                                         ;
-	LD		HL,(paramDE)				; Get FCB                          ;
-	LD		DE,fcbExtIndex				; Get EXT offset                   ;
-	ADD		HL,DE						; HL=.fcb(fcbExtIndex)             ;
-	RET                                                                    ;
-;----------------------Get FileExtent--------------------------------------;
-;--------------------- Set/Reset Disk Map Allocation Bit ------------------;
-; At Entry:	BC Contains to the Block to be modified                        ;
-;			E  = TRUE if bit is to be set                                  ;
-;			E  <> TRUE if bit is to be reset                               ;
-; At Exit:  The target bit in the target Octet will be set/reset	       ;
- SetResetMapBit:                                                           ;
-                                                                           ;
-	LD		HL,0000H					; Move the block number from BC    ;
-	ADD		HL,BC						;  to HL                           ;
-	LD		C,E							; Move the flag to E               ;
-	                                                                       ;
-	LD		A,L							; LSB of the Block Number          ;
-	AND		07H							; Calculate Mod(Block,8)           ;
-	PUSH	AF							; Save the OctetBit                ;
-	LD		B,3                                                            ;
-	CALL	ShiftRightHLbyB				; Calculate Block / 8              ;
-	LD		DE,(caAllocVector)			; Start Of Map                     ;
-	ADD		HL,DE						; Address of targeted Octet        ;
-	POP		AF                                                             ;
-	LD		B,A							; Get the bit                      ;
-                                                                           ;
-	INC		B							; Adjust for looping               ;
-	PUSH	BC							; Will need this later             ;
-Left:                                                                      ;
-	RL		(HL)						; Rotate the Octet                 ;
-	DJNZ	Left						;  to move target bit to bit 0     ;
-	POP		BC							; Restore loop limit and           ;
-	SCF									;  set/reset flag                  ;
-	INC		C							; was C = TRUE                     ;
-	JR		Z,Right						; Skip if Set                      ;
-	CCF									; Set for Reset                    ;
-Right:                                                                     ;
-	RR		(HL)						; Move the Octet back              ;
-	DJNZ	Right						;  to its original alignment       ;
-	RET                                                                    ;
-;--------------------- Set/Reset Disk Map Allocation Bit ------------------;
-;--------------------- Initialize Extent Number MSB -----------------------;
- ;clear the Extent number field for user open/make (S2)                    ;
-InitializeExtentNumberMSB:                                                 ;
-	CALL	GetExtentNumberMSB                                             ;
-	LD		(HL),0								; Set it to = 0            ;
-	RET                                                                    ;
-;--------------------- Initialize Extent Number MSB -----------------------;
-;--------------------- Get Extent Number MSB| Write Protect ---------------;
-; Get S2 value                                                             ;
-;  Returns:	A = S2 Value (bit 7 write protect, bits 0-6 Ext MSB)           ;
-;			HL = Address of S2 for the FCB pointed to by paramDE           ;
-GetWriteFileFlagValue:							; S2 bit 7                 ;
-GetExtentNumberMSB:								; S2 bits 0-6              ;
-	LD		HL,(paramDE)						; FCB address              ;
-	LD		DE,fcbS2Index						; Index to value           ;
-	ADD		HL,DE								; Address of value         ;
-	LD		A,(HL)								; load into ACC            ;
-	RET	                                                                   ;
-;--------------------- Get Extent Number MSB| Write Protect ---------------;
+;--------------------------- Set Record Variables --------------------------;
+;set variables from currently FCB - Current Record, RC, EXM                 ;
+SetRecordVars:                                                              ;
+	CALL	GetFcbRecordDetails			; DE = .RecordCount                 ;
+										;  and HL => .CurrentRecord         ;
+	LD		A,(HL)                                                          ;
+	LD		(currentFileRecord),A		; Save current record               ;
+	EX		DE,HL                                                           ;
+	LD		A,(HL)                                                          ;
+	LD		(fcbRecordCount),A			; Save the FCBs RC                  ;
+	CALL	GetExtentAddress			; HL=.FCB(fcbExtIndex)              ;
+	LD		A,(dpbEXM)					; Extent mask                       ;
+	AND		M							; Remove unwanted bits              ;
+	LD		(extentValue),A				; Store the value                   ;
+	RET                                                                     ;
+;--------------------------- Set Record Variables --------------------------;
+;----------------------Get File Record Count and Current Record-------------;
+; returns with DE pointing at RC from FCB                                   ;
+;         with HL pointing at Current Record                                ;
+ GetFcbRecordDetails:                                                       ;
+	LD		HL,(paramDE)				; Get FCB start                     ;
+	LD		DE,fcbRCIndex				; Offset to Record Count            ;
+	ADD		HL,DE                                                           ;
+	EX		DE,HL						; DE Points to Record Count         ;
+	LD		HL,recordSeq-fcbRCIndex                                         ;
+	ADD		HL,DE						; HL Points to Current Record       ;
+	RET                                                                     ;
+;----------------------Get File Record Count and Current Record-------------;
+;----------------------Get FileExtent---------------------------------------;
+ ;get current extent field address to (HL)                                  ;
+ GetExtentAddress:                                                          ;
+	LD		HL,(paramDE)				; Get FCB                           ;
+	LD		DE,fcbExtIndex				; Get EXT offset                    ;
+	ADD		HL,DE						; HL=.fcb(fcbExtIndex)              ;
+	RET                                                                     ;
+;----------------------Get FileExtent---------------------------------------;
+;--------------------- Set/Reset Disk Map Allocation Bit -------------------;
+; At Entry:	BC Contains to the Block to be modified                         ;
+;			E  = TRUE if bit is to be set                                   ;
+;			E  <> TRUE if bit is to be reset                                ;
+; At Exit:  The target bit in the target Octet will be set/reset	        ;
+ SetResetMapBit:                                                            ;
+                                                                            ;
+	LD		HL,0000H					; Move the block number from BC     ;
+	ADD		HL,BC						;  to HL                            ;
+	LD		C,E							; Move the flag to E                ;
+	                                                                        ;
+	LD		A,L							; LSB of the Block Number           ;
+	AND		07H							; Calculate Mod(Block,8)            ;
+	PUSH	AF							; Save the OctetBit                 ;
+	LD		B,3                                                             ;
+	CALL	ShiftRightHLbyB				; Calculate Block / 8               ;
+	LD		DE,(caAllocVector)			; Start Of Map                      ;
+	ADD		HL,DE						; Address of targeted Octet         ;
+	POP		AF                                                              ;
+	LD		B,A							; Get the bit                       ;
+                                                                            ;
+	INC		B							; Adjust for looping                ;
+	PUSH	BC							; Will need this later              ;
+Left:                                                                       ;
+	RL		(HL)						; Rotate the Octet                  ;
+	DJNZ	Left						;  to move target bit to bit 0      ;
+	POP		BC							; Restore loop limit and            ;
+	SCF									;  set/reset flag                   ;
+	INC		C							; was C = TRUE                      ;
+	JR		Z,Right						; Skip if Set                       ;
+	CCF									; Set for Reset                     ;
+Right:                                                                      ;
+	RR		(HL)						; Move the Octet back               ;
+	DJNZ	Right						;  to its original alignment        ;
+	RET                                                                     ;
+;--------------------- Set/Reset Disk Map Allocation Bit -------------------;
+;--------------------- Initialize Extent Number MSB ------------------------;
+ ;clear the Extent number field for user open/make (S2)                     ;
+InitializeExtentNumberMSB:                                                  ;
+	CALL	GetExtentNumberMSB                                              ;
+	LD		(HL),0								; Set it to = 0             ;
+	RET                                                                     ;
+;--------------------- Initialize Extent Number MSB ------------------------;
+;--------------------- Get Extent Number MSB| Write Protect ----------------;
+; Get S2 value                                                              ;
+;  Returns:	A = S2 Value (bit 7 write protect, bits 0-6 Ext MSB)            ;
+;			HL = Address of S2 for the FCB pointed to by paramDE            ;
+GetWriteFileFlagValue:							; S2 bit 7                  ;
+GetExtentNumberMSB:								; S2 bits 0-6               ;
+	LD		HL,(paramDE)						; FCB address               ;
+	LD		DE,fcbS2Index						; Index to value            ;
+	ADD		HL,DE								; Address of value          ;
+	LD		A,(HL)								; load into ACC             ;
+	RET	                                                                    ;
+;--------------------- Get Extent Number MSB| Write Protect ----------------;
 ;--------------------------- Set File Write Flag----------------------------;
 ;Set file write flag in FCB in (paramDE)									;
 ; Used to indicate the FCB is clean. No need to write on close				;
@@ -2714,7 +2671,7 @@ SetNextPosition:															;
 WriteBuffer:                                                                ;
 	CALL	bcWrite						; Call into BIOS                    ;
 	OR		A							; Get return code                   ;
-	JP		NZ,erPermanentNoWait		; Error if not 00                   ;
+	JP		NZ,Error_BadSector		; Error if not 00                   ;
 	RET                                                                     ;
 ;----------------------------------- Write Buffer --------------------------;
 ;---------------------------- Update Record Vars ---------------------------;
@@ -3110,7 +3067,7 @@ DirLocationToReturnLoc:                                                     ;
  CheckWrite:                                                                ;
 	CALL	IsDiskWriteProtected		; Is this disk Write Protected?     ;
 	RET		Z							; OK to write                       ;
-	JP		errReadOnlyDisk				; Report read only disk error		;
+	JP		Error_DiskReadOnly			; Report read only disk error		;
 ;--------------------------- Check OK to Write to Disk ---------------------;
 ;--------------------------- Check File Write Protect Status ---------------;
  CheckRODirectory:                                                          ;
@@ -3122,7 +3079,7 @@ DirLocationToReturnLoc:                                                     ;
 	LD		A,(HL)                                                          ;
 	RLA									; Set CY if RO bit set              ;
 	RET		NC							; Return OK                         ;
-	JP		errReadOnlyFile				; Report to read only File          ;
+	JP		Error_FileReadOnly			; Report to read only File          ;
 ;--------------------------- Check File Write Protect Status ---------------;
 ;------------------------- Copy FCB To Directory record --------------------;
 ; On Entry:                                                                 ;
@@ -3293,46 +3250,46 @@ OpenNextExtError:                                                           ;
 
 ;=========================== General   Utilities ===========================;
 
-;--------------------------- Rotate HL right by value in C ----------------;
-                                                                           ;
-; HL = Value to be rotated Right                                           ;
-;  B = Amount to shift                                                     ;
-RotateRightHLbyB:                                                          ;
- 		SCF								; Set carry flag, expect LSBit = 1 ;
-		BIT		0,L						; is LSB set?                      ;
-		JR		NZ, RotateRightHLbyB1		; Skip if LSB set              ;
-		CCF								; else Clear Carry flag            ;
-RotateRightHLbyB1:                                                         ;
-		RR		H						; Shift thru CY                    ;
-		RR		L						; ditto                            ;
-		DJNZ	RotateRightHLbyB                                           ;
-		RET                                                                ;
-                                                                           ;
-;--------------------------- Rotate HL right by value in C ----------------;
-;---------Divide HL by 8  &&  Shift HL right by value in C ----------------;
-; HL = Value to be shifted Right                                           ;
-DivideHLby8:															   ;
-		LD		B,3						; 8 = 2**3						   ;
-;  B = Amount to shift                                                     ;
-ShiftRightHLbyB:                                                           ;
-		XOR		A						; else Clear Carry flag            ;
-		RR		H						; Shift thru CY                    ;
-		RR		L						; ditto                            ;
-		DJNZ	ShiftRightHLbyB                                            ;
-		RET                                                                ;
-;---------Divide HL by 8  &&  Shift HL right by value in C ----------------;
-;---------Multiply HL by 8  &&  Shift HL left by value in C ---------------;
-; HL = Value to be shifted Left                                            ;
-MultiplyHLby8:															   ;
-		LD		B,3						; 8 = 2**3						   ;
-;  B = Amount to shift                                                     ;
-ShiftLeftHLbyB:                                                            ;
-		XOR		A						; else Clear Carry flag            ;
-		RL		L						; Shift thru CY                    ;
-		RL		H						; ditto                            ;
-		DJNZ	ShiftLeftHLbyB                                             ;
-		RET                                                                ;
-;---------Multiply HL by 8  &&  Shift HL left by value in C ---------------;
+;--------------------------- Rotate HL right by value in C -----------------;
+                                                                            ;
+; HL = Value to be rotated Right                                            ;
+;  B = Amount to shift                                                      ;
+RotateRightHLbyB:                                                           ;
+ 		SCF								; Set carry flag, expect LSBit = 1  ;
+		BIT		0,L						; is LSB set?                       ;
+		JR		NZ, RotateRightHLbyB1		; Skip if LSB set               ;
+		CCF								; else Clear Carry flag             ;
+RotateRightHLbyB1:                                                          ;
+		RR		H						; Shift thru CY                     ;
+		RR		L						; ditto                             ;
+		DJNZ	RotateRightHLbyB                                            ;
+		RET                                                                 ;
+                                                                            ;
+;--------------------------- Rotate HL right by value in C -----------------;
+;---------Divide HL by 8  &&  Shift HL right by value in C -----------------;
+; HL = Value to be shifted Right                                            ;
+DivideHLby8:															    ;
+		LD		B,3						; 8 = 2**3						    ;
+;  B = Amount to shift                                                      ;
+ShiftRightHLbyB:                                                            ;
+		XOR		A						; else Clear Carry flag             ;
+		RR		H						; Shift thru CY                     ;
+		RR		L						; ditto                             ;
+		DJNZ	ShiftRightHLbyB                                             ;
+		RET                                                                 ;
+;---------Divide HL by 8  &&  Shift HL right by value in C -----------------;
+;---------Multiply HL by 8  &&  Shift HL left by value in C ----------------;
+; HL = Value to be shifted Left                                             ;
+MultiplyHLby8:															    ;
+		LD		B,3						; 8 = 2**3						    ;
+;  B = Amount to shift                                                      ;
+ShiftLeftHLbyB:                                                             ;
+		XOR		A						; else Clear Carry flag             ;
+		RL		L						; Shift thru CY                     ;
+		RL		H						; ditto                             ;
+		DJNZ	ShiftLeftHLbyB                                              ;
+		RET                                                                 ;
+;---------Multiply HL by 8  &&  Shift HL left by value in C ----------------;
 ;----------------------------- Merge ---------------------------------------;
 ; Merge Map Block Numbers between FCB and directory record                  ;
 ; HL has pointer to map for either dir record or FCB,                       ;
@@ -3505,201 +3462,115 @@ ComputeCheckSum1:                                                           ;
 	LD		(HL),A                                                          ;
 	RET                                                                     ;
 ;--------------------------- Check Sum Utility -----------------------------;
+;---------------------------------- Is Bit Set -----------------------------;
+; Enter HL  contains the bit map                                            ;
+;       B   Has the bit number (0...F)                                      ;
+; Return ZFlag = 1 if bit is reset (0)                                      ;
+;              = 0 if bit is set (1)                                        ;
+IsBitSet:																	;
+		INC		B                                                           ;
+IsBitSetLoop:                                                               ;
+ 		SCF								; Set carry flag, expect LSBit = 1  ;
+		BIT		0,L						; is LSB set?                       ;
+		JR		NZ, IsBitSet1				; Skip if LSB set               ;
+		CCF								; else Clear Carry flag             ;
+IsBitSet1:                                                                  ;
+		RR		H						; Shift thru CY                     ;
+		RR		L						; ditto                             ;
+		DJNZ	IsBitSetLoop                                                ;
+		BIT		7,H						; Bit moved from L LSBit to H MSBit	;
+		RET                                                                 ;
+;---------------------------------- Is Bit Set -----------------------------;
 
-;*****************************************************************
-;************************ Utilities ******************************
-;*****************************************************************
-;_ AddAtoHL:
-;_	ADD		A,L
-;_	LD		L,A
-;_	RET	NC
-;_	INC		H
-;_	RET
-;_ ;----------
-;_ DEminusHL2HL:
-;_	LD		A,E
-;_	SUB		L
-;_	LD		L,A
-;_	LD		A,D
-;_	SBC		A,H
-;_	LD		H,A
-;_	RET
-;_ ;-------------
-;_ ShiftRightHLbyC:
-;_	INC		C
-;_ ShiftRightHLbyC0:
-;_	DEC		C
-;_	RET	Z
-;_	LD		A,H
-;_	OR		A
-;_	RRA
-;_	LD		H,A
-;_	LD		A,L
-;_	RRA
-;_	LD		L,A
-;_	JP		ShiftRightHLbyC0
-;_ ;-------
-;_ ShiftLeftHLbyC:
-;_	INC		C
-;_ ShiftLeftHLbyC0:
-;_	DEC		C
-;_	RET	Z; exit when done
-;_	ADD		HL,HL
-;_	JP		ShiftLeftHLbyC0
-;_ ;*****************************************************************
-;? ;move data length of length C from source DE to HL
-;? MoveX:
-;?	INC		C
-;? MoveX0:
-;?	DEC		C
-;?	RET	Z
-;?	LD	A,(DE)
-;?	LD		(HL),A
-;?	INC		DE
-;?	INC		HL
-;?	JP		MoveX0
-;?
- ;********** Console OUT Routines*******************??????
- 
-;---------------------------------- Is Bit Set ------------------------------;
-; Enter HL  contains the bit map                                             ;
-;       B   Has the bit number (0...F)                                       ;
-; Return ZFlag = 1 if bit is reset (0)                                       ;
-;              = 0 if bit is set (1)                                         ;
-IsBitSet:																	 ;
-		INC		B                                                            ;
-IsBitSetLoop:                                                                ;
- 		SCF								; Set carry flag, expect LSBit = 1   ;
-		BIT		0,L						; is LSB set?                        ;
-		JR		NZ, IsBitSet1				; Skip if LSB set                ;
-		CCF								; else Clear Carry flag              ;
-IsBitSet1:                                                                   ;
-		RR		H						; Shift thru CY                      ;
-		RR		L						; ditto                              ;
-		DJNZ	IsBitSetLoop                                                 ;
-		BIT		7,H						; Bit moved from L LSBit to H MSBit	 ;
-		RET                                                                  ;
-;---------------------------------- Is Bit Set ------------------------------;
-
-;============================ Set/Reset Vector Bit ==========================;		
-;---------------------------------- Set Vector Bit -------------------------;;		
-; Enter  HL  contains the bit map vector                                    ;;
-;        B   Has the bit number (0...F)                                     ;;
-; Return HL  Contains the modified bit map vector                           ;;
-SetVectorBit:                                                               ;;
-		PUSH	BC						; Save the Bit Number               ;;
-		CALL	IsBitSet				; Put the bit in the LSBit          ;;
-                                                                            ;;
-		POP		BC						; Get the bit position              ;;
-		SET		7,H                                                         ;;
-		JR		ReAlignVector				;                                ;
-;---------------------------------- Set Vector Bit -------------------------;;
-;---------------------------------- Reset Vector Bit -----------------------;;		
-; Enter  HL  contains the bit map vector                                    ;;
-;        B   Has the bit number (0...F)                                     ;;
-; Return HL  Contains the modified bit map vector                           ;;
-ResetVectorBit:                                                             ;;
-		PUSH	BC						; Save the Bit Number               ;;
-		CALL	IsBitSet				; Put the bit in the LSBit          ;;
-                                                                            ;;
-		POP		BC						; Get the bit position              ;;
-		RES		7,H                                                         ;;
-; Fall thru to ReAlignVector                                                 ;
-;---------------------------------- Reset Vector Bit -----------------------;;		
-;---------------------------------- Set VectorBit --------------------------;;
-; Adjusts the HL register to its Original Alignment after IsBitSet           ;
-		                                                                     ;
-ReAlignVector:                                                               ;
-		INC		B                                                            ;
-ReAlignMapLoop:                                                              ;
- 		SCF								; Set carry flag, expect LSBit = 1   ;
-		BIT		7,H						; is LSB set?                        ;
-		JR		NZ, ReAlignMap1				; Skip if LSB set                ;
-		CCF								; else Clear Carry flag              ;
-ReAlignMap1:                                                                 ;
-		RL		L						; Shift thru CY                      ;
-		RL		H						; ditto                              ;
-		DJNZ	ReAlignMapLoop                                               ;
-		RET                                                                  ;
-;============================ Set/Reset Vector Bit ==========================;
-;============================= Error message World ==========================;
+;============================ Set/Reset Vector Bit =========================;		
+;---------------------------------- Set Vector Bit -------------------------;		
+; Enter  HL  contains the bit map vector                                    ;
+;        B   Has the bit number (0...F)                                     ;
+; Return HL  Contains the modified bit map vector                           ;
+SetVectorBit:                                                               ;
+		PUSH	BC						; Save the Bit Number               ;
+		CALL	IsBitSet				; Put the bit in the LSBit          ;
+                                                                            ;
+		POP		BC						; Get the bit position              ;
+		SET		7,H                                                         ;
+		JR		ReAlignVector				;                                
+;---------------------------------- Set Vector Bit -------------------------;
+;---------------------------------- Reset Vector Bit -----------------------;		
+; Enter  HL  contains the bit map vector                                    ;
+;        B   Has the bit number (0...F)                                     ;
+; Return HL  Contains the modified bit map vector                           ;
+ResetVectorBit:                                                             ;
+		PUSH	BC						; Save the Bit Number               ;
+		CALL	IsBitSet				; Put the bit in the LSBit          ;
+                                                                            ;
+		POP		BC						; Get the bit position              ;
+		RES		7,H                                                         ;
+; Fall thru to ReAlignVector                                                ; 
+;---------------------------------- Reset Vector Bit -----------------------;		
+;---------------------------------- Set VectorBit --------------------------;
+; Adjusts the HL register to its Original Alignment after IsBitSet          ;
+		                                                                    ;
+ReAlignVector:                                                              ;
+		INC		B                                                           ;
+ReAlignMapLoop:                                                             ;
+ 		SCF								; Set carry flag, expect LSBit = 1  ;
+		BIT		7,H						; is LSB set?                       ;
+		JR		NZ, ReAlignMap1				; Skip if LSB set               ;
+		CCF								; else Clear Carry flag             ;
+ReAlignMap1:                                                                ;
+		RL		L						; Shift thru CY                     ;
+		RL		H						; ditto                             ;
+		DJNZ	ReAlignMapLoop                                              ;
+		RET                                                                 ;
+;============================ Set/Reset Vector Bit =========================;
+;============================= Error message World =========================;
 ;																			;		
- ;************Error message World*************************
- errSelect:
-	LD		HL,evSelection
-	JP		GoToError
- errReadOnlyDisk:
-	LD		HL,evReadOnlyDisk
-	JP		GoToError
- errReadOnlyFile:
-	LD		HL,evReadOnlyFile
-	JP		GoToError
- errPermanent:
-	LD		HL,evPermanent
-	JP		GoToError
- ;************Error message handler **********************
- GoToError:
- ;HL = .errorhandler, call subroutine
-	LD		E,(HL)
-	INC		HL
-	LD		D,(HL)								; address of routine in DE
-	EX	DE,HL 
-	JP(HL) 									; vector to subroutine
- ;************ Error Vectors *****************************
- evPermanent: 	DW	erPermanent				; pererr permanent error subroutine
- evSelection:	DW	erSelection				; selerr select error subroutine
- evReadOnlyDisk:	DW	erReadOnlyDisk			; roderr ro disk error subroutine
- evReadOnlyFile:	DW	erReadOnlyFile			; roferr ro file error subroutine
- ;************Error Routines ******************************
- erPermanentNoWait:
-	LD		HL,emPermanent
-	JP		GoToError
- erPermanent:
-	LD		HL,emPermanent
-	CALL	displayAndWait					; to report the error
-	CP 	CTRL_C
-	JP	Z,WarmBoot						; reboot if response is CTRL_C
-	RET										; and ignore the error
- ;
- erSelection:
-	LD		HL,emSelection
-	JP		waitB4boot						; wait console before boot
- ;
- erReadOnlyDisk:
-	LD		HL,emReadOnlyDisk
-	JP		waitB4boot						; wait console before boot
- ;
- erReadOnlyFile:
-	LD		HL,emReadOnlyFile				; drop through to wait for console
- ;
- ; wait for response before boot
- waitB4boot:
-	CALL	displayAndWait
-	JP		WarmBoot
-
- ;report error to console, message address in HL
- displayAndWait:
-	PUSH	HL								; save message pointer
-	CALL	showCRLF						; stack mssg address, new line
-	LD		A,(currentDisk)
-	ADD	A,ASCII_A
-	LD		(emDisk),A							; Problem disk name
-	LD		BC,emDisk0
-	CALL	Print							; the error message
-	POP		BC
-	CALL	Print							; error mssage tail
-	JP		ConIn							; to get the input character
-	;ret
-;============================= Error message World ==========================;
-
-
- emDisk0:			DB		'Bdos Err On '
- emDisk:				DB		' : $'
- emPermanent:		DB		'Bad Sector$'
- emSelection:		DB		'Select$'
- emReadOnlyFile:		DB		'File '
- emReadOnlyDisk:		DB		'R/O$'
- ;*****************************************************************
+Error_Select:                                                               ;
+	LD		HL,ErrMsg_Selection			; Error Message                     ;
+	JP		WaitBeforeBoot				; Wait for console input before boot;
+	                                                                        ;
+Error_DiskReadOnly:                                                         ;
+	LD		HL,ErrMsg_ReadOnlyDisk		; Error Message                     ;
+	JP		WaitBeforeBoot				; Wait for console input before boot;
+                                                                            ;
+Error_FileReadOnly:                                                         ;
+	LD		HL,ErrMsg_ReadOnlyFile		; Error Message                     ;
+	JP		WaitBeforeBoot				; Wait for console input before boot;
+                                                                            ;
+Error_BadSector:                                                            ;
+	LD		HL,ErrMsg_BadSector			; Error Message                     ;
+	CALL	DisplayErrorAndWait			; Check input from console          ;
+	CP		CTRL_C                                                          ;
+	JP		Z,WarmBoot					; Reboot if response is CTRL_C      ;
+	RET                                                                     ;
+;---------------------------------------------------------------------------;
+WaitBeforeBoot:                                                             ;
+	CALL	DisplayErrorAndWait                                             ;
+	JP		WarmBoot                                                        ;
+;---------------------------------------------------------------------------;
+                                                                            ;
+DisplayErrorAndWait:                                                        ;
+	PUSH	HL							; Save message pointer              ;
+	CALL	showCRLF					; Line Feed and Carriage Return     ;
+	LD		A,(currentDisk)				; Disk in question                  ;
+	ADD		A,ASCII_A					; Make ASCII out of it              ;
+	LD		(ErrMsg_BDOS_DISK),A		; Put into the error message        ;
+	LD		BC,ErrMsg_BDOS				; Load the start of message         ;
+	CALL	Print						; Display it                        ;
+	POP		BC							; Load the rest of message          ;
+	CALL	Print						; Display it                        ;
+	JP		ConIn						; Get the input character           ;
+                                                                            ;
+;***************************************************************************;
+                                                                            ;
+ErrMsg_BDOS:			DB		'BDOS Err On '                              ;
+ErrMsg_BDOS_DISK:		DB		' : $'                                      ;
+ErrMsg_BadSector:		DB		'Bad Sector$'                               ;
+ErrMsg_Selection:		DB		'Select$'                                   ;
+ErrMsg_ReadOnlyFile:	DB		'R/O File$'                                 ;
+ErrMsg_ReadOnlyDisk:	DB		'R/O Disk$'                                 ;
+                                                                            ;
+;============================= Error message World =========================;
 
  ;********* file control block (fcb) constants ********************
  fcbLength			EQU		20H	;32				; fcblen file control block size

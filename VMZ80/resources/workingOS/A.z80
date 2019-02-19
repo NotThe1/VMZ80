@@ -23,51 +23,24 @@ TPA			EQU		0100H
 Start:
 			LD		SP,Stack
 			
-GetFileSizeExit:
-;	POP		BC							; Get S2(B) and EXT(C)
-	LD		BC,03F1FH
-	LD		DE,0000H
-	LD		HL,0000H
-	LD		IX,FCB						; point at FCB
+	LD	HL,(evPermanent)
+	JP	(HL)
+		
+errPermanent:
+	LD		HL,evPermanent
+	JP		GoToError
+	NOP
+	HALT
+ ;************Error message handler **********************
+ GoToError:
+	LD		E,(HL)
+	INC		HL
+	LD		D,(HL)								; address of routine in DE
+	EX	DE,HL 
+	JP(HL) 									; vector to subroutine
+ ;************ Error Vectors *****************************
+evPermanent: 	DW	erPermanent				; pererr permanent error subroutine
 
-	LD		A,(lastRC)
-	LD		L,A							; put RC into L
-	LD		A,B							; get S2
-	AND		070H						; Check for overflow
-	JR		Z,NoOverFlow
-	LD		(IX + recordRandomOVF),01H	; Set overflow flag
-NoOverFlow:	
-	SLA		B							; xxxS SSS0
-	SLA		B							; xxSS SS00
-	SLA		B							; xSSS S000
-	SLA		B							; SSSS 0000
-
-;	LD		L,(lastRC)					; 0RRR|RRRR 
-	LD		A,C							; get EXT (000E|EEEE)
-	SRL		A							; 0000|EEEE -> C
-	JR		NC,NoExtLSB
-	SET		7,L							; ERRR|RRRR 
-NoExtLSB:
-	ADD		A,B							; SSSS|EEEE
-	LD		H,A							; 
-										; HL = SSSS|EEEE||ERRR|RRRR 
-				
-GFSE1:									; L has ERRR RRRR	
-	RET
-lastRC:
-	DB		07FH						; RC of last dir entry
-	
-			
-;			LD		C,OPEN_FILE
-;			LD		DE,FCB
-;			CALL	BDOS
-;			NOP
-;
-;			LD		C,GET_SIZE
-;			LD		DE,FCB
-;			CALL	BDOS
-;			NOP
-;			HALT
 
 FCB:
 			
@@ -77,11 +50,22 @@ TYPE:		DB		'ARK'
 EXT:		DB		0
 RESV:		DB		0,0
 RC:			DB		0
-ALLOC:		DW		0,0,0,0,0,0,0,0
+ALLOC:		DW		0
+			DW		0
+			DW		0
+			DW		0
+			DW		0
+			DW		0
+			DW		0
+			DW		0
 REC_SEQ:	DB		0
 REC_RANDOM:	DW		0000H
 REC_RAN_O:	DB		00
-			
+
+
+erPermanent:
+			NOP
+			HALT
 		DS		0100H
 			DB		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 			DB		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
