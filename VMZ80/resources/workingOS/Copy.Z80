@@ -1,0 +1,143 @@
+;Copy.Z80
+;    sample file-to-file copy program
+;    at the ccp level, the command;       copy a:x.y b:u.v
+
+BOOT			EQU     0000h 			; system reboot 
+BDOS			EQU     0005h 			; BDOS entry point 
+FCB1			EQU     005ch 			; first file name    
+sourceFCB		EQU     FCB1  			; source fcb  
+FCB2			EQU     006ch 			; second file name 
+DEFAULT_BUFFER	EQU     0080h 			; default buffer 
+TPA				EQU     0100h 			; beginning of TPA; 
+PRINT_BUFFEER	EQU     9     			; print buffer func# 
+OPEN_FILE		EQU     15    			; open file func# 
+CLOSE_FILE		EQU     16    			; close file func# 
+DELETE_FILE		EQU     19    			; delete file func# 
+READ_SEQ		EQU     20    			; sequential read func# 
+WRITE_SEQ		EQU     21    			; sequential write
+MAKE_FILE		EQU     22    			; make file func#     
+; 
+
+
+        ORG     TPA
+CodeStart:
+        LD		SP,stack				; set local stack 
+		LD		BC,0016
+		LD		HL,FCB2
+		LD		DE,destinationFCB
+		LDIR							; Move half FCB
+		
+;?        LD		C,16					; half an fcb 
+;?        LD		DE,FCB2					; source of move 
+;?        LD		HL,destinationFCB		; destination fcb 
+;?MoveFCB:
+;?        LD		A,(DE)					; source fcb 
+;?        INC		DE						; ready next 
+;?        LD		(HL),A					; dest fcb 
+;?        INC		HL						; ready next 
+;?        DEC		C						; count 16...0 
+;?        JP		NZ, MoveFCB				; loop 16 times
+; name has been removed, zero cr 
+        XOR     A							; a = 00h 
+        LD     (destinationCurrentRecord),A	; current rec = 0
+; source and destination fcb's ready 
+        LD		DE,sourceFCB				; source file 
+        CALL	OpenFile					; error if 255 
+        LD		DE,msgSourceMissing			; ready message 
+        INC     A							; 255 becomes 0 
+        CALL	Z, ExitProgram				; done if no file
+		
+; source file open, prep destination 
+        LD		DE,destinationFCB			; destination 
+        CALL	DeleteFile					; remove if present
+        LD		DE,destinationFCB			; destination 
+        CALL	MakeFile					; create the file 
+        LD		DE,msgDirSpaceError			; ready message 
+        INC		A							; 255 becomes 0 
+        CALL	Z, ExitProgram				; done if no dir space
+;
+;    source file open, dest file open
+;    copy until end of file on source
+;
+Copy:
+        LD		DE,sourceFCB				; source 
+        CALL	Read						; read next record 
+        OR		A							; end of file? 
+        JP		NZ,  EndOfFile				; skip write if so
+; not end of file, write the record 
+        LD		DE,destinationFCB			; destination 
+        CALL	Write						; write the record 
+        LD		DE,msgExitOutOfSpace		; ready message 
+        OR		A							; 00 if write ok 
+        CALL	NZ,ExitProgram				; end if so 
+        JP		Copy						; loop until eof
+;
+EndOfFile:
+; end of file, close destination 
+		LD		DE,destinationFCB			; destination 
+		CALL	CloseFile					; 255 if error 
+		LD		HL,msgExitWiteProtect					; ready message 
+		INC		A							; 255 becomes 00 
+		CALL	Z,ExitProgram				; shouldn't happen
+; Copy operation complete, end 
+        LD     DE,msgExitNormal				; ready OK message
+;
+ExitProgram:
+; write message given in de, reboot 
+		LD		C,PRINT_BUFFEER 
+		CALL	BDOS						; write message 
+		JP		BOOT						; reboot system
+;
+;    system interface subroutines
+;    (all return directly from BDOS)
+; 
+OpenFile:
+        LD     C,OPEN_FILE 
+        JP     BDOS
+; 
+CloseFile:
+        LD     C,CLOSE_FILE 
+        JP     BDOS
+; 
+DeleteFile:
+        LD     C,DELETE_FILE 
+        JP     BDOS
+;
+Read:
+        LD     C,READ_SEQ 
+        JP     BDOS
+; 
+Write:
+        LD     C,WRITE_SEQ 
+        JP     BDOS
+; 
+MakeFile: 
+        LD     C,MAKE_FILE 
+        JP     BDOS
+;
+; console messages 
+msgSourceMissing:	DB	'no source file$' 
+msgDirSpaceError:	DB	'no directory space$' 
+
+
+
+
+
+
+FILE: COPY     ASM                 PAGE 003
+
+
+msgExitOutOfSpace:		DB		'out of dat space$' 
+msgExitWiteProtect:		DB		'Write protected?$' 
+msgExitNormal:		DB		'Copy complete$'
+;
+;    data areas 
+destinationFCB:
+			DS      32                              ; destination fcb 
+destinationCurrentRecord:
+
+; bottom of stack 
+			DS      32                              ; 16 level stack
+stack: 
+
+CodeEnd:
