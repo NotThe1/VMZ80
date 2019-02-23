@@ -20,7 +20,8 @@
 BDOS		EQU		0005H		; BDOS Vector in Page 00000	
  
 fcbSystemFileIndex		EQU		0AH			; extent number field index
- 
+FILE_NAME_SIZE		EQU		08H			; Max size of file Name 
+FILE_TYPE_SIZE		EQU		03H			; Max size of file Type 
  
  
  					ORG	CCPEntry
@@ -207,34 +208,192 @@ SetPage0CurDisk:                                                            ;
  	LD		(Pg0CurentDisk),A			; Put into Page 0	                ;
  	RET                                                                     ;
 ;------------------------- Set Page 0 Current Disk -------------------------;
-;------------------------------ Command Error ------------------------------;
-;error in command string starting at position;'tokenStart' and ending     ;
-; with first delimiter                                                      ;
+
+;--------------------------------- Parse Token -----------------------------;
+; Parse command buffer.                                                     ;
+; Used to isolate the command                                               ;
                                                                             ;
-CommandError:                                                               ;
-	CALL	CrLf						; Next Line                         ;
-	LD		HL,(tokenStart)			; Start of error token              ;
-CommandErrorLoop:                                                           ;
-	LD		A,(HL)						; Get character                     ;
-	CP		SPACE						; Past offending token ?            ;
-	JP		Z,CommandErrorExit			;  done if yes                      ;
-	OR		A							; At end of command ?               ;
-	JP		Z,CommandErrorExit			;  done if yes                      ;
-	PUSH	HL							; Save pointer                      ;
-	CALL	PrintCharInA				; Display on console                ;
-	POP		HL							; Restore pointer                   ;
-	INC		HL							; Update it                         ;
-	JR		CommandErrorLoop			; Keep going                        ;
+ParseToken2:                                                                ;
+	LD		HL,Token2					; Point at Token2 start             ;
+	JR		ParseToken                                                      ;
+ParseToken1:                                                                ;
+	LD		HL,Token1					; Point at Token1 start             ;
+ParseToken:                                                                 ;
+	PUSH	HL							; Start of Token's Pointer          ;
+	PUSH	HL							; Start of Token's Pointer          ;
+	XOR		A							; Set A to 0                        ;
+	LD		(selectedDisk),A			; Assume default disk               ;
+	LD		HL,(commandBufferPointer)	; Buffer's Pointer                  ;
+	EX		DE,HL						; DE-> Buffer                       ;
+	CALL	NextNonBlankChar			; Buffer's next non-blank character ;
+	EX		DE,HL						; DE-> Token , HL -> Buffer         ;
+	LD		(tokenStart),HL				; Save token's address              ;
+	EX		DE,HL						; DE -> Buffer                      ;
+	POP		HL							; DE -> Buffer,                     ;
+										;  HL -> Start of Token's Pointer   ;
+; Disk ?                                                                    ;
+	LD		A,(DE)						; Get 1st character from buffer     ;
+	OR		A							; Is it the default Disk ?          ;
+	JP		Z,UseCurrentDisk			; Use current disk if empty         ;
+	SBC		A,040H						; Convert to number                 ;
+	LD		B,A							; Hold disk number in B             ;
+	INC		DE                                                              ;
+	LD		A,(DE)						; Look at next character            ;
+	CP		COLON						; Is it a ':' ?                     ;
+	JP		Z,UseTokensDisk				;  if yes, set disk number          ;
+; No Disk                                                                   ;
+	DEC		DE							; Back to start of buffer           ;
+                                                                            ;
+UseCurrentDisk:                                                             ;
+	LD		A,(currentDisk)				; Get current Disk                  ;
+	LD		(HL),A						; Put into the Token                ;
+	JP		SetFileName                                                     ;
+                                                                            ;
+UseTokensDisk:                                                              ;
+	LD		A,B							; Get disk from this parse          ;
+	LD		(selectedDisk),A			; Mark as disk selected             ;
+	LD		(HL),B						; Put it into the token             ;
+	INC		DE							; Move past the ':'                 ;
 	                                                                        ;
-CommandErrorExit:                                                           ;
-	LD		A,QMARK                                                         ;
-	CALL	PrintCharInA				; Send '?' to console               ;
-	CALL	CrLf						; Next Line                         ;
-	CALL	DeleteSubmitFile			; Remove any submit file            ;
-	JP		ccpMainEntry				; Go back for another command       ;
-;------------------------------ Command Error ------------------------------;
+SetFileName:                                                                ;
+	LD		B,FILE_NAME_SIZE			; File name length (max)            ;
+	CALL	FormatElement				; Format file name                  ;
+                                                                            ;
+SetType:                                                                    ;
+	LD		B,FILE_TYPE_SIZE			; File type length (max)            ;
+	CALL	IsItDot						; is it a '.' ?	                    ;
+	CALL	Z,FormatElement				;  Yes,Format it                    ;
+                                                                            ;
+; Zero Rest of token                                                        ;
+	LD		B,3                                                             ;
+	XOR		A                                                               ;
+	CALL	FillWithAcc                                                     ;
+	EX		DE,HL                                                           ;
+	LD		(commandBufferPointer),HL	; Set new starting point	        ;
+; Recover the start address of the fcb and count ?'s                        ;
+	POP		HL							; Restore start of Token            ;
+	LD		B,FILE_NAME_SIZE + FILE_TYPE_SIZE ; Loop size                   ;
+	LD		C,00						; Counter                           ;
+	LD		A,QMARK						; We want to count '?'s             ;
+QuestionMarkCount:                                                          ;
+	INC		HL							; Adjust token pointer				;
+	CP		(HL)						; Is it a '?'                       ;
+	JR		NZ,QuestionMarkCount1		;  no, then skip                    ;
+	INC		C							;  else increment the count         ;
+QuestionMarkCount1:                                                         ;
+	DJNZ	QuestionMarkCount			; Manage the Loop	                ;
+	LD		A,C                                                             ;
+	OR		A                                                               ;
+	RET                                                                     ;
+;-------------------------------- Parse Token ------------------------------;
+;------------------------------- Format Element ----------------------------;
+; Put element in a Left Justified, Space Padded field.                      ;
+; If it encounters an asterisk, it will pad the rest of the field with '?'s ;
+; Enter With:	B  = Element size                                           ;
+;				DE = Element source                                         ;
+;				HL = Element destination                                    ;
+FormatElement:                                                              ;
+	CALL	IsItADelimiter				; Is character a delimiter ?        ;
+	JP		Z,PadTheElement				;  yes, pad rest of Element         ;
+                                                                            ;
+	INC		HL							;  else move the Token's pointer    ;
+	CP		ASTERISK					; Is it an '*'					    ;
+	JP		NZ,FormatElement1				;  no, then just put in Token   ;
+	LD		(HL),QMARK					;  else Put a '?' in token          ;
+	JP		FormatElement2				;  for rest of Element              ;
+                                                                            ;
+FormatElement1:                                                             ;
+	LD		(HL),A						; Put character in token            ;
+	INC		DE							; Increment the buffer pointer      ;
+FormatElement2:                                                             ;
+	DJNZ	FormatElement				; Loop if more                      ;
+	                                                                        ;
+TruncateElement:                                                            ;
+	CALL	IsItADelimiter				; We expect a delimiter             ;
+	RET		Z							; If we get one, we are done        ;
+	INC		DE							;  skip forward in buffer           ;
+	JP		TruncateElement				; Keep looking for delimiter        ;
+                                                                            ;
+PadTheElement:                                                              ;
+	CALL	FillWithSpace				; Pad the rest of Element           ;
+	RET                                                                     ;
+;------------------------------- Format Element ----------------------------;
+;-------------------------------- Is It a Dot ------------------------------;
+; Check to see if char is buffer is a period. If it is it returns with      ;
+; the Z-Flag set., and the DE pointer advanced beyond the '.'.  If it is    ;
+; not a period. It will fill the buffer with spaces and return with the     ;
+; Z-Flag reset.                                                             ;
+;                                                                           ;
+; Enter With:	DE = Pointer for buffer                                     ;
+;				 B = buffer size	                                        ;
+; Return With:	DE = Past the period                                        ;
+;			   	Z-Flag =  set if Period                                     ;
+;  				Z-Flag = reset if not Period                                ;
+IsItDot:                                                                    ;
+	LD		A,(DE)                                                          ;
+	INC		DE							; Assume it is a '.'                ;
+	CP		PERIOD						; Is it '.' ?                       ;
+	RET		Z							;  if yes exit with Z-Flag set      ;
+                                                                            ;
+	DEC		DE							; Adjust, wrong assumption          ;
+	CALL	FillWithSpace				;  else make all spaces             ;
+	XOR		A                                                               ;
+	INC		A							; Reset the Z-Flag                  ;
+	RET									; Exit with Z-Flag reset            ;
+;-------------------------------- Is It a Dot ------------------------------;
+;-------------------------- Fill With Space/Acc ----------------------------;
+; fills buffer with SPACE or contents of Acc.                               ;
+; Enters with:	HL = less than start of fill area                           ;
+;				B  = fill Count                                             ;
+;				A  = fill character (FillWithAcc)                           ;
+FillWithSpace:                                                              ;
+	LD		A,SPACE                                                         ;
+FillWithAcc:                                                                ;
+	INC		HL                                                              ;
+	LD		(HL),A                                                          ;
+	DJNZ	FillWithAcc                                                     ;
+	RET                                                                     ;
+;-------------------------- Fill With Space/Acc ----------------------------;
+;------------------------ Next Non Blank Character -------------------------;
+;find the next non blank character in line pointed to by DE                 ;
+NextNonBlankChar:                                                           ;
+	LD		A,(DE)						; Get the character                 ;
+	OR		A							; Is it End of buffer ?             ;
+	RET		Z							;  if yes, return                   ;
+	CP		SPACE						; is it a blank ?                   ;
+	RET		NZ							;  if not, return                   ;
+	INC		DE							;  else increment pointer           ;
+	JP		NextNonBlankChar			; Loop for next character           ;
+;------------------------ Next Non Blank Character -------------------------;
+;---------------------------- Is It A Delimiter ----------------------------;
+; Returns with Z-flag set if (DE) pointing at a delimiter                   ;
+; Does an error exit if not valid ASCII character                           ;
+IsItADelimiter:                                                             ;
+	LD		A,(DE)						; Get the character                 ;
+	OR		A                                                               ;
+	RET		Z							; End of Buffer is a delimiter      ;
+	CP		SPACE                                                           ;
+	JP		C,CommandError				; Error exit if not ASCII           ;
+	RET		Z							; SPACE is a delimiter              ;
+	CP		EQUAL_SIGN                                                      ;
+	RET		Z							; '=' is a delimiter                ;
+	CP		UNDER_SCORE					                                    ;
+	RET		Z							; '_' is a delimiter                ;
+	CP		PERIOD                                                          ;
+	RET		Z							; '.' is a delimiter                ;
+	CP		COLON                                                           ;
+	RET		Z							; ':' is a delimiter                ;
+	CP		SEMICOLON                                                       ;
+	RET		Z							; ';' is a delimiter                ;
+	CP		LESS_THAN                                                       ;
+	RET		Z							; '<' is a delimiter                ;
+	CP		GREATER_THAN                                                    ;
+	RET		Z							; '>' is a delimiter                ;
+	RET									; Not a delimiter                   ;
+;---------------------------- Is It A Delimiter ----------------------------;
+
 ;---------------------------- Intrinsic Function ---------------------------;
-;look for intrinsic functions (Token1 has been filled)                  ;
+;look for intrinsic functions (Token1 has been filled)                 		;
 IntrinsicFunction:                                                          ;
 	LD		HL,builtInCMDNames			; Point at List of CMDs             ;
 	LD		C,0							; Initialize counter                ;
@@ -242,7 +401,7 @@ IntrinsicFunction1:                                                         ;
 	LD		A,C							; Get Counter                       ;
 	CP		builtInCMDCount				; Past number of commands ?         ;
 	RET		NC							;  exit if yes                      ;
-	LD		DE,Token1 + 1			; Beginning of name                 ;
+	LD		DE,Token1 + 1			; Beginning of name                 	;
 	LD		B,builtInCMDNameSize		; Length of match                   ;
 IntrinsicFunction2:                                                         ;
 	LD		A,(DE)                                                          ;
@@ -270,6 +429,33 @@ IntrinsicFunction4:                                                         ;
 ;---------------------------- Intrinsic Function ---------------------------;
 
  ; cmd
+;------------------------------ Command Error ------------------------------;
+;error in command string starting at position;'tokenStart' and ending    	;
+; with first delimiter                                                      ;
+                                                                            ;
+CommandError:                                                               ;
+	CALL	CrLf						; Next Line                         ;
+	LD		HL,(tokenStart)			; Start of error token             		;
+CommandErrorLoop:                                                           ;
+	LD		A,(HL)						; Get character                     ;
+	CP		SPACE						; Past offending token ?            ;
+	JP		Z,CommandErrorExit			;  done if yes                      ;
+	OR		A							; At end of command ?               ;
+	JP		Z,CommandErrorExit			;  done if yes                      ;
+	PUSH	HL							; Save pointer                      ;
+	CALL	PrintCharInA				; Display on console                ;
+	POP		HL							; Restore pointer                   ;
+	INC		HL							; Update it                         ;
+	JR		CommandErrorLoop			; Keep going                        ;
+	                                                                        ;
+CommandErrorExit:                                                           ;
+	LD		A,QMARK                                                         ;
+	CALL	PrintCharInA				; Send '?' to console               ;
+	CALL	CrLf						; Next Line                         ;
+	CALL	DeleteSubmitFile			; Remove any submit file            ;
+	JP		ccpMainEntry				; Go back for another command       ;
+;------------------------------ Command Error ------------------------------;
+
 ;------------------------------ Command Buffer -----------------------------;
 maximumBufferSize	EQU	07FH				; Max Length of Buffer          ;
 commandMaxLength:	DB	maximumBufferSize                                   ;
@@ -443,185 +629,7 @@ GetSelectedDrive:                                                           ;
  	CALL	BDOS							; character cleared
  	OR		A
  	RET
- ;-----------------------------
-;--------------------------------- Fill Token ------------------------------;
- ;equivalent to fillfcb(0)
-; Exits with  Z-flag set if File name unambiguous
 
-ParseToken2:
-	LD		HL,Token2				; Point at Token2 start
-	JR		ParseToken
-ParseToken1:
-	LD		HL,Token1				; Point at Token1 start
-ParseToken:
-	PUSH	HL							; Start of Token's Pointer
-	PUSH	HL							; Start of Token's Pointer
-	XOR		A							; Set A to 0
-	LD		(selectedDisk),A			; Assume default disk
-	LD		HL,(commandBufferPointer)	; Buffer's Pointer
-	EX		DE,HL						; DE-> Buffer, HL -> Token
-	CALL	NextNonBlankChar			; Buffer's next non-blank character
-	EX		DE,HL						; DE-> Token , HL -> Buffer
-	LD		(tokenStart),HL				; Save token's address
-	EX		DE,HL						; DE -> Buffer
-	POP		HL							; DE -> Buffer, HL -> Start of Token's Pointer
-; Disk ?
-	LD		A,(DE)						; Get 1st character from buffer
-	OR		A							; Is it the default Disk ?
-	JP		Z,UseCurrentDisk			; Use current disk if empty
-	SBC		A,040H						; Convert to number 
-	LD		B,A							; Hold disk number in B
-	INC		DE
-	LD		A,(DE)						; Look at next character
-	CP		COLON						; Is it a ':' ?
-	JP		Z,UseTokensDisk				;  if yes, set disk number
-; No Disk
-	DEC		DE							; Back to start of buffer
-
-UseCurrentDisk:
-	LD		A,(currentDisk)				; Get current Disk
-	LD		(HL),A						; put into the Token
-	JP		SetFileName
-
-UseTokensDisk:
-	LD		A,B
-	LD		(selectedDisk),A					; mark as disk selected
-	LD		(HL),B
-	INC		DE								; past the :
-;set the file name field
-SetFileName:
-	LD		B,8							; File name length (max)
-SetFileNameLoop:
-	CALL	IsItADelimiter				; Is character a delimiter ?
-	JP		Z,PadTheName				;  yes, pad rest of name
-	INC		HL							;  else move the Token's pointer
-	CP		ASTERISK					; Is it an '*'					
-	JP		NZ,SetFileName2				;  no, then just put in Token
-	LD		(HL),QMARK					;  else Put a '?' in token
-	JP		SetFileName3				;  for rest of Name
-
-SetFileName2:
-	LD		(HL),A						; Put character in token
-	INC		DE							; Increment the buffer pointer
-SetFileName3:
-	DJNZ	SetFileNameLoop				; Loop if more
-	
-TruncateName:
-	CALL	IsItADelimiter				; We expect a delimiter
-	JP		Z,SetType					; If we get one, move to type
-	INC		DE							;  skip forward in buffer
-	JP		TruncateName				; Keep looking for delimiter
-
-PadTheName:
-	CALL	FillWithSpace				; Pad the rest of the name
-	
-SetType:
-	LD		B,3							; File type length (max)
-	CP		PERIOD						; is it a '.' ?
-	JP		NZ,PadTypeField				; no, no type in buffer
-	INC		DE							; Move past the .
-SetTypeField1:
-	CALL	IsItADelimiter				; Is character a delimiter ?
-	JP		Z,PadTypeField				;  yes, pad rest of type
-	INC		HL							;  else move the Token's pointer
-	CP		ASTERISK					; Is it an '*'	
-	JP		NZ,SetTypeField2			;  no, then just put in Token
-	LD		(HL),QMARK					;  else Put a '?' in token
-	JP		SetTypeField3				;  for rest of type
-
-;  not a *, so copy to type field
-SetTypeField2:
-	LD		(HL),A						; Put character in token
-	INC		DE							; Increment the buffer pointer
-SetTypeField3:
-;	DEC		B
-;	JP		NZ,SetTypeField1
-	DJNZ	SetTypeField1
-											; end of type field, truncate the rest
-TruncateType:
-	CALL	IsItADelimiter
-	JP	Z,FillRestofFCB
-	INC		DE
-	JP		TruncateType
-
-PadTypeField:
-	CALL	FillWithSpace
-FillRestofFCB:
-	LD		B,3
-	XOR		A
-	CALL	FillWithAcc
-	EX	DE,HL 
-	LD	(commandBufferPointer),HL					; set new starting point
-; recover the start address of the fcb and count ?'s
-	POP		HL
-	LD		BC,11							; b=0, c=8+3
-QuestionMarkCount:
-	INC		HL
-	LD		A,(HL)
-	CP		QMARK
-	JP	NZ,QuestionMarkCount1
-; ? found, count it in b
-	INC		B
-QuestionMarkCount1:
-	DEC		C
-	JP	NZ,QuestionMarkCount
-; number of ?'s in c, move to a and return with flags set
-	LD		A,B
-	OR		A
-	RET
-;-----------------------------
-
-
-;-------------------------- Fill With Space/Acc ----------------------------;
-; fills buffer with SPACE or contents of Acc.                               ;
-; Enters with:	HL = less than start of fill area                           ;
-;				B  = fill Count                                             ;
-;				A  = fill character (FillWithAcc)                           ;
-FillWithSpace:                                                              ;
-	LD		A,SPACE                                                         ;
-FillWithAcc:                                                                ;
-	INC		HL                                                              ;
-	LD		(HL),A                                                          ;
-	DJNZ	FillWithAcc                                                     ;
-	RET                                                                     ;
-;-------------------------- Fill With Space/Acc ----------------------------;
-;------------------------ Next Non Blank Character -------------------------;
-;find the next non blank character in line pointed to by DE                 ;
-NextNonBlankChar:                                                           ;
-	LD		A,(DE)						; Get the character                 ;
-	OR		A							; Is it End of buffer ?             ;
-	RET		Z							;  if yes, return                   ;
-	CP		SPACE						; is it a blank ?                   ;
-	RET		NZ							;  if not, return                   ;
-	INC		DE							;  else increment pointer           ;
-	JP		NextNonBlankChar			; Loop for next character           ;
-;------------------------ Next Non Blank Character -------------------------;
-;---------------------------- Is It A Delimiter ----------------------------;
-; Returns with Z-flag set if (DE) pointing at a delimiter                   ;
-; Does an error exit if not valid ASCII character                           ;
-IsItADelimiter:                                                             ;
-	LD		A,(DE)						; Get the character                 ;
-	OR		A                                                               ;
-	RET		Z							; End of Buffer is a delimiter      ;
-	CP		SPACE                                                           ;
-	JP		C,CommandError				; Error exit if not ASCII           ;
-	RET		Z							; SPACE is a delimiter              ;
-	CP		EQUAL_SIGN                                                      ;
-	RET		Z							; '=' is a delimiter                ;
-	CP		UNDER_SCORE					                                    ;
-	RET		Z							; '_' is a delimiter                ;
-	CP		PERIOD                                                          ;
-	RET		Z							; '.' is a delimiter                ;
-	CP		COLON                                                           ;
-	RET		Z							; ':' is a delimiter                ;
-	CP		SEMICOLON                                                       ;
-	RET		Z							; ';' is a delimiter                ;
-	CP		LESS_THAN                                                       ;
-	RET		Z							; '<' is a delimiter                ;
-	CP		GREATER_THAN                                                    ;
-	RET		Z							; '>' is a delimiter                ;
-	RET									; Not a delimiter                   ;
-;---------------------------- Is It A Delimiter ----------------------------;
 ;-----------------------------
 ; get number from the command line
 GetNumberFromCmdLine:
