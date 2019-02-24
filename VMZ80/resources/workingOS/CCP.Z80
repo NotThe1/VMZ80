@@ -1,7 +1,8 @@
 ;     File created by MakeZ80Source on Tue Sep 18 14:13:13 EDT 2018 from:
 ;     C:\Users\admin\Dropbox\Resources\CPM\CurrentOS\8080\CCP.asm
 
-; Entering CCP
+; Intrinsic Commands
+;	DIR
 
 ; CCP.Z80
 ;
@@ -42,8 +43,9 @@ CcpStart:
 	SRL		E							;  to Lo Nibble
 	SRL		E
 	CALL	SetUser						; Set initial User
-	CALL	Initialize					; Completely reset the disk file system					
-	LD		(submitFlag),A	; submit flag set if $ file present - ???????
+; Initialize will completely reset the disk file system	
+	CALL	Initialize					; A = 0FFH if Submit file found				
+	LD		(submitFlag),A				; Save return value in Flag
 	POP		BC							; Recall disk number
 	LD		A,C							; Put into Acc
 	AND		LO_NIBBLE_MASK				; Remove User Number
@@ -97,44 +99,51 @@ ReadCommand:
 	OR		A							; Is it Set ?
 	JP		Z,NotSubmitFile				;  skip if not
 ; scanning a submit file change drives to open and read the file
-	LD		A,(currentDisk)
-	OR		A
-	LD		A,0
-	CALL	NZ,SelectDisk
+	LD		A,(currentDisk)				; Get current disk
+	OR		A							; Is it default ?
+	LD		A,0							; Prepare to set Disk A
+	CALL	NZ,SelectDisk				; Select it if needed
 ; have to open again in case xsub present
-	LD		DE,submitFCB
-	CALL	OpenFile
-	JP		Z,NotSubmitFile					; skip if no submit file
-	LD		A,(submitRC)
+	LD		DE,submitFCB				; Point at the Submits's FCB
+	CALL	OpenFile					; Open it
+	JP		Z,NotSubmitFile				; Skip if no submit file present
+	LD		A,(submitRC)				; Get Number of records in file
 	DEC		A								; read last record(s) first
 	LD		(submitCR),A				; current record to read
-	LD		DE,submitFCB
-	CALL	DiskRead						; end of file if last record
-	JP		NZ,NotSubmitFile
-; disk read is ok, transfer to commandBuffer
-	LD		DE,commandLength
-	LD		HL,DMABuffer
-	LD		B,cpmRecordSize					; number of bytes to Copy
-	CALL	CopyHL2DEforB
+	LD		DE,submitFCB				; Point at the Submits's FCB
+	CALL	DiskRead					; Read from back to front
+	JP		NZ,NotSubmitFile			; Skip EOF ??
+	
+; disk read is OK, transfer to commandBuffer
+	LD		HL,DMABuffer				; From
+	LD		DE,commandLength			; TO	
+	LD		BC,cpmRecordSize			; For this many bytes
+	LDIR								; Move to command buffer
+;	LD		B,cpmRecordSize					; number of bytes to Copy
+;	CALL	CopyHL2DEforB
+	
 ; line is transferred, close the file with a deleted record
-	LD		HL,submitS2
-	LD		(HL),0								; clear fwflag
-	INC		HL
-	DEC		M								; one less record
-	LD		DE,submitFCB
-	CALL	CloseFile
-	JP		Z,NotSubmitFile
+	LD		HL,submitFWF				; Point at the WriteFileFlag
+	RES		7,(HL)				; Clear the WriteFileFlag
+;	LD		HL,submitFWF				; Bit 7 is FileWriteFlag
+;	LD		(HL),0						
+;	INC		HL
+	LD		HL,submitRC					; Point at FCB record Count
+	DEC		M							; Make it one less record
+	LD		DE,submitFCB				; Point at the Submits's FCB
+	CALL	CloseFile					; Close it
+	JP		Z,NotSubmitFile				; Skip if not clean close
 ; CloseFile went ok, return to original drive
-	LD		A,(currentDisk)
-	OR		A
-	CALL	NZ,SelectDisk
+	LD		A,(currentDisk)				; Get the current disk
+	OR		A							; Is it the default disk ?
+	CALL	NZ,SelectDisk				;  no, then go select it
 ; print to the 00
-	LD		HL,commandBuffer
-	CALL	PrintStringNull
-	CALL	CheckForConsoleChar
-	JP		Z,NoRead
-	CALL	DeleteSubmitFile
-	JP		DeleteSubmitFile				; break key depressed
+	LD		HL,commandBuffer			; Point at the command buffer
+	CALL	PrintStringNull				; Display it on the Console
+	CALL	CheckForConsoleChar			; User input a character ?
+	JP		Z,NoRead					;  skip if not
+	CALL	DeleteSubmitFile			; Remove file and reset submit flag
+	JP		ccpMainEntry				; Start a new CCP session
 ;--------------------------------------------------------------------------------
 NotSubmitFile:
 	CALL	DeleteSubmitFile			; Delete any submit file
@@ -472,7 +481,8 @@ submitFCB:			DB		'$$$     '	; File name is $$$                  ;
 submitType:			DB		'SUB'		; Type is 'SUB'                     ;
 submitExtent:		DB		00H			; Extent                            ;
 submitS1:			DB		00H			; S1                                ;
-submitS2:			DB		00H			; S2                                ;
+submitFWF:								; Bit7 = FileWriteFlag
+submitS2:			DB		00H			; S2 (bit7 = FileWriteFlag)         ;
 submitRC:			DB		00H			; RC                                ;
 submitMap:			DS		010H		; Allocation Map                    ;
 submitCR:			DB		00H			; Current Record                    ;
@@ -503,40 +513,75 @@ builtInCMDVector:                                                           ;
  ;----------------------------------------------------------------
  ;----------------------------------------------------------------
 ;================================ BDOS API =================================;
+;------------------------------- Initialize --------------------------------;
+Initialize:                                                                 ;
+ 	LD		C,fResetSystem				; Load Function Number  - 0D        ;
+ 	JP		BDOS						;  and let BDOS do its work         ;
+;------------------------------- Initialize --------------------------------;
+;------------------------------- Select Disk -------------------------------;
+SelectDisk:                                                                 ;
+	LD		E,A							; Load Target disk                  ;
+	LD		C,fSelectDisk				; Load Function Number - 0EH        ;
+ 	JP		BDOS						;  and let BDOS do its work         ;
+;------------------------------- Select Disk -------------------------------;
+;-------------------------------- Open File --------------------------------;
+;Open the file				                                                ;
+; On Entry DE = FCB to read 						                        ;
+; Exits with Z-Flag Set if file not found									;
+;					Reset if file found										;
+OpenFile:                                                                   ;
+ 	LD		C,fOpenFile					; Load Function Number - 0FH        ;
+ 	JP		BDOSandIncA					; make BDOS call & set dir index    ;
+;-------------------------------- Open File --------------------------------;
+;------------------------------- Close File --------------------------------;
+;Close the file				                                                ;
+; On Entry DE = FCB to Close						                        ;
+; Exits with Z-Flag Set if file not found									;
+;					Reset if file found										;
+CloseFile:                                                                  ;
+ 	LD		C,fCloseFile				; Load Function Number - 10H        ;
+ 	JP		BDOSandIncA					; make BDOS call & set dir index    ;
+;------------------------------- Close File --------------------------------;
+;-------------------------------- Read File --------------------------------;
+;Read the next record from the file.										;
+; On Entry DE = FCB to read 						                        ;
+DiskRead:                                                                   ;
+ 	LD		C,fReadSeq					; Load Function Number - 14H        ;
+	CALL	BDOS						;  and let BDOS do its work         ;
+ 	OR		A							; set return code flags             ;
+	RET																		;
+;-------------------------------- Read File --------------------------------;
+;----------------------------- Get Current Disk ----------------------------;
+;Exits with current drive number to A (0=A,1=B....F=P)                      ;
+GetSelectedDrive:                                                           ;
+ 	LD		C,fGetCurrentDisk				; Load Function Number - 19H    ;
+ 	JP		BDOS						;  and let BDOS do its work         ;
+;----------------------------- Get Current Disk ----------------------------;
 ;------------------------------ Get/Set User -------------------------------;
 ;return current user code in A                                              ;
 GetUser:                                                                    ;
  	LD		E,0FFH						; Set Entry Parameter for Get       ;
 ; If E <> -1 then Set user number found in E                                ;
 SetUser:                                                                    ;
- 	LD		C,fGetSetUserNumber			; Load Function Number              ;
+ 	LD		C,fGetSetUserNumber			; Load Function Number - 20H        ;
  	JP		BDOS						;  and let BDOS do its work         ;
 ;------------------------------ Get/Set User -------------------------------;
-;------------------------------- Initialize --------------------------------;
-Initialize:                                                                 ;
- 	LD		C,fResetSystem				; Load Function Number              ;
- 	JP		BDOS						;  and let BDOS do its work         ;
-;------------------------------- Initialize --------------------------------;
-;------------------------------- Select Disk -------------------------------;
-SelectDisk:                                                                 ;
-	LD		E,A							; Load Target disk                  ;
-	LD		C,fSelectDisk				; Load Function Number              ;
- 	JP		BDOS						;  and let BDOS do its work         ;
-;------------------------------- Select Disk -------------------------------;
-;----------------------------- Get Current Disk ----------------------------;
-;Exits with current drive number to A (0=A,1=B....F=P)                      ;
-GetSelectedDrive:                                                           ;
- 	LD		C,fGetCurrentDisk				; Load Function Number          ;
- 	JP		BDOS						;  and let BDOS do its work         ;
-;----------------------------- Get Current Disk ----------------------------;
 
 ;  AP i
 
- ;-----------------------------
- ;open the file given by (DE)
- OpenFile:
- 	LD		C,fOpenFile
- 	JP		BDOSandIncA
+;------------------------------ BDOS and Inc A -----------------------------;
+; Call B DOS                                                                ;
+;  Store returned directory index                                           ;
+;  Increment result.                                                        ;
+; Exits with 	A =  0 if File Not Found                                    ;
+;				  <> 0 if file found                                        ;
+BDOSandIncA:                                                                ;
+ 	CALL	BDOS						; Make call to BDOS                 ;
+ 	LD		(directoryIndex),A			; Save return value                 ;
+ 	INC		A							; Increment & (Re)Set Z-Flag        ;
+ 	RET                                                                     ;
+;------------------------------ BDOS and Inc A -----------------------------;
+
  ;--------
  ;open file for Command FCB
  OpenFile4CmdFCB:
@@ -545,12 +590,7 @@ GetSelectedDrive:                                                           ;
  	LD		DE,Token1
  	JP		OpenFile
  ;-----------------------------
- ;close the file given by (DE)
- CloseFile:
- 	LD		C,fCloseFile
- 	JP		BDOSandIncA
- ;-----------------------------
- ;delete the file given by (DE)
+;delete the file given by (DE)
  DeleteFile:
  	LD		C,fDeleteFile
  	JP		BDOS
@@ -559,11 +599,6 @@ GetSelectedDrive:                                                           ;
  MakeFile:
  	LD		C,fMakeFile
  	JP		BDOSandIncA
- ;-----------------------------
- ;read the next record from the file given by d,e
- DiskRead:
- 	LD		C,fReadSeq
- 	JP		BDOSsetFlags
  ;-----------
  ;read next record from Command FCB
  DiskReadCmdFCB:
@@ -573,8 +608,10 @@ GetSelectedDrive:                                                           ;
  ;write the next record to the file given by (DE)
  DiskWrite:
  	LD		C,fWriteSeq
- 	JP		BDOSsetFlags
- ;-----------------------------
+ 	CALL	BDOS						;  and let BDOS do its work         ;
+ 	OR		A							; set return code flags
+ 	RET
+;-----------------------------
  ;search for the file given by d,e
  SearchForFirst:
  	LD		C,fSearchFirst
@@ -604,33 +641,14 @@ GetSelectedDrive:                                                           ;
  	LD		C,fSetDMA
  	JP		BDOS
  ;-----------------------------
- ; call B DOS and set Flags
- BDOSsetFlags:
- 	CALL	BDOS
- 	OR		A								; set return code flags
- 	RET
+;/ ; call B DOS and set Flags
+;/ BDOSsetFlags:
+;/ 	CALL	BDOS
+;/ 	OR		A								; set return code flags
+;/ 	RET
+ ;----------------------------------------------------------------
+ ;----------------------------------------------------------------
  ;-----------------------------
- ;call B DOS  - increment result - store in directory count
- BDOSandIncA:
- 	CALL	BDOS
- 	LD		(directoryCount),A
- 	INC		A
- 	RET
- ;----------------------------------------------------------------
- ;----------------------------------------------------------------
- ;----------------------------------------------------------------
- ;check for a character ready at the console
- CheckForConsoleChar:
- 	LD		C,fGetConsoleStatus
- 	CALL	BDOS
- 	OR		A
- 	RET	Z; return no char waiting
- 	LD		C,fConsoleIn
- 	CALL	BDOS							; character cleared
- 	OR		A
- 	RET
-
-;-----------------------------
 ; get number from the command line
 GetNumberFromCmdLine:
 	CALL	ParseToken1						; should be number
@@ -711,6 +729,43 @@ PrintCharInE:                                                               ;
 	POP		BC							; Restore BC                        ;
 	RET                                                                     ;
 ;------------------------------- PrintCharInE ------------------------------;
+;----------------- Print (CRLF then ) Null Terminated String ---------------;
+;print CRLF then null terminated string at (BC)                             ;
+PrintCrLfStringNull:                                                        ;
+	PUSH	BC							; Save string pointer               ;
+	CALL	CrLf						; Send CR/LF                        ;
+	POP		HL							; Restore pointer & fall thru       ;
+;print null terminated string from (HL)                                     ;
+PrintStringNull:                                                            ;
+	LD		A,(HL)						; Get the next character            ;
+	OR		A							; Is it the Null terminator ?       ;
+	RET		Z							;  exit if yes                      ;
+	INC		HL							; Move string pointer               ;
+	PUSH	HL							; Save for next iteration           ;
+	CALL	PrintCharInA				; Send the character to the console ;
+	POP		HL							; string pointer                    ;
+	JP		PrintStringNull				; Loop for more                     ;
+;----------------- Print (CRLF then ) Null Terminated String ---------------;
+;------------------------- Check For Console Input -------------------------;
+;check for a character ready at the console                                 ;
+;Exits with	Z-Flag  set if there has been no character input                ;
+;					reset if there is a character waiting                   ;
+;			A = character input, if Z-Flag reset                            ;
+ CheckForConsoleChar:                                                       ;
+	LD		C,fGetConsoleStatus			; Load Function Number - 0BH        ;
+	CALL	BDOS						;  and let BDOS do its work         ;
+	OR		A							; Check return value                ;
+	RET		Z							; Return if no char waiting         ;
+	                                                                        ;
+	LD		C,fConsoleIn				; Load Function Number - 01H        ;
+	CALL	BDOS							; character cleared             ;
+	OR		A							; Resets the Z-Flag                 ;
+	RET                                                                     ;
+;------------------------- Check For Console Input -------------------------;
+
+
+
+
 
 ; UT
  PrintSpace:
@@ -724,21 +779,6 @@ PrintCharInE:                                                               ;
  	POP		BC
  	RET
  ;-----------------------------
- ;print CRLF then null terminated string at (BC)
- PrintCrLfStringNull:
- 	PUSH	BC
- 	CALL	CrLf
- 	POP		HL 								;now print the string
- ;print null terminated string at (HL)
- PrintStringNull:
- 	LD		A,(HL)
- 	OR		A
- 	RET	Z; stop on 00
- 	INC		HL
- 	PUSH	HL								; ready for next
- 	CALL	PrintCharInA
- 	POP		HL								; character printed
- 	JP		PrintStringNull 				;for
  ;-----------------------------
  ;print no file message
  PrintNoFile:
@@ -748,7 +788,7 @@ PrintCharInE:                                                               ;
  msgNoFile: DB 'NO FILE',0
  ;-----------------------------
  ;move 3 characters from h,l to d,e addresses
- CopyHL2DE3:
+ CopyHL2DE3: ;XXXXXXXXX
  	LD		B,3
  CopyHL2DEforB:
  	LD		A,(HL)
@@ -844,7 +884,7 @@ PrintCharInE:                                                               ;
  ccpDir3:
  	JP	Z,ccpDirEnd
  ; found, but may be system file
- 	LD		 A,(directoryCount)					; get the location of the element
+ 	LD		 A,(directoryIndex)					; get the location of the element
  	RRCA
  	RRCA
  	RRCA
@@ -1284,9 +1324,9 @@ PrintCharInE:                                                               ;
 Token1:			DS		16				; Command Token
 Token2:			DS		16				; Command Token
 
+
+
  currentRecord:		DB		00H				; current record to read/write
- directoryCount:		DB		00H				; disk directory count (used for error codes)
-currentDisk:		DB		00H				; Current disk
  selectedDisk:		DB		00H				; selected disk for current operation none=0, a=1, b=2 ...
  ;
  bufferPointer:		DB		00H				; buffer pointer
@@ -1294,8 +1334,10 @@ currentDisk:		DB		00H				; Current disk
  tokenStart:		DW		0000H			; staddr starting address of current Fill FCB request
  ;----------------------------
  ; (command executed initially if commandLength non zero)
-;  Command Buffer
-
+;--------------------------------- Variables -------------------------------;
+currentDisk:		DB		00H				; Current disk
+directoryIndex:		DB		00H				; Index into Directory Buffer
+;--------------------------------- Variables -------------------------------;
  
 endOfCode:
  				ORG		BDOSBase-10H

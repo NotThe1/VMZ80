@@ -309,1377 +309,1417 @@
 0309: E007 CB 3B                  SRL    E                    ; Move user number
 0310: E009 CB 3B                  SRL    E                    ;  to Lo Nibble
 0311: E00B CB 3B                  SRL    E
-0312: E00D CD F9 E2               CALL   SetUser              ; Set initial User
-0313: E010 CD FE E2               CALL   Initialize           ; Completely reset the disk file system
-0314: E013 32 B0 E2               LD     (submitFlag),A       ; submit flag set if $ file present - ???????
-0315: E016 C1                     POP    BC                   ; Recall disk number
-0316: E017 79                     LD     A,C                  ; Put into Acc
-0317: E018 E6 0F                  AND    LO_NIBBLE_MASK       ; Remove User Number
-0318: E01A 32 04 00               LD     (Pg0CurentDisk),A    ; Puts disk number into Page 0
-0319: E01D CD 03 E3               CALL   SelectDisk           ; Set default Disk From Acc											; check for initial command
-0320: E020 3A 2D E2               LD     A,(commandLength)
-0321: E023 B7                     OR     A                    ; See if there is a Command
-0322: E024 20 16                  JR     NZ,CcpParseCommand   ;  Skip if yes
-0323: E026
-0324: E026             ccpMainEntry:
-0325: E026 31 F0 E7               LD     SP,Stack             ; (re)Establish CCP's Stack
-0326: E029 CD BC E3               CALL   CrLf                 ; Send CRLF to the Console
-0327: E02C CD 09 E3               CALL   GetSelectedDrive     ; Get current disk number
-0328: E02F C6 41                  ADD    A,ASCII_A            ; Make ASCII form of Drive
-0329: E031 CD C5 E3               CALL   PrintCharInA         ; Send Drive letter to console
-0330: E034 3E 3E                  LD     A,GREATER_THAN       ; Load '>'
-0331: E036 CD C5 E3               CALL   PrintCharInA         ; Send to Console
-0332: E039 CD 65 E0               CALL   ReadCommand          ; Command Buffer filled, Pointer set
-0333: E03C
-0334: E03C             CcpParseCommand:
-0335: E03C 11 80 00               LD     DE,DMABuffer         ; Default in page 0
-0336: E03F CD 54 E3               CALL   SetDMA               ; Set the DMA address
-0337: E042 CD 09 E3               CALL   GetSelectedDrive     ; Get current drive
-0338: E045 32 88 E7               LD     (currentDisk),A      ; Save
-0339: E048 CD 24 E1               CALL   ParseToken1          ; Get first token in command buffer
-0340: E04B C4 06 E2               CALL   NZ,CommandError      ; The name must be unambiguous
-0341: E04E 3A 89 E7               LD     A,(selectedDisk)     ; Get the Disk:
-0342: E051 B7                     OR     A                    ; If not default,
-0343: E052 C2 78 E6               JP     NZ,ccpUserFunction   ;   must be user CMD
-0344: E055
-0345: E055 CD DC E1               CALL   IntrinsicFunction    ; Get CMD index into ACC
-0346: E058 21 E9 E2               LD     HL,builtInCMDVector  ; Base of Vector
-0347: E05B 5F                     LD     E,A
-0348: E05C 16 00                  LD     D,0                  ; Index in DE
-0349: E05E 19                     ADD    HL,DE
-0350: E05F 19                     ADD    HL,DE                ; Vector is a word, need 2 ADDs
-0351: E060 7E                     LD     A,(HL)               ; Pointing at Address
-0352: E061 23                     INC    HL
-0353: E062 66                     LD     H,(HL)
-0354: E063 6F                     LD     L,A                  ; Get address to HL
-0355: E064 E9                     JP     (HL)                 ;  Go to the Function
-0356: E065
+0312: E00D CD 1C E3               CALL   SetUser              ; Set initial User
+0313: E010         ; Initialize will completely reset the disk file system
+0314: E010 CD F9 E2               CALL   Initialize           ; A = 0FFH if Submit file found
+0315: E013 32 B2 E2               LD     (submitFlag),A       ; Save return value in Flag
+0316: E016 C1                     POP    BC                   ; Recall disk number
+0317: E017 79                     LD     A,C                  ; Put into Acc
+0318: E018 E6 0F                  AND    LO_NIBBLE_MASK       ; Remove User Number
+0319: E01A 32 04 00               LD     (Pg0CurentDisk),A    ; Puts disk number into Page 0
+0320: E01D CD FE E2               CALL   SelectDisk           ; Set default Disk From Acc											; check for initial command
+0321: E020 3A 2F E2               LD     A,(commandLength)
+0322: E023 B7                     OR     A                    ; See if there is a Command
+0323: E024 20 16                  JR     NZ,CcpParseCommand   ;  Skip if yes
+0324: E026
+0325: E026             ccpMainEntry:
+0326: E026 31 F0 E7               LD     SP,Stack             ; (re)Establish CCP's Stack
+0327: E029 CD AF E3               CALL   CrLf                 ; Send CRLF to the Console
+0328: E02C CD 15 E3               CALL   GetSelectedDrive     ; Get current disk number
+0329: E02F C6 41                  ADD    A,ASCII_A            ; Make ASCII form of Drive
+0330: E031 CD B8 E3               CALL   PrintCharInA         ; Send Drive letter to console
+0331: E034 3E 3E                  LD     A,GREATER_THAN       ; Load '>'
+0332: E036 CD B8 E3               CALL   PrintCharInA         ; Send to Console
+0333: E039 CD 65 E0               CALL   ReadCommand          ; Command Buffer filled, Pointer set
+0334: E03C
+0335: E03C             CcpParseCommand:
+0336: E03C 11 80 00               LD     DE,DMABuffer         ; Default in page 0
+0337: E03F CD 62 E3               CALL   SetDMA               ; Set the DMA address
+0338: E042 CD 15 E3               CALL   GetSelectedDrive     ; Get current drive
+0339: E045 32 8C E7               LD     (currentDisk),A      ; Save
+0340: E048 CD 26 E1               CALL   ParseToken1          ; Get first token in command buffer
+0341: E04B C4 08 E2               CALL   NZ,CommandError      ; The name must be unambiguous
+0342: E04E 3A 88 E7               LD     A,(selectedDisk)     ; Get the Disk:
+0343: E051 B7                     OR     A                    ; If not default,
+0344: E052 C2 79 E6               JP     NZ,ccpUserFunction   ;   must be user CMD
+0345: E055
+0346: E055 CD DE E1               CALL   IntrinsicFunction    ; Get CMD index into ACC
+0347: E058 21 EB E2               LD     HL,builtInCMDVector  ; Base of Vector
+0348: E05B 5F                     LD     E,A
+0349: E05C 16 00                  LD     D,0                  ; Index in DE
+0350: E05E 19                     ADD    HL,DE
+0351: E05F 19                     ADD    HL,DE                ; Vector is a word, need 2 ADDs
+0352: E060 7E                     LD     A,(HL)               ; Pointing at Address
+0353: E061 23                     INC    HL
+0354: E062 66                     LD     H,(HL)
+0355: E063 6F                     LD     L,A                  ; Get address to HL
+0356: E064 E9                     JP     (HL)                 ;  Go to the Function
 0357: E065
-0358: E065         ;----------------------------------------------------------------
-0359: E065         ;------------------------------ Read Command -------------------------------;
-0360: E065
-0361: E065         ;read the next command into the command buffer
-0362: E065         ;check for submit file
-0363: E065             ReadCommand:
-0364: E065 3A B0 E2               LD     A,(submitFlag)       ; Get the Submit File Flag
-0365: E068 B7                     OR     A                    ; Is it Set ?
-0366: E069 CA C2 E0               JP     Z,NotSubmitFile      ;  skip if not
-0367: E06C         ; scanning a submit file change drives to open and read the file
-0368: E06C 3A 88 E7               LD     A,(currentDisk)
-0369: E06F B7                     OR     A
-0370: E070 3E 00                  LD     A,0
-0371: E072 C4 03 E3               CALL   NZ,SelectDisk
-0372: E075         ; have to open again in case xsub present
-0373: E075 11 B1 E2               LD     DE,submitFCB
-0374: E078 CD 0E E3               CALL   OpenFile
-0375: E07B CA C2 E0               JP     Z,NotSubmitFile      ; skip if no submit file
-0376: E07E 3A BF E2               LD     A,(submitRC)
-0377: E081 3D                     DEC    A                    ; read last record(s) first
-0378: E082 32 D0 E2               LD     (submitCR),A         ; current record to read
-0379: E085 11 B1 E2               LD     DE,submitFCB
-0380: E088 CD 2C E3               CALL   DiskRead             ; end of file if last record
-0381: E08B C2 C2 E0               JP     NZ,NotSubmitFile
-0382: E08E         ; disk read is ok, transfer to commandBuffer
-0383: E08E 11 2D E2               LD     DE,commandLength
-0384: E091 21 80 00               LD     HL,DMABuffer
-0385: E094 06 80                  LD     B,cpmRecordSize      ; number of bytes to Copy
-0386: E096 CD FC E3               CALL   CopyHL2DEforB
-0387: E099         ; line is transferred, close the file with a deleted record
-0388: E099 21 BE E2               LD     HL,submitS2
-0389: E09C 36 00                  LD     (HL),0               ; clear fwflag
-0390: E09E 23                     INC    HL
-0391: E09F 35                     DEC    M                    ; one less record
-0392: E0A0 11 B1 E2               LD     DE,submitFCB
-0393: E0A3 CD 1D E3               CALL   CloseFile
-0394: E0A6 CA C2 E0               JP     Z,NotSubmitFile
-0395: E0A9         ; CloseFile went ok, return to original drive
-0396: E0A9 3A 88 E7               LD     A,(currentDisk)
-0397: E0AC B7                     OR     A
-0398: E0AD C4 03 E3               CALL   NZ,SelectDisk
-0399: E0B0         ; print to the 00
-0400: E0B0 21 2E E2               LD     HL,commandBuffer
-0401: E0B3 CD E0 E3               CALL   PrintStringNull
-0402: E0B6 CD 66 E3               CALL   CheckForConsoleChar
-0403: E0B9 CA D3 E0               JP     Z,NoRead
-0404: E0BC CD F1 E0               CALL   DeleteSubmitFile
-0405: E0BF C3 F1 E0               JP     DeleteSubmitFile     ; break key depressed
-0406: E0C2         ;--------------------------------------------------------------------------------
-0407: E0C2             NotSubmitFile:
-0408: E0C2 CD F1 E0               CALL   DeleteSubmitFile     ; Delete any submit file
-0409: E0C5 CD 09 E1               CALL   SaveUserAndDisk      ; Save User & Disk to page 0
-0410: E0C8 11 2C E2               LD     DE,commandMaxLength  ; Point to Start of Buffer
-0411: E0CB 0E 0A                  LD     C,fReadString        ; Load Function Number
-0412: E0CD CD 05 00               CALL   BDOS                 ;  and let BDOS do its work
-0413: E0D0 CD 18 E1               CALL   SetPage0CurDisk      ; No Cntl C, so restore Pg0CurentDisk
-0414: E0D3
-0415: E0D3             NoRead:
-0416: E0D3         ; set the last character to zero for later scans
-0417: E0D3 21 2D E2               LD     HL,commandLength     ; Point to length of command
-0418: E0D6 46                     LD     B,(HL)               ; Put it into B
-0419: E0D7             UpCaseLoop:
-0420: E0D7 23                     INC    HL                   ; Point at next byte in buffer
-0421: E0D8 7E                     LD     A,(HL)               ; Get the Character
-0422: E0D9 CD E8 E0               CALL   UpCase               ; If between a-z, up-case it
-0423: E0DC 77                     LD     (HL),A               ; Replace character
-0424: E0DD 10 F8                  DJNZ   UpCaseLoop           ; go thru all of the CMD buffer
-0425: E0DF         ;end of scan, h,l address end of command
-0426: E0DF         ;ReadCommand2:
-0427: E0DF 23                     INC    HL                   ; Point at last char + 1
-0428: E0E0 70                     LD     (HL),B               ; Stuff Zero to terminate the CMD
-0429: E0E1 21 2E E2               LD     HL,commandBuffer     ; go back to start of com
-0430: E0E4 22 AE E2               LD     (commandBufferPointer),HL ; Place in current CMD address
-0431: E0E7 C9                     RET
-0432: E0E8         ;------------------------------ Read Command -------------------------------;
-0433: E0E8
-0434: E0E8         ;--------------------------------- UpCase ----------------------------------;
-0435: E0E8         ;convert character in register A (a to z) to upper case                     ;
-0436: E0E8             UpCase:                         ;
-0437: E0E8 FE 61                  CP     061H                 ;
-0438: E0EA D8                     RET    C                    ; Return if below lower case 'a'    ;
-0439: E0EB FE 7B                  CP     07BH                 ;
-0440: E0ED D0                     RET    NC                   ; Return if above lower case 'z'    ;
-0441: E0EE E6 5F                  AND    05FH                 ; Drop bit 5/ makes q->Q etc        ;
-0442: E0F0 C9                     RET                         ;
-0443: E0F1         ;--------------------------------- UpCase ----------------------------------;
-0444: E0F1         ;---------------------------- Delete SubmitFile ----------------------------;
-0445: E0F1         ;delete the submit file, and set submit flag to false                       ;
-0446: E0F1             DeleteSubmitFile:                      ;
-0447: E0F1 21 B0 E2               LD     HL,submitFlag        ; Point at Submit flag              ;
-0448: E0F4 7E                     LD     A,(HL)               ; Get the Flag                      ;
-0449: E0F5 B7                     OR     A                    ; Is it Set ?                       ;
-0450: E0F6 C8                     RET    Z                    ;  return if not set                ;
-0451: E0F7 36 00                  LD     (HL),0               ; Clear Flag                        ;
-0452: E0F9 AF                     XOR    A                    ; Drive 0 = A:                      ;
-0453: E0FA CD 03 E3               CALL   SelectDisk           ; Select drive                      ;
-0454: E0FD 11 B1 E2               LD     DE,submitFCB         ; Load the submits FCB              ;
-0455: E100 CD 22 E3               CALL   DeleteFile           ; Go delete it                      ;
-0456: E103 3A 88 E7               LD     A,(currentDisk)      ; Determine the current disk        ;
-0457: E106 C3 03 E3               JP     SelectDisk           ; Reselect back to original drive   ;
-0458: E109         ;---------------------------- Delete SubmitFile ----------------------------;
-0459: E109         ;-------------------------------- Save User --------------------------------;
-0460: E109         ;save user#/disk# before possible ^c or transient                           ;
-0461: E109             SaveUserAndDisk:                      ;
-0462: E109 CD F7 E2               CALL   GetUser              ; Get the user number into Acc      ;
-0463: E10C 87                     ADD    A,A                  ;
-0464: E10D 87                     ADD    A,A                  ;
-0465: E10E 87                     ADD    A,A                  ;
-0466: E10F 87                     ADD    A,A                  ; Move user to Hi Nibble            ;
-0467: E110 21 88 E7               LD     HL,currentDisk       ; Current disk (Lo Nibble)          ;
-0468: E113 B6                     OR     M                    ; Acc -> User & Disk                ;
-0469: E114 32 04 00               LD     (Pg0CurentDisk),A    ; Stored in Page0 for later         ;
-0470: E117 C9                     RET                         ;
-0471: E118         ;-------------------------------- Save User --------------------------------;
-0472: E118         ;------------------------- Set Page 0 Current Disk -------------------------;
-0473: E118         ;set Pg0CurentDisk to current disk                                          ;
-0474: E118             SetPage0CurDisk:                      ;
-0475: E118 3A 88 E7               LD     A,(currentDisk)      ; Get CCP's current disk            ;
-0476: E11B 32 04 00               LD     (Pg0CurentDisk),A    ; Put into Page 0	                ;
-0477: E11E C9                     RET                         ;
-0478: E11F         ;------------------------- Set Page 0 Current Disk -------------------------;
-0479: E11F
-0480: E11F         ;--------------------------------- Parse Token -----------------------------;
-0481: E11F         ; Parse command buffer.                                                     ;
-0482: E11F         ; Used to isolate the command                                               ;
-0483: E11F         ;
-0484: E11F             ParseToken2:                      ;
-0485: E11F 21 76 E7               LD     HL,Token2            ; Point at Token2 start             ;
-0486: E122 18 03                  JR     ParseToken           ;
-0487: E124             ParseToken1:                      ;
-0488: E124 21 66 E7               LD     HL,Token1            ; Point at Token1 start             ;
-0489: E127             ParseToken:                      ;
-0490: E127 E5                     PUSH   HL                   ; Start of Token's Pointer          ;
-0491: E128 E5                     PUSH   HL                   ; Start of Token's Pointer          ;
-0492: E129 AF                     XOR    A                    ; Set A to 0                        ;
-0493: E12A 32 89 E7               LD     (selectedDisk),A     ; Assume default disk               ;
-0494: E12D 2A AE E2               LD     HL,(commandBufferPointer) ; Buffer's Pointer                  ;
-0495: E130 EB                     EX     DE,HL                ; DE-> Buffer                       ;
-0496: E131 CD B3 E1               CALL   NextNonBlankChar     ; Buffer's next non-blank character ;
-0497: E134 EB                     EX     DE,HL                ; DE-> Token , HL -> Buffer         ;
-0498: E135 22 8B E7               LD     (tokenStart),HL      ; Save token's address              ;
-0499: E138 EB                     EX     DE,HL                ; DE -> Buffer                      ;
-0500: E139 E1                     POP    HL                   ; DE -> Buffer,                     ;
-0501: E13A         ;  HL -> Start of Token's Pointer   ;
-0502: E13A         ; Disk ?                                                                    ;
-0503: E13A 1A                     LD     A,(DE)               ; Get 1st character from buffer     ;
-0504: E13B B7                     OR     A                    ; Is it the default Disk ?          ;
-0505: E13C CA 4A E1               JP     Z,UseCurrentDisk     ; Use current disk if empty         ;
-0506: E13F DE 40                  SBC    A,040H               ; Convert to number                 ;
-0507: E141 47                     LD     B,A                  ; Hold disk number in B             ;
-0508: E142 13                     INC    DE                   ;
-0509: E143 1A                     LD     A,(DE)               ; Look at next character            ;
-0510: E144 FE 3A                  CP     COLON                ; Is it a ':' ?                     ;
-0511: E146 CA 51 E1               JP     Z,UseTokensDisk      ;  if yes, set disk number          ;
-0512: E149         ; No Disk                                                                   ;
-0513: E149 1B                     DEC    DE                   ; Back to start of buffer           ;
-0514: E14A         ;
-0515: E14A             UseCurrentDisk:                      ;
-0516: E14A 3A 88 E7               LD     A,(currentDisk)      ; Get current Disk                  ;
-0517: E14D 77                     LD     (HL),A               ; Put into the Token                ;
-0518: E14E C3 57 E1               JP     SetFileName          ;
-0519: E151         ;
-0520: E151             UseTokensDisk:                      ;
-0521: E151 78                     LD     A,B                  ; Get disk from this parse          ;
-0522: E152 32 89 E7               LD     (selectedDisk),A     ; Mark as disk selected             ;
-0523: E155 70                     LD     (HL),B               ; Put it into the token             ;
-0524: E156 13                     INC    DE                   ; Move past the ':'                 ;
-0525: E157         ;
-0526: E157             SetFileName:                      ;
-0527: E157 06 08                  LD     B,FILE_NAME_SIZE     ; File name length (max)            ;
-0528: E159 CD 7F E1               CALL   FormatElement        ; Format file name                  ;
-0529: E15C         ;
-0530: E15C             SetType:                        ;
-0531: E15C 06 03                  LD     B,FILE_TYPE_SIZE     ; File type length (max)            ;
-0532: E15E CD A0 E1               CALL   IsItDot              ; is it a '.' ?	                    ;
-0533: E161 CC 7F E1               CALL   Z,FormatElement      ;  Yes,Format it                    ;
-0534: E164         ;
-0535: E164         ; Zero Rest of token                                                        ;
-0536: E164 06 03                  LD     B,3                  ;
-0537: E166 AF                     XOR    A                    ;
-0538: E167 CD AE E1               CALL   FillWithAcc          ;
-0539: E16A EB                     EX     DE,HL                ;
-0540: E16B 22 AE E2               LD     (commandBufferPointer),HL ; Set new starting point	        ;
-0541: E16E         ; Recover the start address of the fcb and count ?'s                        ;
-0542: E16E E1                     POP    HL                   ; Restore start of Token            ;
-0543: E16F 06 0B                  LD     B,FILE_NAME_SIZE+FILE_TYPE_SIZE ; Loop size                   ;
-0544: E171 0E 00                  LD     C,00                 ; Counter                           ;
-0545: E173 3E 3F                  LD     A,QMARK              ; We want to count '?'s             ;
-0546: E175             QuestionMarkCount:                      ;
-0547: E175 23                     INC    HL                   ; Adjust token pointer				;
-0548: E176 BE                     CP     (HL)                 ; Is it a '?'                       ;
-0549: E177 20 01                  JR     NZ,QuestionMarkCount1 ;  no, then skip                    ;
-0550: E179 0C                     INC    C                    ;  else increment the count         ;
-0551: E17A             QuestionMarkCount1:                      ;
-0552: E17A 10 F9                  DJNZ   QuestionMarkCount    ; Manage the Loop	                ;
-0553: E17C 79                     LD     A,C                  ;
-0554: E17D B7                     OR     A                    ;
-0555: E17E C9                     RET                         ;
-0556: E17F         ;-------------------------------- Parse Token ------------------------------;
-0557: E17F         ;------------------------------- Format Element ----------------------------;
-0558: E17F         ; Put element in a Left Justified, Space Padded field.                      ;
-0559: E17F         ; If it encounters an asterisk, it will pad the rest of the field with '?'s ;
-0560: E17F         ; Enter With:	B  = Element size                                           ;
-0561: E17F         ;				DE = Element source                                         ;
-0562: E17F         ;				HL = Element destination                                    ;
-0563: E17F             FormatElement:                      ;
-0564: E17F CD BD E1               CALL   IsItADelimiter       ; Is character a delimiter ?        ;
-0565: E182 CA 9C E1               JP     Z,PadTheElement      ;  yes, pad rest of Element         ;
-0566: E185         ;
-0567: E185 23                     INC    HL                   ;  else move the Token's pointer    ;
-0568: E186 FE 2A                  CP     ASTERISK             ; Is it an '*'					    ;
-0569: E188 C2 90 E1               JP     NZ,FormatElement1    ;  no, then just put in Token   ;
-0570: E18B 36 3F                  LD     (HL),QMARK           ;  else Put a '?' in token          ;
-0571: E18D C3 92 E1               JP     FormatElement2       ;  for rest of Element              ;
-0572: E190         ;
-0573: E190             FormatElement1:                      ;
-0574: E190 77                     LD     (HL),A               ; Put character in token            ;
-0575: E191 13                     INC    DE                   ; Increment the buffer pointer      ;
-0576: E192             FormatElement2:                      ;
-0577: E192 10 EB                  DJNZ   FormatElement        ; Loop if more                      ;
-0578: E194         ;
-0579: E194             TruncateElement:                      ;
-0580: E194 CD BD E1               CALL   IsItADelimiter       ; We expect a delimiter             ;
-0581: E197 C8                     RET    Z                    ; If we get one, we are done        ;
-0582: E198 13                     INC    DE                   ;  skip forward in buffer           ;
-0583: E199 C3 94 E1               JP     TruncateElement      ; Keep looking for delimiter        ;
-0584: E19C         ;
-0585: E19C             PadTheElement:                      ;
-0586: E19C CD AC E1               CALL   FillWithSpace        ; Pad the rest of Element           ;
-0587: E19F C9                     RET                         ;
-0588: E1A0         ;------------------------------- Format Element ----------------------------;
-0589: E1A0         ;-------------------------------- Is It a Dot ------------------------------;
-0590: E1A0         ; Check to see if char is buffer is a period. If it is it returns with      ;
-0591: E1A0         ; the Z-Flag set., and the DE pointer advanced beyond the '.'.  If it is    ;
-0592: E1A0         ; not a period. It will fill the buffer with spaces and return with the     ;
-0593: E1A0         ; Z-Flag reset.                                                             ;
-0594: E1A0         ;                                                                           ;
-0595: E1A0         ; Enter With:	DE = Pointer for buffer                                     ;
-0596: E1A0         ;				 B = buffer size	                                        ;
-0597: E1A0         ; Return With:	DE = Past the period                                        ;
-0598: E1A0         ;			   	Z-Flag =  set if Period                                     ;
-0599: E1A0         ;  				Z-Flag = reset if not Period                                ;
-0600: E1A0             IsItDot:                        ;
-0601: E1A0 1A                     LD     A,(DE)               ;
-0602: E1A1 13                     INC    DE                   ; Assume it is a '.'                ;
-0603: E1A2 FE 2E                  CP     PERIOD               ; Is it '.' ?                       ;
-0604: E1A4 C8                     RET    Z                    ;  if yes exit with Z-Flag set      ;
-0605: E1A5         ;
-0606: E1A5 1B                     DEC    DE                   ; Adjust, wrong assumption          ;
-0607: E1A6 CD AC E1               CALL   FillWithSpace        ;  else make all spaces             ;
-0608: E1A9 AF                     XOR    A                    ;
-0609: E1AA 3C                     INC    A                    ; Reset the Z-Flag                  ;
-0610: E1AB C9                     RET                         ; Exit with Z-Flag reset            ;
-0611: E1AC         ;-------------------------------- Is It a Dot ------------------------------;
-0612: E1AC         ;-------------------------- Fill With Space/Acc ----------------------------;
-0613: E1AC         ; fills buffer with SPACE or contents of Acc.                               ;
-0614: E1AC         ; Enters with:	HL = less than start of fill area                           ;
-0615: E1AC         ;				B  = fill Count                                             ;
-0616: E1AC         ;				A  = fill character (FillWithAcc)                           ;
-0617: E1AC             FillWithSpace:                      ;
-0618: E1AC 3E 20                  LD     A,SPACE              ;
-0619: E1AE             FillWithAcc:                      ;
-0620: E1AE 23                     INC    HL                   ;
-0621: E1AF 77                     LD     (HL),A               ;
-0622: E1B0 10 FC                  DJNZ   FillWithAcc          ;
-0623: E1B2 C9                     RET                         ;
-0624: E1B3         ;-------------------------- Fill With Space/Acc ----------------------------;
-0625: E1B3         ;------------------------ Next Non Blank Character -------------------------;
-0626: E1B3         ;find the next non blank character in line pointed to by DE                 ;
-0627: E1B3             NextNonBlankChar:                      ;
-0628: E1B3 1A                     LD     A,(DE)               ; Get the character                 ;
-0629: E1B4 B7                     OR     A                    ; Is it End of buffer ?             ;
-0630: E1B5 C8                     RET    Z                    ;  if yes, return                   ;
-0631: E1B6 FE 20                  CP     SPACE                ; is it a blank ?                   ;
-0632: E1B8 C0                     RET    NZ                   ;  if not, return                   ;
-0633: E1B9 13                     INC    DE                   ;  else increment pointer           ;
-0634: E1BA C3 B3 E1               JP     NextNonBlankChar     ; Loop for next character           ;
-0635: E1BD         ;------------------------ Next Non Blank Character -------------------------;
-0636: E1BD         ;---------------------------- Is It A Delimiter ----------------------------;
-0637: E1BD         ; Returns with Z-flag set if (DE) pointing at a delimiter                   ;
-0638: E1BD         ; Does an error exit if not valid ASCII character                           ;
-0639: E1BD             IsItADelimiter:                      ;
-0640: E1BD 1A                     LD     A,(DE)               ; Get the character                 ;
-0641: E1BE B7                     OR     A                    ;
-0642: E1BF C8                     RET    Z                    ; End of Buffer is a delimiter      ;
-0643: E1C0 FE 20                  CP     SPACE                ;
-0644: E1C2 DA 06 E2               JP     C,CommandError       ; Error exit if not ASCII           ;
-0645: E1C5 C8                     RET    Z                    ; SPACE is a delimiter              ;
-0646: E1C6 FE 3D                  CP     EQUAL_SIGN           ;
-0647: E1C8 C8                     RET    Z                    ; '=' is a delimiter                ;
-0648: E1C9 FE 5F                  CP     UNDER_SCORE          ;
-0649: E1CB C8                     RET    Z                    ; '_' is a delimiter                ;
-0650: E1CC FE 2E                  CP     PERIOD               ;
-0651: E1CE C8                     RET    Z                    ; '.' is a delimiter                ;
-0652: E1CF FE 3A                  CP     COLON                ;
-0653: E1D1 C8                     RET    Z                    ; ':' is a delimiter                ;
-0654: E1D2 FE 3B                  CP     SEMICOLON            ;
-0655: E1D4 C8                     RET    Z                    ; ';' is a delimiter                ;
-0656: E1D5 FE 3C                  CP     LESS_THAN            ;
-0657: E1D7 C8                     RET    Z                    ; '<' is a delimiter                ;
-0658: E1D8 FE 3E                  CP     GREATER_THAN         ;
-0659: E1DA C8                     RET    Z                    ; '>' is a delimiter                ;
-0660: E1DB C9                     RET                         ; Not a delimiter                   ;
-0661: E1DC         ;---------------------------- Is It A Delimiter ----------------------------;
-0662: E1DC
-0663: E1DC         ;---------------------------- Intrinsic Function ---------------------------;
-0664: E1DC         ;look for intrinsic functions (Token1 has been filled)                 		;
-0665: E1DC             IntrinsicFunction:                      ;
-0666: E1DC 21 D1 E2               LD     HL,builtInCMDNames   ; Point at List of CMDs             ;
-0667: E1DF 0E 00                  LD     C,0                  ; Initialize counter                ;
-0668: E1E1             IntrinsicFunction1:                      ;
-0669: E1E1 79                     LD     A,C                  ; Get Counter                       ;
-0670: E1E2 FE 06                  CP     builtInCMDCount      ; Past number of commands ?         ;
-0671: E1E4 D0                     RET    NC                   ;  exit if yes                      ;
-0672: E1E5 11 67 E7               LD     DE,Token1+1          ; Beginning of name                 	;
-0673: E1E8 06 04                  LD     B,builtInCMDNameSize ; Length of match                   ;
-0674: E1EA             IntrinsicFunction2:                      ;
-0675: E1EA 1A                     LD     A,(DE)               ;
-0676: E1EB BE                     CP     M                    ; Is there a match ?                ;
-0677: E1EC C2 FD E1               JP     NZ,IntrinsicFunction3 ;  skip if no match                 ;
-0678: E1EF 13                     INC    DE                   ;
-0679: E1F0 23                     INC    HL                   ; Point at next characters          ;
-0680: E1F1 05                     DEC    B                    ; Decrement the counter             ;
-0681: E1F2 C2 EA E1               JP     NZ,IntrinsicFunction2 ; Loop while matching               ;
-0682: E1F5         ; complete match on name, check for blank in fcb                            ;
-0683: E1F5 1A                     LD     A,(DE)               ;
-0684: E1F6 FE 20                  CP     SPACE                ; Blank in CMD ?                    ;
-0685: E1F8 C2 02 E2               JP     NZ,IntrinsicFunction4 ;  No ,then no match                ;
-0686: E1FB 79                     LD     A,C                  ;  Else they match,                 ;
-0687: E1FC C9                     RET                         ; Return with index in A            ;
-0688: E1FD         ;
-0689: E1FD             IntrinsicFunction3:                      ;
-0690: E1FD 23                     INC    HL                   ; Move to next in list              ;
-0691: E1FE 05                     DEC    B                    ;
-0692: E1FF C2 FD E1               JP     NZ,IntrinsicFunction3 ; Loop thru this one                ;
-0693: E202         ;
-0694: E202             IntrinsicFunction4:                      ;
-0695: E202 0C                     INC    C                    ; Update the index                  ;
-0696: E203 C3 E1 E1               JP     IntrinsicFunction1   ;  loop for another round           ;
-0697: E206         ;---------------------------- Intrinsic Function ---------------------------;
-0698: E206
-0699: E206         ; cmd
-0700: E206         ;------------------------------ Command Error ------------------------------;
-0701: E206         ;error in command string starting at position;'tokenStart' and ending    	;
-0702: E206         ; with first delimiter                                                      ;
-0703: E206         ;
-0704: E206             CommandError:                      ;
-0705: E206 CD BC E3               CALL   CrLf                 ; Next Line                         ;
-0706: E209 2A 8B E7               LD     HL,(tokenStart)      ; Start of error token             		;
-0707: E20C             CommandErrorLoop:                      ;
-0708: E20C 7E                     LD     A,(HL)               ; Get character                     ;
-0709: E20D FE 20                  CP     SPACE                ; Past offending token ?            ;
-0710: E20F CA 1E E2               JP     Z,CommandErrorExit   ;  done if yes                      ;
-0711: E212 B7                     OR     A                    ; At end of command ?               ;
-0712: E213 CA 1E E2               JP     Z,CommandErrorExit   ;  done if yes                      ;
-0713: E216 E5                     PUSH   HL                   ; Save pointer                      ;
-0714: E217 CD C5 E3               CALL   PrintCharInA         ; Display on console                ;
-0715: E21A E1                     POP    HL                   ; Restore pointer                   ;
-0716: E21B 23                     INC    HL                   ; Update it                         ;
-0717: E21C 18 EE                  JR     CommandErrorLoop     ; Keep going                        ;
-0718: E21E         ;
-0719: E21E             CommandErrorExit:                      ;
-0720: E21E 3E 3F                  LD     A,QMARK              ;
-0721: E220 CD C5 E3               CALL   PrintCharInA         ; Send '?' to console               ;
-0722: E223 CD BC E3               CALL   CrLf                 ; Next Line                         ;
-0723: E226 CD F1 E0               CALL   DeleteSubmitFile     ; Remove any submit file            ;
-0724: E229 C3 26 E0               JP     ccpMainEntry         ; Go back for another command       ;
-0725: E22C         ;------------------------------ Command Error ------------------------------;
-0726: E22C
-0727: E22C         ;------------------------------ Command Buffer -----------------------------;
-0728: E22C             maximumBufferSize EQU    07FH                 ; Max Length of Buffer          ;
-0729: E22C 7F          commandMaxLength: DB     maximumBufferSize    ;
-0730: E22D 00          commandLength: DB     00H                  ; Actual size of input          ;
-0731: E22E             commandBuffer: DS     maximumBufferSize + 1 ; The Command Buffer           ;
-0732: E2AE         ;
-0733: E2AE 2E E2       commandBufferPointer: DW     commandBuffer        ; Address of next to char       ;
-0734: E2B0         ;------------------------------ Command Buffer -----------------------------;
-0735: E2B0         ;------------------------- Submit File Control Block -----------------------;
-0736: E2B0         ;	                                                                        ;
-0737: E2B0 00          submitFlag: DB     00H                  ; 00 if no submit file,             ;
-0738: E2B1         ;  0FFH if submitting               ;
-0739: E2B1 24 24 24 20 20 20 20 20     submitFCB: DB     '$$$     '           ; File name is $$$                  ;
-0740: E2B9 53 55 42     submitType: DB     'SUB'                ; Type is 'SUB'                     ;
-0741: E2BC 00          submitExtent: DB     00H                  ; Extent                            ;
-0742: E2BD 00          submitS1:  DB     00H                  ; S1                                ;
-0743: E2BE 00          submitS2:  DB     00H                  ; S2                                ;
-0744: E2BF 00          submitRC:  DB     00H                  ; RC                                ;
-0745: E2C0             submitMap: DS     010H                 ; Allocation Map                    ;
-0746: E2D0 00          submitCR:  DB     00H                  ; Current Record                    ;
-0747: E2D1         ;------------------------- Submit File Control Block -----------------------;
-0748: E2D1         ;--------------------------- Built In Command Data -------------------------;
-0749: E2D1         ;intrinsic function names four characters each                              ;
-0750: E2D1             builtInCMDNameSize EQU    04                   ; Size of intrinsic function names  ;
-0751: E2D1         ;
-0752: E2D1             builtInCMDNames:                      ;
-0753: E2D1 44 49 52 20                DB     'DIR '               ;
-0754: E2D5 45 52 41 20                DB     'ERA '               ;
-0755: E2D9 54 59 50 45                DB     'TYPE'               ;
-0756: E2DD 53 41 56 45                DB     'SAVE'               ;
-0757: E2E1 52 45 4E 20                DB     'REN '               ;
-0758: E2E5 55 53 45 52                DB     'USER'               ;
-0759: E2E9             builtInCMDCount EQU    (($-builtInCMDNames)/builtInCMDNameSize) + 1 ;
-0760: E2E9         ;
-0761: E2E9             builtInCMDVector:                      ;
-0762: E2E9 4A E4                  DW     ccpDirectory         ; Directory List                    ;
-0763: E2EB F2 E4                  DW     ccpErase             ; File erase                        ;
-0764: E2ED 30 E5                  DW     ccpType              ; Type file on Console              ;
-0765: E2EF 80 E5                  DW     ccpSave              ; Save memory image                 ;
-0766: E2F1 E3 E5                  DW     ccpRename            ; File rename                       ;
-0767: E2F3 61 E6                  DW     ccpUser              ; User number                       ;
-0768: E2F5 78 E6                  DW     ccpUserFunction      ; User-defined function             ;
-0769: E2F7         ;
-0770: E2F7         ;--------------------------- Built In Command Data -------------------------;
-0771: E2F7         ;----------------------------------------------------------------
-0772: E2F7         ;----------------------------------------------------------------
-0773: E2F7         ;================================ BDOS API =================================;
-0774: E2F7         ;------------------------------ Get/Set User -------------------------------;
-0775: E2F7         ;return current user code in A                                              ;
-0776: E2F7             GetUser:                        ;
-0777: E2F7 1E FF                  LD     E,0FFH               ; Set Entry Parameter for Get       ;
-0778: E2F9         ; If E <> -1 then Set user number found in E                                ;
-0779: E2F9             SetUser:                        ;
-0780: E2F9 0E 20                  LD     C,fGetSetUserNumber  ; Load Function Number              ;
-0781: E2FB C3 05 00               JP     BDOS                 ;  and let BDOS do its work         ;
-0782: E2FE         ;------------------------------ Get/Set User -------------------------------;
-0783: E2FE         ;------------------------------- Initialize --------------------------------;
-0784: E2FE             Initialize:                      ;
-0785: E2FE 0E 0D                  LD     C,fResetSystem       ; Load Function Number              ;
-0786: E300 C3 05 00               JP     BDOS                 ;  and let BDOS do its work         ;
-0787: E303         ;------------------------------- Initialize --------------------------------;
-0788: E303         ;------------------------------- Select Disk -------------------------------;
-0789: E303             SelectDisk:                      ;
-0790: E303 5F                     LD     E,A                  ; Load Target disk                  ;
-0791: E304 0E 0E                  LD     C,fSelectDisk        ; Load Function Number              ;
-0792: E306 C3 05 00               JP     BDOS                 ;  and let BDOS do its work         ;
-0793: E309         ;------------------------------- Select Disk -------------------------------;
-0794: E309         ;----------------------------- Get Current Disk ----------------------------;
-0795: E309         ;Exits with current drive number to A (0=A,1=B....F=P)                      ;
-0796: E309             GetSelectedDrive:                      ;
-0797: E309 0E 19                  LD     C,fGetCurrentDisk    ; Load Function Number          ;
-0798: E30B C3 05 00               JP     BDOS                 ;  and let BDOS do its work         ;
-0799: E30E         ;----------------------------- Get Current Disk ----------------------------;
-0800: E30E
-0801: E30E         ;  AP i
-0802: E30E
-0803: E30E         ;-----------------------------
-0804: E30E         ;open the file given by (DE)
-0805: E30E             OpenFile:
-0806: E30E 0E 0F                  LD     C,fOpenFile
-0807: E310 C3 5E E3               JP     BDOSandIncA
-0808: E313         ;--------
-0809: E313         ;open file for Command FCB
-0810: E313             OpenFile4CmdFCB:
-0811: E313 AF                     XOR    A
-0812: E314 32 86 E7               LD     (currentRecord),A    ; clear next record to read
-0813: E317 11 66 E7               LD     DE,Token1
-0814: E31A C3 0E E3               JP     OpenFile
-0815: E31D         ;-----------------------------
-0816: E31D         ;close the file given by (DE)
-0817: E31D             CloseFile:
-0818: E31D 0E 10                  LD     C,fCloseFile
-0819: E31F C3 5E E3               JP     BDOSandIncA
-0820: E322         ;-----------------------------
-0821: E322         ;delete the file given by (DE)
-0822: E322             DeleteFile:
-0823: E322 0E 13                  LD     C,fDeleteFile
-0824: E324 C3 05 00               JP     BDOS
-0825: E327         ;-----------------------------
-0826: E327         ;make the file given by (DE)
-0827: E327             MakeFile:
-0828: E327 0E 16                  LD     C,fMakeFile
-0829: E329 C3 5E E3               JP     BDOSandIncA
-0830: E32C         ;-----------------------------
-0831: E32C         ;read the next record from the file given by d,e
-0832: E32C             DiskRead:
-0833: E32C 0E 14                  LD     C,fReadSeq
-0834: E32E C3 59 E3               JP     BDOSsetFlags
-0835: E331         ;-----------
-0836: E331         ;read next record from Command FCB
-0837: E331             DiskReadCmdFCB:
-0838: E331 11 66 E7               LD     DE,Token1
-0839: E334 C3 2C E3               JP     DiskRead
-0840: E337         ;-----------------------------
-0841: E337         ;write the next record to the file given by (DE)
-0842: E337             DiskWrite:
-0843: E337 0E 15                  LD     C,fWriteSeq
-0844: E339 C3 59 E3               JP     BDOSsetFlags
-0845: E33C         ;-----------------------------
-0846: E33C         ;search for the file given by d,e
-0847: E33C             SearchForFirst:
-0848: E33C 0E 11                  LD     C,fSearchFirst
-0849: E33E C3 5E E3               JP     BDOSandIncA
-0850: E341         ;-----
-0851: E341         ;search for Token1 file
-0852: E341             Searc4CmdFcbFile:
-0853: E341 11 66 E7               LD     DE,Token1
-0854: E344 C3 3C E3               JP     SearchForFirst
-0855: E347         ;-----------------------------
-0856: E347         ;search for the next occurrence of the file given by d,e
-0857: E347             SearchForNext:
-0858: E347 0E 12                  LD     C,fSearchNext
-0859: E349 C3 5E E3               JP     BDOSandIncA
-0860: E34C         ;-----------------------------
-0861: E34C         ; rename a file give bu (DE)
-0862: E34C             RenameFile:
-0863: E34C 0E 17                  LD     C,fRenameFile
-0864: E34E C3 05 00               JP     BDOS
-0865: E351         ;-----------------------------
-0866: E351         ;set default buffer dma address
-0867: E351             SetDefaultDMA:
-0868: E351 11 80 00               LD     DE,DMABuffer
-0869: E354         ;---------
-0870: E354         ;set dma address to d,e
-0871: E354             SetDMA:
-0872: E354 0E 1A                  LD     C,fSetDMA
-0873: E356 C3 05 00               JP     BDOS
-0874: E359         ;-----------------------------
-0875: E359         ; call B DOS and set Flags
-0876: E359             BDOSsetFlags:
-0877: E359 CD 05 00               CALL   BDOS
-0878: E35C B7                     OR     A                    ; set return code flags
-0879: E35D C9                     RET
-0880: E35E         ;-----------------------------
-0881: E35E         ;call B DOS  - increment result - store in directory count
-0882: E35E             BDOSandIncA:
-0883: E35E CD 05 00               CALL   BDOS
-0884: E361 32 87 E7               LD     (directoryCount),A
-0885: E364 3C                     INC    A
-0886: E365 C9                     RET
-0887: E366         ;----------------------------------------------------------------
-0888: E366         ;----------------------------------------------------------------
-0889: E366         ;----------------------------------------------------------------
-0890: E366         ;check for a character ready at the console
-0891: E366             CheckForConsoleChar:
-0892: E366 0E 0B                  LD     C,fGetConsoleStatus
-0893: E368 CD 05 00               CALL   BDOS
-0894: E36B B7                     OR     A
-0895: E36C C8                     RET    Z                    ; return no char waiting
-0896: E36D 0E 01                  LD     C,fConsoleIn
-0897: E36F CD 05 00               CALL   BDOS                 ; character cleared
-0898: E372 B7                     OR     A
-0899: E373 C9                     RET
-0900: E374
-0901: E374         ;-----------------------------
-0902: E374         ; get number from the command line
-0903: E374             GetNumberFromCmdLine:
-0904: E374 CD 24 E1               CALL   ParseToken1          ; should be number
-0905: E377 3A 89 E7               LD     A,(selectedDisk)
-0906: E37A B7                     OR     A
-0907: E37B C2 06 E2               JP     NZ,CommandError      ; cannot be prefixed
-0908: E37E         ; convert the byte value in Token1 to binary
-0909: E37E 21 67 E7               LD     HL,Token1+1
-0910: E381 01 0B 00               LD     BC,11                ;(b=0, c=11)
-0911: E384         ; value accumulated in b, c counts name length to zero
-0912: E384             GetNumericValue:
-0913: E384 7E                     LD     A,(HL)
-0914: E385 FE 20                  CP     SPACE
-0915: E387 CA AF E3               JP     Z,GetNumericValue1
-0916: E38A         ; more to scan, convert char to binary and add
-0917: E38A 23                     INC    HL
-0918: E38B D6 30                  SUB    ASCII_ZERO
-0919: E38D FE 0A                  CP     10
-0920: E38F D2 06 E2               JP     NC,CommandError      ; valid?
-0921: E392 57                     LD     D,A                  ; save value
-0922: E393 78                     LD     A,B                  ; mult by 10
-0923: E394 E6 E0                  AND    11100000B
-0924: E396 C2 06 E2               JP     NZ,CommandError
-0925: E399 78                     LD     A,B                  ; recover value
-0926: E39A 07                     RLCA
-0927: E39B 07                     RLCA
-0928: E39C 07                     RLCA                        ; *8
-0929: E39D 80                     ADD    A,B
-0930: E39E DA 06 E2               JP     C,CommandError
-0931: E3A1 80                     ADD    A,B
-0932: E3A2 DA 06 E2               JP     C,CommandError       ; *8+*2 = *10
-0933: E3A5 82                     ADD    A,D
-0934: E3A6 DA 06 E2               JP     C,CommandError       ; +digit
-0935: E3A9 47                     LD     B,A
-0936: E3AA 0D                     DEC    C
-0937: E3AB C2 84 E3               JP     NZ,GetNumericValue   ; for another digit
-0938: E3AE C9                     RET
-0939: E3AF             GetNumericValue1:                      ; conv1 end of digits, check for all blanks
-0940: E3AF 7E                     LD     A,(HL)
-0941: E3B0 FE 20                  CP     SPACE
-0942: E3B2 C2 06 E2               JP     NZ,CommandError      ;blanks?
-0943: E3B5 23                     INC    HL
-0944: E3B6 0D                     DEC    C
-0945: E3B7 C2 AF E3               JP     NZ,GetNumericValue1
-0946: E3BA 78                     LD     A,B                  ;recover value
-0947: E3BB C9                     RET
-0948: E3BC         ;-----------------------------
-0949: E3BC         ;+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-0950: E3BC
-0951: E3BC
-0952: E3BC         ;-----------------------------
-0953: E3BC         ;*****************************************************************
-0954: E3BC
-0955: E3BC         ;=============================== Utilities =================================;
-0956: E3BC         ;-------------------------------- CR / LF ----------------------------------;
-0957: E3BC         ;Sent Carriage Return Line Feed to Console                                  ;
-0958: E3BC             CrLf:                           ;
-0959: E3BC 1E 0D                  LD     E,CR                 ; Carriage Return                   ;
-0960: E3BE CD C8 E3               CALL   PrintCharInE         ;
-0961: E3C1 1E 0A                  LD     E,LF                 ; Line Feed                         ;
-0962: E3C3 18 03                  JR     PrintCharInE         ;
-0963: E3C5         ;-------------------------------- CR / LF ----------------------------------;
-0964: E3C5         ;------------------------------- PrintCharInA ------------------------------;
-0965: E3C5         ; Print character                                                           ;
-0966: E3C5         ; On Entry A = Character to Send to Console                                 ;
-0967: E3C5             PrintCharInA:                      ;
-0968: E3C5 5F                     LD     E,A                  ; move char to E                    ;
-0969: E3C6 18 00                  JR     PrintCharInE         ;
-0970: E3C8         ;------------------------------- PrintCharInA -------------------------------;
-0971: E3C8         ;------------------------------- PrintCharInE ------------------------------;
-0972: E3C8         ; Print character                                                           ;
-0973: E3C8         ; On Entry E = Character to Send to Console                                 ;
-0974: E3C8         ; Preserves BC                                ;                             ;
-0975: E3C8             PrintCharInE:                      ;
-0976: E3C8 C5                     PUSH   BC                   ; Preserve BC                       ;
-0977: E3C9 0E 02                  LD     C,fConsoleOut        ; Load Function Number         		;
-0978: E3CB CD 05 00               CALL   BDOS                 ;  and let BDOS do its work         ;
-0979: E3CE C1                     POP    BC                   ; Restore BC                        ;
-0980: E3CF C9                     RET                         ;
-0981: E3D0         ;------------------------------- PrintCharInE ------------------------------;
-0982: E3D0
-0983: E3D0         ; UT
-0984: E3D0             PrintSpace:
-0985: E3D0 3E 20                  LD     A,SPACE
-0986: E3D2 C3 D5 E3               JP     PrintSaveBC
-0987: E3D5         ;-----------------------------
-0988: E3D5         ;print character, but save b,c registers
-0989: E3D5             PrintSaveBC:
-0990: E3D5 C5                     PUSH   BC
-0991: E3D6 CD C5 E3               CALL   PrintCharInA
-0992: E3D9 C1                     POP    BC
-0993: E3DA C9                     RET
-0994: E3DB         ;-----------------------------
-0995: E3DB         ;print CRLF then null terminated string at (BC)
-0996: E3DB             PrintCrLfStringNull:
-0997: E3DB C5                     PUSH   BC
-0998: E3DC CD BC E3               CALL   CrLf
-0999: E3DF E1                     POP    HL                   ;now print the string
-1000: E3E0         ;print null terminated string at (HL)
-1001: E3E0             PrintStringNull:
-1002: E3E0 7E                     LD     A,(HL)
-1003: E3E1 B7                     OR     A
-1004: E3E2 C8                     RET    Z                    ; stop on 00
-1005: E3E3 23                     INC    HL
-1006: E3E4 E5                     PUSH   HL                   ; ready for next
-1007: E3E5 CD C5 E3               CALL   PrintCharInA
-1008: E3E8 E1                     POP    HL                   ; character printed
-1009: E3E9 C3 E0 E3               JP     PrintStringNull      ;for
-1010: E3EC         ;-----------------------------
-1011: E3EC         ;print no file message
-1012: E3EC             PrintNoFile:
-1013: E3EC 01 F2 E3               LD     BC,msgNoFile
-1014: E3EF C3 DB E3               JP     PrintCrLfStringNull
-1015: E3F2
-1016: E3F2 4E 4F 20 46 49 4C 45 00     msgNoFile: DB     'NO FILE',0
-1017: E3FA         ;-----------------------------
-1018: E3FA         ;move 3 characters from h,l to d,e addresses
-1019: E3FA             CopyHL2DE3:
-1020: E3FA 06 03                  LD     B,3
-1021: E3FC             CopyHL2DEforB:
-1022: E3FC 7E                     LD     A,(HL)
-1023: E3FD 12                     LD     (DE),AE
-1024: E3FE 23                     INC    HL
-1025: E3FF 13                     INC    DE
-1026: E400 05                     DEC    B
-1027: E401 C2 FC E3               JP     NZ,CopyHL2DEforB
-1028: E404 C9                     RET
-1029: E405         ;-----------------------------
-1030: E405         ;return (HL) = (A) + (HL)
-1031: E405             AddA2HL:
-1032: E405 85                     ADD    A,L
-1033: E406 6F                     LD     L,A
-1034: E407 D0                     RET    NC
-1035: E408 24                     INC    H
-1036: E409 C9                     RET
-1037: E40A         ;-----------------------------
-1038: E40A         ;DMABuffer + a + c to h,l followed by fetch
-1039: E40A             GetByteAtAandCandDMA:
-1040: E40A 21 80 00               LD     HL,DMABuffer         ; 0080H
-1041: E40D 81                     ADD    A,C
-1042: E40E CD 05 E4               CALL   AddA2HL
-1043: E411 7E                     LD     A,(HL)
-1044: E412 C9                     RET
-1045: E413         ;-----------------------------
-1046: E413         ;-----------------------------
-1047: E413         ;*****************************************************************
-1048: E413         ;************************ Error messages ******************************
-1049: E413         ;*****************************************************************
-1050: E413         ;print the read error message
-1051: E413             PrintReadError:
-1052: E413 01 19 E4               LD     BC,msgReadErr
-1053: E416 C3 DB E3               JP     PrintCrLfStringNull
-1054: E419             msgReadErr:
-1055: E419 52 45 41 44 20 45 52 52 4F 52 00                DB     'READ ERROR',0
-1056: E424         ;-----------------------------
-1057: E424
-1058: E424
-1059: E424         ;*****************************************************************
-1060: E424         ;--------------------------------------------------------
-1061: E424         ;reset disk
-1062: E424             ResetDisk:
-1063: E424 3A 89 E7               LD     A,(selectedDisk)
-1064: E427 B7                     OR     A
-1065: E428 C8                     RET    Z                    ; no action if not selected
-1066: E429 3D                     DEC    A
-1067: E42A 21 88 E7               LD     HL,currentDisk
-1068: E42D BE                     CP     M
-1069: E42E C8                     RET    Z                    ; same disk
-1070: E42F 3A 88 E7               LD     A,(currentDisk)
-1071: E432 C3 03 E3               JP     SelectDisk
-1072: E435         ;--------------------------------------------------------
-1073: E435         ;reset disk before end of command check
-1074: E435             ResetDiskAtCmdEnd:
-1075: E435 CD 24 E4               CALL   ResetDisk
-1076: E438         ;end of intrinsic command
-1077: E438             EndCommand:
-1078: E438 CD 24 E1               CALL   ParseToken1          ; to check for garbage at end of line
-1079: E43B 3A 67 E7               LD     A,(Token1)+1
-1080: E43E D6 20                  SUB    SPACE
-1081: E440 21 89 E7               LD     HL,selectedDisk
-1082: E443 B6                     OR     M
-1083: E444         ; 0 in accumulator if no disk selected, and blank fcb
-1084: E444 C2 06 E2               JP     NZ,CommandError
-1085: E447 C3 26 E0               JP     ccpMainEntry
-1086: E44A         ;*****************************************************************
-1087: E44A         ;************************ CCP Commands ***************************
-1088: E44A         ;*****************************************************************
-1089: E44A
-1090: E44A         ;******************** Directory Listing ***************************
-1091: E44A         ;Directory Listing
-1092: E44A             ccpDirectory:
-1093: E44A CD 24 E1               CALL   ParseToken1          ; Token1 gets file name
-1094: E44D CD 54 E7               CALL   SetDisk4Cmd          ; change disk drives if requested
-1095: E450 21 67 E7               LD     HL,Token1+1
-1096: E453 7E                     LD     A,(HL)               ; may be empty request
-1097: E454 FE 20                  CP     SPACE
-1098: E456 C2 62 E4               JP     NZ,ccpDir2           ; skip fill of ??? if not blank
-1099: E459         ; set Token1 to all ??? for current disk
-1100: E459 06 0B                  LD     B,11                 ; length of fill ????????.???
-1101: E45B             ccpDir1:
-1102: E45B 36 3F                  LD     (HL),QMARK
-1103: E45D 23                     INC    HL
-1104: E45E 05                     DEC    B
-1105: E45F C2 5B E4               JP     NZ,ccpDir1
-1106: E462         ; not a blank request, must be in Token1
-1107: E462             ccpDir2:
-1108: E462 1E 00                  LD     E,0
-1109: E464 D5                     PUSH   DE                   ; E counts directory entries
-1110: E465 CD 41 E3               CALL   Searc4CmdFcbFile     ; first one has been found
-1111: E468 CC EC E3               CALL   Z,PrintNoFile        ; not found message
-1112: E46B             ccpDir3:
-1113: E46B CA EE E4               JP     Z,ccpDirEnd
-1114: E46E         ; found, but may be system file
-1115: E46E 3A 87 E7               LD     A,(directoryCount)   ; get the location of the element
-1116: E471 0F                     RRCA
-1117: E472 0F                     RRCA
-1118: E473 0F                     RRCA
-1119: E474 E6 60                  AND    1100000B
-1120: E476 4F                     LD     C,A
-1121: E477         ; c contains base index into DMABuffer for dir entry
-1122: E477 3E 0A                  LD     A,fcbSystemFileIndex ; System File Location in FCB
-1123: E479 CD 0A E4               CALL   GetByteAtAandCandDMA ; value to A
-1124: E47C 17                     RLA
-1125: E47D DA E2 E4               JP     C,ccpDir7            ; skip if system file c holds index into buffer
-1126: E480         ;  another fcb found, new line?
-1127: E480 D1                     POP    DE                   ; get directory entry count (E)
-1128: E481 7B                     LD     A,E
-1129: E482 1C                     INC    E
-1130: E483 D5                     PUSH   DE                   ; save dir entry count
-1131: E484 E6 03                  AND    11B                  ; e=0,1,2,3,...new line if mod 4 = 0
-1132: E486 F5                     PUSH   AF                   ; and save the test
-1133: E487 C2 9F E4               JP     NZ,ccpDirHeader      ; header on current line
-1134: E48A         ; print the header drive with Colon ie A:
-1135: E48A CD BC E3               CALL   CrLf
-1136: E48D C5                     PUSH   BC
-1137: E48E CD 09 E3               CALL   GetSelectedDrive
-1138: E491 C1                     POP    BC
-1139: E492 C6 41                  ADD    A,ASCII_A
-1140: E494 CD D5 E3               CALL   PrintSaveBC
-1141: E497 3E 3A                  LD     A,COLON
-1142: E499 CD D5 E3               CALL   PrintSaveBC          ; just printed drive with Colon ie A:
-1143: E49C C3 A7 E4               JP     ccpDirHeader1        ; skip current line hdr
-1144: E49F
-1145: E49F             ccpDirHeader:
-1146: E49F CD D0 E3               CALL   PrintSpace           ; after last one
-1147: E4A2 3E 3A                  LD     A,COLON
-1148: E4A4 CD D5 E3               CALL   PrintSaveBC
-1149: E4A7             ccpDirHeader1:
-1150: E4A7 CD D0 E3               CALL   PrintSpace
-1151: E4AA         ; compute position of name in buffer
-1152: E4AA 06 01                  LD     B,1                  ; start with first character of name
-1153: E4AC             ccpDir4:
-1154: E4AC 78                     LD     A,B
-1155: E4AD CD 0A E4               CALL   GetByteAtAandCandDMA ; DMABuffer+a+c fetched
-1156: E4B0 E6 7F                  AND    ASCII_MASK           ; mask flags
-1157: E4B2         ; may delete trailing blanks
-1158: E4B2 FE 20                  CP     SPACE
-1159: E4B4 C2 CC E4               JP     NZ,ccpDir5           ; check for blank type
-1160: E4B7 F1                     POP    AF
-1161: E4B8 F5                     PUSH   AF                   ; may be 3rd item
-1162: E4B9 FE 03                  CP     3
-1163: E4BB C2 CA E4               JP     NZ,ccpDirSpace       ; place blank at end if not
-1164: E4BE 3E 09                  LD     A,9
-1165: E4C0 CD 0A E4               CALL   GetByteAtAandCandDMA ; first char of type
-1166: E4C3 E6 7F                  AND    ASCII_MASK
-1167: E4C5 FE 20                  CP     SPACE
-1168: E4C7 CA E1 E4               JP     Z,ccpDir6
-1169: E4CA         ; not a blank in the file type field
-1170: E4CA             ccpDirSpace:
-1171: E4CA 3E 20                  LD     A,SPACE              ; restore trailing filename chr
-1172: E4CC             ccpDir5:
-1173: E4CC CD D5 E3               CALL   PrintSaveBC          ; char printed
-1174: E4CF 04                     INC    B
-1175: E4D0 78                     LD     A,B
-1176: E4D1 FE 0C                  CP     12
-1177: E4D3 D2 E1 E4               JP     NC,ccpDir6
-1178: E4D6         ; check for break between names
-1179: E4D6 FE 09                  CP     9
-1180: E4D8 C2 AC E4               JP     NZ,ccpDir4           ; for another char
-1181: E4DB
-1182: E4DB CD D0 E3               CALL   PrintSpace           ; print a blank between names
-1183: E4DE C3 AC E4               JP     ccpDir4
-1184: E4E1
-1185: E4E1             ccpDir6:                        ; end of current entry
-1186: E4E1 F1                     POP    AF                   ; discard the directory counter (mod 4)
-1187: E4E2             ccpDir7:
-1188: E4E2 CD 66 E3               CALL   CheckForConsoleChar  ; check for interrupt at keyboard
-1189: E4E5 C2 EE E4               JP     NZ,ccpDirEnd         ; abort directory search
-1190: E4E8 CD 47 E3               CALL   SearchForNext
-1191: E4EB C3 6B E4               JP     ccpDir3              ; for another entry
-1192: E4EE             ccpDirEnd:
-1193: E4EE D1                     POP    DE                   ; discard directory counter
-1194: E4EF C3 35 E4               JP     ResetDiskAtCmdEnd
-1195: E4F2         ;
-1196: E4F2
-1197: E4F2         ;*****************************************************************
-1198: E4F2             ccpErase:
-1199: E4F2 CD 24 E1               CALL   ParseToken1          ; cannot be all ???'s
-1200: E4F5 FE 0B                  CP     11
-1201: E4F7 C2 15 E5               JP     NZ,ccpEraseAll
-1202: E4FA         ; erasing all of the disk
-1203: E4FA 01 25 E5               LD     BC,msgEraseAll
-1204: E4FD CD DB E3               CALL   PrintCrLfStringNull
-1205: E500
-1206: E500 CD 65 E0               CALL   ReadCommand
-1207: E503 21 2D E2               LD     HL,commandLength
-1208: E506 35                     DEC    M
-1209: E507 C2 26 E0               JP     NZ,ccpMainEntry      ;bad input
-1210: E50A 23                     INC    HL
-1211: E50B 7E                     LD     A,(HL)
-1212: E50C FE 59                  CP     ASCII_Y
-1213: E50E C2 26 E0               JP     NZ,ccpMainEntry
-1214: E511         ; ok, erase the entire diskette
-1215: E511 23                     INC    HL
-1216: E512 22 AE E2               LD     (commandBufferPointer),HL ; otherwise error at ResetDiskAtCmdEnd
-1217: E515             ccpEraseAll:
-1218: E515 CD 54 E7               CALL   SetDisk4Cmd
-1219: E518 11 66 E7               LD     DE,Token1
-1220: E51B CD 22 E3               CALL   DeleteFile
-1221: E51E 3C                     INC    A                    ; 255 returned if not found
-1222: E51F CC EC E3               CALL   Z,PrintNoFile        ; no file message if so
-1223: E522 C3 35 E4               JP     ResetDiskAtCmdEnd
-1224: E525         ;
-1225: E525             msgEraseAll:
-1226: E525 41 4C 4C 20 28 59 2F 4E 29 3F 00                DB     'ALL (Y/N)?',0
-1227: E530         ;*****************************************************************
-1228: E530         ; Type file
-1229: E530             ccpType:
-1230: E530 CD 24 E1               CALL   ParseToken1
-1231: E533 C2 06 E2               JP     NZ,CommandError      ; don't allow ?'s in file name
-1232: E536 CD 54 E7               CALL   SetDisk4Cmd
-1233: E539 CD 13 E3               CALL   OpenFile4CmdFCB      ; open the file
-1234: E53C CA 7A E5               JP     Z,ccpTypeError       ; zero flag indicates not found
-1235: E53F         ; file opened, read 'til eof
-1236: E53F CD BC E3               CALL   CrLf
-1237: E542 21 8A E7               LD     HL,bufferPointer
-1238: E545 36 FF                  LD     (HL),255             ; read first buffer
-1239: E547             ccpType1:                       ; loop on bufferPointer
-1240: E547 21 8A E7               LD     HL,bufferPointer
-1241: E54A 7E                     LD     A,(HL)
-1242: E54B FE 80                  CP     128                  ; end buffer
-1243: E54D DA 5A E5               JP     C,ccpType2
-1244: E550 E5                     PUSH   HL                   ; carry if 0,1,...,127
-1245: E551         ; read another buffer full
-1246: E551 CD 31 E3               CALL   DiskReadCmdFCB
-1247: E554 E1                     POP    HL                   ; recover address of bufferPointer
-1248: E555 C2 73 E5               JP     NZ,ccpTypeEOF        ; hard end of file
-1249: E558 AF                     XOR    A
-1250: E559 77                     LD     (HL),A               ; bufferPointer = 0
-1251: E55A         ; read character at bufferPointer and print
-1252: E55A             ccpType2:
-1253: E55A 34                     INC    M                    ; bufferPointer = bufferPointer + 1
-1254: E55B 21 80 00               LD     HL,DMABuffer
-1255: E55E CD 05 E4               CALL   AddA2HL              ; h,l addresses char
-1256: E561 7E                     LD     A,(HL)
-1257: E562 FE 1A                  CP     END_OF_FILE
-1258: E564 CA 35 E4               JP     Z,ResetDiskAtCmdEnd
-1259: E567 CD C5 E3               CALL   PrintCharInA
-1260: E56A CD 66 E3               CALL   CheckForConsoleChar
-1261: E56D C2 35 E4               JP     NZ,ResetDiskAtCmdEnd ; abort if break
-1262: E570 C3 47 E5               JP     ccpType1             ; for another character
-1263: E573
-1264: E573             ccpTypeEOF:
-1265: E573 3D                     DEC    A
-1266: E574 CA 35 E4               JP     Z,ResetDiskAtCmdEnd
-1267: E577 CD 13 E4               CALL   PrintReadError
-1268: E57A             ccpTypeError:
-1269: E57A CD 24 E4               CALL   ResetDisk
-1270: E57D C3 06 E2               JP     CommandError
-1271: E580         ;*****************************************************************
-1272: E580         ; save save memory image
-1273: E580         ;*****************************************************************
-1274: E580             ccpSave:
-1275: E580 CD 74 E3               CALL   GetNumberFromCmdLine ; value to register a
-1276: E583 F5                     PUSH   AF                   ; save it for later
-1277: E584         ; should be followed by a file to save the memory image
-1278: E584 CD 24 E1               CALL   ParseToken1
-1279: E587 C2 06 E2               JP     NZ,CommandError      ; cannot be ambiguous
-1280: E58A CD 54 E7               CALL   SetDisk4Cmd          ; may be a disk change
-1281: E58D 11 66 E7               LD     DE,Token1
-1282: E590 D5                     PUSH   DE
-1283: E591 CD 22 E3               CALL   DeleteFile           ; existing file removed
-1284: E594 D1                     POP    DE
-1285: E595 CD 27 E3               CALL   MakeFile             ; create a new file on disk
-1286: E598 CA CE E5               JP     Z,ccpSaveError       ; no directory space
-1287: E59B AF                     XOR    A
-1288: E59C 32 86 E7               LD     (currentRecord),A    ; clear next record field
-1289: E59F F1                     POP    AF                   ; #pages to write is in a, change to #sectors
-1290: E5A0 6F                     LD     L,A
-1291: E5A1 26 00                  LD     H,0
-1292: E5A3 29                     ADD    HL,HL
-1293: E5A4
-1294: E5A4 11 00 01               LD     DE,TPA               ; h,l is sector count, d,e is load address
-1295: E5A7             ccpSave1:                       ; save0 check for sector count zero
-1296: E5A7 7C                     LD     A,H
-1297: E5A8 B5                     OR     L
-1298: E5A9 CA C4 E5               JP     Z,ccpSave2           ; may be completed
-1299: E5AC 2B                     DEC    HL                   ; sector count = sector count - 1
-1300: E5AD E5                     PUSH   HL                   ; save it for next time around
-1301: E5AE 21 80 00               LD     HL,cpmRecordSize
-1302: E5B1 19                     ADD    HL,DE
-1303: E5B2 E5                     PUSH   HL                   ; next dma address saved
-1304: E5B3 CD 54 E3               CALL   SetDMA               ; current dma address set
-1305: E5B6 11 66 E7               LD     DE,Token1
-1306: E5B9 CD 37 E3               CALL   DiskWrite
-1307: E5BC D1                     POP    DE
-1308: E5BD E1                     POP    HL                   ; dma address, sector count
-1309: E5BE C2 CE E5               JP     NZ,ccpSaveError      ; may be disk full case
-1310: E5C1 C3 A7 E5               JP     ccpSave1             ; for another sector
-1311: E5C4
-1312: E5C4         ;  end of dump, close the file
-1313: E5C4             ccpSave2:
-1314: E5C4 11 66 E7               LD     DE,Token1
-1315: E5C7 CD 1D E3               CALL   CloseFile
-1316: E5CA 3C                     INC    A                    ; 255 becomes 00 if error
-1317: E5CB C2 D4 E5               JP     NZ,ccpSaveExit       ; for another command
-1318: E5CE             ccpSaveError:                      ; saverr must be full or read only disk
-1319: E5CE 01 DA E5               LD     BC,msgNoSpace
-1320: E5D1 CD DB E3               CALL   PrintCrLfStringNull
-1321: E5D4             ccpSaveExit:
-1322: E5D4 CD 51 E3               CALL   SetDefaultDMA        ; reset dma buffer
-1323: E5D7 C3 35 E4               JP     ResetDiskAtCmdEnd
-1324: E5DA
-1325: E5DA             msgNoSpace:
-1326: E5DA 4E 4F 20 53 50 41 43 45 00                DB     'NO SPACE',0
-1327: E5E3         ;*****************************************************************
-1328: E5E3             ccpRename:
-1329: E5E3 CD 24 E1               CALL   ParseToken1
-1330: E5E6 C2 06 E2               JP     NZ,CommandError      ; must be unambiguous
-1331: E5E9 3A 89 E7               LD     A,(selectedDisk)
-1332: E5EC F5                     PUSH   AF                   ; save for later compare
-1333: E5ED CD 54 E7               CALL   SetDisk4Cmd          ; disk selected
-1334: E5F0 CD 41 E3               CALL   Searc4CmdFcbFile     ; is new name already there?
-1335: E5F3 C2 4C E6               JP     NZ,ccpRenameError3
-1336: E5F6         ; file doesn't exist, move to second half of fcb
-1337: E5F6 21 66 E7               LD     HL,Token1
-1338: E5F9 11 76 E7               LD     DE,Token2
-1339: E5FC 06 10                  LD     B,16
-1340: E5FE CD FC E3               CALL   CopyHL2DEforB
-1341: E601         ; check for = or left arrow
-1342: E601 2A AE E2               LD     HL,(commandBufferPointer)
-1343: E604 EB                     EX     DE,HL
-1344: E605 CD B3 E1               CALL   NextNonBlankChar
-1345: E608 FE 3D                  CP     EQUAL_SIGN
-1346: E60A CA 12 E6               JP     Z,ccpRename1         ; ok if =
-1347: E60D FE 5F                  CP     LEFT_ARROW           ; la
-1348: E60F C2 46 E6               JP     NZ,ccpRenameError2
-1349: E612             ccpRename1:
-1350: E612 EB                     EX     DE,HL
-1351: E613 23                     INC    HL
-1352: E614 22 AE E2               LD     (commandBufferPointer),HL ; past delimiter
-1353: E617         ; proper delimiter found
-1354: E617 CD 24 E1               CALL   ParseToken1
-1355: E61A C2 46 E6               JP     NZ,ccpRenameError2
-1356: E61D         ; check for drive conflict
-1357: E61D F1                     POP    AF
-1358: E61E 47                     LD     B,A                  ; previous drive number
-1359: E61F 21 89 E7               LD     HL,selectedDisk
-1360: E622 7E                     LD     A,(HL)
-1361: E623 B7                     OR     A
-1362: E624 CA 2C E6               JP     Z,ccpRename2
-1363: E627         ; drive name was specified.  same one?
-1364: E627 B8                     CP     B
-1365: E628 70                     LD     (HL),B
-1366: E629 C2 46 E6               JP     NZ,ccpRenameError2
-1367: E62C             ccpRename2:
-1368: E62C 70                     LD     (HL),B               ; store the name in case drives switched
-1369: E62D AF                     XOR    A
-1370: E62E 32 66 E7               LD     (Token1),A
-1371: E631 CD 41 E3               CALL   Searc4CmdFcbFile     ; is old file there?
-1372: E634 CA 40 E6               JP     Z,ccpRenameError1
-1373: E637         ; everything is ok, rename the file
-1374: E637 11 66 E7               LD     DE,Token1
-1375: E63A CD 4C E3               CALL   RenameFile
-1376: E63D C3 35 E4               JP     ResetDiskAtCmdEnd
-1377: E640
-1378: E640             ccpRenameError1:                      ; no file on disk
-1379: E640 CD EC E3               CALL   PrintNoFile
-1380: E643 C3 35 E4               JP     ResetDiskAtCmdEnd
-1381: E646             ccpRenameError2:                      ; ambigous reference/name conflict
-1382: E646 CD 24 E4               CALL   ResetDisk
-1383: E649 C3 06 E2               JP     CommandError
-1384: E64C             ccpRenameError3:                      ; file already exists
-1385: E64C 01 55 E6               LD     BC,msgFileExists
-1386: E64F CD DB E3               CALL   PrintCrLfStringNull
-1387: E652 C3 35 E4               JP     ResetDiskAtCmdEnd
-1388: E655
-1389: E655             msgFileExists:
-1390: E655 46 49 4C 45 20 45 58 49 53 54 53 00                DB     'FILE EXISTS',0
-1391: E661
-1392: E661         ;*****************************************************************
-1393: E661             ccpUser:
-1394: E661 CD 74 E3               CALL   GetNumberFromCmdLine ; leaves the value in the accumulator
-1395: E664 FE 10                  CP     16
-1396: E666 D2 06 E2               JP     NC,CommandError      ; must be between 0 and 15
-1397: E669 5F                     LD     E,A                  ; save for SetUser call
-1398: E66A 3A 67 E7               LD     A,(Token1)+1
-1399: E66D FE 20                  CP     SPACE
-1400: E66F CA 06 E2               JP     Z,CommandError
-1401: E672 CD F9 E2               CALL   SetUser              ;new user number set
-1402: E675 C3 38 E4               JP     EndCommand
-1403: E678         ;*****************************************************************
-1404: E678         ;User defined function
-1405: E678         ;*****************************************************************
-1406: E678             ccpUserFunction:
-1407: E678
-1408: E678 3A 67 E7               LD     A,(Token1)+1
-1409: E67B FE 20                  CP     SPACE
-1410: E67D C2 94 E6               JP     NZ,ccpUserFunction1
-1411: E680         ; no file name, but may be disk switch
-1412: E680 3A 89 E7               LD     A,(selectedDisk)
-1413: E683 B7                     OR     A
-1414: E684 CA 38 E4               JP     Z,EndCommand         ; no disk named if 0
-1415: E687 3D                     DEC    A                    ; adjust so A=>0, B=>1, C=>2 ......
-1416: E688 32 88 E7               LD     (currentDisk),A      ; update current Disk indicator
-1417: E68B CD 18 E1               CALL   SetPage0CurDisk      ; set user/disk
-1418: E68E CD 03 E3               CALL   SelectDisk
-1419: E691 C3 38 E4               JP     EndCommand
-1420: E694
-1421: E694         ;  file name is present
-1422: E694             ccpUserFunction1:
-1423: E694 11 6F E7               LD     DE,Token1+9
-1424: E697 1A                     LD     A,(DE)
-1425: E698 FE 20                  CP     SPACE
-1426: E69A C2 06 E2               JP     NZ,CommandError      ; type SPACE
-1427: E69D D5                     PUSH   DE
-1428: E69E CD 54 E7               CALL   SetDisk4Cmd
-1429: E6A1 D1                     POP    DE
-1430: E6A2 21 51 E7               LD     HL,comFileType       ; .com
-1431: E6A5 CD FA E3               CALL   CopyHL2DE3           ; file type is set to .com
-1432: E6A8 CD 13 E3               CALL   OpenFile4CmdFCB
-1433: E6AB CA 39 E7               JP     Z,ccpUserFunctionError1
-1434: E6AE         ; file opened properly, read it into memory
-1435: E6AE 21 00 01               LD     HL,TPA               ; transient program base
-1436: E6B1             ccpUserFunction2:
-1437: E6B1 E5                     PUSH   HL                   ;save dma address
-1438: E6B2 EB                     EX     DE,HL
-1439: E6B3 CD 54 E3               CALL   SetDMA
-1440: E6B6 11 66 E7               LD     DE,Token1
-1441: E6B9 CD 2C E3               CALL   DiskRead
-1442: E6BC C2 D1 E6               JP     NZ,ccpUserFunction3
-1443: E6BF         ; sector loaded, set new dma address and compare
-1444: E6BF E1                     POP    HL
-1445: E6C0 11 80 00               LD     DE,cpmRecordSize
-1446: E6C3 19                     ADD    HL,DE
-1447: E6C4 11 00 E0               LD     DE,CcpBoundary       ; has the load overflowed?
-1448: E6C7 7D                     LD     A,L
-1449: E6C8 93                     SUB    E
-1450: E6C9 7C                     LD     A,H
-1451: E6CA 9A                     SBC    A,D
-1452: E6CB D2 3F E7               JP     NC,ccpUserFunctionError2
-1453: E6CE C3 B1 E6               JP     ccpUserFunction2     ; for another sector
-1454: E6D1
-1455: E6D1             ccpUserFunction3:
-1456: E6D1 E1                     POP    HL
-1457: E6D2 3D                     DEC    A
-1458: E6D3 C2 3F E7               JP     NZ,ccpUserFunctionError2 ; end file is 1
-1459: E6D6 CD 24 E4               CALL   ResetDisk            ; back to original disk
-1460: E6D9 CD 24 E1               CALL   ParseToken1
-1461: E6DC 21 89 E7               LD     HL,selectedDisk
-1462: E6DF E5                     PUSH   HL
-1463: E6E0 7E                     LD     A,(HL)
-1464: E6E1 32 66 E7               LD     (Token1),A           ; drive number set
-1465: E6E4         ; 	LD		A,16
-1466: E6E4 CD 1F E1               CALL   ParseToken2          ; move entire fcb to memory
-1467: E6E7 E1                     POP    HL
-1468: E6E8 7E                     LD     A,(HL)
-1469: E6E9 32 76 E7               LD     (Token2),A
-1470: E6EC AF                     XOR    A
-1471: E6ED 32 86 E7               LD     (currentRecord),A    ; record number set to zero
-1472: E6F0 11 5C 00               LD     DE,FCB1              ; default FCB in page 0
-1473: E6F3 21 66 E7               LD     HL,Token1
-1474: E6F6 06 21                  LD     B,33
-1475: E6F8 CD FC E3               CALL   CopyHL2DEforB
-1476: E6FB         ; move command line to buff
-1477: E6FB 21 2E E2               LD     HL,commandBuffer
-1478: E6FE             ccpUserFunction4:
-1479: E6FE 7E                     LD     A,(HL)
-1480: E6FF B7                     OR     A
-1481: E700 CA 0C E7               JP     Z,ccpUserFunction5
-1482: E703 FE 20                  CP     SPACE
-1483: E705 CA 0C E7               JP     Z,ccpUserFunction5
-1484: E708 23                     INC    HL
-1485: E709 C3 FE E6               JP     ccpUserFunction4     ; for another scan
-1486: E70C         ; first blank position found
-1487: E70C             ccpUserFunction5:
-1488: E70C 06 00                  LD     B,0
-1489: E70E 11 81 00               LD     DE,DMABuffer+1
-1490: E711         ; ready for the move
-1491: E711             ccpUserFunction6:
-1492: E711 7E                     LD     A,(HL)
-1493: E712 12                     LD     (DE),AE
-1494: E713 B7                     OR     A
-1495: E714 CA 1D E7               JP     Z,ccpUserFunction7
-1496: E717         ;more to move
-1497: E717 04                     INC    B
-1498: E718 23                     INC    HL
-1499: E719 13                     INC    DE
-1500: E71A C3 11 E7               JP     ccpUserFunction6
-1501: E71D             ccpUserFunction7:                      ; B has character count
-1502: E71D 78                     LD     A,B
-1503: E71E 32 80 00               LD     (DMABuffer),A
-1504: E721 CD BC E3               CALL   CrLf
-1505: E724         ; now go to the loaded program
-1506: E724 CD 51 E3               CALL   SetDefaultDMA        ; default dma
-1507: E727 CD 09 E1               CALL   SaveUserAndDisk      ; user code saved
-1508: E72A         ; low memory diska contains user code
-1509: E72A CD 00 01               CALL   TPA                  ; gone to the loaded program
-1510: E72D 31 F0 E7               LD     SP,Stack             ; may come back here
-1511: E730 CD 18 E1               CALL   SetPage0CurDisk
-1512: E733 CD 03 E3               CALL   SelectDisk
-1513: E736 C3 26 E0               JP     ccpMainEntry
-1514: E739
-1515: E739             ccpUserFunctionError1:
-1516: E739 CD 24 E4               CALL   ResetDisk
-1517: E73C C3 06 E2               JP     CommandError
-1518: E73F
-1519: E73F             ccpUserFunctionError2:                      ; cannot load the program
-1520: E73F 01 48 E7               LD     BC,msgBadLoad
-1521: E742 CD DB E3               CALL   PrintCrLfStringNull
-1522: E745 C3 35 E4               JP     ResetDiskAtCmdEnd
-1523: E748
-1524: E748             msgBadLoad:
-1525: E748 42 41 44 20 4C 4F 41 44 00                DB     'BAD LOAD',0
-1526: E751             comFileType:
-1527: E751 43 4F 4D                DB     'COM'                ;for com files
-1528: E754         ;
-1529: E754
-1530: E754         ;*****************************************************************
-1531: E754         ;*****************************************************************
-1532: E754         ;change disks for this command, if requested
-1533: E754             SetDisk4Cmd:
-1534: E754 AF                     XOR    A
-1535: E755 32 66 E7               LD     (Token1),A           ; clear disk name from fcb
-1536: E758 3A 89 E7               LD     A,(selectedDisk)
-1537: E75B B7                     OR     A
-1538: E75C C8                     RET    Z                    ; no action if not specified
-1539: E75D 3D                     DEC    A
-1540: E75E 21 88 E7               LD     HL,currentDisk
-1541: E761 BE                     CP     M
-1542: E762 C8                     RET    Z                    ;already selected
-1543: E763 C3 03 E3               JP     SelectDisk
-1544: E766         ;*****************************************************************
-1545: E766
-1546: E766         ;*****************************************************************
-1547: E766         ;************************ Data Area ******************************
-1548: E766         ;*****************************************************************
-1549: E766         ;------------------------------ Command Buffer -----------------------------;
-1550: E766         ;;
-1551: E766         ;;
-1552: E766             Token1:    DS     16                   ; Command Token
-1553: E776             Token2:    DS     16                   ; Command Token
-1554: E786
-1555: E786 00          currentRecord: DB     00H                  ; current record to read/write
-1556: E787 00          directoryCount: DB     00H                  ; disk directory count (used for error codes)
-1557: E788 00          currentDisk: DB     00H                  ; Current disk
-1558: E789 00          selectedDisk: DB     00H                  ; selected disk for current operation none=0, a=1, b=2 ...
-1559: E78A         ;
-1560: E78A 00          bufferPointer: DB     00H                  ; buffer pointer
-1561: E78B         ;------------------------------------
-1562: E78B 00 00       tokenStart: DW     0000H                ; staddr starting address of current Fill FCB request
-1563: E78D         ;----------------------------
-1564: E78D         ; (command executed initially if commandLength non zero)
-1565: E78D         ;  Command Buffer
-1566: E78D
-1567: E78D
-1568: E78D             endOfCode:
-1569: E78D                        ORG    BDOSBase-10H
-1570: E7F0             Stack:                          ; Top Of Stack
-1571: E7F0
-1572: E7F0         ;Z_HighestLocation:
-1573: E7F0             ZZ_MemoryLeft EQU    (BDOSBase-1) - endOfCode
-1574: E7F0
-1575: E7F0
-1576: E7F0
-1577: E7F0
-1578: E7F0
+0358: E065
+0359: E065         ;----------------------------------------------------------------
+0360: E065         ;------------------------------ Read Command -------------------------------;
+0361: E065
+0362: E065         ;read the next command into the command buffer
+0363: E065         ;check for submit file
+0364: E065             ReadCommand:
+0365: E065 3A B2 E2               LD     A,(submitFlag)       ; Get the Submit File Flag
+0366: E068 B7                     OR     A                    ; Is it Set ?
+0367: E069 CA C4 E0               JP     Z,NotSubmitFile      ;  skip if not
+0368: E06C         ; scanning a submit file change drives to open and read the file
+0369: E06C 3A 8C E7               LD     A,(currentDisk)      ; Get current disk
+0370: E06F B7                     OR     A                    ; Is it default ?
+0371: E070 3E 00                  LD     A,0                  ; Prepare to set Disk A
+0372: E072 C4 FE E2               CALL   NZ,SelectDisk        ; Select it if needed
+0373: E075         ; have to open again in case xsub present
+0374: E075 11 B3 E2               LD     DE,submitFCB         ; Point at the Submits's FCB
+0375: E078 CD 04 E3               CALL   OpenFile             ; Open it
+0376: E07B CA C4 E0               JP     Z,NotSubmitFile      ; Skip if no submit file present
+0377: E07E 3A C1 E2               LD     A,(submitRC)         ; Get Number of records in file
+0378: E081 3D                     DEC    A                    ; read last record(s) first
+0379: E082 32 D2 E2               LD     (submitCR),A         ; current record to read
+0380: E085 11 B3 E2               LD     DE,submitFCB         ; Point at the Submits's FCB
+0381: E088 CD 0E E3               CALL   DiskRead             ; Read from back to front
+0382: E08B C2 C4 E0               JP     NZ,NotSubmitFile     ; Skip EOF ??
+0383: E08E
+0384: E08E         ; disk read is OK, transfer to commandBuffer
+0385: E08E 21 80 00               LD     HL,DMABuffer         ; From
+0386: E091 11 2F E2               LD     DE,commandLength     ; TO
+0387: E094 01 80 00               LD     BC,cpmRecordSize     ; For this many bytes
+0388: E097 ED B0                  LDIR                        ; Move to command buffer
+0389: E099         ;	LD		B,cpmRecordSize					; number of bytes to Copy
+0390: E099         ;	CALL	CopyHL2DEforB
+0391: E099
+0392: E099         ; line is transferred, close the file with a deleted record
+0393: E099 21 C0 E2               LD     HL,submitFWF         ; Point at the WriteFileFlag
+0394: E09C CB BE                  RES    7,(HL)               ; Clear the WriteFileFlag
+0395: E09E         ;	LD		HL,submitFWF				; Bit 7 is FileWriteFlag
+0396: E09E         ;	LD		(HL),0
+0397: E09E         ;	INC		HL
+0398: E09E 21 C1 E2               LD     HL,submitRC          ; Point at FCB record Count
+0399: E0A1 35                     DEC    M                    ; Make it one less record
+0400: E0A2 11 B3 E2               LD     DE,submitFCB         ; Point at the Submits's FCB
+0401: E0A5 CD 09 E3               CALL   CloseFile            ; Close it
+0402: E0A8 CA C4 E0               JP     Z,NotSubmitFile      ; Skip if not clean close
+0403: E0AB         ; CloseFile went ok, return to original drive
+0404: E0AB 3A 8C E7               LD     A,(currentDisk)      ; Get the current disk
+0405: E0AE B7                     OR     A                    ; Is it the default disk ?
+0406: E0AF C4 FE E2               CALL   NZ,SelectDisk        ;  no, then go select it
+0407: E0B2         ; print to the 00
+0408: E0B2 21 30 E2               LD     HL,commandBuffer     ; Point at the command buffer
+0409: E0B5 CD C8 E3               CALL   PrintStringNull      ; Display it on the Console
+0410: E0B8 CD D4 E3               CALL   CheckForConsoleChar  ; User input a character ?
+0411: E0BB CA D5 E0               JP     Z,NoRead             ;  skip if not
+0412: E0BE CD F3 E0               CALL   DeleteSubmitFile     ; Remove file and reset submit flag
+0413: E0C1 C3 26 E0               JP     ccpMainEntry         ; Start a new CCP session
+0414: E0C4         ;--------------------------------------------------------------------------------
+0415: E0C4             NotSubmitFile:
+0416: E0C4 CD F3 E0               CALL   DeleteSubmitFile     ; Delete any submit file
+0417: E0C7 CD 0B E1               CALL   SaveUserAndDisk      ; Save User & Disk to page 0
+0418: E0CA 11 2E E2               LD     DE,commandMaxLength  ; Point to Start of Buffer
+0419: E0CD 0E 0A                  LD     C,fReadString        ; Load Function Number
+0420: E0CF CD 05 00               CALL   BDOS                 ;  and let BDOS do its work
+0421: E0D2 CD 1A E1               CALL   SetPage0CurDisk      ; No Cntl C, so restore Pg0CurentDisk
+0422: E0D5
+0423: E0D5             NoRead:
+0424: E0D5         ; set the last character to zero for later scans
+0425: E0D5 21 2F E2               LD     HL,commandLength     ; Point to length of command
+0426: E0D8 46                     LD     B,(HL)               ; Put it into B
+0427: E0D9             UpCaseLoop:
+0428: E0D9 23                     INC    HL                   ; Point at next byte in buffer
+0429: E0DA 7E                     LD     A,(HL)               ; Get the Character
+0430: E0DB CD EA E0               CALL   UpCase               ; If between a-z, up-case it
+0431: E0DE 77                     LD     (HL),A               ; Replace character
+0432: E0DF 10 F8                  DJNZ   UpCaseLoop           ; go thru all of the CMD buffer
+0433: E0E1         ;end of scan, h,l address end of command
+0434: E0E1         ;ReadCommand2:
+0435: E0E1 23                     INC    HL                   ; Point at last char + 1
+0436: E0E2 70                     LD     (HL),B               ; Stuff Zero to terminate the CMD
+0437: E0E3 21 30 E2               LD     HL,commandBuffer     ; go back to start of com
+0438: E0E6 22 B0 E2               LD     (commandBufferPointer),HL ; Place in current CMD address
+0439: E0E9 C9                     RET
+0440: E0EA         ;------------------------------ Read Command -------------------------------;
+0441: E0EA
+0442: E0EA         ;--------------------------------- UpCase ----------------------------------;
+0443: E0EA         ;convert character in register A (a to z) to upper case                     ;
+0444: E0EA             UpCase:                         ;
+0445: E0EA FE 61                  CP     061H                 ;
+0446: E0EC D8                     RET    C                    ; Return if below lower case 'a'    ;
+0447: E0ED FE 7B                  CP     07BH                 ;
+0448: E0EF D0                     RET    NC                   ; Return if above lower case 'z'    ;
+0449: E0F0 E6 5F                  AND    05FH                 ; Drop bit 5/ makes q->Q etc        ;
+0450: E0F2 C9                     RET                         ;
+0451: E0F3         ;--------------------------------- UpCase ----------------------------------;
+0452: E0F3         ;---------------------------- Delete SubmitFile ----------------------------;
+0453: E0F3         ;delete the submit file, and set submit flag to false                       ;
+0454: E0F3             DeleteSubmitFile:                      ;
+0455: E0F3 21 B2 E2               LD     HL,submitFlag        ; Point at Submit flag              ;
+0456: E0F6 7E                     LD     A,(HL)               ; Get the Flag                      ;
+0457: E0F7 B7                     OR     A                    ; Is it Set ?                       ;
+0458: E0F8 C8                     RET    Z                    ;  return if not set                ;
+0459: E0F9 36 00                  LD     (HL),0               ; Clear Flag                        ;
+0460: E0FB AF                     XOR    A                    ; Drive 0 = A:                      ;
+0461: E0FC CD FE E2               CALL   SelectDisk           ; Select drive                      ;
+0462: E0FF 11 B3 E2               LD     DE,submitFCB         ; Load the submits FCB              ;
+0463: E102 CD 33 E3               CALL   DeleteFile           ; Go delete it                      ;
+0464: E105 3A 8C E7               LD     A,(currentDisk)      ; Determine the current disk        ;
+0465: E108 C3 FE E2               JP     SelectDisk           ; Reselect back to original drive   ;
+0466: E10B         ;---------------------------- Delete SubmitFile ----------------------------;
+0467: E10B         ;-------------------------------- Save User --------------------------------;
+0468: E10B         ;save user#/disk# before possible ^c or transient                           ;
+0469: E10B             SaveUserAndDisk:                      ;
+0470: E10B CD 1A E3               CALL   GetUser              ; Get the user number into Acc      ;
+0471: E10E 87                     ADD    A,A                  ;
+0472: E10F 87                     ADD    A,A                  ;
+0473: E110 87                     ADD    A,A                  ;
+0474: E111 87                     ADD    A,A                  ; Move user to Hi Nibble            ;
+0475: E112 21 8C E7               LD     HL,currentDisk       ; Current disk (Lo Nibble)          ;
+0476: E115 B6                     OR     M                    ; Acc -> User & Disk                ;
+0477: E116 32 04 00               LD     (Pg0CurentDisk),A    ; Stored in Page0 for later         ;
+0478: E119 C9                     RET                         ;
+0479: E11A         ;-------------------------------- Save User --------------------------------;
+0480: E11A         ;------------------------- Set Page 0 Current Disk -------------------------;
+0481: E11A         ;set Pg0CurentDisk to current disk                                          ;
+0482: E11A             SetPage0CurDisk:                      ;
+0483: E11A 3A 8C E7               LD     A,(currentDisk)      ; Get CCP's current disk            ;
+0484: E11D 32 04 00               LD     (Pg0CurentDisk),A    ; Put into Page 0	                ;
+0485: E120 C9                     RET                         ;
+0486: E121         ;------------------------- Set Page 0 Current Disk -------------------------;
+0487: E121
+0488: E121         ;--------------------------------- Parse Token -----------------------------;
+0489: E121         ; Parse command buffer.                                                     ;
+0490: E121         ; Used to isolate the command                                               ;
+0491: E121         ;
+0492: E121             ParseToken2:                      ;
+0493: E121 21 77 E7               LD     HL,Token2            ; Point at Token2 start             ;
+0494: E124 18 03                  JR     ParseToken           ;
+0495: E126             ParseToken1:                      ;
+0496: E126 21 67 E7               LD     HL,Token1            ; Point at Token1 start             ;
+0497: E129             ParseToken:                      ;
+0498: E129 E5                     PUSH   HL                   ; Start of Token's Pointer          ;
+0499: E12A E5                     PUSH   HL                   ; Start of Token's Pointer          ;
+0500: E12B AF                     XOR    A                    ; Set A to 0                        ;
+0501: E12C 32 88 E7               LD     (selectedDisk),A     ; Assume default disk               ;
+0502: E12F 2A B0 E2               LD     HL,(commandBufferPointer) ; Buffer's Pointer                  ;
+0503: E132 EB                     EX     DE,HL                ; DE-> Buffer                       ;
+0504: E133 CD B5 E1               CALL   NextNonBlankChar     ; Buffer's next non-blank character ;
+0505: E136 EB                     EX     DE,HL                ; DE-> Token , HL -> Buffer         ;
+0506: E137 22 8A E7               LD     (tokenStart),HL      ; Save token's address              ;
+0507: E13A EB                     EX     DE,HL                ; DE -> Buffer                      ;
+0508: E13B E1                     POP    HL                   ; DE -> Buffer,                     ;
+0509: E13C         ;  HL -> Start of Token's Pointer   ;
+0510: E13C         ; Disk ?                                                                    ;
+0511: E13C 1A                     LD     A,(DE)               ; Get 1st character from buffer     ;
+0512: E13D B7                     OR     A                    ; Is it the default Disk ?          ;
+0513: E13E CA 4C E1               JP     Z,UseCurrentDisk     ; Use current disk if empty         ;
+0514: E141 DE 40                  SBC    A,040H               ; Convert to number                 ;
+0515: E143 47                     LD     B,A                  ; Hold disk number in B             ;
+0516: E144 13                     INC    DE                   ;
+0517: E145 1A                     LD     A,(DE)               ; Look at next character            ;
+0518: E146 FE 3A                  CP     COLON                ; Is it a ':' ?                     ;
+0519: E148 CA 53 E1               JP     Z,UseTokensDisk      ;  if yes, set disk number          ;
+0520: E14B         ; No Disk                                                                   ;
+0521: E14B 1B                     DEC    DE                   ; Back to start of buffer           ;
+0522: E14C         ;
+0523: E14C             UseCurrentDisk:                      ;
+0524: E14C 3A 8C E7               LD     A,(currentDisk)      ; Get current Disk                  ;
+0525: E14F 77                     LD     (HL),A               ; Put into the Token                ;
+0526: E150 C3 59 E1               JP     SetFileName          ;
+0527: E153         ;
+0528: E153             UseTokensDisk:                      ;
+0529: E153 78                     LD     A,B                  ; Get disk from this parse          ;
+0530: E154 32 88 E7               LD     (selectedDisk),A     ; Mark as disk selected             ;
+0531: E157 70                     LD     (HL),B               ; Put it into the token             ;
+0532: E158 13                     INC    DE                   ; Move past the ':'                 ;
+0533: E159         ;
+0534: E159             SetFileName:                      ;
+0535: E159 06 08                  LD     B,FILE_NAME_SIZE     ; File name length (max)            ;
+0536: E15B CD 81 E1               CALL   FormatElement        ; Format file name                  ;
+0537: E15E         ;
+0538: E15E             SetType:                        ;
+0539: E15E 06 03                  LD     B,FILE_TYPE_SIZE     ; File type length (max)            ;
+0540: E160 CD A2 E1               CALL   IsItDot              ; is it a '.' ?	                    ;
+0541: E163 CC 81 E1               CALL   Z,FormatElement      ;  Yes,Format it                    ;
+0542: E166         ;
+0543: E166         ; Zero Rest of token                                                        ;
+0544: E166 06 03                  LD     B,3                  ;
+0545: E168 AF                     XOR    A                    ;
+0546: E169 CD B0 E1               CALL   FillWithAcc          ;
+0547: E16C EB                     EX     DE,HL                ;
+0548: E16D 22 B0 E2               LD     (commandBufferPointer),HL ; Set new starting point	        ;
+0549: E170         ; Recover the start address of the fcb and count ?'s                        ;
+0550: E170 E1                     POP    HL                   ; Restore start of Token            ;
+0551: E171 06 0B                  LD     B,FILE_NAME_SIZE+FILE_TYPE_SIZE ; Loop size                   ;
+0552: E173 0E 00                  LD     C,00                 ; Counter                           ;
+0553: E175 3E 3F                  LD     A,QMARK              ; We want to count '?'s             ;
+0554: E177             QuestionMarkCount:                      ;
+0555: E177 23                     INC    HL                   ; Adjust token pointer				;
+0556: E178 BE                     CP     (HL)                 ; Is it a '?'                       ;
+0557: E179 20 01                  JR     NZ,QuestionMarkCount1 ;  no, then skip                    ;
+0558: E17B 0C                     INC    C                    ;  else increment the count         ;
+0559: E17C             QuestionMarkCount1:                      ;
+0560: E17C 10 F9                  DJNZ   QuestionMarkCount    ; Manage the Loop	                ;
+0561: E17E 79                     LD     A,C                  ;
+0562: E17F B7                     OR     A                    ;
+0563: E180 C9                     RET                         ;
+0564: E181         ;-------------------------------- Parse Token ------------------------------;
+0565: E181         ;------------------------------- Format Element ----------------------------;
+0566: E181         ; Put element in a Left Justified, Space Padded field.                      ;
+0567: E181         ; If it encounters an asterisk, it will pad the rest of the field with '?'s ;
+0568: E181         ; Enter With:	B  = Element size                                           ;
+0569: E181         ;				DE = Element source                                         ;
+0570: E181         ;				HL = Element destination                                    ;
+0571: E181             FormatElement:                      ;
+0572: E181 CD BF E1               CALL   IsItADelimiter       ; Is character a delimiter ?        ;
+0573: E184 CA 9E E1               JP     Z,PadTheElement      ;  yes, pad rest of Element         ;
+0574: E187         ;
+0575: E187 23                     INC    HL                   ;  else move the Token's pointer    ;
+0576: E188 FE 2A                  CP     ASTERISK             ; Is it an '*'					    ;
+0577: E18A C2 92 E1               JP     NZ,FormatElement1    ;  no, then just put in Token   ;
+0578: E18D 36 3F                  LD     (HL),QMARK           ;  else Put a '?' in token          ;
+0579: E18F C3 94 E1               JP     FormatElement2       ;  for rest of Element              ;
+0580: E192         ;
+0581: E192             FormatElement1:                      ;
+0582: E192 77                     LD     (HL),A               ; Put character in token            ;
+0583: E193 13                     INC    DE                   ; Increment the buffer pointer      ;
+0584: E194             FormatElement2:                      ;
+0585: E194 10 EB                  DJNZ   FormatElement        ; Loop if more                      ;
+0586: E196         ;
+0587: E196             TruncateElement:                      ;
+0588: E196 CD BF E1               CALL   IsItADelimiter       ; We expect a delimiter             ;
+0589: E199 C8                     RET    Z                    ; If we get one, we are done        ;
+0590: E19A 13                     INC    DE                   ;  skip forward in buffer           ;
+0591: E19B C3 96 E1               JP     TruncateElement      ; Keep looking for delimiter        ;
+0592: E19E         ;
+0593: E19E             PadTheElement:                      ;
+0594: E19E CD AE E1               CALL   FillWithSpace        ; Pad the rest of Element           ;
+0595: E1A1 C9                     RET                         ;
+0596: E1A2         ;------------------------------- Format Element ----------------------------;
+0597: E1A2         ;-------------------------------- Is It a Dot ------------------------------;
+0598: E1A2         ; Check to see if char is buffer is a period. If it is it returns with      ;
+0599: E1A2         ; the Z-Flag set., and the DE pointer advanced beyond the '.'.  If it is    ;
+0600: E1A2         ; not a period. It will fill the buffer with spaces and return with the     ;
+0601: E1A2         ; Z-Flag reset.                                                             ;
+0602: E1A2         ;                                                                           ;
+0603: E1A2         ; Enter With:	DE = Pointer for buffer                                     ;
+0604: E1A2         ;				 B = buffer size	                                        ;
+0605: E1A2         ; Return With:	DE = Past the period                                        ;
+0606: E1A2         ;			   	Z-Flag =  set if Period                                     ;
+0607: E1A2         ;  				Z-Flag = reset if not Period                                ;
+0608: E1A2             IsItDot:                        ;
+0609: E1A2 1A                     LD     A,(DE)               ;
+0610: E1A3 13                     INC    DE                   ; Assume it is a '.'                ;
+0611: E1A4 FE 2E                  CP     PERIOD               ; Is it '.' ?                       ;
+0612: E1A6 C8                     RET    Z                    ;  if yes exit with Z-Flag set      ;
+0613: E1A7         ;
+0614: E1A7 1B                     DEC    DE                   ; Adjust, wrong assumption          ;
+0615: E1A8 CD AE E1               CALL   FillWithSpace        ;  else make all spaces             ;
+0616: E1AB AF                     XOR    A                    ;
+0617: E1AC 3C                     INC    A                    ; Reset the Z-Flag                  ;
+0618: E1AD C9                     RET                         ; Exit with Z-Flag reset            ;
+0619: E1AE         ;-------------------------------- Is It a Dot ------------------------------;
+0620: E1AE         ;-------------------------- Fill With Space/Acc ----------------------------;
+0621: E1AE         ; fills buffer with SPACE or contents of Acc.                               ;
+0622: E1AE         ; Enters with:	HL = less than start of fill area                           ;
+0623: E1AE         ;				B  = fill Count                                             ;
+0624: E1AE         ;				A  = fill character (FillWithAcc)                           ;
+0625: E1AE             FillWithSpace:                      ;
+0626: E1AE 3E 20                  LD     A,SPACE              ;
+0627: E1B0             FillWithAcc:                      ;
+0628: E1B0 23                     INC    HL                   ;
+0629: E1B1 77                     LD     (HL),A               ;
+0630: E1B2 10 FC                  DJNZ   FillWithAcc          ;
+0631: E1B4 C9                     RET                         ;
+0632: E1B5         ;-------------------------- Fill With Space/Acc ----------------------------;
+0633: E1B5         ;------------------------ Next Non Blank Character -------------------------;
+0634: E1B5         ;find the next non blank character in line pointed to by DE                 ;
+0635: E1B5             NextNonBlankChar:                      ;
+0636: E1B5 1A                     LD     A,(DE)               ; Get the character                 ;
+0637: E1B6 B7                     OR     A                    ; Is it End of buffer ?             ;
+0638: E1B7 C8                     RET    Z                    ;  if yes, return                   ;
+0639: E1B8 FE 20                  CP     SPACE                ; is it a blank ?                   ;
+0640: E1BA C0                     RET    NZ                   ;  if not, return                   ;
+0641: E1BB 13                     INC    DE                   ;  else increment pointer           ;
+0642: E1BC C3 B5 E1               JP     NextNonBlankChar     ; Loop for next character           ;
+0643: E1BF         ;------------------------ Next Non Blank Character -------------------------;
+0644: E1BF         ;---------------------------- Is It A Delimiter ----------------------------;
+0645: E1BF         ; Returns with Z-flag set if (DE) pointing at a delimiter                   ;
+0646: E1BF         ; Does an error exit if not valid ASCII character                           ;
+0647: E1BF             IsItADelimiter:                      ;
+0648: E1BF 1A                     LD     A,(DE)               ; Get the character                 ;
+0649: E1C0 B7                     OR     A                    ;
+0650: E1C1 C8                     RET    Z                    ; End of Buffer is a delimiter      ;
+0651: E1C2 FE 20                  CP     SPACE                ;
+0652: E1C4 DA 08 E2               JP     C,CommandError       ; Error exit if not ASCII           ;
+0653: E1C7 C8                     RET    Z                    ; SPACE is a delimiter              ;
+0654: E1C8 FE 3D                  CP     EQUAL_SIGN           ;
+0655: E1CA C8                     RET    Z                    ; '=' is a delimiter                ;
+0656: E1CB FE 5F                  CP     UNDER_SCORE          ;
+0657: E1CD C8                     RET    Z                    ; '_' is a delimiter                ;
+0658: E1CE FE 2E                  CP     PERIOD               ;
+0659: E1D0 C8                     RET    Z                    ; '.' is a delimiter                ;
+0660: E1D1 FE 3A                  CP     COLON                ;
+0661: E1D3 C8                     RET    Z                    ; ':' is a delimiter                ;
+0662: E1D4 FE 3B                  CP     SEMICOLON            ;
+0663: E1D6 C8                     RET    Z                    ; ';' is a delimiter                ;
+0664: E1D7 FE 3C                  CP     LESS_THAN            ;
+0665: E1D9 C8                     RET    Z                    ; '<' is a delimiter                ;
+0666: E1DA FE 3E                  CP     GREATER_THAN         ;
+0667: E1DC C8                     RET    Z                    ; '>' is a delimiter                ;
+0668: E1DD C9                     RET                         ; Not a delimiter                   ;
+0669: E1DE         ;---------------------------- Is It A Delimiter ----------------------------;
+0670: E1DE
+0671: E1DE         ;---------------------------- Intrinsic Function ---------------------------;
+0672: E1DE         ;look for intrinsic functions (Token1 has been filled)                 		;
+0673: E1DE             IntrinsicFunction:                      ;
+0674: E1DE 21 D3 E2               LD     HL,builtInCMDNames   ; Point at List of CMDs             ;
+0675: E1E1 0E 00                  LD     C,0                  ; Initialize counter                ;
+0676: E1E3             IntrinsicFunction1:                      ;
+0677: E1E3 79                     LD     A,C                  ; Get Counter                       ;
+0678: E1E4 FE 06                  CP     builtInCMDCount      ; Past number of commands ?         ;
+0679: E1E6 D0                     RET    NC                   ;  exit if yes                      ;
+0680: E1E7 11 68 E7               LD     DE,Token1+1          ; Beginning of name                 	;
+0681: E1EA 06 04                  LD     B,builtInCMDNameSize ; Length of match                   ;
+0682: E1EC             IntrinsicFunction2:                      ;
+0683: E1EC 1A                     LD     A,(DE)               ;
+0684: E1ED BE                     CP     M                    ; Is there a match ?                ;
+0685: E1EE C2 FF E1               JP     NZ,IntrinsicFunction3 ;  skip if no match                 ;
+0686: E1F1 13                     INC    DE                   ;
+0687: E1F2 23                     INC    HL                   ; Point at next characters          ;
+0688: E1F3 05                     DEC    B                    ; Decrement the counter             ;
+0689: E1F4 C2 EC E1               JP     NZ,IntrinsicFunction2 ; Loop while matching               ;
+0690: E1F7         ; complete match on name, check for blank in fcb                            ;
+0691: E1F7 1A                     LD     A,(DE)               ;
+0692: E1F8 FE 20                  CP     SPACE                ; Blank in CMD ?                    ;
+0693: E1FA C2 04 E2               JP     NZ,IntrinsicFunction4 ;  No ,then no match                ;
+0694: E1FD 79                     LD     A,C                  ;  Else they match,                 ;
+0695: E1FE C9                     RET                         ; Return with index in A            ;
+0696: E1FF         ;
+0697: E1FF             IntrinsicFunction3:                      ;
+0698: E1FF 23                     INC    HL                   ; Move to next in list              ;
+0699: E200 05                     DEC    B                    ;
+0700: E201 C2 FF E1               JP     NZ,IntrinsicFunction3 ; Loop thru this one                ;
+0701: E204         ;
+0702: E204             IntrinsicFunction4:                      ;
+0703: E204 0C                     INC    C                    ; Update the index                  ;
+0704: E205 C3 E3 E1               JP     IntrinsicFunction1   ;  loop for another round           ;
+0705: E208         ;---------------------------- Intrinsic Function ---------------------------;
+0706: E208
+0707: E208         ; cmd
+0708: E208         ;------------------------------ Command Error ------------------------------;
+0709: E208         ;error in command string starting at position;'tokenStart' and ending    	;
+0710: E208         ; with first delimiter                                                      ;
+0711: E208         ;
+0712: E208             CommandError:                      ;
+0713: E208 CD AF E3               CALL   CrLf                 ; Next Line                         ;
+0714: E20B 2A 8A E7               LD     HL,(tokenStart)      ; Start of error token             		;
+0715: E20E             CommandErrorLoop:                      ;
+0716: E20E 7E                     LD     A,(HL)               ; Get character                     ;
+0717: E20F FE 20                  CP     SPACE                ; Past offending token ?            ;
+0718: E211 CA 20 E2               JP     Z,CommandErrorExit   ;  done if yes                      ;
+0719: E214 B7                     OR     A                    ; At end of command ?               ;
+0720: E215 CA 20 E2               JP     Z,CommandErrorExit   ;  done if yes                      ;
+0721: E218 E5                     PUSH   HL                   ; Save pointer                      ;
+0722: E219 CD B8 E3               CALL   PrintCharInA         ; Display on console                ;
+0723: E21C E1                     POP    HL                   ; Restore pointer                   ;
+0724: E21D 23                     INC    HL                   ; Update it                         ;
+0725: E21E 18 EE                  JR     CommandErrorLoop     ; Keep going                        ;
+0726: E220         ;
+0727: E220             CommandErrorExit:                      ;
+0728: E220 3E 3F                  LD     A,QMARK              ;
+0729: E222 CD B8 E3               CALL   PrintCharInA         ; Send '?' to console               ;
+0730: E225 CD AF E3               CALL   CrLf                 ; Next Line                         ;
+0731: E228 CD F3 E0               CALL   DeleteSubmitFile     ; Remove any submit file            ;
+0732: E22B C3 26 E0               JP     ccpMainEntry         ; Go back for another command       ;
+0733: E22E         ;------------------------------ Command Error ------------------------------;
+0734: E22E
+0735: E22E         ;------------------------------ Command Buffer -----------------------------;
+0736: E22E             maximumBufferSize EQU    07FH                 ; Max Length of Buffer          ;
+0737: E22E 7F          commandMaxLength: DB     maximumBufferSize    ;
+0738: E22F 00          commandLength: DB     00H                  ; Actual size of input          ;
+0739: E230             commandBuffer: DS     maximumBufferSize + 1 ; The Command Buffer           ;
+0740: E2B0         ;
+0741: E2B0 30 E2       commandBufferPointer: DW     commandBuffer        ; Address of next to char       ;
+0742: E2B2         ;------------------------------ Command Buffer -----------------------------;
+0743: E2B2         ;------------------------- Submit File Control Block -----------------------;
+0744: E2B2         ;	                                                                        ;
+0745: E2B2 00          submitFlag: DB     00H                  ; 00 if no submit file,             ;
+0746: E2B3         ;  0FFH if submitting               ;
+0747: E2B3 24 24 24 20 20 20 20 20     submitFCB: DB     '$$$     '           ; File name is $$$                  ;
+0748: E2BB 53 55 42     submitType: DB     'SUB'                ; Type is 'SUB'                     ;
+0749: E2BE 00          submitExtent: DB     00H                  ; Extent                            ;
+0750: E2BF 00          submitS1:  DB     00H                  ; S1                                ;
+0751: E2C0             submitFWF:                      ; Bit7 = FileWriteFlag
+0752: E2C0 00          submitS2:  DB     00H                  ; S2 (bit7 = FileWriteFlag)         ;
+0753: E2C1 00          submitRC:  DB     00H                  ; RC                                ;
+0754: E2C2             submitMap: DS     010H                 ; Allocation Map                    ;
+0755: E2D2 00          submitCR:  DB     00H                  ; Current Record                    ;
+0756: E2D3         ;------------------------- Submit File Control Block -----------------------;
+0757: E2D3         ;--------------------------- Built In Command Data -------------------------;
+0758: E2D3         ;intrinsic function names four characters each                              ;
+0759: E2D3             builtInCMDNameSize EQU    04                   ; Size of intrinsic function names  ;
+0760: E2D3         ;
+0761: E2D3             builtInCMDNames:                      ;
+0762: E2D3 44 49 52 20                DB     'DIR '               ;
+0763: E2D7 45 52 41 20                DB     'ERA '               ;
+0764: E2DB 54 59 50 45                DB     'TYPE'               ;
+0765: E2DF 53 41 56 45                DB     'SAVE'               ;
+0766: E2E3 52 45 4E 20                DB     'REN '               ;
+0767: E2E7 55 53 45 52                DB     'USER'               ;
+0768: E2EB             builtInCMDCount EQU    (($-builtInCMDNames)/builtInCMDNameSize) + 1 ;
+0769: E2EB         ;
+0770: E2EB             builtInCMDVector:                      ;
+0771: E2EB 4B E4                  DW     ccpDirectory         ; Directory List                    ;
+0772: E2ED F3 E4                  DW     ccpErase             ; File erase                        ;
+0773: E2EF 31 E5                  DW     ccpType              ; Type file on Console              ;
+0774: E2F1 81 E5                  DW     ccpSave              ; Save memory image                 ;
+0775: E2F3 E4 E5                  DW     ccpRename            ; File rename                       ;
+0776: E2F5 62 E6                  DW     ccpUser              ; User number                       ;
+0777: E2F7 79 E6                  DW     ccpUserFunction      ; User-defined function             ;
+0778: E2F9         ;
+0779: E2F9         ;--------------------------- Built In Command Data -------------------------;
+0780: E2F9         ;----------------------------------------------------------------
+0781: E2F9         ;----------------------------------------------------------------
+0782: E2F9         ;================================ BDOS API =================================;
+0783: E2F9         ;------------------------------- Initialize --------------------------------;
+0784: E2F9             Initialize:                      ;
+0785: E2F9 0E 0D                  LD     C,fResetSystem       ; Load Function Number  - 0D        ;
+0786: E2FB C3 05 00               JP     BDOS                 ;  and let BDOS do its work         ;
+0787: E2FE         ;------------------------------- Initialize --------------------------------;
+0788: E2FE         ;------------------------------- Select Disk -------------------------------;
+0789: E2FE             SelectDisk:                      ;
+0790: E2FE 5F                     LD     E,A                  ; Load Target disk                  ;
+0791: E2FF 0E 0E                  LD     C,fSelectDisk        ; Load Function Number - 0EH        ;
+0792: E301 C3 05 00               JP     BDOS                 ;  and let BDOS do its work         ;
+0793: E304         ;------------------------------- Select Disk -------------------------------;
+0794: E304         ;-------------------------------- Open File --------------------------------;
+0795: E304         ;Open the file				                                                ;
+0796: E304         ; On Entry DE = FCB to read 						                        ;
+0797: E304         ; Exits with Z-Flag Set if file not found									;
+0798: E304         ;					Reset if file found										;
+0799: E304             OpenFile:                       ;
+0800: E304 0E 0F                  LD     C,fOpenFile          ; Load Function Number - 0FH        ;
+0801: E306 C3 21 E3               JP     BDOSandIncA          ; make BDOS call & set dir index    ;
+0802: E309         ;-------------------------------- Open File --------------------------------;
+0803: E309         ;------------------------------- Close File --------------------------------;
+0804: E309         ;Close the file				                                                ;
+0805: E309         ; On Entry DE = FCB to Close						                        ;
+0806: E309         ; Exits with Z-Flag Set if file not found									;
+0807: E309         ;					Reset if file found										;
+0808: E309             CloseFile:                      ;
+0809: E309 0E 10                  LD     C,fCloseFile         ; Load Function Number - 10H        ;
+0810: E30B C3 21 E3               JP     BDOSandIncA          ; make BDOS call & set dir index    ;
+0811: E30E         ;------------------------------- Close File --------------------------------;
+0812: E30E         ;-------------------------------- Read File --------------------------------;
+0813: E30E         ;Read the next record from the file.										;
+0814: E30E         ; On Entry DE = FCB to read 						                        ;
+0815: E30E             DiskRead:                       ;
+0816: E30E 0E 14                  LD     C,fReadSeq           ; Load Function Number - 14H        ;
+0817: E310 CD 05 00               CALL   BDOS                 ;  and let BDOS do its work         ;
+0818: E313 B7                     OR     A                    ; set return code flags             ;
+0819: E314 C9                     RET                         ;
+0820: E315         ;-------------------------------- Read File --------------------------------;
+0821: E315         ;----------------------------- Get Current Disk ----------------------------;
+0822: E315         ;Exits with current drive number to A (0=A,1=B....F=P)                      ;
+0823: E315             GetSelectedDrive:                      ;
+0824: E315 0E 19                  LD     C,fGetCurrentDisk    ; Load Function Number - 19H    ;
+0825: E317 C3 05 00               JP     BDOS                 ;  and let BDOS do its work         ;
+0826: E31A         ;----------------------------- Get Current Disk ----------------------------;
+0827: E31A         ;------------------------------ Get/Set User -------------------------------;
+0828: E31A         ;return current user code in A                                              ;
+0829: E31A             GetUser:                        ;
+0830: E31A 1E FF                  LD     E,0FFH               ; Set Entry Parameter for Get       ;
+0831: E31C         ; If E <> -1 then Set user number found in E                                ;
+0832: E31C             SetUser:                        ;
+0833: E31C 0E 20                  LD     C,fGetSetUserNumber  ; Load Function Number - 20H        ;
+0834: E31E C3 05 00               JP     BDOS                 ;  and let BDOS do its work         ;
+0835: E321         ;------------------------------ Get/Set User -------------------------------;
+0836: E321
+0837: E321         ;  AP i
+0838: E321
+0839: E321         ;------------------------------ BDOS and Inc A -----------------------------;
+0840: E321         ; Call B DOS                                                                ;
+0841: E321         ;  Store returned directory index                                           ;
+0842: E321         ;  Increment result.                                                        ;
+0843: E321         ; Exits with 	A =  0 if File Not Found                                    ;
+0844: E321         ;				  <> 0 if file found                                        ;
+0845: E321             BDOSandIncA:                      ;
+0846: E321 CD 05 00               CALL   BDOS                 ; Make call to BDOS                 ;
+0847: E324 32 8D E7               LD     (directoryIndex),A   ; Save return value                 ;
+0848: E327 3C                     INC    A                    ; Increment & (Re)Set Z-Flag        ;
+0849: E328 C9                     RET                         ;
+0850: E329         ;------------------------------ BDOS and Inc A -----------------------------;
+0851: E329
+0852: E329         ;--------
+0853: E329         ;open file for Command FCB
+0854: E329             OpenFile4CmdFCB:
+0855: E329 AF                     XOR    A
+0856: E32A 32 87 E7               LD     (currentRecord),A    ; clear next record to read
+0857: E32D 11 67 E7               LD     DE,Token1
+0858: E330 C3 04 E3               JP     OpenFile
+0859: E333         ;-----------------------------
+0860: E333         ;delete the file given by (DE)
+0861: E333             DeleteFile:
+0862: E333 0E 13                  LD     C,fDeleteFile
+0863: E335 C3 05 00               JP     BDOS
+0864: E338         ;-----------------------------
+0865: E338         ;make the file given by (DE)
+0866: E338             MakeFile:
+0867: E338 0E 16                  LD     C,fMakeFile
+0868: E33A C3 21 E3               JP     BDOSandIncA
+0869: E33D         ;-----------
+0870: E33D         ;read next record from Command FCB
+0871: E33D             DiskReadCmdFCB:
+0872: E33D 11 67 E7               LD     DE,Token1
+0873: E340 C3 0E E3               JP     DiskRead
+0874: E343         ;-----------------------------
+0875: E343         ;write the next record to the file given by (DE)
+0876: E343             DiskWrite:
+0877: E343 0E 15                  LD     C,fWriteSeq
+0878: E345 CD 05 00               CALL   BDOS                 ;  and let BDOS do its work         ;
+0879: E348 B7                     OR     A                    ; set return code flags
+0880: E349 C9                     RET
+0881: E34A         ;-----------------------------
+0882: E34A         ;search for the file given by d,e
+0883: E34A             SearchForFirst:
+0884: E34A 0E 11                  LD     C,fSearchFirst
+0885: E34C C3 21 E3               JP     BDOSandIncA
+0886: E34F         ;-----
+0887: E34F         ;search for Token1 file
+0888: E34F             Searc4CmdFcbFile:
+0889: E34F 11 67 E7               LD     DE,Token1
+0890: E352 C3 4A E3               JP     SearchForFirst
+0891: E355         ;-----------------------------
+0892: E355         ;search for the next occurrence of the file given by d,e
+0893: E355             SearchForNext:
+0894: E355 0E 12                  LD     C,fSearchNext
+0895: E357 C3 21 E3               JP     BDOSandIncA
+0896: E35A         ;-----------------------------
+0897: E35A         ; rename a file give bu (DE)
+0898: E35A             RenameFile:
+0899: E35A 0E 17                  LD     C,fRenameFile
+0900: E35C C3 05 00               JP     BDOS
+0901: E35F         ;-----------------------------
+0902: E35F         ;set default buffer dma address
+0903: E35F             SetDefaultDMA:
+0904: E35F 11 80 00               LD     DE,DMABuffer
+0905: E362         ;---------
+0906: E362         ;set dma address to d,e
+0907: E362             SetDMA:
+0908: E362 0E 1A                  LD     C,fSetDMA
+0909: E364 C3 05 00               JP     BDOS
+0910: E367         ;-----------------------------
+0911: E367         ;/ ; call B DOS and set Flags
+0912: E367         ;/ BDOSsetFlags:
+0913: E367         ;/ 	CALL	BDOS
+0914: E367         ;/ 	OR		A								; set return code flags
+0915: E367         ;/ 	RET
+0916: E367         ;----------------------------------------------------------------
+0917: E367         ;----------------------------------------------------------------
+0918: E367         ;-----------------------------
+0919: E367         ; get number from the command line
+0920: E367             GetNumberFromCmdLine:
+0921: E367 CD 26 E1               CALL   ParseToken1          ; should be number
+0922: E36A 3A 88 E7               LD     A,(selectedDisk)
+0923: E36D B7                     OR     A
+0924: E36E C2 08 E2               JP     NZ,CommandError      ; cannot be prefixed
+0925: E371         ; convert the byte value in Token1 to binary
+0926: E371 21 68 E7               LD     HL,Token1+1
+0927: E374 01 0B 00               LD     BC,11                ;(b=0, c=11)
+0928: E377         ; value accumulated in b, c counts name length to zero
+0929: E377             GetNumericValue:
+0930: E377 7E                     LD     A,(HL)
+0931: E378 FE 20                  CP     SPACE
+0932: E37A CA A2 E3               JP     Z,GetNumericValue1
+0933: E37D         ; more to scan, convert char to binary and add
+0934: E37D 23                     INC    HL
+0935: E37E D6 30                  SUB    ASCII_ZERO
+0936: E380 FE 0A                  CP     10
+0937: E382 D2 08 E2               JP     NC,CommandError      ; valid?
+0938: E385 57                     LD     D,A                  ; save value
+0939: E386 78                     LD     A,B                  ; mult by 10
+0940: E387 E6 E0                  AND    11100000B
+0941: E389 C2 08 E2               JP     NZ,CommandError
+0942: E38C 78                     LD     A,B                  ; recover value
+0943: E38D 07                     RLCA
+0944: E38E 07                     RLCA
+0945: E38F 07                     RLCA                        ; *8
+0946: E390 80                     ADD    A,B
+0947: E391 DA 08 E2               JP     C,CommandError
+0948: E394 80                     ADD    A,B
+0949: E395 DA 08 E2               JP     C,CommandError       ; *8+*2 = *10
+0950: E398 82                     ADD    A,D
+0951: E399 DA 08 E2               JP     C,CommandError       ; +digit
+0952: E39C 47                     LD     B,A
+0953: E39D 0D                     DEC    C
+0954: E39E C2 77 E3               JP     NZ,GetNumericValue   ; for another digit
+0955: E3A1 C9                     RET
+0956: E3A2             GetNumericValue1:                      ; conv1 end of digits, check for all blanks
+0957: E3A2 7E                     LD     A,(HL)
+0958: E3A3 FE 20                  CP     SPACE
+0959: E3A5 C2 08 E2               JP     NZ,CommandError      ;blanks?
+0960: E3A8 23                     INC    HL
+0961: E3A9 0D                     DEC    C
+0962: E3AA C2 A2 E3               JP     NZ,GetNumericValue1
+0963: E3AD 78                     LD     A,B                  ;recover value
+0964: E3AE C9                     RET
+0965: E3AF         ;-----------------------------
+0966: E3AF         ;+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+0967: E3AF
+0968: E3AF
+0969: E3AF         ;-----------------------------
+0970: E3AF         ;*****************************************************************
+0971: E3AF
+0972: E3AF         ;=============================== Utilities =================================;
+0973: E3AF         ;-------------------------------- CR / LF ----------------------------------;
+0974: E3AF         ;Sent Carriage Return Line Feed to Console                                  ;
+0975: E3AF             CrLf:                           ;
+0976: E3AF 1E 0D                  LD     E,CR                 ; Carriage Return                   ;
+0977: E3B1 CD BB E3               CALL   PrintCharInE         ;
+0978: E3B4 1E 0A                  LD     E,LF                 ; Line Feed                         ;
+0979: E3B6 18 03                  JR     PrintCharInE         ;
+0980: E3B8         ;-------------------------------- CR / LF ----------------------------------;
+0981: E3B8         ;------------------------------- PrintCharInA ------------------------------;
+0982: E3B8         ; Print character                                                           ;
+0983: E3B8         ; On Entry A = Character to Send to Console                                 ;
+0984: E3B8             PrintCharInA:                      ;
+0985: E3B8 5F                     LD     E,A                  ; move char to E                    ;
+0986: E3B9 18 00                  JR     PrintCharInE         ;
+0987: E3BB         ;------------------------------- PrintCharInA -------------------------------;
+0988: E3BB         ;------------------------------- PrintCharInE ------------------------------;
+0989: E3BB         ; Print character                                                           ;
+0990: E3BB         ; On Entry E = Character to Send to Console                                 ;
+0991: E3BB         ; Preserves BC                                ;                             ;
+0992: E3BB             PrintCharInE:                      ;
+0993: E3BB C5                     PUSH   BC                   ; Preserve BC                       ;
+0994: E3BC 0E 02                  LD     C,fConsoleOut        ; Load Function Number         		;
+0995: E3BE CD 05 00               CALL   BDOS                 ;  and let BDOS do its work         ;
+0996: E3C1 C1                     POP    BC                   ; Restore BC                        ;
+0997: E3C2 C9                     RET                         ;
+0998: E3C3         ;------------------------------- PrintCharInE ------------------------------;
+0999: E3C3         ;----------------- Print (CRLF then ) Null Terminated String ---------------;
+1000: E3C3         ;print CRLF then null terminated string at (BC)                             ;
+1001: E3C3             PrintCrLfStringNull:                      ;
+1002: E3C3 C5                     PUSH   BC                   ; Save string pointer               ;
+1003: E3C4 CD AF E3               CALL   CrLf                 ; Send CR/LF                        ;
+1004: E3C7 E1                     POP    HL                   ; Restore pointer & fall thru       ;
+1005: E3C8         ;print null terminated string from (HL)                                     ;
+1006: E3C8             PrintStringNull:                      ;
+1007: E3C8 7E                     LD     A,(HL)               ; Get the next character            ;
+1008: E3C9 B7                     OR     A                    ; Is it the Null terminator ?       ;
+1009: E3CA C8                     RET    Z                    ;  exit if yes                      ;
+1010: E3CB 23                     INC    HL                   ; Move string pointer               ;
+1011: E3CC E5                     PUSH   HL                   ; Save for next iteration           ;
+1012: E3CD CD B8 E3               CALL   PrintCharInA         ; Send the character to the console ;
+1013: E3D0 E1                     POP    HL                   ; string pointer                    ;
+1014: E3D1 C3 C8 E3               JP     PrintStringNull      ; Loop for more                     ;
+1015: E3D4         ;----------------- Print (CRLF then ) Null Terminated String ---------------;
+1016: E3D4         ;------------------------- Check For Console Input -------------------------;
+1017: E3D4         ;check for a character ready at the console                                 ;
+1018: E3D4         ;Exits with	Z-Flag  set if there has been no character input                ;
+1019: E3D4         ;					reset if there is a character waiting                   ;
+1020: E3D4         ;			A = character input, if Z-Flag reset                            ;
+1021: E3D4             CheckForConsoleChar:                      ;
+1022: E3D4 0E 0B                  LD     C,fGetConsoleStatus  ; Load Function Number - 0BH        ;
+1023: E3D6 CD 05 00               CALL   BDOS                 ;  and let BDOS do its work         ;
+1024: E3D9 B7                     OR     A                    ; Check return value                ;
+1025: E3DA C8                     RET    Z                    ; Return if no char waiting         ;
+1026: E3DB         ;
+1027: E3DB 0E 01                  LD     C,fConsoleIn         ; Load Function Number - 01H        ;
+1028: E3DD CD 05 00               CALL   BDOS                 ; character cleared             ;
+1029: E3E0 B7                     OR     A                    ; Resets the Z-Flag                 ;
+1030: E3E1 C9                     RET                         ;
+1031: E3E2         ;------------------------- Check For Console Input -------------------------;
+1032: E3E2
+1033: E3E2
+1034: E3E2
+1035: E3E2
+1036: E3E2
+1037: E3E2         ; UT
+1038: E3E2             PrintSpace:
+1039: E3E2 3E 20                  LD     A,SPACE
+1040: E3E4 C3 E7 E3               JP     PrintSaveBC
+1041: E3E7         ;-----------------------------
+1042: E3E7         ;print character, but save b,c registers
+1043: E3E7             PrintSaveBC:
+1044: E3E7 C5                     PUSH   BC
+1045: E3E8 CD B8 E3               CALL   PrintCharInA
+1046: E3EB C1                     POP    BC
+1047: E3EC C9                     RET
+1048: E3ED         ;-----------------------------
+1049: E3ED         ;-----------------------------
+1050: E3ED         ;print no file message
+1051: E3ED             PrintNoFile:
+1052: E3ED 01 F3 E3               LD     BC,msgNoFile
+1053: E3F0 C3 C3 E3               JP     PrintCrLfStringNull
+1054: E3F3
+1055: E3F3 4E 4F 20 46 49 4C 45 00     msgNoFile: DB     'NO FILE',0
+1056: E3FB         ;-----------------------------
+1057: E3FB         ;move 3 characters from h,l to d,e addresses
+1058: E3FB             CopyHL2DE3:                      ;XXXXXXXXX
+1059: E3FB 06 03                  LD     B,3
+1060: E3FD             CopyHL2DEforB:
+1061: E3FD 7E                     LD     A,(HL)
+1062: E3FE 12                     LD     (DE),AE
+1063: E3FF 23                     INC    HL
+1064: E400 13                     INC    DE
+1065: E401 05                     DEC    B
+1066: E402 C2 FD E3               JP     NZ,CopyHL2DEforB
+1067: E405 C9                     RET
+1068: E406         ;-----------------------------
+1069: E406         ;return (HL) = (A) + (HL)
+1070: E406             AddA2HL:
+1071: E406 85                     ADD    A,L
+1072: E407 6F                     LD     L,A
+1073: E408 D0                     RET    NC
+1074: E409 24                     INC    H
+1075: E40A C9                     RET
+1076: E40B         ;-----------------------------
+1077: E40B         ;DMABuffer + a + c to h,l followed by fetch
+1078: E40B             GetByteAtAandCandDMA:
+1079: E40B 21 80 00               LD     HL,DMABuffer         ; 0080H
+1080: E40E 81                     ADD    A,C
+1081: E40F CD 06 E4               CALL   AddA2HL
+1082: E412 7E                     LD     A,(HL)
+1083: E413 C9                     RET
+1084: E414         ;-----------------------------
+1085: E414         ;-----------------------------
+1086: E414         ;*****************************************************************
+1087: E414         ;************************ Error messages ******************************
+1088: E414         ;*****************************************************************
+1089: E414         ;print the read error message
+1090: E414             PrintReadError:
+1091: E414 01 1A E4               LD     BC,msgReadErr
+1092: E417 C3 C3 E3               JP     PrintCrLfStringNull
+1093: E41A             msgReadErr:
+1094: E41A 52 45 41 44 20 45 52 52 4F 52 00                DB     'READ ERROR',0
+1095: E425         ;-----------------------------
+1096: E425
+1097: E425
+1098: E425         ;*****************************************************************
+1099: E425         ;--------------------------------------------------------
+1100: E425         ;reset disk
+1101: E425             ResetDisk:
+1102: E425 3A 88 E7               LD     A,(selectedDisk)
+1103: E428 B7                     OR     A
+1104: E429 C8                     RET    Z                    ; no action if not selected
+1105: E42A 3D                     DEC    A
+1106: E42B 21 8C E7               LD     HL,currentDisk
+1107: E42E BE                     CP     M
+1108: E42F C8                     RET    Z                    ; same disk
+1109: E430 3A 8C E7               LD     A,(currentDisk)
+1110: E433 C3 FE E2               JP     SelectDisk
+1111: E436         ;--------------------------------------------------------
+1112: E436         ;reset disk before end of command check
+1113: E436             ResetDiskAtCmdEnd:
+1114: E436 CD 25 E4               CALL   ResetDisk
+1115: E439         ;end of intrinsic command
+1116: E439             EndCommand:
+1117: E439 CD 26 E1               CALL   ParseToken1          ; to check for garbage at end of line
+1118: E43C 3A 68 E7               LD     A,(Token1)+1
+1119: E43F D6 20                  SUB    SPACE
+1120: E441 21 88 E7               LD     HL,selectedDisk
+1121: E444 B6                     OR     M
+1122: E445         ; 0 in accumulator if no disk selected, and blank fcb
+1123: E445 C2 08 E2               JP     NZ,CommandError
+1124: E448 C3 26 E0               JP     ccpMainEntry
+1125: E44B         ;*****************************************************************
+1126: E44B         ;************************ CCP Commands ***************************
+1127: E44B         ;*****************************************************************
+1128: E44B
+1129: E44B         ;******************** Directory Listing ***************************
+1130: E44B         ;Directory Listing
+1131: E44B             ccpDirectory:
+1132: E44B CD 26 E1               CALL   ParseToken1          ; Token1 gets file name
+1133: E44E CD 55 E7               CALL   SetDisk4Cmd          ; change disk drives if requested
+1134: E451 21 68 E7               LD     HL,Token1+1
+1135: E454 7E                     LD     A,(HL)               ; may be empty request
+1136: E455 FE 20                  CP     SPACE
+1137: E457 C2 63 E4               JP     NZ,ccpDir2           ; skip fill of ??? if not blank
+1138: E45A         ; set Token1 to all ??? for current disk
+1139: E45A 06 0B                  LD     B,11                 ; length of fill ????????.???
+1140: E45C             ccpDir1:
+1141: E45C 36 3F                  LD     (HL),QMARK
+1142: E45E 23                     INC    HL
+1143: E45F 05                     DEC    B
+1144: E460 C2 5C E4               JP     NZ,ccpDir1
+1145: E463         ; not a blank request, must be in Token1
+1146: E463             ccpDir2:
+1147: E463 1E 00                  LD     E,0
+1148: E465 D5                     PUSH   DE                   ; E counts directory entries
+1149: E466 CD 4F E3               CALL   Searc4CmdFcbFile     ; first one has been found
+1150: E469 CC ED E3               CALL   Z,PrintNoFile        ; not found message
+1151: E46C             ccpDir3:
+1152: E46C CA EF E4               JP     Z,ccpDirEnd
+1153: E46F         ; found, but may be system file
+1154: E46F 3A 8D E7               LD     A,(directoryIndex)   ; get the location of the element
+1155: E472 0F                     RRCA
+1156: E473 0F                     RRCA
+1157: E474 0F                     RRCA
+1158: E475 E6 60                  AND    1100000B
+1159: E477 4F                     LD     C,A
+1160: E478         ; c contains base index into DMABuffer for dir entry
+1161: E478 3E 0A                  LD     A,fcbSystemFileIndex ; System File Location in FCB
+1162: E47A CD 0B E4               CALL   GetByteAtAandCandDMA ; value to A
+1163: E47D 17                     RLA
+1164: E47E DA E3 E4               JP     C,ccpDir7            ; skip if system file c holds index into buffer
+1165: E481         ;  another fcb found, new line?
+1166: E481 D1                     POP    DE                   ; get directory entry count (E)
+1167: E482 7B                     LD     A,E
+1168: E483 1C                     INC    E
+1169: E484 D5                     PUSH   DE                   ; save dir entry count
+1170: E485 E6 03                  AND    11B                  ; e=0,1,2,3,...new line if mod 4 = 0
+1171: E487 F5                     PUSH   AF                   ; and save the test
+1172: E488 C2 A0 E4               JP     NZ,ccpDirHeader      ; header on current line
+1173: E48B         ; print the header drive with Colon ie A:
+1174: E48B CD AF E3               CALL   CrLf
+1175: E48E C5                     PUSH   BC
+1176: E48F CD 15 E3               CALL   GetSelectedDrive
+1177: E492 C1                     POP    BC
+1178: E493 C6 41                  ADD    A,ASCII_A
+1179: E495 CD E7 E3               CALL   PrintSaveBC
+1180: E498 3E 3A                  LD     A,COLON
+1181: E49A CD E7 E3               CALL   PrintSaveBC          ; just printed drive with Colon ie A:
+1182: E49D C3 A8 E4               JP     ccpDirHeader1        ; skip current line hdr
+1183: E4A0
+1184: E4A0             ccpDirHeader:
+1185: E4A0 CD E2 E3               CALL   PrintSpace           ; after last one
+1186: E4A3 3E 3A                  LD     A,COLON
+1187: E4A5 CD E7 E3               CALL   PrintSaveBC
+1188: E4A8             ccpDirHeader1:
+1189: E4A8 CD E2 E3               CALL   PrintSpace
+1190: E4AB         ; compute position of name in buffer
+1191: E4AB 06 01                  LD     B,1                  ; start with first character of name
+1192: E4AD             ccpDir4:
+1193: E4AD 78                     LD     A,B
+1194: E4AE CD 0B E4               CALL   GetByteAtAandCandDMA ; DMABuffer+a+c fetched
+1195: E4B1 E6 7F                  AND    ASCII_MASK           ; mask flags
+1196: E4B3         ; may delete trailing blanks
+1197: E4B3 FE 20                  CP     SPACE
+1198: E4B5 C2 CD E4               JP     NZ,ccpDir5           ; check for blank type
+1199: E4B8 F1                     POP    AF
+1200: E4B9 F5                     PUSH   AF                   ; may be 3rd item
+1201: E4BA FE 03                  CP     3
+1202: E4BC C2 CB E4               JP     NZ,ccpDirSpace       ; place blank at end if not
+1203: E4BF 3E 09                  LD     A,9
+1204: E4C1 CD 0B E4               CALL   GetByteAtAandCandDMA ; first char of type
+1205: E4C4 E6 7F                  AND    ASCII_MASK
+1206: E4C6 FE 20                  CP     SPACE
+1207: E4C8 CA E2 E4               JP     Z,ccpDir6
+1208: E4CB         ; not a blank in the file type field
+1209: E4CB             ccpDirSpace:
+1210: E4CB 3E 20                  LD     A,SPACE              ; restore trailing filename chr
+1211: E4CD             ccpDir5:
+1212: E4CD CD E7 E3               CALL   PrintSaveBC          ; char printed
+1213: E4D0 04                     INC    B
+1214: E4D1 78                     LD     A,B
+1215: E4D2 FE 0C                  CP     12
+1216: E4D4 D2 E2 E4               JP     NC,ccpDir6
+1217: E4D7         ; check for break between names
+1218: E4D7 FE 09                  CP     9
+1219: E4D9 C2 AD E4               JP     NZ,ccpDir4           ; for another char
+1220: E4DC
+1221: E4DC CD E2 E3               CALL   PrintSpace           ; print a blank between names
+1222: E4DF C3 AD E4               JP     ccpDir4
+1223: E4E2
+1224: E4E2             ccpDir6:                        ; end of current entry
+1225: E4E2 F1                     POP    AF                   ; discard the directory counter (mod 4)
+1226: E4E3             ccpDir7:
+1227: E4E3 CD D4 E3               CALL   CheckForConsoleChar  ; check for interrupt at keyboard
+1228: E4E6 C2 EF E4               JP     NZ,ccpDirEnd         ; abort directory search
+1229: E4E9 CD 55 E3               CALL   SearchForNext
+1230: E4EC C3 6C E4               JP     ccpDir3              ; for another entry
+1231: E4EF             ccpDirEnd:
+1232: E4EF D1                     POP    DE                   ; discard directory counter
+1233: E4F0 C3 36 E4               JP     ResetDiskAtCmdEnd
+1234: E4F3         ;
+1235: E4F3
+1236: E4F3         ;*****************************************************************
+1237: E4F3             ccpErase:
+1238: E4F3 CD 26 E1               CALL   ParseToken1          ; cannot be all ???'s
+1239: E4F6 FE 0B                  CP     11
+1240: E4F8 C2 16 E5               JP     NZ,ccpEraseAll
+1241: E4FB         ; erasing all of the disk
+1242: E4FB 01 26 E5               LD     BC,msgEraseAll
+1243: E4FE CD C3 E3               CALL   PrintCrLfStringNull
+1244: E501
+1245: E501 CD 65 E0               CALL   ReadCommand
+1246: E504 21 2F E2               LD     HL,commandLength
+1247: E507 35                     DEC    M
+1248: E508 C2 26 E0               JP     NZ,ccpMainEntry      ;bad input
+1249: E50B 23                     INC    HL
+1250: E50C 7E                     LD     A,(HL)
+1251: E50D FE 59                  CP     ASCII_Y
+1252: E50F C2 26 E0               JP     NZ,ccpMainEntry
+1253: E512         ; ok, erase the entire diskette
+1254: E512 23                     INC    HL
+1255: E513 22 B0 E2               LD     (commandBufferPointer),HL ; otherwise error at ResetDiskAtCmdEnd
+1256: E516             ccpEraseAll:
+1257: E516 CD 55 E7               CALL   SetDisk4Cmd
+1258: E519 11 67 E7               LD     DE,Token1
+1259: E51C CD 33 E3               CALL   DeleteFile
+1260: E51F 3C                     INC    A                    ; 255 returned if not found
+1261: E520 CC ED E3               CALL   Z,PrintNoFile        ; no file message if so
+1262: E523 C3 36 E4               JP     ResetDiskAtCmdEnd
+1263: E526         ;
+1264: E526             msgEraseAll:
+1265: E526 41 4C 4C 20 28 59 2F 4E 29 3F 00                DB     'ALL (Y/N)?',0
+1266: E531         ;*****************************************************************
+1267: E531         ; Type file
+1268: E531             ccpType:
+1269: E531 CD 26 E1               CALL   ParseToken1
+1270: E534 C2 08 E2               JP     NZ,CommandError      ; don't allow ?'s in file name
+1271: E537 CD 55 E7               CALL   SetDisk4Cmd
+1272: E53A CD 29 E3               CALL   OpenFile4CmdFCB      ; open the file
+1273: E53D CA 7B E5               JP     Z,ccpTypeError       ; zero flag indicates not found
+1274: E540         ; file opened, read 'til eof
+1275: E540 CD AF E3               CALL   CrLf
+1276: E543 21 89 E7               LD     HL,bufferPointer
+1277: E546 36 FF                  LD     (HL),255             ; read first buffer
+1278: E548             ccpType1:                       ; loop on bufferPointer
+1279: E548 21 89 E7               LD     HL,bufferPointer
+1280: E54B 7E                     LD     A,(HL)
+1281: E54C FE 80                  CP     128                  ; end buffer
+1282: E54E DA 5B E5               JP     C,ccpType2
+1283: E551 E5                     PUSH   HL                   ; carry if 0,1,...,127
+1284: E552         ; read another buffer full
+1285: E552 CD 3D E3               CALL   DiskReadCmdFCB
+1286: E555 E1                     POP    HL                   ; recover address of bufferPointer
+1287: E556 C2 74 E5               JP     NZ,ccpTypeEOF        ; hard end of file
+1288: E559 AF                     XOR    A
+1289: E55A 77                     LD     (HL),A               ; bufferPointer = 0
+1290: E55B         ; read character at bufferPointer and print
+1291: E55B             ccpType2:
+1292: E55B 34                     INC    M                    ; bufferPointer = bufferPointer + 1
+1293: E55C 21 80 00               LD     HL,DMABuffer
+1294: E55F CD 06 E4               CALL   AddA2HL              ; h,l addresses char
+1295: E562 7E                     LD     A,(HL)
+1296: E563 FE 1A                  CP     END_OF_FILE
+1297: E565 CA 36 E4               JP     Z,ResetDiskAtCmdEnd
+1298: E568 CD B8 E3               CALL   PrintCharInA
+1299: E56B CD D4 E3               CALL   CheckForConsoleChar
+1300: E56E C2 36 E4               JP     NZ,ResetDiskAtCmdEnd ; abort if break
+1301: E571 C3 48 E5               JP     ccpType1             ; for another character
+1302: E574
+1303: E574             ccpTypeEOF:
+1304: E574 3D                     DEC    A
+1305: E575 CA 36 E4               JP     Z,ResetDiskAtCmdEnd
+1306: E578 CD 14 E4               CALL   PrintReadError
+1307: E57B             ccpTypeError:
+1308: E57B CD 25 E4               CALL   ResetDisk
+1309: E57E C3 08 E2               JP     CommandError
+1310: E581         ;*****************************************************************
+1311: E581         ; save save memory image
+1312: E581         ;*****************************************************************
+1313: E581             ccpSave:
+1314: E581 CD 67 E3               CALL   GetNumberFromCmdLine ; value to register a
+1315: E584 F5                     PUSH   AF                   ; save it for later
+1316: E585         ; should be followed by a file to save the memory image
+1317: E585 CD 26 E1               CALL   ParseToken1
+1318: E588 C2 08 E2               JP     NZ,CommandError      ; cannot be ambiguous
+1319: E58B CD 55 E7               CALL   SetDisk4Cmd          ; may be a disk change
+1320: E58E 11 67 E7               LD     DE,Token1
+1321: E591 D5                     PUSH   DE
+1322: E592 CD 33 E3               CALL   DeleteFile           ; existing file removed
+1323: E595 D1                     POP    DE
+1324: E596 CD 38 E3               CALL   MakeFile             ; create a new file on disk
+1325: E599 CA CF E5               JP     Z,ccpSaveError       ; no directory space
+1326: E59C AF                     XOR    A
+1327: E59D 32 87 E7               LD     (currentRecord),A    ; clear next record field
+1328: E5A0 F1                     POP    AF                   ; #pages to write is in a, change to #sectors
+1329: E5A1 6F                     LD     L,A
+1330: E5A2 26 00                  LD     H,0
+1331: E5A4 29                     ADD    HL,HL
+1332: E5A5
+1333: E5A5 11 00 01               LD     DE,TPA               ; h,l is sector count, d,e is load address
+1334: E5A8             ccpSave1:                       ; save0 check for sector count zero
+1335: E5A8 7C                     LD     A,H
+1336: E5A9 B5                     OR     L
+1337: E5AA CA C5 E5               JP     Z,ccpSave2           ; may be completed
+1338: E5AD 2B                     DEC    HL                   ; sector count = sector count - 1
+1339: E5AE E5                     PUSH   HL                   ; save it for next time around
+1340: E5AF 21 80 00               LD     HL,cpmRecordSize
+1341: E5B2 19                     ADD    HL,DE
+1342: E5B3 E5                     PUSH   HL                   ; next dma address saved
+1343: E5B4 CD 62 E3               CALL   SetDMA               ; current dma address set
+1344: E5B7 11 67 E7               LD     DE,Token1
+1345: E5BA CD 43 E3               CALL   DiskWrite
+1346: E5BD D1                     POP    DE
+1347: E5BE E1                     POP    HL                   ; dma address, sector count
+1348: E5BF C2 CF E5               JP     NZ,ccpSaveError      ; may be disk full case
+1349: E5C2 C3 A8 E5               JP     ccpSave1             ; for another sector
+1350: E5C5
+1351: E5C5         ;  end of dump, close the file
+1352: E5C5             ccpSave2:
+1353: E5C5 11 67 E7               LD     DE,Token1
+1354: E5C8 CD 09 E3               CALL   CloseFile
+1355: E5CB 3C                     INC    A                    ; 255 becomes 00 if error
+1356: E5CC C2 D5 E5               JP     NZ,ccpSaveExit       ; for another command
+1357: E5CF             ccpSaveError:                      ; saverr must be full or read only disk
+1358: E5CF 01 DB E5               LD     BC,msgNoSpace
+1359: E5D2 CD C3 E3               CALL   PrintCrLfStringNull
+1360: E5D5             ccpSaveExit:
+1361: E5D5 CD 5F E3               CALL   SetDefaultDMA        ; reset dma buffer
+1362: E5D8 C3 36 E4               JP     ResetDiskAtCmdEnd
+1363: E5DB
+1364: E5DB             msgNoSpace:
+1365: E5DB 4E 4F 20 53 50 41 43 45 00                DB     'NO SPACE',0
+1366: E5E4         ;*****************************************************************
+1367: E5E4             ccpRename:
+1368: E5E4 CD 26 E1               CALL   ParseToken1
+1369: E5E7 C2 08 E2               JP     NZ,CommandError      ; must be unambiguous
+1370: E5EA 3A 88 E7               LD     A,(selectedDisk)
+1371: E5ED F5                     PUSH   AF                   ; save for later compare
+1372: E5EE CD 55 E7               CALL   SetDisk4Cmd          ; disk selected
+1373: E5F1 CD 4F E3               CALL   Searc4CmdFcbFile     ; is new name already there?
+1374: E5F4 C2 4D E6               JP     NZ,ccpRenameError3
+1375: E5F7         ; file doesn't exist, move to second half of fcb
+1376: E5F7 21 67 E7               LD     HL,Token1
+1377: E5FA 11 77 E7               LD     DE,Token2
+1378: E5FD 06 10                  LD     B,16
+1379: E5FF CD FD E3               CALL   CopyHL2DEforB
+1380: E602         ; check for = or left arrow
+1381: E602 2A B0 E2               LD     HL,(commandBufferPointer)
+1382: E605 EB                     EX     DE,HL
+1383: E606 CD B5 E1               CALL   NextNonBlankChar
+1384: E609 FE 3D                  CP     EQUAL_SIGN
+1385: E60B CA 13 E6               JP     Z,ccpRename1         ; ok if =
+1386: E60E FE 5F                  CP     LEFT_ARROW           ; la
+1387: E610 C2 47 E6               JP     NZ,ccpRenameError2
+1388: E613             ccpRename1:
+1389: E613 EB                     EX     DE,HL
+1390: E614 23                     INC    HL
+1391: E615 22 B0 E2               LD     (commandBufferPointer),HL ; past delimiter
+1392: E618         ; proper delimiter found
+1393: E618 CD 26 E1               CALL   ParseToken1
+1394: E61B C2 47 E6               JP     NZ,ccpRenameError2
+1395: E61E         ; check for drive conflict
+1396: E61E F1                     POP    AF
+1397: E61F 47                     LD     B,A                  ; previous drive number
+1398: E620 21 88 E7               LD     HL,selectedDisk
+1399: E623 7E                     LD     A,(HL)
+1400: E624 B7                     OR     A
+1401: E625 CA 2D E6               JP     Z,ccpRename2
+1402: E628         ; drive name was specified.  same one?
+1403: E628 B8                     CP     B
+1404: E629 70                     LD     (HL),B
+1405: E62A C2 47 E6               JP     NZ,ccpRenameError2
+1406: E62D             ccpRename2:
+1407: E62D 70                     LD     (HL),B               ; store the name in case drives switched
+1408: E62E AF                     XOR    A
+1409: E62F 32 67 E7               LD     (Token1),A
+1410: E632 CD 4F E3               CALL   Searc4CmdFcbFile     ; is old file there?
+1411: E635 CA 41 E6               JP     Z,ccpRenameError1
+1412: E638         ; everything is ok, rename the file
+1413: E638 11 67 E7               LD     DE,Token1
+1414: E63B CD 5A E3               CALL   RenameFile
+1415: E63E C3 36 E4               JP     ResetDiskAtCmdEnd
+1416: E641
+1417: E641             ccpRenameError1:                      ; no file on disk
+1418: E641 CD ED E3               CALL   PrintNoFile
+1419: E644 C3 36 E4               JP     ResetDiskAtCmdEnd
+1420: E647             ccpRenameError2:                      ; ambigous reference/name conflict
+1421: E647 CD 25 E4               CALL   ResetDisk
+1422: E64A C3 08 E2               JP     CommandError
+1423: E64D             ccpRenameError3:                      ; file already exists
+1424: E64D 01 56 E6               LD     BC,msgFileExists
+1425: E650 CD C3 E3               CALL   PrintCrLfStringNull
+1426: E653 C3 36 E4               JP     ResetDiskAtCmdEnd
+1427: E656
+1428: E656             msgFileExists:
+1429: E656 46 49 4C 45 20 45 58 49 53 54 53 00                DB     'FILE EXISTS',0
+1430: E662
+1431: E662         ;*****************************************************************
+1432: E662             ccpUser:
+1433: E662 CD 67 E3               CALL   GetNumberFromCmdLine ; leaves the value in the accumulator
+1434: E665 FE 10                  CP     16
+1435: E667 D2 08 E2               JP     NC,CommandError      ; must be between 0 and 15
+1436: E66A 5F                     LD     E,A                  ; save for SetUser call
+1437: E66B 3A 68 E7               LD     A,(Token1)+1
+1438: E66E FE 20                  CP     SPACE
+1439: E670 CA 08 E2               JP     Z,CommandError
+1440: E673 CD 1C E3               CALL   SetUser              ;new user number set
+1441: E676 C3 39 E4               JP     EndCommand
+1442: E679         ;*****************************************************************
+1443: E679         ;User defined function
+1444: E679         ;*****************************************************************
+1445: E679             ccpUserFunction:
+1446: E679
+1447: E679 3A 68 E7               LD     A,(Token1)+1
+1448: E67C FE 20                  CP     SPACE
+1449: E67E C2 95 E6               JP     NZ,ccpUserFunction1
+1450: E681         ; no file name, but may be disk switch
+1451: E681 3A 88 E7               LD     A,(selectedDisk)
+1452: E684 B7                     OR     A
+1453: E685 CA 39 E4               JP     Z,EndCommand         ; no disk named if 0
+1454: E688 3D                     DEC    A                    ; adjust so A=>0, B=>1, C=>2 ......
+1455: E689 32 8C E7               LD     (currentDisk),A      ; update current Disk indicator
+1456: E68C CD 1A E1               CALL   SetPage0CurDisk      ; set user/disk
+1457: E68F CD FE E2               CALL   SelectDisk
+1458: E692 C3 39 E4               JP     EndCommand
+1459: E695
+1460: E695         ;  file name is present
+1461: E695             ccpUserFunction1:
+1462: E695 11 70 E7               LD     DE,Token1+9
+1463: E698 1A                     LD     A,(DE)
+1464: E699 FE 20                  CP     SPACE
+1465: E69B C2 08 E2               JP     NZ,CommandError      ; type SPACE
+1466: E69E D5                     PUSH   DE
+1467: E69F CD 55 E7               CALL   SetDisk4Cmd
+1468: E6A2 D1                     POP    DE
+1469: E6A3 21 52 E7               LD     HL,comFileType       ; .com
+1470: E6A6 CD FB E3               CALL   CopyHL2DE3           ; file type is set to .com
+1471: E6A9 CD 29 E3               CALL   OpenFile4CmdFCB
+1472: E6AC CA 3A E7               JP     Z,ccpUserFunctionError1
+1473: E6AF         ; file opened properly, read it into memory
+1474: E6AF 21 00 01               LD     HL,TPA               ; transient program base
+1475: E6B2             ccpUserFunction2:
+1476: E6B2 E5                     PUSH   HL                   ;save dma address
+1477: E6B3 EB                     EX     DE,HL
+1478: E6B4 CD 62 E3               CALL   SetDMA
+1479: E6B7 11 67 E7               LD     DE,Token1
+1480: E6BA CD 0E E3               CALL   DiskRead
+1481: E6BD C2 D2 E6               JP     NZ,ccpUserFunction3
+1482: E6C0         ; sector loaded, set new dma address and compare
+1483: E6C0 E1                     POP    HL
+1484: E6C1 11 80 00               LD     DE,cpmRecordSize
+1485: E6C4 19                     ADD    HL,DE
+1486: E6C5 11 00 E0               LD     DE,CcpBoundary       ; has the load overflowed?
+1487: E6C8 7D                     LD     A,L
+1488: E6C9 93                     SUB    E
+1489: E6CA 7C                     LD     A,H
+1490: E6CB 9A                     SBC    A,D
+1491: E6CC D2 40 E7               JP     NC,ccpUserFunctionError2
+1492: E6CF C3 B2 E6               JP     ccpUserFunction2     ; for another sector
+1493: E6D2
+1494: E6D2             ccpUserFunction3:
+1495: E6D2 E1                     POP    HL
+1496: E6D3 3D                     DEC    A
+1497: E6D4 C2 40 E7               JP     NZ,ccpUserFunctionError2 ; end file is 1
+1498: E6D7 CD 25 E4               CALL   ResetDisk            ; back to original disk
+1499: E6DA CD 26 E1               CALL   ParseToken1
+1500: E6DD 21 88 E7               LD     HL,selectedDisk
+1501: E6E0 E5                     PUSH   HL
+1502: E6E1 7E                     LD     A,(HL)
+1503: E6E2 32 67 E7               LD     (Token1),A           ; drive number set
+1504: E6E5         ; 	LD		A,16
+1505: E6E5 CD 21 E1               CALL   ParseToken2          ; move entire fcb to memory
+1506: E6E8 E1                     POP    HL
+1507: E6E9 7E                     LD     A,(HL)
+1508: E6EA 32 77 E7               LD     (Token2),A
+1509: E6ED AF                     XOR    A
+1510: E6EE 32 87 E7               LD     (currentRecord),A    ; record number set to zero
+1511: E6F1 11 5C 00               LD     DE,FCB1              ; default FCB in page 0
+1512: E6F4 21 67 E7               LD     HL,Token1
+1513: E6F7 06 21                  LD     B,33
+1514: E6F9 CD FD E3               CALL   CopyHL2DEforB
+1515: E6FC         ; move command line to buff
+1516: E6FC 21 30 E2               LD     HL,commandBuffer
+1517: E6FF             ccpUserFunction4:
+1518: E6FF 7E                     LD     A,(HL)
+1519: E700 B7                     OR     A
+1520: E701 CA 0D E7               JP     Z,ccpUserFunction5
+1521: E704 FE 20                  CP     SPACE
+1522: E706 CA 0D E7               JP     Z,ccpUserFunction5
+1523: E709 23                     INC    HL
+1524: E70A C3 FF E6               JP     ccpUserFunction4     ; for another scan
+1525: E70D         ; first blank position found
+1526: E70D             ccpUserFunction5:
+1527: E70D 06 00                  LD     B,0
+1528: E70F 11 81 00               LD     DE,DMABuffer+1
+1529: E712         ; ready for the move
+1530: E712             ccpUserFunction6:
+1531: E712 7E                     LD     A,(HL)
+1532: E713 12                     LD     (DE),AE
+1533: E714 B7                     OR     A
+1534: E715 CA 1E E7               JP     Z,ccpUserFunction7
+1535: E718         ;more to move
+1536: E718 04                     INC    B
+1537: E719 23                     INC    HL
+1538: E71A 13                     INC    DE
+1539: E71B C3 12 E7               JP     ccpUserFunction6
+1540: E71E             ccpUserFunction7:                      ; B has character count
+1541: E71E 78                     LD     A,B
+1542: E71F 32 80 00               LD     (DMABuffer),A
+1543: E722 CD AF E3               CALL   CrLf
+1544: E725         ; now go to the loaded program
+1545: E725 CD 5F E3               CALL   SetDefaultDMA        ; default dma
+1546: E728 CD 0B E1               CALL   SaveUserAndDisk      ; user code saved
+1547: E72B         ; low memory diska contains user code
+1548: E72B CD 00 01               CALL   TPA                  ; gone to the loaded program
+1549: E72E 31 F0 E7               LD     SP,Stack             ; may come back here
+1550: E731 CD 1A E1               CALL   SetPage0CurDisk
+1551: E734 CD FE E2               CALL   SelectDisk
+1552: E737 C3 26 E0               JP     ccpMainEntry
+1553: E73A
+1554: E73A             ccpUserFunctionError1:
+1555: E73A CD 25 E4               CALL   ResetDisk
+1556: E73D C3 08 E2               JP     CommandError
+1557: E740
+1558: E740             ccpUserFunctionError2:                      ; cannot load the program
+1559: E740 01 49 E7               LD     BC,msgBadLoad
+1560: E743 CD C3 E3               CALL   PrintCrLfStringNull
+1561: E746 C3 36 E4               JP     ResetDiskAtCmdEnd
+1562: E749
+1563: E749             msgBadLoad:
+1564: E749 42 41 44 20 4C 4F 41 44 00                DB     'BAD LOAD',0
+1565: E752             comFileType:
+1566: E752 43 4F 4D                DB     'COM'                ;for com files
+1567: E755         ;
+1568: E755
+1569: E755         ;*****************************************************************
+1570: E755         ;*****************************************************************
+1571: E755         ;change disks for this command, if requested
+1572: E755             SetDisk4Cmd:
+1573: E755 AF                     XOR    A
+1574: E756 32 67 E7               LD     (Token1),A           ; clear disk name from fcb
+1575: E759 3A 88 E7               LD     A,(selectedDisk)
+1576: E75C B7                     OR     A
+1577: E75D C8                     RET    Z                    ; no action if not specified
+1578: E75E 3D                     DEC    A
+1579: E75F 21 8C E7               LD     HL,currentDisk
+1580: E762 BE                     CP     M
+1581: E763 C8                     RET    Z                    ;already selected
+1582: E764 C3 FE E2               JP     SelectDisk
+1583: E767         ;*****************************************************************
+1584: E767
+1585: E767         ;*****************************************************************
+1586: E767         ;************************ Data Area ******************************
+1587: E767         ;*****************************************************************
+1588: E767         ;------------------------------ Command Buffer -----------------------------;
+1589: E767         ;;
+1590: E767         ;;
+1591: E767             Token1:    DS     16                   ; Command Token
+1592: E777             Token2:    DS     16                   ; Command Token
+1593: E787
+1594: E787
+1595: E787
+1596: E787 00          currentRecord: DB     00H                  ; current record to read/write
+1597: E788 00          selectedDisk: DB     00H                  ; selected disk for current operation none=0, a=1, b=2 ...
+1598: E789         ;
+1599: E789 00          bufferPointer: DB     00H                  ; buffer pointer
+1600: E78A         ;------------------------------------
+1601: E78A 00 00       tokenStart: DW     0000H                ; staddr starting address of current Fill FCB request
+1602: E78C         ;----------------------------
+1603: E78C         ; (command executed initially if commandLength non zero)
+1604: E78C         ;--------------------------------- Variables -------------------------------;
+1605: E78C 00          currentDisk: DB     00H                  ; Current disk
+1606: E78D 00          directoryIndex: DB     00H                  ; Index into Directory Buffer
+1607: E78E         ;--------------------------------- Variables -------------------------------;
+1608: E78E
+1609: E78E             endOfCode:
+1610: E78E                        ORG    BDOSBase-10H
+1611: E7F0             Stack:                          ; Top Of Stack
+1612: E7F0
+1613: E7F0         ;Z_HighestLocation:
+1614: E7F0             ZZ_MemoryLeft EQU    (BDOSBase-1) - endOfCode
+1615: E7F0
+1616: E7F0
+1617: E7F0
+1618: E7F0
+1619: E7F0
            ************************   Xref   ************************
-0000: $               E7F0   0759
-1031: AddA2HL         E405   1042 1255
-0084: ASCII_A         0041   0328 1139
+0000: $               E7F0   0768
+1070: AddA2HL         E406   1081 1294
+0084: ASCII_A         0041   0329 1178
 0085: ASCII_C         0043
 0086: ASCII_K         004B
 0093: ASCII_LO_A      0061
 0094: ASCII_LO_K      006B
 0095: ASCII_LO_P      0070
-0036: ASCII_MASK      007F   1156 1166
+0036: ASCII_MASK      007F   1195 1205
 0087: ASCII_N         004E
 0088: ASCII_Q         0051
 0089: ASCII_R         0052
 0090: ASCII_W         0057
-0091: ASCII_Y         0059   1212
-0071: ASCII_ZERO      0030   0918
-0065: ASTERISK        002A   0568
-0288: BDOS            0005   0412 0781 0786 0792 0798 0824 0864 0873 0877 0883 0893 0897 0978
-0882: BDOSandIncA     E35E   0807 0819 0829 0849 0859
-0151: BDOSBase        E800   0152 0154 1569 1573
+0091: ASCII_Y         0059   1251
+0071: ASCII_ZERO      0030   0935
+0065: ASTERISK        002A   0576
+0288: BDOS            0005   0420 0786 0792 0817 0825 0834 0846 0863 0878 0900 0909 0995 1023 1028
+0845: BDOSandIncA     E321   0801 0810 0868 0885 0895
+0151: BDOSBase        E800   0152 0154 1610 1614
 0120: BDOSE           0005   0121
 0152: BDOSEntry       E800
 0141: BDOSLength      0E00   0144 0154 0155
-0876: BDOSsetFlags    E359   0834 0844
 0054: BELL            0007
 0154: BIOSBase        F600
 0142: BIOSLength      0A00   0144
 0114: BIOSPAGE        0002
 0155: BIOSStart       F600
 0251: BlockSize       0800   0273
-1560: bufferPointer   E78A   1237 1240
-0759: builtInCMDCount 0006   0670
-0752: builtInCMDNames E2D1   0666 0759
-0750: builtInCMDNameSize 0004   0673 0759
-0761: builtInCMDVector E2E9   0346
+1599: bufferPointer   E789   1276 1279
+0768: builtInCMDCount 0006   0678
+0761: builtInCMDNames E2D3   0674 0768
+0759: builtInCMDNameSize 0004   0681 0768
+0770: builtInCMDVector E2EB   0347
 0032: BYTE            0001
 0092: CARET           005E
-0296: CcpBoundary     E000   1447
-1101: ccpDir1         E45B   1105
-1107: ccpDir2         E462   1098
-1112: ccpDir3         E46B   1191
-1153: ccpDir4         E4AC   1180 1183
-1172: ccpDir5         E4CC   1159
-1185: ccpDir6         E4E1   1168 1177
-1187: ccpDir7         E4E2   1125
-1092: ccpDirectory    E44A   0762
-1192: ccpDirEnd       E4EE   1113 1189
-1145: ccpDirHeader    E49F   1133
-1149: ccpDirHeader1   E4A7   1143
-1170: ccpDirSpace     E4CA   1163
+0296: CcpBoundary     E000   1486
+1140: ccpDir1         E45C   1144
+1146: ccpDir2         E463   1137
+1151: ccpDir3         E46C   1230
+1192: ccpDir4         E4AD   1219 1222
+1211: ccpDir5         E4CD   1198
+1224: ccpDir6         E4E2   1207 1216
+1226: ccpDir7         E4E3   1164
+1131: ccpDirectory    E44B   0771
+1231: ccpDirEnd       E4EF   1152 1228
+1184: ccpDirHeader    E4A0   1172
+1188: ccpDirHeader1   E4A8   1182
+1209: ccpDirSpace     E4CB   1202
 0149: CCPEntry        E000   0151 0155 0295
-1198: ccpErase        E4F2   0763
-1217: ccpEraseAll     E515   1201
+1237: ccpErase        E4F3   0772
+1256: ccpEraseAll     E516   1240
 0140: CCPLength       0800   0144 0151 0155
-0324: ccpMainEntry    E026   0724 1085 1209 1213 1513
-0334: CcpParseCommand E03C   0322
-1328: ccpRename       E5E3   0766
-1349: ccpRename1      E612   1346
-1367: ccpRename2      E62C   1362
-1378: ccpRenameError1 E640   1372
-1381: ccpRenameError2 E646   1348 1355 1366
-1384: ccpRenameError3 E64C   1335
-1274: ccpSave         E580   0765
-1295: ccpSave1        E5A7   1310
-1313: ccpSave2        E5C4   1298
-1318: ccpSaveError    E5CE   1286 1309
-1321: ccpSaveExit     E5D4   1317
+0325: ccpMainEntry    E026   0413 0732 1124 1248 1252 1552
+0335: CcpParseCommand E03C   0323
+1367: ccpRename       E5E4   0775
+1388: ccpRename1      E613   1385
+1406: ccpRename2      E62D   1401
+1417: ccpRenameError1 E641   1411
+1420: ccpRenameError2 E647   1387 1394 1405
+1423: ccpRenameError3 E64D   1374
+1313: ccpSave         E581   0774
+1334: ccpSave1        E5A8   1349
+1352: ccpSave2        E5C5   1337
+1357: ccpSaveError    E5CF   1325 1348
+1360: ccpSaveExit     E5D5   1356
 0304: CcpStart        E000
-1229: ccpType         E530   0764
-1239: ccpType1        E547   1262
-1252: ccpType2        E55A   1243
-1264: ccpTypeEOF      E573   1248
-1268: ccpTypeError    E57A   1234
-1393: ccpUser         E661   0767
-1406: ccpUserFunction E678   0343 0768
-1422: ccpUserFunction1 E694   1410
-1436: ccpUserFunction2 E6B1   1453
-1455: ccpUserFunction3 E6D1   1442
-1478: ccpUserFunction4 E6FE   1485
-1487: ccpUserFunction5 E70C   1481 1483
-1491: ccpUserFunction6 E711   1500
-1501: ccpUserFunction7 E71D   1495
-1515: ccpUserFunctionError1 E739   1433
-1519: ccpUserFunctionError2 E73F   1452 1458
-0891: CheckForConsoleChar E366   0402 1188 1260
-0817: CloseFile       E31D   0393 1315
-0072: COLON           003A   0510 0652 1141 1147
-1526: comFileType     E751   1430
+1268: ccpType         E531   0773
+1278: ccpType1        E548   1301
+1291: ccpType2        E55B   1282
+1303: ccpTypeEOF      E574   1287
+1307: ccpTypeError    E57B   1273
+1432: ccpUser         E662   0776
+1445: ccpUserFunction E679   0344 0777
+1461: ccpUserFunction1 E695   1449
+1475: ccpUserFunction2 E6B2   1492
+1494: ccpUserFunction3 E6D2   1481
+1517: ccpUserFunction4 E6FF   1524
+1526: ccpUserFunction5 E70D   1520 1522
+1530: ccpUserFunction6 E712   1539
+1540: ccpUserFunction7 E71E   1534
+1554: ccpUserFunctionError1 E73A   1472
+1558: ccpUserFunctionError2 E740   1491 1497
+1021: CheckForConsoleChar E3D4   0410 1227 1299
+0808: CloseFile       E309   0401 1354
+0072: COLON           003A   0518 0660 1180 1186
+1565: comFileType     E752   1469
 0067: COMMA           002C
-0731: commandBuffer   E22E   0400 0429 0733 1477
-0733: commandBufferPointer E2AE   0430 0494 0540 1216 1342 1352
-0704: CommandError    E206   0340 0644 0907 0920 0924 0930 0932 0934 0942 1084 1231 1270 1279 1330 1383 1396 1400 1426 1517
-0719: CommandErrorExit E21E   0710 0712
-0707: CommandErrorLoop E20C   0717
-0730: commandLength   E22D   0320 0383 0417 1207
-0729: commandMaxLength E22C   0410
+0739: commandBuffer   E230   0408 0437 0741 1516
+0741: commandBufferPointer E2B0   0438 0502 0548 1255 1381 1391
+0712: CommandError    E208   0341 0652 0924 0937 0941 0947 0949 0951 0959 1123 1270 1309 1318 1369 1422 1435 1439 1465 1556
+0727: CommandErrorExit E220   0718 0720
+0715: CommandErrorLoop E20E   0725
+0738: commandLength   E22F   0321 0386 0425 1246
+0737: commandMaxLength E22E   0418
 0126: ComTail         0080   0127
 0128: ComTailChars    0082
 0127: ComTailCount    0081   0128
-1019: CopyHL2DE3      E3FA   1431
-1021: CopyHL2DEforB   E3FC   0386 1027 1340 1475
-0228: cpmRecordSize   0080   0230 0233 0235 0385 1301 1445
-0057: CR              000D   0959
-0958: CrLf            E3BC   0326 0705 0722 0998 1135 1236 1504
+1058: CopyHL2DE3      E3FB   1470
+1060: CopyHL2DEforB   E3FD   1066 1379 1514
+0228: cpmRecordSize   0080   0230 0233 0235 0387 1340 1484
+0057: CR              000D   0976
+0975: CrLf            E3AF   0327 0713 0730 1003 1174 1275 1543
 0040: CTRL_C          0003
 0041: CTRL_E          0005
 0042: CTRL_H          0008
@@ -1691,29 +1731,29 @@
 0048: CTRL_U          0015
 0049: CTRL_X          0018
 0050: CTRL_Z          001A
-1557: currentDisk     E788   0338 0368 0396 0456 0467 0475 0516 1067 1070 1416 1540
-1555: currentRecord   E786   0812 1288 1471
+1605: currentDisk     E78C   0339 0369 0404 0464 0475 0483 0524 1106 1109 1455 1579
+1596: currentRecord   E787   0856 1327 1510
 0068: DASH            002D
 0262: DataBlocks      02C7   0272
 0261: DataSectors     0B1C   0262
-0822: DeleteFile      E322   0455 1220 1283
-0446: DeleteSubmitFile E0F1   0404 0405 0408 0723
+0861: DeleteFile      E333   0463 1259 1322
+0454: DeleteSubmitFile E0F3   0412 0416 0731
 0233: DirBuffSize     0080
 0248: DirectoryBlockCount 0002   0273
-1556: directoryCount  E787   0884 1115
 0235: DirectoryEntryPerRecord 0004   0276
+1606: directoryIndex  E78D   0847 1154
 0232: DirEntrySize    0020   0235 0273
 0220: DiskCommandBlock 0046
 0219: DiskControlByte 0045
 0222: DiskControlTable 0040
-0832: DiskRead        E32C   0380 0839 1441
-0837: DiskReadCmdFCB  E331   1246
+0815: DiskRead        E30E   0381 0873 1480
+0871: DiskReadCmdFCB  E33D   1285
 0224: DiskReadCode    0001
 0229: diskSectorSize  0200   0230 0251 0259
 0218: DiskStatusLocation 0043
-0842: DiskWrite       E337   1306
+0876: DiskWrite       E343   1345
 0225: DiskWriteCode   0002
-0131: DMABuffer       0080   0335 0384 0868 1040 1254 1489 1503
+0131: DMABuffer       0080   0336 0385 0904 1079 1293 1528 1542
 0061: DOLLAR          0024
 0274: dpb3hdAL0       00C0
 0275: dpb3hdAL1       0000
@@ -1726,171 +1766,172 @@
 0278: dpb3hdNOH       0002
 0277: dpb3hdOFF       0001
 0268: dpb3hdSPT       0090
-0135: END_OF_FILE     001A   1257
-1077: EndCommand      E438   1402 1414 1419
-1568: endOfCode       E78D   1573
+0135: END_OF_FILE     001A   1296
+1116: EndCommand      E439   1441 1453 1458
+1609: endOfCode       E78E   1614
 0038: EndOfMessage    0000
-0076: EQUAL_SIGN      003D   0646 1345
+0076: EQUAL_SIGN      003D   0654 1384
 0059: EXCLAIM_POINT   0021
 0027: FALSE           0000
-0123: FCB1            005C   0124 1472
+0123: FCB1            005C   0124 1511
 0124: FCB2            006C
-0290: fcbSystemFileIndex 000A   1122
-0168: fCloseFile      0010   0818
-0159: fConsoleIn      0001   0896
-0160: fConsoleOut     0002   0977
-0171: fDeleteFile     0013   0823
-0163: fGetConsoleStatus 000B   0892
-0177: fGetCurrentDisk 0019   0797
+0290: fcbSystemFileIndex 000A   1161
+0168: fCloseFile      0010   0809
+0159: fConsoleIn      0001   1027
+0160: fConsoleOut     0002   0994
+0171: fDeleteFile     0013   0862
+0163: fGetConsoleStatus 000B   1022
+0177: fGetCurrentDisk 0019   0824
 0176: fGetLoginVector 0018
-0179: fGetSetUserNumber 0020   0780
+0179: fGetSetUserNumber 0020   0833
 0164: fGetVersion     000C
-0291: FILE_NAME_SIZE  0008   0527 0543
-0292: FILE_TYPE_SIZE  0003   0531 0543
-0619: FillWithAcc     E1AE   0538 0622
-0617: FillWithSpace   E1AC   0586 0607
-0174: fMakeFile       0016   0828
-0167: fOpenFile       000F   0806
-0563: FormatElement   E17F   0528 0533 0577
-0573: FormatElement1  E190   0569
-0576: FormatElement2  E192   0571
+0291: FILE_NAME_SIZE  0008   0535 0551
+0292: FILE_TYPE_SIZE  0003   0539 0551
+0627: FillWithAcc     E1B0   0546 0630
+0625: FillWithSpace   E1AE   0594 0615
+0174: fMakeFile       0016   0867
+0167: fOpenFile       000F   0800
+0571: FormatElement   E181   0536 0541 0585
+0581: FormatElement1  E192   0577
+0584: FormatElement2  E194   0579
 0161: fPrintString    0009
-0172: fReadSeq        0014   0833
-0162: fReadString     000A   0411
-0175: fRenameFile     0017   0863
+0172: fReadSeq        0014   0816
+0162: fReadString     000A   0419
+0175: fRenameFile     0017   0899
 0165: fResetSystem    000D   0785
-0169: fSearchFirst    0011   0848
-0170: fSearchNext     0012   0858
+0169: fSearchFirst    0011   0884
+0170: fSearchNext     0012   0894
 0166: fSelectDisk     000E   0791
-0178: fSetDMA         001A   0872
-0173: fWriteSeq       0015   0843
-1039: GetByteAtAandCandDMA E40A   1123 1155 1165
-0903: GetNumberFromCmdLine E374   1275 1394
-0912: GetNumericValue E384   0937
-0939: GetNumericValue1 E3AF   0915 0945
-0796: GetSelectedDrive E309   0327 0337 1137
-0776: GetUser         E2F7   0462
-0077: GREATER_THAN    003E   0330 0658
+0178: fSetDMA         001A   0908
+0173: fWriteSeq       0015   0877
+1078: GetByteAtAandCandDMA E40B   1162 1194 1204
+0920: GetNumberFromCmdLine E367   1314 1433
+0929: GetNumericValue E377   0954
+0956: GetNumericValue1 E3A2   0932 0962
+0823: GetSelectedDrive E315   0328 0338 1176
+0829: GetUser         E31A   0470
+0077: GREATER_THAN    003E   0331 0666
 0060: HASH_TAG        0023
-0784: Initialize      E2FE   0313
-0665: IntrinsicFunction E1DC   0345
-0668: IntrinsicFunction1 E1E1   0696
-0674: IntrinsicFunction2 E1EA   0681
-0689: IntrinsicFunction3 E1FD   0677 0692
-0694: IntrinsicFunction4 E202   0685
+0784: Initialize      E2F9   0314
+0673: IntrinsicFunction E1DE   0346
+0676: IntrinsicFunction1 E1E3   0704
+0682: IntrinsicFunction2 E1EC   0689
+0697: IntrinsicFunction3 E1FF   0685 0700
+0702: IntrinsicFunction4 E204   0693
 0115: IOBYTE          0003
-0639: IsItADelimiter  E1BD   0564 0580
-0600: IsItDot         E1A0   0532
+0647: IsItADelimiter  E1BF   0572 0588
+0608: IsItDot         E1A2   0540
 0063: L_PAREN         0028
-0080: LEFT_ARROW      005F   1347
+0080: LEFT_ARROW      005F   1386
 0096: LEFT_CURLY      007B
 0144: LengthInBytes   2000   0145 0149 0259
 0145: LengthInK       0009
-0075: LESS_THAN       003C   0656
-0056: LF              000A   0961
-0030: LO_NIBBLE_MASK  000F   0317
-0827: MakeFile        E327   1285
-0728: maximumBufferSize 007F   0729 0731
+0075: LESS_THAN       003C   0664
+0056: LF              000A   0978
+0030: LO_NIBBLE_MASK  000F   0318
+0866: MakeFile        E338   1324
+0736: maximumBufferSize 007F   0737 0739
 0147: MemorySize      0040   0149
-1524: msgBadLoad      E748   1520
-1225: msgEraseAll     E525   1203
-1389: msgFileExists   E655   1385
-1016: msgNoFile       E3F2   1013
-1325: msgNoSpace      E5DA   1319
-1054: msgReadErr      E419   1052
+1563: msgBadLoad      E749   1559
+1264: msgEraseAll     E526   1242
+1428: msgFileExists   E656   1424
+1055: msgNoFile       E3F3   1052
+1364: msgNoSpace      E5DB   1358
+1093: msgReadErr      E41A   1091
 0260: myOffset        0001   0261 0277
-0627: NextNonBlankChar E1B3   0496 0634 1344
-0415: NoRead          E0D3   0403
-0407: NotSubmitFile   E0C2   0366 0375 0381 0394
+0635: NextNonBlankChar E1B5   0504 0642 1383
+0423: NoRead          E0D5   0411
+0415: NotSubmitFile   E0C4   0367 0376 0382 0402
 0052: NULL            0000
 0244: NumberOfHeads   0002   0255 0257 0268 0278
 0241: NumberOfLogicalDisks 0004
 0029: OFF             0000
 0028: ON              FFFF
-0805: OpenFile        E30E   0374 0814
-0810: OpenFile4CmdFCB E313   1233 1432
-0585: PadTheElement   E19C   0565
-0489: ParseToken      E127   0486
-0487: ParseToken1     E124   0339 0904 1078 1093 1199 1230 1278 1329 1354 1460
-0484: ParseToken2     E11F   1466
+0799: OpenFile        E304   0375 0858
+0854: OpenFile4CmdFCB E329   1272 1471
+0593: PadTheElement   E19E   0573
+0497: ParseToken      E129   0494
+0495: ParseToken1     E126   0340 0921 1117 1132 1238 1269 1317 1368 1393 1499
+0492: ParseToken2     E121   1505
 0062: PERCENT         0025
-0069: PERIOD          002E   0603 0650
-0118: Pg0CurentDisk   0004   0318 0469 0476
+0069: PERIOD          002E   0611 0658
+0118: Pg0CurentDisk   0004   0319 0477 0484
 0117: Pg0CurentUser   0004   0118
 0066: PLUS_SIGN       002B
-0967: PrintCharInA    E3C5   0329 0331 0714 0721 0991 1007 1259
-0975: PrintCharInE    E3C8   0960 0962 0969
-0996: PrintCrLfStringNull E3DB   1014 1053 1204 1320 1386 1521
-1012: PrintNoFile     E3EC   1111 1222 1379
-1051: PrintReadError  E413   1267
-0989: PrintSaveBC     E3D5   0986 1140 1142 1148 1173
-0984: PrintSpace      E3D0   1146 1150 1182
-1001: PrintStringNull E3E0   0401 1009
-0078: QMARK           003F   0545 0570 0720 1102
-0546: QuestionMarkCount E175   0552
-0551: QuestionMarkCount1 E17A   0549
+0984: PrintCharInA    E3B8   0330 0332 0722 0729 1012 1045 1298
+0992: PrintCharInE    E3BB   0977 0979 0986
+1001: PrintCrLfStringNull E3C3   1053 1092 1243 1359 1425 1560
+1051: PrintNoFile     E3ED   1150 1261 1418
+1090: PrintReadError  E414   1306
+1043: PrintSaveBC     E3E7   1040 1179 1181 1187 1212
+1038: PrintSpace      E3E2   1185 1189 1221
+1006: PrintStringNull E3C8   0409 1014
+0078: QMARK           003F   0553 0578 0728 1141
+0554: QuestionMarkCount E177   0560
+0559: QuestionMarkCount1 E17C   0557
 0064: R_PAREN         0029
 0111: RAM             0000   0113 0114 0115 0117 0120 0123 0126 0131 0133
-0363: ReadCommand     E065   0332 1206
+0364: ReadCommand     E065   0333 1245
 0253: RecordsPerBlock 0010
 0237: RecordsPerExtent 0080
 0230: recordsPerSector 0004   0253 0268
-0862: RenameFile      E34C   1375
-1062: ResetDisk       E424   1075 1269 1382 1459 1516
-1074: ResetDiskAtCmdEnd E435   1194 1223 1258 1261 1266 1323 1376 1380 1387 1522
+0898: RenameFile      E35A   1414
+1101: ResetDisk       E425   1114 1308 1421 1498 1555
+1113: ResetDiskAtCmdEnd E436   1233 1262 1297 1300 1305 1362 1415 1419 1426 1561
 0081: RUBOUT          007F
-0461: SaveUserAndDisk E109   0409 1507
-0852: Searc4CmdFcbFile E341   1110 1334 1371
-0847: SearchForFirst  E33C   0854
-0857: SearchForNext   E347   1190
+0469: SaveUserAndDisk E10B   0417 1546
+0888: Searc4CmdFcbFile E34F   1149 1373 1410
+0883: SearchForFirst  E34A   0890
+0893: SearchForNext   E355   1229
 0282: SectorMask      0003
 0247: SectorsPerBlock 0004   0251 0253 0256 0262 0282
 0257: SectorsPerCylinder 0024   0260 0261
 0246: SectorsPerTrack 0012   0255 0257 0268
-0789: SelectDisk      E303   0319 0371 0398 0453 0457 1071 1418 1512 1543
-1558: selectedDisk    E789   0341 0493 0522 0905 1063 1081 1331 1359 1412 1461 1536
-0074: SEMICOLON       003B   0654
-0867: SetDefaultDMA   E351   1322 1506
-1533: SetDisk4Cmd     E754   1094 1218 1232 1280 1333 1428
-0871: SetDMA          E354   0336 1304 1439
-0526: SetFileName     E157   0518
-0474: SetPage0CurDisk E118   0413 1417 1511
-0530: SetType         E15C
-0779: SetUser         E2F9   0312 1401
+0789: SelectDisk      E2FE   0320 0372 0406 0461 0465 1110 1457 1551 1582
+1597: selectedDisk    E788   0342 0501 0530 0922 1102 1120 1370 1398 1451 1500 1575
+0074: SEMICOLON       003B   0662
+0903: SetDefaultDMA   E35F   1361 1545
+1572: SetDisk4Cmd     E755   1133 1257 1271 1319 1372 1467
+0907: SetDMA          E362   0337 1343 1478
+0534: SetFileName     E159   0526
+0482: SetPage0CurDisk E11A   0421 1456 1550
+0538: SetType         E15E
+0832: SetUser         E31C   0312 1440
 0070: SLASH           002F
 0053: SOH             0001
-0058: SPACE           0020   0618 0631 0643 0684 0709 0914 0941 0985 1080 1097 1158 1167 1171 1399 1409 1425 1482
-1570: Stack           E7F0   0305 0325 1510
-0746: submitCR        E2D0   0378
-0741: submitExtent    E2BC
-0739: submitFCB       E2B1   0373 0379 0392 0454
-0737: submitFlag      E2B0   0314 0364 0447
-0745: submitMap       E2C0
-0744: submitRC        E2BF   0376
-0742: submitS1        E2BD
-0743: submitS2        E2BE   0388
-0740: submitType      E2B9
+0058: SPACE           0020   0626 0639 0651 0692 0717 0931 0958 1039 1119 1136 1197 1206 1210 1438 1448 1464 1521
+1611: Stack           E7F0   0305 0326 1549
+0755: submitCR        E2D2   0379
+0749: submitExtent    E2BE
+0747: submitFCB       E2B3   0374 0380 0400 0462
+0745: submitFlag      E2B2   0315 0365 0455
+0751: submitFWF       E2C0   0393
+0754: submitMap       E2C2
+0753: submitRC        E2C1   0377 0398
+0750: submitS1        E2BF
+0752: submitS2        E2C0
+0748: submitType      E2BB
 0259: SystemSectors   0011   0260
 0055: TAB             0009
-1552: Token1          E766   0488 0672 0813 0838 0853 0909 1079 1095 1219 1281 1305 1314 1337 1370 1374 1398 1408 1423 1440 1464 1473 1535
-1553: Token2          E776   0485 1338 1469
-1562: tokenStart      E78B   0498 0706
+1591: Token1          E767   0496 0680 0857 0872 0889 0926 1118 1134 1258 1320 1344 1353 1376 1409 1413 1437 1447 1462 1479 1503 1512 1574
+1592: Token2          E777   0493 1377 1508
+1601: tokenStart      E78A   0506 0714
 0121: TopRAM          0007
 0256: TotalNumberOfBlocks 02D0
 0255: TotalNumberOfSectors 0B40   0256 0261
-0133: TPA             0100   1294 1435 1509
+0133: TPA             0100   1333 1474 1548
 0245: TracksPerHead   0050   0255
 0026: TRUE            FFFF
-0579: TruncateElement E194   0583
-0079: UNDER_SCORE     005F   0648
-0436: UpCase          E0E8   0422
-0419: UpCaseLoop      E0D7   0424
-0515: UseCurrentDisk  E14A   0505
-0520: UseTokensDisk   E151   0511
+0587: TruncateElement E196   0591
+0079: UNDER_SCORE     005F   0656
+0444: UpCase          E0EA   0430
+0427: UpCaseLoop      E0D9   0432
+0523: UseCurrentDisk  E14C   0513
+0528: UseTokensDisk   E153   0519
 0113: WarmBoot        0000
 0033: WORD            0002
 0193: WriteAllocated  0000
 0195: WriteCleanBuffer 0002
 0194: WriteDirectory  0001
 0037: ZERO            0000
-1573: ZZ_MemoryLeft   0072
+1614: ZZ_MemoryLeft   0071

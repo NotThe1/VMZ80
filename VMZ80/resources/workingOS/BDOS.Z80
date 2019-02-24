@@ -926,10 +926,13 @@ exitParameterWord:	DS	WORD				; Word                          ;
 ; entire file directory for the disk and rebuilding the allocation vectors  ;
 ; which keep track of which allocation blocks are free and which            ;
 ; are used for file storage.                                                ;
+;	Submit file is created by external command Submit. The file is          ;
+; identified as $$$.SUB                                                     ;
 ;                                                                           ;
 ;			Function Code	:	C = 0DH                                     ;
 ;			Entry Parameters:	None										;
-;			Exit Parameters :	None										;
+;			Exit Parameters :	A = 00H if no Submit File found				;
+;								  = 0FFH if Submit file found				;
 ;																			;
 ;---------------------------- Reset Disk System - D (13) -------------------;
 vResetSystem:
