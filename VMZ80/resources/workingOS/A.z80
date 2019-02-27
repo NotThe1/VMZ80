@@ -21,67 +21,57 @@ TPA			EQU		0100H
 
 			ORG		TPA			
 Start:
+
+	ADD		IX,BC
+	ADD		IX,DE
+	ADD		IX,IX
+	ADD		IX,SP
+
+	ADD		IY,BC
+	ADD		IY,DE
+	ADD		IY,IY
+	ADD		IY,SP
+
+
+
+
+
+
+
 	LD		SP,Stack
-	LD		IX,CMD
-	LD		HL,builtInCMDNames
-	LD		DE,builtInCMDNameSize
-	LD		B,builtInCMDCount
-	LD		C,0
+	LD		BC,0000
+	LD		DE,0000
+	LD		HL,0000
+	LD		IX,cmdLine
 Loop1:
 	LD		A,(IX + 0)
-	CP		M
-	JR		Z,Match
-	INC		C
-	ADD		HL,DE						; point at next entry
-	DJNZ	Loop1
-	JR		UserCommand
-;
-Match:
-	PUSH	DE							; Size of Match
-	LD		E,C							; Index into E
-	POP		BC							; Size of Match
-Loop2:
-	LD		A,(IX + 0)
-	CPI
 	INC		IX
-	JP		PO,Found
-	JR		Z,Loop2						; if more loop
-	
-UserCommand:
-	NOP
-	HALT
-	
-Found:
-	INC		IX
-	LD		A,(IX+0)
 	CP		020H
-	JR		NZ,UserCommand
+	JR		Z, END
+	SUB		030H
+	CP		0AH
+	JR		NC,END
+	
+	ADD		HL,HL			; * 2
+	PUSH	HL				; save * 2
+	ADD		HL,HL			; * 4
+	ADD		HL,HL			; * 8
+	POP		DE				; Get * 2
+	ADD		HL,DE			; * 10
+	
+	LD		C,A
+	LD		B,0
+	ADD		HL,BC			; new value
+	JR		Loop1
+	
+END:
 	NOP
 	HALT
-			
-CMD:		DB		'SAVE '
-
-;---------------------------------------------------
-builtInCMDNameSize	EQU		04			; Size of intrinsic function names  ;
-                                                                            ;
-builtInCMDNames:                                                            ;
-	DB		'DIR '                                                          ;
-	DB		'ERA '                                                          ;
-	DB		'TYPE'                                                          ;
-	DB		'SAVE'                                                          ;
-	DB		'REN '                                                          ;
-	DB		'USER'                                                          ;
-builtInCMDCount	EQU	(($-builtInCMDNames)/builtInCMDNameSize) + 1            ;
-                                                                            ;
-builtInCMDVector:                                                           ;
-	DW		1001H				; Directory List                    ;
-	DW		2002H					; File erase                        ;
-	DW		3003H						; Type file on Console              ;
-	DW		4004H						; Save memory image                 ;
-	DW		500H					; File rename                       ;
-	DW		6006H						; User number                       ;
-	DW		7007H				; User-defined function             ;
-;----------------------------------------------------------------------------
+	
+cmdLine:	DB		'255 '
+	
+	
+	
 FCB:
 			
 DISK:		DB		00
@@ -101,7 +91,6 @@ ALLOC:		DW		0
 REC_SEQ:	DB		0
 REC_RANDOM:	DW		0000H
 REC_RAN_O:	DB		00
-
 
 erPermanent:
 			NOP

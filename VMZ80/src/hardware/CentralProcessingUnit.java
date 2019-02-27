@@ -16,6 +16,7 @@ import memory.CpuBuss;
  * @author Frank Martyn
  * @version 1.0.1
  *
+ * 2019-02-27   ADD IX,IX & ADD IY,IY Used wrong second argument - 'HL'
  * 2018-12-16   DJNZ logic was backwards
  * 				LD rr,(nn) Reversed the word order in the double register
  * 2018-12-01   wrapped a try catch around reading byte from IOC. Reported to Application Log.
@@ -474,7 +475,13 @@ public class CentralProcessingUnit implements Runnable {
 		case (byte) 0X29:// ADD IXY,IXY
 		case (byte) 0X39:// ADD IXY,SP
 			instructionSize = 2;
-			regDouble = Z80.getDoubleRegister1((cpuBuss.read(instructionBase + 1) >> 4) & 0b0000_0011);
+			int doubleRegisterIndex = (cpuBuss.read(instructionBase + 1) >> 4) & 0b0000_0011;
+			if (doubleRegisterIndex == 2) {
+				regDouble = activeIndexRegister;
+			}else {
+			regDouble = Z80.getDoubleRegister1(doubleRegisterIndex);
+			
+			}
 			arg1 = getValue(wrs.getDoubleReg(activeIndexRegister));
 			arg2 = getValue(wrs.getDoubleReg(regDouble));
 			result = au.addWord(arg1, arg2);
