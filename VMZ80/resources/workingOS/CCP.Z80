@@ -795,7 +795,76 @@ msgNoDirSpace:                                                              ;
 msgNoDiskSpace:                                                             ;
 	DB		'NO DISK SPACE',0                                               ;
 ;---------------------------------- Save File ------------------------------; 
- 
+
+;---------------------------------- Type File ------------------------------;
+; SYNTAX: TYPE ufn                                                    		;
+;                                                                           ;
+;  The 'TYPE' command displays the content of the ASCII source file ufn on  ;
+; the currently logged disk at the console device.                          ;
+                                                                            ;
+ccpType:                                                                    ;
+	CALL	ParseToken1					; Setup the ufn's FCB               ;
+	JP		NZ,CommandError				; Must be unambiguous. No '?'s      ;
+	CALL	SetDiskForCmd				; Change disks for this command     ;
+	CALL	OpenToken1File				; Open the file at Token1           ;
+	JP		Z,ccpTypeError				;  error exit if not successful     ;
+                                                                            ;
+	CALL	CrLf						; Send new  NewLine to console      ;
+	                                                                        ;
+ccpTypeRead:                                                                ;
+ 	LD		DE,Token1					; Point at Token1's FCB             ;
+ 	CALL	DiskRead					; Read next Record                  ;
+	JP		NZ,ccpTypeEOF				; Hard End Of File                  ;
+		                                                                    ;
+	LD		B,cpmRecordSize				; Load Character count              ;
+	LD		C,fConsoleOut				; Load Function Number              ;
+	LD		HL,DMABuffer				; Point at the read buffer          ;
+	PUSH	HL							; Buffer Pointer                    ;
+ccpTypeRecord:                                                                ;
+	POP		HL							; Buffer Pointer                    ;
+	LD		A,(HL)						; Get the Character                 ;
+	CP		END_OF_FILE					; Are we at EOF ?                   ;
+	JP		Z,RestoreDiskAtCmdEnd		;  yes, exit                        ;
+	                                                                        ;
+	INC		HL							; Increment the Buffer Pointer      ;
+	PUSH	HL							; Buffer Pointer                    ;
+	CALL	PrintCharInA				; Preserve BC                       ;
+	DJNZ	ccpTypeRecord					; Iterate over the record           ;
+	JR		ccpTypeRead					; Iterate over the file             ;
+	                                                                        ;
+ccpTypeEOF:                                                                 ;
+	DEC		A							; Error returned ?                  ;
+	JP		Z,RestoreDiskAtCmdEnd		;  no, Restore Disk and exit        ;
+	CALL	PrintReadError				; Report Error                      ;
+ccpTypeError:                                                               ;
+	CALL	RestoreDisk					; Restore Disk                      ;
+	JP		CommandError				; Report error and exit             ;
+                                                                            ;
+;---------------------------------- Type File ------------------------------;
+
+;------------------------------------ User ---------------------------------;
+; SYNTAX: USER n		                                             		;
+;                                                                           ;
+;  The User command allows maintenance of separate files in the same        ;
+; directory. In the syntax line, n is an integer value in the range of 0-15 ;
+; On cold start, the operator is automatically logged into user area        ;
+; number 0.                                                                 ;
+;  The active user number is maintained until changed by a subsequent USER  ;
+; command, or until a cold start when user 0 is again assumed               ;
+                                                                            ;
+ccpUser:                                                                    ;
+	CALL	GetNumberFromCmdLine		; Value returned in Acc.            ;
+	CP		16							; Greater than 16 ?                 ;
+	JP		NC,CommandError				;  if yes, Error exit               ;
+	LD		E,A							; Prepare for SetUser call          ;
+	LD		A,(Token1) + 1				; Look past the number              ;
+	CP		SPACE						; Is it a Space ?                   ;
+	JP		Z,CommandError				;  yes, error exit                  ;
+	CALL	SetUser						; Call BDOS to set new user         ;
+	JP		EndCommand					; Exit cleanly                      ;
+;------------------------------------ User ---------------------------------;
+
+
 ;================================ BDOS API =================================;
 ;------------------------------- Initialize --------------------------------;
 Initialize:                                                                 ;
@@ -863,13 +932,6 @@ BDOSandIncA:                                                                ;
  	RET                                                                     ;
 ;------------------------------ BDOS and Inc A -----------------------------;
 
- ;--------
- ;open file for Command FCB
- OpenFile4CmdFCB:
- 	XOR		A
- 	LD		(currentRecord),A					; clear next record to read
- 	LD		DE,Token1
- 	JP		OpenFile
  ;-----------------------------
 ;delete the file given by (DE)
  DeleteFile:
@@ -881,10 +943,10 @@ BDOSandIncA:                                                                ;
  	LD		C,fMakeFile
  	JP		BDOSandIncA
  ;-----------
- ;read next record from Command FCB
- DiskReadCmdFCB:
- 	LD		DE,Token1
- 	JP		DiskRead
+;/ ;read next record from Command FCB
+;/ DiskReadCmdFCB:
+;/ 	LD		DE,Token1
+;/ 	JP		DiskRead
  ;-----------------------------
  ;write the next record to the file given by (DE)
  DiskWrite:
@@ -970,64 +1032,10 @@ BDOSandIncA:                                                                ;
  
  ;*****************************************************************
  ;*****************************************************************
- ; Type file
- ccpType:
- 	CALL	ParseToken1
- 	JP	NZ,CommandError					; don't allow ?'s in file name
- 	CALL	SetDiskForCmd
- 	CALL	OpenFile4CmdFCB					; open the file
- 	JP	Z,ccpTypeError					; zero flag indicates not found
- ; file opened, read 'til eof
- 	CALL	CrLf
- 	LD		HL,bufferPointer
- 	LD		(HL),255 							; read first buffer
- ccpType1:									; loop on bufferPointer
- 	LD		HL,bufferPointer
- 	LD		A,(HL)
- 	CP		128								; end buffer
- 	JP	C,ccpType2
- 	PUSH	HL								; carry if 0,1,...,127
- ; read another buffer full
- 	CALL	DiskReadCmdFCB
- 	POP		HL								; recover address of bufferPointer
- 	JP	NZ,ccpTypeEOF						; hard end of file
- 	XOR		A
- 	LD		(HL),A								; bufferPointer = 0
- ; read character at bufferPointer and print
- ccpType2:
- 	INC		M								; bufferPointer = bufferPointer + 1
- 	LD		HL,DMABuffer
- 	CALL	AddA2HL							; h,l addresses char
- 	LD		A,(HL)
- 	CP		END_OF_FILE
- 	JP	Z,RestoreDiskAtCmdEnd
- 	CALL	PrintCharInA
- 	CALL	CheckForConsoleChar
- 	JP	NZ,RestoreDiskAtCmdEnd				; abort if break
- 	JP		ccpType1						; for another character
- 
- ccpTypeEOF:
- 	DEC		A
- 	JP	Z,RestoreDiskAtCmdEnd
- 	CALL	PrintReadError
- ccpTypeError:
- 	CALL	RestoreDisk
- 	JP		CommandError
  ;*****************************************************************
  ; save save memory image
 ;*****************************************************************
- ;*****************************************************************
- ccpUser:
- 	CALL	GetNumberFromCmdLine			; leaves the value in the accumulator
- 	CP		16
- 	JP	NC,CommandError					; must be between 0 and 15
- 	LD		E,A								; save for SetUser call
- 	LD		 A,(Token1) + 1
- 	CP		SPACE
- 	JP	Z,CommandError
- 	CALL	SetUser 						;new user number set
- 	JP		EndCommand
- ;*****************************************************************
+  ;*****************************************************************
  ;User defined function
  ;*****************************************************************
  ccpUserFunction:
@@ -1056,7 +1064,7 @@ BDOSandIncA:                                                                ;
  	POP		DE
  	LD		HL,comFileType					; .com
  	CALL	CopyHL2DE3						; file type is set to .com
- 	CALL	OpenFile4CmdFCB
+ 	CALL	OpenToken1File
  	JP	Z,ccpUserFunctionError1
  ; file opened properly, read it into memory
  	LD		HL,TPA							; transient program base
@@ -1266,46 +1274,41 @@ EndCommand:                                                                 ;
 ;------------------------ Restore Disk at Command End ----------------------;
 
 ;------------------------ Get Number From Command Line ---------------------;
-; Get number from the command line
-; Exits with A = Value
-GetNumberFromCmdLine:
-	CALL	ParseToken1					; Get token
-	LD		A,(selectedDisk)			; Get currently selected disk
-	OR		A							; Is it current default disk ?
-	JP		NZ,CommandError				;  no, then error exit
-; convert the byte value in Token1 to binary
-
-	LD		IX,0000
-	LD		BC,0000						; Clear the registers
-	
-	LD		HL,Token1 + 1
-Loop1:
-	LD		A,(HL)						; Get Character
-	INC		HL							; Adjust for next time around
-	CP		SPACE						; Is it the terminating character ?
-	JR		Z,GetNumericValue1			;  get out if yes
-	SUB		ASCII_ZERO					; Make binary
-	CP		0AH							; Is it a digit ?
-	JR		NC,GetNumericValue1			;  get out if no
-	ADD		IX,IX						; Prior value * 2
-	PUSH	DE							; Save *2
-	ADD		IX,IX						; Prior value * 4
-	ADD		IX,IX						; Prior value * 8
-	ADD		IX,DE						; Add * 2 gives Prior value * 10
-	LD		C,A							; Get this digit
-	ADD		IX,BC						; and add it
-	JR		Loop1
-	
-GetNumericValue1:
-;	LD		A,(HL)
-;	CP		SPACE
-;	JP		NZ,CommandError			;blanks?
-;	INC		HL
-;	DEC		C
-;	JP		NZ,GetNumericValue1
-	LD		A,C						;recover value
-	RET
-
+; Get number from the command line                                          ;
+; Exits with A = Value                                                      ;
+GetNumberFromCmdLine:                                                       ;
+	CALL	ParseToken1					; Get token                         ;
+	LD		A,(selectedDisk)			; Get currently selected disk       ;
+	OR		A							; Is it current default disk ?      ;
+	JP		NZ,CommandError				;  no, then error exit              ;
+; convert the byte value in Token1 to binary                                ;
+                                                                            ;
+	LD		HL,0000                                                         ;
+	LD		BC,0000						; Clear the registers               ;
+	                                                                        ;
+	LD		IX,Token1 + 1                                                   ;
+Loop1:                                                                      ;
+	LD		A,(IX + 0)					; Get Character                     ;
+	INC		IX							; Adjust for next time around       ;
+	CP		SPACE						; Terminating character ?           ;
+	JR		Z,GetNumericValue1			;  get out if yes                   ;
+	SUB		ASCII_ZERO					; Make binary                       ;
+	CP		0AH							; Is it a digit ?                   ;
+	JR		NC,GetNumericValue1			;  get out if no                    ;
+	ADD		HL,HL						; Prior value * 2                   ;
+	PUSH	HL							; Move *2                           ;
+	POP		DE							;  to DE                            ;
+	ADD		HL,HL						; Prior value * 4                   ;
+	ADD		HL,HL						; Prior value * 8                   ;
+	ADD		HL,DE						; Add * 2 gives Prior value * 10    ;
+	LD		C,A							; Get this digit                    ;
+	ADD		HL,BC						; and add it                        ;
+	JR		Loop1                                                           ;
+	                                                                        ;
+GetNumericValue1:                                                           ;
+	LD		A,L							; Put result in Acc                 ;
+	RET                                                                     ;
+                                                                            ;
 ;------------------------ Get Number From Command Line ---------------------;
 ;-------------------------------- Restore Disk -----------------------------;
 ; Restore Disk from before command                                          ;
@@ -1331,7 +1334,7 @@ FindFirstToken1File:                                                        ;
 ;Upon entry  DE = FCB                                                       ;
 SearchForFirst:                                                             ;
 	LD		C,fSearchFirst				; Load Function Number - 11H        ;
-	JP		BDOSandIncA				; make BDOS call & set dir index    	;
+	JP		BDOSandIncA					; make BDOS call & set dir index   	;
 ;----------------------------- Find First Entry ----------------------------;
 ;----------------------------- Find  Next Entry ----------------------------;
 ;Search for the next occurrence of the file given DE                        ;
@@ -1340,6 +1343,13 @@ SearchForNext:                                                              ;
  	LD		C,fSearchNext				; Load Function Number - 12H        ;
  	JP		BDOSandIncA					; make BDOS call & set dir index    ;
 ;----------------------------- Find  Next Entry ----------------------------;
+;----------------------------- Open Token1 File ----------------------------;
+OpenToken1File:                                                             ;
+ 	XOR		A							; Clear Acc                         ;
+ 	LD		(currentRecord),A			; Initialize  next record for I/O   ;
+ 	LD		DE,Token1					; Point at the FCB                  ;
+ 	JP		OpenFile					; Let BDOS open the file            ;
+;----------------------------- Open Token1 File ----------------------------;
 
 
 
@@ -1352,8 +1362,8 @@ SearchForNext:                                                              ;
 ;------------------------------ Command Buffer -----------------------------;
  ;;
  ;;	
-Token1:			DS		16				; Command Token
-Token2:			DS		16				; Command Token
+Token1:				DS		16				; Command Token
+Token2:				DS		16				; Command Token
 
 
 
