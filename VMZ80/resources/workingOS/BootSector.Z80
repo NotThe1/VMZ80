@@ -9,9 +9,13 @@
  ;				 , and default IOBYTE : IOBYTE_DEFAULT
  ; 2017-03-02 Refactored the CP/M Suite
  
- 	$Include ./stdHeader.Z80
+ 	DollarInclude ./stdHeader.Z80
  	$Include ./osHeader.Z80
  	$Include ./diskHeader.Z80
+CR				EQU		0DH			; Carriage Return
+EndOfMessage	EQU		00H
+LF				EQU		0AH			; Line Feed
+
  	
 BOOT_CON_ADDRESS	EQU	0ECH			; tty data address
 IOBYTE_DEFAULT		EQU	080H			; LST:=LPT, rest all = TTY:

@@ -1,11 +1,9 @@
 ;     File created by MakeZ80Source on Tue Sep 18 14:13:13 EDT 2018 from:
 ;     C:\Users\admin\Dropbox\Resources\CPM\CurrentOS\8080\CCP.asm
 
-; Intrinsic Commands
-;	DIR
-
 ; CCP.Z80
 ;
+; 2019-03-01 Finished refactor to Z80 idiom
 ; 2019-02-19 Started to refactor to Z80 idiom
 
 ; 2017-03-02 Refactored the CP/M Suite
@@ -24,8 +22,8 @@ fcbSystemFileIndex		EQU		0AH			; extent number field index
 FILE_NAME_SIZE			EQU		08H			; Max size of file Name 
 FILE_TYPE_SIZE			EQU		03H			; Max size of file Type
 
-ASCII_M					EQU    'M' 
-ASCII_O					EQU    'O' 
+; ASCII_M					EQU    'M' 
+; ASCII_O					EQU    'O' 
  
  					ORG	CCPEntry
 CcpBoundary			EQU	$
