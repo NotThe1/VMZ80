@@ -101,8 +101,8 @@ public class Z80Machine {
 	// ---------------------------------------------------------
 
 	private void loadROM() {
-		InputStream in = this.getClass().getResourceAsStream("/workingOS/ROM.mem");
-		// InputStream in = this.getClass().getResourceAsStream("/Z80code/ROM.mem");
+//		InputStream in = this.getClass().getResourceAsStream("/workingOS/ROM.mem");
+		 InputStream in = this.getClass().getResourceAsStream("/Z80code/ROM.mem");
 		BufferedReader reader = new BufferedReader(new InputStreamReader(in));
 		MemoryLoaderFromFile.loadMemoryImage(reader);
 	}// loadROM
@@ -416,6 +416,13 @@ public class Z80Machine {
 		for (JInternalFrame internalFrame : desktopPane.getAllFrames()) {
 			internalFrame.setEnabled(state);
 		} // for frames
+		
+		int menuCount = menuBar.getMenuCount();
+
+		for(int i = 0; i< menuCount;i++) {
+			menuBar.getMenu(i).setEnabled(state);
+		}//for
+
 	}// setDisplaysEnabled
 
 	private void doBoot() {
@@ -680,9 +687,9 @@ public class Z80Machine {
 		gbc_lblNewLabel_1.gridy = 0;
 		statusBar.add(lblNewLabel_1, gbc_lblNewLabel_1);
 
-		JMenuBar menuBar = new JMenuBar();
+		menuBar = new JMenuBar();
 		frameBase.setJMenuBar(menuBar);
-
+		
 		JMenu mnuFile = new JMenu("File");
 		menuBar.add(mnuFile);
 
@@ -848,6 +855,7 @@ public class Z80Machine {
 	private JToggleButton tbRunStop;
 	private JPanel disksPanel;
 	private JToggleButton btnBoot;
+	private JMenuBar menuBar;
 	//////////////////////////////////////////////////////////////////////////
 
 	class ApplicationAdapter implements ActionListener, HDNumberValueChangeListener, Observer {// ,
