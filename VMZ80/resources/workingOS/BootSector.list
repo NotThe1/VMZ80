@@ -1,5 +1,5 @@
-0001: 0100         ;     File created by MakeZ80Source on Tue Sep 18 10:01:22 EDT 2018 from:
-0002: 0100         ;     C:\Users\admin\Dropbox\Resources\CPM\CurrentOS\8080\BootSector.asm
+0001: 0100         ;		File created by MakeZ80Source on Tue Sep 18 10:01:22 EDT 2018 from:
+0002: 0100         ;		C:\Users\admin\Dropbox\Resources\CPM\CurrentOS\8080\BootSector.asm
 0003: 0100         ; BootSector.Z80
 0004: 0100         ; Build 2.01
 0005: 0100
@@ -7,7 +7,7 @@
 0007: 0100         ; 2018-02-19 BDOS 1.0 designation
 0008: 0100         ; 2018-11-22 begin  Z80 idiom update
 0009: 0100         ; 2017-04-07 Added equates for message IO : BOOT_CON_ADDRESS
-0010: 0100         ;				 , and default IOBYTE : IOBYTE_DEFAULT
+0010: 0100         ;				, and default IOBYTE : IOBYTE_DEFAULT
 0011: 0100         ; 2017-03-02 Refactored the CP/M Suite
 0012: 0100
 0013: 0100                        Include ./DCTheader.Z80
@@ -164,35 +164,35 @@
 0164: 012B CD FA 01               CALL   SendMessage          ; Send message
 0165: 012E 76                     HALT                        ; And STOP!
 0166: 012F
-0167: 012F         ;---------------------------- Boot Disk Control Block -----------------------;
+0167: 012F         ;---------------------------- Boot Disk Control Block ----------------------;
 0168: 012F             BootDiskControlTable:                      ;
-0169: 012F 01                     DB     DiskReadCode         ; Read function                   	 ;
-0170: 0130 00                     DB     00H                  ; unit number                     	 ;
-0171: 0131 00                     DB     00H                  ; head number                     	 ;
-0172: 0132 00                     DB     00H                  ; track number                    	 ;
-0173: 0133 0D                     DB     0DH                  ; Starting sector number (13)     	 ;
-0174: 0134 00 0A                  DW     5 * 512              ; Number of bytes to read         	 ;
-0175: 0136         ;	( 0A00 All of BIOS)           	 ;
-0176: 0136 00 F6                  DW     BIOSStart            ; read into this address          	 ;
-0177: 0138 43 00                  DW     DiskStatusLocation   ; next block - no linking         	 ;
-0178: 013A 40 00                  DW     DiskControlTable     ; next table- no linking          	 ;
-0179: 013C         ;---------------------------- ROM Disk Control Block ------------------------;
+0169: 012F 01                     DB     DiskReadCode         ; Read function						;
+0170: 0130 00                     DB     00H                  ; unit number						;
+0171: 0131 00                     DB     00H                  ; head number						;
+0172: 0132 00                     DB     00H                  ; track number						;
+0173: 0133 0D                     DB     0DH                  ; Starting sector number (13)		;
+0174: 0134 00 0A                  DW     5 * 512              ; Number of bytes to read			;
+0175: 0136         ;	( 0A00 All of BIOS)				;
+0176: 0136 00 F6                  DW     BIOSStart            ; read into this address			;
+0177: 0138 43 00                  DW     DiskStatusLocation   ; next block - no linking			;
+0178: 013A 40 00                  DW     DiskControlTable     ; next table- no linking			;
+0179: 013C         ;---------------------------- ROM Disk Control Block -----------------------;
 0180: 013C
-0181: 013C         ;------------------------------------ Page 0 --------------------------------;
+0181: 013C         ;------------------------------------ Page 0 -------------------------------;
 0182: 013C             Page0Image:                      ;
-0183: 013C C3 03 F6               JP     WarmBootEntry        ; warm start                         ;
-0184: 013F         ;IOBYTE:                                                                     ;
-0185: 013F 80                     DB     IOBYTE_DEFAULT       ; IOBYTE-                            ;
+0183: 013C C3 03 F6               JP     WarmBootEntry        ; warm start						;
+0184: 013F         ;IOBYTE:																	;
+0185: 013F 80                     DB     IOBYTE_DEFAULT       ; IOBYTE-							;
 0186: 0140             DefaultDisk:                      ;
-0187: 0140 00                     DB     00H                  ; Current default drive (A)          ;
-0188: 0141 C3 00 E8               JP     BDOSEntry            ; jump to BDOS entry                 ;
-0189: 0144                        DS     028H                 ; interrupt locations 1-5 not used   ;
-0190: 016C                        DS     008H                 ; interrupt location 6 is reserved   ;
-0191: 0174 C3 00 00               JP     0000H                ; RST 7 used only by DDT & SID       ;
+0187: 0140 00                     DB     00H                  ; Current default drive (A)			;
+0188: 0141 C3 00 E8               JP     BDOSEntry            ; jump to BDOS entry				;
+0189: 0144                        DS     028H                 ; interrupt locations 1-5 not used	;
+0190: 016C                        DS     008H                 ; interrupt location 6 is reserved	;
+0191: 0174 C3 00 00               JP     0000H                ; RST 7 used only by DDT & SID		;
 0192: 0177             Page0ImageEnd:                      ;
-0193: 0177         ;------------------------------------ Page 0 --------------------------------;
+0193: 0177         ;------------------------------------ Page 0 -------------------------------;
 0194: 0177
-0195: 0177         ;---------------------------------- Messages --------------------------------;
+0195: 0177         ;---------------------------------- Messages -------------------------------;
 0196: 0177             BootMessage:                      ;
 0197: 0177 0D 0A                  DB     CR,LF                ;
 0198: 0179 42 6F 6F 74 53 74 72 61 70 20 6C 6F 61 64 65 72 20                DB     'BootStrap loader '  ;
@@ -215,10 +215,10 @@
 0215: 01FA 7E                     LD     A,(HL)               ;
 0216: 01FB B7                     OR     A                    ;
 0217: 01FC C8                     RET    Z                    ;
-0218: 01FD D3 EC                  OUT    (CONSOLE),A          ; Console address		             ;
+0218: 01FD D3 EC                  OUT    (CONSOLE),A          ; Console address					;
 0219: 01FF 23                     INC    HL                   ;
 0220: 0200 C3 FA 01               JP     SendMessage          ;
-0221: 0203         ;---------------------------------- Messages --------------------------------;
+0221: 0203         ;---------------------------------- Messages -------------------------------;
 0222: 0203             Z_HighestLocation:
 0223: 0203             Z_MemoryLeft EQU    0512H - Z_HighestLocation
            ************************   Xref   ************************
