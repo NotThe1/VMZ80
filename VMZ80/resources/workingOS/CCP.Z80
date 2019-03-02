@@ -3,6 +3,8 @@
 
 ; CCP.Z80
 ;
+; 2019-03-02 Version 1.0
+; 2019-03-02 Refactored constants and removed header files
 ; 2019-03-01 Finished refactor to Z80 idiom
 ; 2019-02-19 Started to refactor to Z80 idiom
 
@@ -14,16 +16,39 @@
  
  	$Include ./stdHeader.Z80
  	$Include ./osHeader.Z80
- 	$Include ./diskHeader.Z80
+ 	DollarInclude ./diskHeader.Z80
 
 BDOS					EQU		0005H		; BDOS Vector in Page 00000	
  
+cpmRecordSize			EQU		080H			; (128) record size that CP/M uses
 fcbSystemFileIndex		EQU		0AH			; extent number field index
 FILE_NAME_SIZE			EQU		08H			; Max size of file Name 
 FILE_TYPE_SIZE			EQU		03H			; Max size of file Type
 
-; ASCII_M					EQU    'M' 
-; ASCII_O					EQU    'O' 
+;------------------- BDOS System Call Equates --------------------------
+fConsoleIn			EQU		01H			; Console Input
+fConsoleOut			EQU		02H			; Console Output
+fPrintString		EQU		09H			; Print String
+fReadString			EQU		0AH			; Read Console String
+fGetConsoleStatus	EQU		0BH			; Get Console Status
+fGetVersion			EQU		0CH			; Return Version Number
+fResetSystem		EQU		0DH			; Reset Disk System
+fSelectDisk			EQU		0EH			; Select Disk
+fOpenFile			EQU		0FH			; Open File
+fCloseFile			EQU		10H			; Close File
+fSearchFirst		EQU		11H			; Search For First
+fSearchNext			EQU		12H			; Search for Next
+fDeleteFile			EQU		13H			; Delete File
+fReadSeq			EQU		14H			; Read Sequential
+fWriteSeq			EQU		15H			; Write Sequential
+fMakeFile			EQU		16H			; Make File
+fRenameFile			EQU		17H			; Rename File
+fGetLoginVector		EQU		18H			; Return Login Vector
+fGetCurrentDisk		EQU		19H			; Return Current Disk
+fSetDMA				EQU		1AH			; Set DMA address
+fGetSetUserNumber	EQU		20H			; Set/Get User Code
+;-----------------------------------------------------------------------
+
  
  					ORG	CCPEntry
 CcpBoundary			EQU	$
@@ -50,8 +75,8 @@ CcpStart:
 	LD		A,C							; Put into Acc
 	AND		LO_NIBBLE_MASK				; Remove User Number
 	LD		(Pg0CurentDisk),A			; Puts disk number into Page 0
-	CALL	SelectDisk					; Set default Disk From Acc											; check for initial command
-	LD		A,(commandLength)
+	CALL	SelectDisk					; Set default Disk From Acc											
+	LD		A,(commandLength)			; check for initial command
 	OR		A							; See if there is a Command
 	JR		NZ,CcpParseCommand			;  Skip if yes
 
@@ -838,9 +863,9 @@ ccpTypeEOF:                                                                 ;
 ccpTypeError:                                                               ;
 	CALL	RestoreDisk					; Restore Disk                      ;
 	JP		CommandError				; Report error and exit             ;
-	
-msgReadErr:
-	DB		'READ ERROR',0
+	                                                                        ;
+msgReadErr:                                                                 ;
+	DB		'READ ERROR',0                                                  ;
                                                                             ;
 ;---------------------------------- Type File ------------------------------;
 
@@ -1165,13 +1190,6 @@ PrintNoFile:                                                                ;
 msgNoFile: DB 'NO FILE',0                                                   ;
 ;-------------------------- Print 'No File' Message ------------------------;
 
-
-
-
-
-
-
-
 ;------------------------- Check For Console Input -------------------------;
 ;check for a character ready at the console                                 ;
 ;Exits with	Z-Flag  set if there has been no character input                ;
@@ -1298,34 +1316,22 @@ OpenToken1File:                                                             ;
  	JP		OpenFile					; Let BDOS open the file            ;
 ;----------------------------- Open Token1 File ----------------------------;
 
+	;*****************************************************************
+	;************************ Data Area ******************************
+	;*****************************************************************
+
+
+Token1:			DS		16				; Command Token
+Token2:			DS		16				; Command Token
 
 
 
-
-; UT 
- ;*****************************************************************
- ;************************ Data Area ******************************
- ;*****************************************************************
-;------------------------------ Command Buffer -----------------------------;
- ;;
- ;;	
-Token1:				DS		16				; Command Token
-Token2:				DS		16				; Command Token
-
-
-
- currentRecord:		DB		00H				; current record to read/write
- selectedDisk:		DB		00H				; selected disk for current operation none=0, a=1, b=2 ...
- ;
-; bufferPointer:		DB		00H				; buffer pointer
- ;------------------------------------
- tokenStart:		DW		0000H			; staddr starting address of current Fill FCB request
- ;----------------------------
- ; (command executed initially if commandLength non zero)
-;--------------------------------- Variables -------------------------------;
-currentDisk:		DB		00H				; Current disk
-directoryEntryNumber:		DB		00H				; Index into Directory Buffer
-;--------------------------------- Variables -------------------------------;
+currentRecord:	DB		00H				; Current record for I/O
+selectedDisk:	DB		00H				; Selected disk for current
+ 
+tokenStart:		DW		0000H			; Token's pointer
+currentDisk:	DB		00H				; Current disk
+directoryEntryNumber:	DB	00H		; Index into Directory Buffer
  
 endOfCode:
  				ORG		BDOSBase-10H

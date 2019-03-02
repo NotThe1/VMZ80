@@ -1,9 +1,10 @@
 ;     File created by MakeZ80Source on Mon Sep 17 16:25:01 EDT 2018 from:
 ;     C:\Users\admin\Dropbox\Resources\CPM\CurrentOS\8080\stdHeader.asm
- ; stdHeader.asm
- ; standard equates
+; stdHeader.Z80
+; standard equates for use by CP/M
  
- ; 2017-03-02 Refactored the CP/M Suite
+; 2019-03-02 Removed any unused constants
+; 2017-03-02 Refactored the CP/M Suite
  
  
 TRUE			EQU		-1			; Not false
@@ -52,8 +53,8 @@ RUBOUT			EQU		7FH			; Delete Key
 
 ASCII_A			EQU		'A'
 ASCII_C			EQU		'C'
-ASCII_M			EQU    'M' 
-ASCII_O			EQU    'O' 
+ASCII_M			EQU		'M' 
+ASCII_O			EQU		'O' 
 ASCII_Y			EQU		'Y'
 CARET			EQU		'^'
 

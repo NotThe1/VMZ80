@@ -1,66 +1,59 @@
 ;     File created by MakeZ80Source on Tue Sep 18 10:01:22 EDT 2018 from:
 ;     C:\Users\admin\Dropbox\Resources\CPM\CurrentOS\8080\BootSector.asm
- ; BootSector.Z80 
- ; Build 2.01
+; BootSector.Z80 
+; Build 2.01
 
- ; 2018-02-19 BDOS 1.0 designation 
- ; 2018-11-22 begin  Z80 idiom update
- ; 2017-04-07 Added equates for message IO : BOOT_CON_ADDRESS
- ;				 , and default IOBYTE : IOBYTE_DEFAULT
- ; 2017-03-02 Refactored the CP/M Suite
- 
- 	DollarInclude ./stdHeader.Z80
+; 2019-03-02 Refactored constants and removed header files
+; 2018-02-19 BDOS 1.0 designation 
+; 2018-11-22 begin  Z80 idiom update
+; 2017-04-07 Added equates for message IO : BOOT_CON_ADDRESS
+;				 , and default IOBYTE : IOBYTE_DEFAULT
+; 2017-03-02 Refactored the CP/M Suite
+
+	$Include ./DCTheader.Z80 
  	$Include ./osHeader.Z80
- 	$Include ./diskHeader.Z80
-CR				EQU		0DH			; Carriage Return
-EndOfMessage	EQU		00H
-LF				EQU		0AH			; Line Feed
+	
+CR		EQU		0DH						; Carriage Return
+EOM		EQU		00H						; End Of Message
+LF		EQU		0AH						; Line Feed
 
- 	
-BOOT_CON_ADDRESS	EQU	0ECH			; tty data address
-IOBYTE_DEFAULT		EQU	080H			; LST:=LPT, rest all = TTY:
+CONSOLE			EQU		0ECH			; Console data address 	
+IOBYTE_DEFAULT	EQU		080H			; LST:=LPT, rest all = TTY:
 
+WarmBootEntry	EQU		BIOSStart + 3
 
-WarmBootEntry		EQU		BIOSStart + 3
-
-					ORG    TPA
+				ORG    TPA
 Start:
- 	LD		SP,Start-1					; Stack goes down from here
- 	CALL	SendBootMessage				; Display boot message
- 	LD		BC,Page0ImageEnd-Page0Image	; Size of code to move
- 	LD		HL,Page0Image				; Source of page 0 code
- 	LD		DE,0000						; Location 0, the target
+	LD		SP,Start-1					; Stack goes down from here
+	CALL	SendBootMessage				; Display boot message
+	LD		BC,Page0ImageEnd-Page0Image	; Size of code to move
+	LD		HL,Page0Image				; Source of page 0 code
+	LD		DE,0000						; Location 0, the target
  
 ; Set up page zero,Move (B) bytes from (HL) to (DE).
-	LDIR
+	LDIR								; Set up page 0
  
 ; Now  start to move data to Disk Control Block
- 
- 	LD		HL,BootControl
- 	LD		(DiskCommandBlock),HL		; Set up Command block for drive A:
- 
- 
- 	LD		HL,DiskControlByte
- 	LD		(HL),080H					; Activate the controller
+	LD		HL,BootDiskControlTable		; Point at Boot's DCT
+	LD		(DiskCommandBlock),HL		; Set up Command block for drive A:
+	LD		HL,DiskControlByte
+	LD		(HL),080H					; Activate the controller
 	
 WaitForBootComplete:
- 	LD		A,(HL)						; Get the control byte
- 	OR		A							; 0 = Completed operation
- 	JR		NZ,WaitForBootComplete		;  if not try again
+	LD		A,(HL)						; Get the control byte
+	OR		A							; 0 = Completed operation
+	JR		NZ,WaitForBootComplete		;  if not try again
  
- 	LD		A,(DiskStatusLocation)		; What's the status after operation
- 	CP		080H						; Any errors ?
-	
-	
- 	JP		NC,0000						; No, do a Warm Boot
-										;  else we have a problem	
-	LD		HL,FailedBootMessage
- 	CALL	SendMessage								
- 	HALT
+	LD		A,(DiskStatusLocation)		; What's the status after operation
+	CP		080H						; Any errors ?	
+	JP		NC,0000						; No, do a Warm Boot
 
+	LD		HL,FailedBootMessage		;  else we have a problem	
+	CALL	SendMessage					; Send message			
+	HALT								; And STOP!
 	
-;---------------------------- ROM Disk Control Block ------------------------; 
-BootControl:                                                                 ;
+;---------------------------- Boot Disk Control Block -----------------------; 
+BootDiskControlTable:                                                        ;
  	DB		DiskReadCode				; Read function                   	 ;
  	DB		00H							; unit number                     	 ;
  	DB		00H							; head number                     	 ;
@@ -93,15 +86,15 @@ BootMessage:                                                                 ;
  	DB		'BootStrap loader '                                              ;
 	DB		'CP/M 2.2 (Z80) '                                                ;
 	DB		CR,LF                                                            ;
-	DB		'Build 0.D '                                                     ;
+	DB		'Build 1.0 '                                                     ;
 	DB		CR,LF                                                            ;
-	DB		'CCP 0.A |  BDOS 1.0 | BIOS 1.0'                                 ;
-	DB		CR,LF,CR,LF,EndOfMessage                                         ;
+	DB		'CCP 1.0 |  BDOS 1.0 | BIOS 1.0'                                 ;
+	DB		CR,LF,CR,LF,EOM			                                         ;
 	                                                                         ;
 FailedBootMessage:                                                           ;
 	DB		CR,LF                                                            ;
 	DB		'Boot Unsuccessful - Check for Disk in A:'                       ;
- 	DB		CR,LF,EndOfMessage                                               ;
+ 	DB		CR,LF,EOM			                                             ;
                                                                              ;
 SendBootMessage:                                                             ;
  	LD		HL,BootMessage                                                   ;
@@ -110,7 +103,7 @@ SendMessage:                                                                 ;
  	LD		A,(HL)                                                           ;
  	OR		A                                                                ;
  	RET		Z                                                                ;
- 	OUT		(BOOT_CON_ADDRESS),A		; Console address		             ;
+ 	OUT		(CONSOLE),A					; Console address		             ;
  	INC		HL                                                               ;
  	JP		SendMessage                                                      ;
 ;---------------------------------- Messages --------------------------------;

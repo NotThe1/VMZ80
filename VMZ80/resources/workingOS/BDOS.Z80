@@ -1,19 +1,19 @@
 ;     File created by MakeZ80Source on Tue Sep 18 12:41:03 EDT 2018 from:
 ;     C:\Users\admin\Dropbox\Resources\CPM\CurrentOS\8080\BDOSX.asm
- ; BDOS.Z80
- ;  in process Clean up
- ; 2019-02-29 Version 1.0
- ; 2019-02-04 Fixed bdosStack problem 
- ; 2019-01-10	Last rev before remaking  FInd nearest Block
- ; 2019-01-11 - BDOS 0.B  - Function 0-A Refactored to Z80 idiom
- ; 2018-12-28 Started to refactor to Z80 idiom
- ; 2018-03-31 added vector for BDOS Call 5 -ListOut
- ; 2018-03-02 Refactored the CP/M Suite
- ; 2018-02-12 fixed allocate 16 bit problem
- ; 2014-01-16 extended from part of newOS (newBDOS)
- ; 2014-03-14  :  Frank Martyn
-fcbExtIndexLSB	EQU		0CH			; 12 
-fcbExtIndexMSB	EQU		0EH			; 14   Bit 7 = Write protected 
+; BDOS.Z80
+
+; 2019-03-02 Refactored constants and removed header files
+; 2019-02-29 Version 1.0
+; 2019-02-04 Fixed bdosStack problem 
+; 2019-01-10	Last rev before remaking  FInd nearest Block
+; 2019-01-11 - BDOS 0.B  - Function 0-A Refactored to Z80 idiom
+; 2018-12-28 Started to refactor to Z80 idiom
+; 2018-03-31 added vector for BDOS Call 5 -ListOut
+; 2018-03-02 Refactored the CP/M Suite
+; 2018-02-12 fixed allocate 16 bit problem
+; 2014-01-16 extended from part of newOS (newBDOS)
+; 2014-03-14  :  Frank Martyn
+
 
 	$Include ./stdHeader.Z80
 	$Include ./osHeader.Z80
@@ -22,6 +22,17 @@ fcbExtIndexMSB	EQU		0EH			; 14   Bit 7 = Write protected
 VERSION			EQU		20H				; Version 2.0
 STACK_SIZE		EQU		20H				; Make stack big enough
 EOD				EQU		-1				; End of Directory
+
+;*******************************************************************************
+; These are the values handed over by the BDOS when it calls the Writer operation
+; The allocated.unallocated indicates whether the BDOS is set to write to an
+; unallocated allocation block (it only indicates this for the first 128 byte
+; sector write) or to an allocation block that has already been allocated to a
+; file. The BDOS also indicates if it is set to write to the file directory
+;*******************************************************************************
+WriteAllocated		EQU		00H
+WriteDirectory		EQU		01H
+WriteCleanBuffer	EQU		02H
 
 ;************************ BIOS Function Constants **************************;
 bcBoot		EQU		BIOSStart+3*0		; Cold Boot function	            ;
@@ -747,7 +758,7 @@ IsItDeleteTheLineU:                                                         ;
 ;Retype the line                                                            ;
 	CP		CTRL_R 														  	;
 	JR		Z,RepeatLine                                                    ;
-
+                                                                            ;
 ;....................... Echo input back to the Console  ...................;
 ; Full Duplex								                                ;
 ; A = Character to display	                                                ; 
@@ -1292,10 +1303,7 @@ DiskRead:
 
  vWriteSeq:
 	CALL	ReselectDisk				; Reselect if needed
-;	CALL	DiskWriteSeq
-;	RET
-;====================
- ;sequential disk write
+
 DiskWriteSeq:
 	LD		A,SEQ_ACCESS
 	LD		(diskAccessType),A			; Set flag as sequential Disk I/O
@@ -1316,10 +1324,6 @@ DiskWrite:
 	CALL	WasBlockAllocated			; Is it really allocated ?
 	LD		C,WriteAllocated			; Assume a normal write operation
 	JP		NZ,HaveWriteBlock			;  Skip if block already allocated
- ; not allocated -
- ; the argument to getblock is the starting position for the disk search
- ; and should be the last allocated block for this file,
- ; or the value 0 if no space has been allocated
 
 	CALL	GetDiskMapIndex				; Disk Map Index in ACC
 	LD		(diskMapIndex),A			; Save it
@@ -1369,8 +1373,6 @@ Allocate16Bit:
 	LD		(HL),E						; SAVE LSB
 MarkNewBlock:
 	CALL	ResetFileWriteFlag
-;	CALL	GetWriteFileFlagValue		; HL = Address of fcbS2
-;	RES		7,(HL)						; Reset the FileWriteFlag
 	LD		C,WriteCleanBuffer			; Marked as unallocated write
 
 HaveWriteBlock:
@@ -1868,8 +1870,7 @@ GetFileSize1:
 	CALL	GetCurrentDirectoryRecord	; HL points at Directory entry
 	LD		DE,fcbRCIndex				; FCB Record Count index
 	CALL	GetRandomRecordPosition
-;???????????????????????????????????????????????????????????????????????????;
- ; A=0000 000? BC = mmmm eeee errr rrrr compare with memory, larger?
+; ???????
 	POP		HL
 	PUSH	HL							; recall, replace .fcb(Random record Field)
 	LD		E,A							; save cy
@@ -2198,13 +2199,13 @@ CopyDirRecordToFCB:                                                        	;
 	CALL	IsDiskWriteProtected		; Return Z set if writable          ;
 	RET		NZ							; Skip close if r/o disk            ;
 ; check file write flag - 0 indicates written                               ;
-
-	PUSH	IX
-	LD		IX,(paramDE)				; FCB address
-	BIT		7,(IX + fcbS2Index)			; Has WFF changed ?	
-	POP		IX
+                                                                            ;
+	PUSH	IX                                                              ;
+	LD		IX,(paramDE)				; FCB address                       ;
+	BIT		7,(IX + fcbS2Index)			; Has WFF changed ?	                ;
+	POP		IX                                                              ;
 	RET		NZ							; Skip close if clean file          ;
-
+                                                                            ;
 ;	CALL	GetWriteFileFlagValue		; Get file's WriteFileFlag          ;
 ;	BIT		7,A							;  Has it changed ?					;
 ;	RET		NZ							; Skip close if clean file          ;
@@ -2346,7 +2347,7 @@ Home:                                                                       ;
 	LD		(HL),A                                                          ;
 	INC		HL                                                              ;
 	LD		(HL),A                                                          ;
-	LD		HL,(caSector)                                                      ;
+	LD		HL,(caSector)                                                   ;
 	LD		(HL),A                                                          ;
 	INC		HL                                                              ;
 	LD		(HL),A                                                          ;
@@ -2512,54 +2513,33 @@ Right:                                                                      ;
 ;--------------------- Initialize Extent Number MSB ------------------------;
  ;clear the Extent number field for user open/make (S2)                     ;
 InitializeExtentNumberMSB:                                                  ;
-	PUSH	IX
-	LD		IX,(paramDE)				; FCB address
-	LD		(IX + fcbS2Index),0			; Clear value
-	POP		IX
-	RET
-;	CALL	GetExtentNumberMSB                                              ;
-;	LD		(HL),0								; Set it to = 0             ;
-;	RET                                                                     ;
+	PUSH	IX                                                              ;
+	LD		IX,(paramDE)				; FCB address                       ;
+	LD		(IX + fcbS2Index),0			; Clear value                       ;
+	POP		IX                                                              ;
+	RET                                                                     ;
+                                                                            ;
 ;--------------------- Initialize Extent Number MSB ------------------------;
-;--------------------- Get Extent Number MSB| Write Protect ----------------;
-; Get S2 value                                                              ;
-;  Returns:	A = S2 Value (bit 7 write protect, bits 0-6 Ext MSB)            ;
-;			HL = Address of S2 for the FCB pointed to by paramDE            ;
-;GetWriteFileFlagValue:							; S2 bit 7                  ;
-;;GetExtentNumberMSB:							; S2 bits 0-6               ;
-;	LD		HL,(paramDE)						; FCB address               ;
-;	LD		DE,fcbS2Index						; Index to value            ;
-;	ADD		HL,DE								; Address of value          ;
-;	LD		A,(HL)								; load into ACC             ;
-;	RET	                                                                    ;
-;--------------------- Get Extent Number MSB| Write Protect ----------------;
 ;--------------------------- Set File Write Flag----------------------------;
 ;Set file write flag in FCB in (paramDE)									;
 ; Used to indicate the FCB is clean. No need to write on close				;
 SetFileWriteFlag:															;
-	PUSH	IX
-	LD		IX,(paramDE)				; FCB address
-	SET		7,(IX + fcbS2Index)			; Set Flag
-	POP		IX
-	RET
-
-;	CALL	GetWriteFileFlagValue		; A= Value, HL = Address of fcbS2   ;
-;	SET		7,(HL)						; Set the FileWriteFlag				;
-;	RET																		;
+	PUSH	IX                                                              ;
+	LD		IX,(paramDE)				; FCB address                       ;
+	SET		7,(IX + fcbS2Index)			; Set Flag                          ;
+	POP		IX                                                              ;
+	RET                                                                     ;
+                                                                            ;
 ;--------------------------- Set File Write Flag----------------------------;
 ;--------------------------- Reset File Write Flag--------------------------;
 ;Reset file write flag in FCB in (paramDE)									;
 ; Used to indicate the FCB is dirty. Need to write on close					;
 ResetFileWriteFlag:                                                         ;
-	PUSH	IX
-	LD		IX,(paramDE)				; FCB address
-	RES		7,(IX + fcbS2Index)			; Reset Flag
-	POP		IX
-	RET
-
-;	CALL	GetWriteFileFlagValue		; A= Value, HL = Address of fcbS2   ;
-;	RES		7,(HL)						; Reset the FileWriteFlag			;
-;	RET																		;
+	PUSH	IX                                                              ;
+	LD		IX,(paramDE)				; FCB address                       ;
+	RES		7,(IX + fcbS2Index)			; Reset Flag                        ;
+	POP		IX                                                              ;
+	RET                                                                     ;
 ;--------------------------- Reset File Write Flag--------------------------;
 ;-------------------------- Compare FCB Extents ----------------------------;
 ; Enters:	A containing Target FCB EXT value								;
@@ -2718,9 +2698,6 @@ RandomSeek:                                                                 ;
 	XOR		A                                                               ;
 	LD		(diskAccessType),A			; Set random access                 ;
 	PUSH	BC							; Save Read(TRUE) / Write (FALSE)   ;
-;?	LD		HL,(paramDE)				; Get the FCB                       ;
-;?	PUSH	HL                                                              ;
-;?	POP		IX							; IX has the FCB address            ;
 	LD		IX,(paramDE)				; Get the FCB						;
 	LD		A,(IX +recordRandomLSB)		; Get LSB from Random Record        ;
 	AND		7FH							; Strip E , left with |0RRR RRRR|   ;
@@ -2849,8 +2826,6 @@ GetRandomRecordPosition:                                                   ;?
 	RET                                                                    ;?
 ;--------------------------- Get Random Record Position -------------------;?
 
-
-; FU
 ;=========================== File Utilities ================================;
 
 ;=========================== Directory Utilities ===========================;
@@ -3267,7 +3242,8 @@ OpenNextExtError:                                                           ;
 ;-------------------------------- Open Next Extent -------------------------;
 
 ;=========================== Directory Utilities ===========================;
-; DU 
+
+;===========================================================================;
 
 ;=========================== General   Utilities ===========================;
 
@@ -3340,8 +3316,6 @@ SetExitParamTo1:                                                            ;
 	LD		(exitParameterByte),A		; Put a 1 in the exit parameter     ;
 	RET                                                                     ;
 ;------------------------- Set Exit Parameter To 1 -------------------------;
-
-; GU 
 
 ;=========================== General   Utilities ===========================;
 
@@ -3593,122 +3567,115 @@ ErrMsg_ReadOnlyDisk:	DB		'R/O Disk$'                                 ;
                                                                             ;
 ;============================= Error message World =========================;
 
- ;********* file control block (fcb) constants ********************
- fcbLength			EQU		20H	;32				; fcblen file control block size
- fcbROfileIndex		EQU		09H				; high order of first type char
- fcbHiddenfileIndex	EQU		0AH	;10				; invisible file in dir command
- fcbExtIndex		EQU		0CH	;12				; extent number field index
- fcbS1Index			EQU		0DH	;13				; S1 index
- fcbS2Index			EQU		0EH	;14				; S2 data module number index
- fcbRCIndex			EQU		0FH	;15				; record count field index
- fcbDiskMapIndex	EQU		10H	;16				; dskmap disk map field
- 
- fcbCurrentRecord	EQU		21H	;33
+;********* file control block (fcb) constants ********************
+fcbLength			EQU		20H			; File control block size
+fcbROfileIndex		EQU		09H			; High order of first type char
+fcbHiddenfileIndex	EQU		0AH			; Hidden file in dir command
+fcbExtIndex			EQU		0CH			; Extent number field index
+fcbS1Index			EQU		0DH			; S1 index
+fcbS2Index			EQU		0EH			; S2 data module number index
+fcbRCIndex			EQU		0FH			; Record count field index
+fcbDiskMapIndex		EQU		10H			; Disk map start
+fcbExtIndexLSB		EQU		0CH			; LSB of Extent
+fcbExtIndexMSB		EQU		0EH			; Bit 7 = Write protected 
 
- highestRecordNumber	EQU		RecordsPerExtent - 1; last record# in extent
+fcbCurrentRecord	EQU		21H			; Next record to read/write
 
- dirEntriesPerRecord	EQU		cpmRecordSize/fcbLength; directory elts / record
- dirEntryShift		EQU		2				; log2(dirEntriesPerRecord)
- dirEntryMask		EQU		dirEntriesPerRecord-1
- fcbShift			EQU		5				; log2(fcbLength)
- ;
+highestRecordNumber	EQU		RecordsPerExtent - 1; Last record# in extent
+
+dirEntriesPerRecord	EQU		cpmRecordSize/fcbLength; Directory entries / record
+dirEntryShift		EQU		2			; Log2(dirEntriesPerRecord)
+dirEntryMask		EQU		dirEntriesPerRecord-1
+fcbShift			EQU		5			; Log2(fcbLength)
+;
 
 
 
- maxExtValue		EQU		31				; largest extent number
- moduleMask			EQU		15				; limits module number value
- writeFlagMask		EQU		80h				; file write flag is high order fcbS2Index
- nameLength			EQU		15				;  name length
+maxExtValue			EQU		31			; Largest extent number
+moduleMask			EQU		15			; Limits module number value
+writeFlagMask		EQU		80h			; File write flag is high order fcbS2Index
+nameLength			EQU		15			; Name length
 
-emptyDir			EQU		0E5H			; empty empty directory entry
+emptyDir			EQU		0E5H			; Empty empty directory entry
 recordSeq			EQU		fcbLength		; Next Sequential Record
 recordRandom		EQU		recordSeq + 1	; Random record field (2 bytes)
 recordRandomLSB		EQU		recordRandom 	; LSB of Random Record
 recordRandomMSB		EQU		recordRandom + 1	; MSB of Random Record
 recordRandomOVF		EQU		recordRandom + 2	; Random Record Overflow
- ;
- ;	reserved file indicators
- ;	equ	11				; reserved
- ;*****************************************************************
- ;*****************************************************************
+
 
  ;***common values shared between bdosi and bdos******************
- currentUserNumber:	DB	0					; usrcode current user number
-; paramDE:			DS	2					; ParamsDE information address
-; exitParameterByte:
-; exitParameterWord:	DS	2					; address value to return
- currentDisk:		DB	-1					; curdsk current disk number
-; exitParameterByte		EQU	exitParameterWord	; lret low(exitParameterWord)
+currentUserNumber:	DB	0					; usrcode current user number
+currentDisk:		DB	-1					; curdsk current disk number
 
  ;********************* Local Variables ***************************
  ;     ************************
  ;     *** Initialized Data ***
 
-emptyFCB:			DB	emptyDir			; efcb 0E5 = available dir entry
- readOnlyVector:		DW	0					; rodsk read only disk vector
- loggedDisks:		DW	0					; dlog	 logged-in disks
- initDAMAddress:		DW	DMABuffer			; dmaad tbuff initial dma address
+emptyFCB:		DB		emptyDir		; 0E5 = available dir entry
+readOnlyVector:	DW		0				; Read only disk vector
+loggedDisks:	DW		0				; Logged-in disks
+initDAMAddress:	DW		DMABuffer		; Initial DMA address
 
- ;     *** Current Disk attributes ****
- ; These are set upon disk select
- ; data must be adjacent, do not insert variables
- ; address of translate vector, not used
- ; ca - currentAddress
+;     *** Current Disk attributes ****
+; These are set upon disk select
+; data must be adjacent, do not insert variables
+; address of translate vector, not used
+; ca - currentAddress
 
- caDirMaxValue:		DW	0000H				; cdrmaxa pointer to cur dir max value
- caTrack:			DW	0000H				; curtrka current track address
- caSector:			DW	0000H				; current Sector
- caListSizeStart:
- caDirectoryDMA:		DW	0000H				; buffa pointer to directory dma address
- caDiskParamBlock:	DW	0000H				; dpbaddr current disk parameter block address
- caCheckSum:			DW	0000H				; checka current checksum vector address
- caAllocVector:		DW	0000H				; alloca current allocation vector address
- caListSizeEnd:
- caListSize			EQU	caListSizeEnd - caListSizeStart
+caDirMaxValue:		DW	0000H			; Pointer to cur dir max value
+caTrack:			DW	0000H			; Current track address
+caSector:			DW	0000H			; Current Sector
+caListSizeStart:
+caDirectoryDMA:		DW	0000H			; Pointer to directory DMA address
+caDiskParamBlock:	DW	0000H			; Current disk parameter block address
+caCheckSum:			DW	0000H			; Current checksum vector address
+caAllocVector:		DW	0000H			; Current allocation vector address
+caListSizeEnd:
+caListSize			EQU	caListSizeEnd - caListSizeStart
 
- ;     ***** Disk Parameter Block *******
- ; data must be adjacent, do not insert variables
- ; dpb - Disk Parameter Block
- dpbStart:
- dpbSPT:				DW	0000H				; sectpt sectors per track
- dpbBSH:				DB	0000H				; blkshf block shift factor
- dpbBLM:				DB	00H					; blkmsk block mask
- dpbEXM:				DB	00H					; extmsk extent mask
- dpbDSM:				DW	0000H				; Maximum allocation number
- dpbDRM:				DW	0000H				; dirmax largest directory number
- dpbDABM:			DW	0000H				; dirblk reserved allocation bits for directory
- dpbCKS:				DW	0000H				; chksiz size of checksum vector
- dpbOFF:				DW	0000H				; offset offset tracks at beginning
- dpbEnd:
- dpbSize				EQU	dpbEnd - dpbStart
+;     ***** Disk Parameter Block *******
+; data must be adjacent, do not insert variables
+; dpb - Disk Parameter Block
+dpbStart:
+dpbSPT:		DW	0000H					; Sectors per track
+dpbBSH:		DB	0000H					; Block shift factor
+dpbBLM:		DB	00H						; Block mask
+dpbEXM:		DB	00H						; Extent mask
+dpbDSM:		DW	0000H					; Maximum allocation number
+dpbDRM:		DW	0000H					; Largest directory number
+dpbDABM:	DW	0000H					; Reserved allocation bits for directory
+dpbCKS:		DW	0000H					; Size of checksum vector
+dpbOFF:		DW	0000H					; Offset tracks at beginning
+dpbEnd:
+dpbSize		EQU	dpbEnd - dpbStart
  ;
 
  ;     ************************
-SEQ_ACCESS			EQU		01H			; Indicates sequential access to file
-RANDOM_ACCESS		EQU		00H			; Indicates random access to file
-diskAccessType:		DB		00H			; Set to 1 if sequential disk operation
+SEQ_ACCESS		EQU		01H				; Indicates sequential access to file
+RANDOM_ACCESS	EQU		00H				; Indicates random access to file
+diskAccessType:	DB		00H				; Set to 1 if sequential disk operation
 
- caSkewTable:		DW	0000H				; tranv address of translate vector
- fcbCopiedFlag:		DB	00H					; fcb$copied set true if CopyFCB called
- readModeFlag:		DB	00H					; rmf read mode flag for Open NextExt
- directoryIndex:		DB	00H					; dirloc directory flag in rename, etc.
- diskMapIndex:		DB	00H					; dminx  local for Disk_Write
- searchLength:		DB	00H					; searchl search length
- searchAddress:		DW	0000H				; searcha search address
- ;tinfo:	ds	word							; temp for info in "make"
- byteAllocationFlag:	DB	00H					; set true if single byte allocation map
- fResel:				DB	00H					; resel reselection flag
- entryDisk:			DB	00H					; olddsk disk on entry to bdos
- fcbDisk:			DB	00H					; fcbdsk disk named in fcb
- fcbRecordCount:	DB	00H				; record count from current FCB
- extentValue:		DB	00H					; extent number and dpbEXM from current fcb
- currentFileRecord:	DW	0000H			; Current File Record - fcbCurrentRecord
- absoluteCPMRecord:	DW	0000H			; Raw record ( 4 records / Sector)( 4 Sectors per block)
- ;
- ;	local variables for directory access
- dirBlockIndex:		DB	00H					; directory block Index 0,1,2,3
- dirEntryIndex:		DW	00H					; directory entry Index  0,1,...,dpbDRM
- dirRecord:			DW	00H					; drec:	ds	word	;directory record 0,1,...,dpbDRM/4
+caSkewTable:	DW		0000H			; Address of translate vector
+fcbCopiedFlag:	DB		00H				; Set true if CopyFCB called
+readModeFlag:	DB		00H				; Read mode flag for Open NextExt
+directoryIndex:	DB		00H				; Directory flag in rename, etc.
+diskMapIndex:	DB		00H				; Local for Disk_Write
+searchLength:	DB		00H				; Search length
+searchAddress:	DW		0000H			; Search address
+byteAllocationFlag:	DB	00H				; Set true if single byte allocation map
+fResel:				DB	00H				; Re selection flag
+entryDisk:			DB	00H				; Disk on entry to BDOS
+fcbDisk:			DB	00H				; Disk named in FCB
+fcbRecordCount:		DB	00H				; Record count from current FCB
+extentValue:		DB	00H				; Extent number and dpbEXM from current FCB
+currentFileRecord:	DW	0000H			; Current File Record - fcbCurrentRecord
+absoluteCPMRecord:	DW	0000H			; Raw record ( 4 records / Sector)( 4 Sectors per block)
+;
+;	local variables for directory access
+dirBlockIndex:		DB	00H				; Directory block Index 0,1,2,3
+dirEntryIndex:		DW	00H				; Directory entry Index  0,1,...,dpbDRM
+dirRecord:			DW	00H				; Directory record 0,1,...,dpbDRM/4
 
  ;********************** data areas ******************************
 
