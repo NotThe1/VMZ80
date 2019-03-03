@@ -3,6 +3,7 @@
 
 ; CCP.Z80
 ;
+; 2019-03-03 Fixed UserCommand not putting 'COM' in Token1
 ; 2019-03-02 Version 1.0
 ; 2019-03-02 Refactored constants and removed header files
 ; 2019-03-01 Finished refactor to Z80 idiom
@@ -900,7 +901,9 @@ ccpUserCmdFileType:															;
 	LD		A,(IX + 9)					; Get 1st char of CMD file type		;
 	CP		SPACE						; Is it a SPACE ?					;
 	JP		NZ,CommandError				;  Error exit (no type allowed)		;
+	PUSH	IX							; Save Token1 start					;
 	CALL	SetDiskForCmd				; Change disk if needed				;
+	POP		IX							; Restore Token1 start				;
 	LD		(IX + 9 ),ASCII_C												;
 	LD		(IX + 10),ASCII_O												;
 	LD		(IX + 11),ASCII_M			; Set Token1's type to 'COM'		;
@@ -1192,7 +1195,7 @@ msgNoFile: DB 'NO FILE',0													;
  SetDiskForCmd:																;
 	XOR		A							; Set to 0							;
 	LD		(Token1),A					; Set Token's disk to default		;
-	LD			A,(selectedDisk)			; Get the selected disk			;
+	LD		A,(selectedDisk)			; Get the selected disk				;
 	OR		A							; Is it also set for default ?		;
 	RET		Z							;  exit if yes						;
 	DEC		A							; Adjust so A=0,B=2....				;
