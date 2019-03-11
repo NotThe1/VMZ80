@@ -138,18 +138,18 @@ public class DiskUtility extends JDialog {
 	AdapterForDiskUtility adapterForDiskUtility = new AdapterForDiskUtility();
 	private ArrayList<HDNumberBox> hdNumberBoxes = new ArrayList<HDNumberBox>();;
 
-	// public static void main(String[] args) {
-	// EventQueue.invokeLater(new Runnable() {
-	// public void run() {
-	// try {
-	// DiskUtility window = getInstance();
-	// window.setVisible(true);
-	// } catch (Exception e) {
-	// e.printStackTrace();
-	// } // try
-	// }// run
-	// });
-	// }// main
+//	public static void main(String[] args) {
+//		EventQueue.invokeLater(new Runnable() {
+//			public void run() {
+//				try {
+//					DiskUtility window = getInstance();
+//					window.setVisible(true);
+//				} catch (Exception e) {
+//					e.printStackTrace();
+//				} // try
+//			}// run
+//		});
+//	}// main
 
 	private void doDisplayBase(AbstractButton button) {
 		// selected = display Decimal
@@ -594,11 +594,11 @@ public class DiskUtility extends JDialog {
 
 	}// doFileNew
 
-//	private int checkForDataChange() {
-//		int result = JOptionPane.NO_OPTION;
-//
-//		return result;
-//	}// checkForDataChange
+	// private int checkForDataChange() {
+	// int result = JOptionPane.NO_OPTION;
+	//
+	// return result;
+	// }// checkForDataChange
 
 	private void doDiskClose() {
 		if (fileChanged | sectorChanged) {
@@ -923,19 +923,19 @@ public class DiskUtility extends JDialog {
 	private void findFiles(File enterFile, Pattern p) {
 		File[] files = enterFile.listFiles();
 		try {
-		for (File file : files) {
-			if (rbRecurse.isSelected() && file.isDirectory()) {
-				findFiles(file, p);
-			} else if (file.getName().toUpperCase().endsWith(PERIOD + lblDiskType.getText())) {
-				processTheFile(file, p);
-			} else {
-				// skip
-			} // if recursive
+			for (File file : files) {
+				if (rbRecurse.isSelected() && file.isDirectory()) {
+					findFiles(file, p);
+				} else if (file.getName().toUpperCase().endsWith(PERIOD + lblDiskType.getText())) {
+					processTheFile(file, p);
+				} else {
+					// skip
+				} // if recursive
 
-		} // for files
-		}catch(NullPointerException npe) {
-			
-		}//try
+			} // for files
+		} catch (NullPointerException npe) {
+
+		} // try
 	}// findFiles
 
 	private void processTheFile(File file, Pattern p) {
@@ -1092,19 +1092,19 @@ public class DiskUtility extends JDialog {
 
 	private void catGetEntries(File enterFile, CatalogTableModel model) {
 		try {
-		File[] files = enterFile.listFiles();
-		for (File file : files) {
-			if (rbRecurse.isSelected() && file.isDirectory()) {
-				catGetEntries(file, model);
-			} else if (file.getName().toUpperCase().endsWith(PERIOD + lblDiskType.getText())) {
-				catGetDiskInfo(file, model);
-			} else {
-				// skip
-			} // if recursive
-		} // for files
-		}catch(NullPointerException npe) {
-			
-		}// try
+			File[] files = enterFile.listFiles();
+			for (File file : files) {
+				if (rbRecurse.isSelected() && file.isDirectory()) {
+					catGetEntries(file, model);
+				} else if (file.getName().toUpperCase().endsWith(PERIOD + lblDiskType.getText())) {
+					catGetDiskInfo(file, model);
+				} else {
+					// skip
+				} // if recursive
+			} // for files
+		} catch (NullPointerException npe) {
+
+		} // try
 	}// catGetEntries
 
 	private void catGetDiskInfo(File file, CatalogTableModel model) {

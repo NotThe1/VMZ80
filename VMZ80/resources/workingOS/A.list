@@ -1,144 +1,673 @@
-0001: 0100         ; A.Z80
-0002: 0100         ; 8
-0003: 0100             BDOS       EQU    00005H
-0004: 0100             OPEN_FILE  EQU    0FH
-0005: 0100             CLOSE_FILE EQU    10H
-0006: 0100             FIND_FIRST EQU    11H
-0007: 0100             FIND_NEXT  EQU    12H
-0008: 0100             READ_SEQ   EQU    14H
-0009: 0100             RENAME_FILE EQU    17H
-0010: 0100             SET_DMA    EQU    1AH
-0011: 0100             GET_SIZE   EQU    023H
-0012: 0100             SET_RANDREC EQU    024H
-0013: 0100             defaultBuffer EQU    080H
-0014: 0100
-0015: 0100             recordRandom EQU    20 + 1               ; Random record field (2 bytes)
-0016: 0100             recordRandomLSB EQU    recordRandom         ; LSB of Random Record
-0017: 0100             recordRandomMSB EQU    recordRandom + 1     ; MSB of Random Record
-0018: 0100             recordRandomOVF EQU    recordRandom + 2     ; Random Record Overflow
-0019: 0100
-0020: 0100             TPA        EQU    0100H
-0021: 0100
-0022: 0100                        ORG    TPA
-0023: 0100             Start:
-0024: 0100
-0025: 0100 DD 09                  ADD    IX,BC
-0026: 0102 DD 19                  ADD    IX,DE
-0027: 0104 DD 29                  ADD    IX,IX
-0028: 0106 DD 39                  ADD    IX,SP
-0029: 0108
-0030: 0108 FD 09                  ADD    IY,BC
-0031: 010A FD 19                  ADD    IY,DE
-0032: 010C FD 29                  ADD    IY,IY
-0033: 010E FD 39                  ADD    IY,SP
-0034: 0110
-0035: 0110
-0036: 0110
-0037: 0110
-0038: 0110
-0039: 0110
-0040: 0110
-0041: 0110 31 E7 02               LD     SP,Stack
-0042: 0113 01 00 00               LD     BC,0000
-0043: 0116 11 00 00               LD     DE,0000
-0044: 0119 21 00 00               LD     HL,0000
-0045: 011C DD 21 3D 01               LD     IX,cmdLine
-0046: 0120             Loop1:
-0047: 0120 DD 7E 00               LD     A,(IX+0)
-0048: 0123 DD 23                  INC    IX
-0049: 0125 FE 20                  CP     020H
-0050: 0127 28 12                  JR     Z,END
-0051: 0129 D6 30                  SUB    030H
-0052: 012B FE 0A                  CP     0AH
-0053: 012D 30 0C                  JR     NC,END
-0054: 012F
-0055: 012F 29                     ADD    HL,HL                ; * 2
-0056: 0130 E5                     PUSH   HL                   ; save * 2
-0057: 0131 29                     ADD    HL,HL                ; * 4
-0058: 0132 29                     ADD    HL,HL                ; * 8
-0059: 0133 D1                     POP    DE                   ; Get * 2
-0060: 0134 19                     ADD    HL,DE                ; * 10
-0061: 0135
-0062: 0135 4F                     LD     C,A
-0063: 0136 06 00                  LD     B,0
-0064: 0138 09                     ADD    HL,BC                ; new value
-0065: 0139 18 E5                  JR     Loop1
-0066: 013B
-0067: 013B             END:
-0068: 013B 00                     NOP
-0069: 013C 76                     HALT
-0070: 013D
-0071: 013D 32 35 35 20     cmdLine:   DB     '255 '
-0072: 0141
-0073: 0141
-0074: 0141
-0075: 0141             FCB:
-0076: 0141
-0077: 0141 00          DISK:      DB     00
-0078: 0142 42 20 20 20 20 20 20 20     NAME:      DB     'B       '
-0079: 014A 41 52 4B     TYPE:      DB     'ARK'
-0080: 014D 00          EXT:       DB     0
-0081: 014E 00 00       RESV:      DB     0,0
-0082: 0150 00          RC:        DB     0
-0083: 0151 00 00       ALLOC:     DW     0
-0084: 0153 00 00                  DW     0
-0085: 0155 00 00                  DW     0
-0086: 0157 00 00                  DW     0
-0087: 0159 00 00                  DW     0
-0088: 015B 00 00                  DW     0
-0089: 015D 00 00                  DW     0
-0090: 015F 00 00                  DW     0
-0091: 0161 00          REC_SEQ:   DB     0
-0092: 0162 00 00       REC_RANDOM: DW     0000H
-0093: 0164 00          REC_RAN_O: DB     00
-0094: 0165
-0095: 0165             erPermanent:
-0096: 0165 00                     NOP
-0097: 0166 76                     HALT
-0098: 0167                        DS     0100H
-0099: 0267 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00                DB     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-0100: 0277 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00                DB     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-0101: 0287 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00                DB     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-0102: 0297 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00                DB     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-0103: 02A7 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00                DB     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-0104: 02B7 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00                DB     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-0105: 02C7 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00                DB     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-0106: 02D7 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00                DB     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-0107: 02E7             Stack:
-0108: 02E7
-0109: 02E7         ;DOLLARInclude ./HeaderForA.Z80
+0001: 0100         ; MyEd.Z80
+0002: 0100         ;  Reading the open file
+0003: 0100
+0004: 0100             TPA        EQU    0100H
+0005: 0100
+0006: 0100                        ORG    TPA
+0007: 0100
+0008: 0100
+0009: 0100             Start:
+0010: 0100 C3 0B 03               JP     appInit              ; Initialize application
+0011: 0103             Begin:
+0012: 0103 CD 93 01               CALL   GetTheFile           ; open/create the file
+0013: 0106 3E FF                  LD     A,TRUE
+0014: 0108 32 3D 03               LD     (file1Open),A        ; Set open flag
+0015: 010B
+0016: 010B CD 13 01               CALL   LoadTheFile          ; Get the file
+0017: 010E C3 B4 01               JP     Exit
+0018: 0111
+0019: 0111             END:
+0020: 0111 00                     NOP
+0021: 0112 76                     HALT
+0022: 0113         ;------------------------------ Load The File ------------------------------;
+0023: 0113             LoadTheFile:
+0024: 0113 11 3E 03               LD     DE,readBuffer
+0025: 0116 CD E8 02               CALL   SetDMA               ; Set the disk read buffer
+0026: 0119
+0027: 0119         ; <set up>
+0028: 0119 21 39 03               LD     HL,startOfBuffer     ; Initialize
+0029: 011C 22 37 03               LD     (readBufferPointer),HL ;  Buffer pointer
+0030: 011F 22 35 03               LD     (displayLinePointer),HL ; Save line start
+0031: 0122 06 80                  LD     B,CPMRecordSize      ; Length of source record
+0032: 0124 0E 00                  LD     C,00                 ; Size of this line
+0033: 0126 11 3E 05               LD     DE,commandBuffer     ; Destination
+0034: 0129 21 3E 03               LD     HL,readBuffer        ; Source
+0035: 012C E5                     PUSH   HL
+0036: 012D D5                     PUSH   DE
+0037: 012E C5                     PUSH   BC                   ; Save the control parameters
+0038: 012F         ; <set up >
+0039: 012F             LoadTheFile1:
+0040: 012F 11 5C 00               LD     DE,FCB1
+0041: 0132 CD ED 02               CALL   ReadSeq              ; Read next record
+0042: 0135 B7                     OR     A                    ; Did we read a record?
+0043: 0136 C0                     RET    NZ                   ; Exit if no more data
+0044: 0137 C1                     POP    BC
+0045: 0138 D1                     POP    DE
+0046: 0139 E1                     POP    HL                   ; Restore the control parameters
+0047: 013A             LoadTheFile2:
+0048: 013A 7E                     LD     A,(HL)
+0049: 013B FE 0D                  CP     CR                   ; Carriage Return ?
+0050: 013D CC 5B 01               CALL   Z,CompleteLineCR     ;  yes EOL CR
+0051: 0140 FE 0A                  CP     LF                   ; Line Feed ?
+0052: 0142 CC 66 01               CALL   Z,CompleteLineLF     ;  yes EOL LF ?
+0053: 0145             LoadTheFile3:
+0054: 0145 12                     LD     (DE),A               ;  else move character to buffer
+0055: 0146 0C                     INC    C                    ; keep character count
+0056: 0147 23                     INC    HL
+0057: 0148 13                     INC    DE
+0058: 0149 05                     DEC    B                    ; Keep track of pointers
+0059: 014A 20 EE                  JR     NZ,LoadTheFile2      ; not at end of read buffer, loop
+0060: 014C
+0061: 014C 06 80                  LD     B,CPMRecordSize      ; Length of source record
+0062: 014E 0E 00                  LD     C,00                 ; Size of this line
+0063: 0150 21 3E 03               LD     HL,readBuffer        ; go back to the start of read buffer
+0064: 0153 E5                     PUSH   HL
+0065: 0154 D5                     PUSH   DE
+0066: 0155 C5                     PUSH   BC                   ; Save the control parameters
+0067: 0156
+0068: 0156
+0069: 0156
+0070: 0156 18 D7                  JR     LoadTheFile1
+0071: 0158
+0072: 0158 00                     NOP
+0073: 0159 76                     HALT
+0074: 015A C9                     RET
+0075: 015B         ;
+0076: 015B
+0077: 015B         ;------------------------- We have a complete line -------------------------;
+0078: 015B             CompleteLineCR:
+0079: 015B 23                     INC    HL                   ; Get past the CR
+0080: 015C 05                     DEC    B                    ; account for reading CR
+0081: 015D 7E                     LD     A,(HL)               ; Get the next character
+0082: 015E FE 0A                  CP     LF                   ; Is it a Line Feed ?
+0083: 0160 20 0F                  JR     NZ,CompleteLine      ;  no then process the line
+0084: 0162 23                     INC    HL                   ; Get past the LF
+0085: 0163 05                     DEC    B                    ; Account for reading LF
+0086: 0164 18 0B                  JR     CompleteLine         ; Process the line
+0087: 0166         ;
+0088: 0166             CompleteLineLF:
+0089: 0166 23                     INC    HL                   ; Get past the LF
+0090: 0167 05                     DEC    B                    ; account for reading LF
+0091: 0168 7E                     LD     A,(HL)               ; Get the next character
+0092: 0169 FE 0D                  CP     CR                   ; Is it a Carriage Return ?
+0093: 016B 20 04                  JR     NZ,CompleteLine      ;  no then process the line
+0094: 016D 23                     INC    HL                   ; Get past the CR
+0095: 016E 05                     DEC    B                    ; Account for reading CR
+0096: 016F 18 00                  JR     CompleteLine         ; Process the line
+0097: 0171         ;
+0098: 0171             CompleteLine:
+0099: 0171 C5                     PUSH   BC                   ; Save the counts
+0100: 0172 EB                     EX     DE,HL
+0101: 0173 36 00                  LD     (HL),0               ; Terminate the string
+0102: 0175 23                     INC    HL
+0103: 0176 36 00                  LD     (HL),0               ; Place 0000 at end of out buffer
+0104: 0178 23                     INC    HL
+0105: 0179 EB                     EX     DE,HL
+0106: 017A         ;	INC		HL							; Look past the CR
+0107: 017A         ;	LD		A,LF
+0108: 017A         ;	CP		(HL)						; Line Feed here ?
+0109: 017A         ;	JR		NZ,CompleteLine1				; Skip if not
+0110: 017A         ;	INC		HL							;  else get past it
+0111: 017A             CompleteLine1:
+0112: 017A E5                     PUSH   HL                   ; Save the pointers
+0113: 017B CD 2C 02               CALL   PrintLineNumber      ; Display the line number
+0114: 017E
+0115: 017E CD 11 02               CALL   IncrementLinePointer ; Bump line number
+0116: 0181 21 3E 05               LD     HL,commandBuffer     ; point at buffer to display
+0117: 0184 CD 7D 02               CALL   printStringNull      ; print null terminated line
+0118: 0187 E1                     POP    HL
+0119: 0188 C1                     POP    BC
+0120: 0189 0E 00                  LD     C,00H                ; reset line char count
+0121: 018B 11 3E 05               LD     DE,commandBuffer
+0122: 018E
+0123: 018E C3 3A 01               JP     LoadTheFile2         ; restart the loop
+0124: 0191 00                     NOP
+0125: 0192         ;	HALT
+0126: 0192 C9                     RET
+0127: 0193
+0128: 0193         ;--------------------------------- Utilities -------------------------------;
+0129: 0193
+0130: 0193                        Include ./Utilities.Z80
+0131: 0193         ;<<<<<<<<<<<<<<<<<<<<<<< Include >>>>>>>>>>>>>>>>
+0132: 0193         ; Utilities.Z80
+0133: 0193         ;------------------------------ Get The File -------------------------------;
+0134: 0193             GetTheFile:
+0135: 0193         ;   Is there a file on the command line ?
+0136: 0193
+0137: 0193 3A 5D 00               LD     A,(FCB1+1)           ; First char in file name
+0138: 0196 FE 20                  CP     SPACE                ; Is it Blank ?
+0139: 0198 CC C8 01               CALL   Z,askForFile         ;  yes, ask the user for the file
+0140: 019B         ;	CALL	CopyFileFCB1				; move the FCB
+0141: 019B
+0142: 019B 11 5C 00               LD     DE,FCB1              ; Point at the file from CMD line
+0143: 019E CD F2 02               CALL   OpenFile             ; Open the file
+0144: 01A1 3C                     INC    A                    ; -1 +1 = 0
+0145: 01A2 C0                     RET    NZ                   ; File is now open
+0146: 01A3 11 5C 00               LD     DE,FCB1              ; Point at the file from CMD line
+0147: 01A6 CD F7 02               CALL   MakeFile             ; Make a new File
+0148: 01A9 3C                     INC    A                    ; -1 +1 = 0
+0149: 01AA C0                     RET    NZ                   ; New File available
+0150: 01AB
+0151: 01AB 01 63 07               LD     BC,msgBadMake
+0152: 01AE CD 78 02               CALL   printCrLfStringNull
+0153: 01B1 C3 B4 01               JP     Exit
+0154: 01B4
+0155: 01B4             Exit:
+0156: 01B4 3A 3D 03               LD     A,(file1Open)
+0157: 01B7 FE FF                  CP     TRUE                 ; Do we have an open file ?
+0158: 01B9 20 06                  JR     NZ,Exit1             ; no, skip the close
+0159: 01BB 11 5C 00               LD     DE,FCB1              ; Point at file1's FCB
+0160: 01BE CD FC 02               CALL   CloseFile            ; Close File
+0161: 01C1             Exit1:
+0162: 01C1 01 77 07               LD     BC,msgByeBye
+0163: 01C4 CD 78 02               CALL   printCrLfStringNull
+0164: 01C7 C9                     RET
+0165: 01C8
+0166: 01C8         ;---------------------------- Ask For The File -----------------------------;
+0167: 01C8             askForFile:
+0168: 01C8 AF                     XOR    A                    ; Set Acc to Zero
+0169: 01C9 CD E3 01               CALL   FillCmdBuffer        ; Initialize command buffer
+0170: 01CC
+0171: 01CC
+0172: 01CC 01 44 07               LD     BC,msgAskForFile
+0173: 01CF CD 78 02               CALL   printCrLfStringNull
+0174: 01D2 CD F6 01               CALL   CommandPrompt
+0175: 01D5
+0176: 01D5 11 3E 05               LD     DE,commandBuffer
+0177: 01D8 3E 0F                  LD     A,15
+0178: 01DA 12                     LD     (DE),A               ; Limit to full file name
+0179: 01DB
+0180: 01DB CD 01 03               CALL   ReadString           ; Read user's input
+0181: 01DE
+0182: 01DE CD B4 01               CALL   Exit
+0183: 01E1 00                     NOP
+0184: 01E2 76                     HALT
+0185: 01E3
+0186: 01E3         ;---------------------------- Fill Command Buffer --------------------------;
+0187: 01E3         ; Fills the command/readFile buffer with value in ACC.
+0188: 01E3         ; Registers BC,DE & HL are preserved
+0189: 01E3             FillCmdBuffer:
+0190: 01E3 E5                     PUSH   HL
+0191: 01E4 D5                     PUSH   DE
+0192: 01E5 C5                     PUSH   BC
+0193: 01E6 21 3E 05               LD     HL,commandBuffer
+0194: 01E9 77                     LD     (HL),A
+0195: 01EA 11 3F 05               LD     DE,commandBuffer+1
+0196: 01ED 01 7F 00               LD     BC,BuffSize-1
+0197: 01F0 ED B0                  LDIR                        ; Clear command buffer
+0198: 01F2 C1                     POP    BC
+0199: 01F3 D1                     POP    DE
+0200: 01F4 E1                     POP    HL
+0201: 01F5 C9                     RET
+0202: 01F6
+0203: 01F6         ;------------------------------ Command Prompt -----------------------------;
+0204: 01F6             CommandPrompt:
+0205: 01F6 1E 2A                  LD     E,STAR               ; nnnn *
+0206: 01F8 CD 02 02               CALL   UserPrompt
+0207: 01FB C9                     RET
+0208: 01FC         ;------------------------------- Input Prompt ------------------------------;
+0209: 01FC             InputPrompt:
+0210: 01FC 1E 3A                  LD     E,COLON              ; nnnn :
+0211: 01FE CD 02 02               CALL   UserPrompt
+0212: 0201 C9                     RET
+0213: 0202         ;-------------------------------- UserPrompt -------------------------------;
+0214: 0202         ; E -> Char to prompt
+0215: 0202             UserPrompt:
+0216: 0202 D5                     PUSH   DE                   ; Save prompt
+0217: 0203 CD 2C 02               CALL   PrintLineNumber
+0218: 0206 CD 53 02               CALL   printSpace
+0219: 0209 D1                     POP    DE                   ; Get prompt char
+0220: 020A CD 5A 02               CALL   printCharInE
+0221: 020D CD 53 02               CALL   printSpace
+0222: 0210 C9                     RET
+0223: 0211
+0224: 0211
+0225: 0211         ;------------------------------ Copy File FCB1 -----------------------------;
+0226: 0211
+0227: 0211
+0228: 0211         ;-------------------------- Increment Line Pointer -------------------------;
+0229: 0211             IncrementLinePointer:
+0230: 0211 E5                     PUSH   HL                   ; Save Register
+0231: 0212 2A 32 03               LD     HL,(activeLinePointer) ; Get current position
+0232: 0215 23                     INC    HL                   ; Increment it
+0233: 0216 22 32 03               LD     (activeLinePointer),HL
+0234: 0219 E1                     POP    HL                   ; Restore register
+0235: 021A C9                     RET
+0236: 021B
+0237: 021B         ;-------------------------- Decrement Line Pointer -------------------------;
+0238: 021B             DecrementLinePointer:
+0239: 021B E5                     PUSH   HL                   ; Save Register
+0240: 021C 2A 32 03               LD     HL,(activeLinePointer) ; Get current position
+0241: 021F 7D                     LD     A,L
+0242: 0220 84                     ADD    A,H
+0243: 0221 C8                     RET    Z                    ; Return at 0
+0244: 0222 2B                     DEC    HL                   ; Decrement it
+0245: 0223 22 32 03               LD     (activeLinePointer),HL
+0246: 0226 E1                     POP    HL                   ; Restore register
+0247: 0227 C9                     RET
+0248: 0228
+0249: 0228         ;----------------------------- Set LinePointer -----------------------------;
+0250: 0228         ; HL <- New Line number
+0251: 0228             SetLineNumber:
+0252: 0228 22 32 03               LD     (activeLinePointer),HL
+0253: 022B C9                     RET
+0254: 022C         ;---------------------------- Print Line Number ----------------------------;
+0255: 022C             PrintLineNumber:
+0256: 022C CD 60 02               CALL   printCrLf
+0257: 022F 2A 32 03               LD     HL,(activeLinePointer) ; get current line number
+0258: 0232 DD 21 3E 07               LD     IX,LineNumber
+0259: 0236 CD B1 02               CALL   HexToASCIIbuff       ; make ASCII
+0260: 0239
+0261: 0239 21 3E 07               LD     HL,LineNumber        ; Point at the buffer
+0262: 023C 06 04                  LD     B,04                 ; Set loop counter up
+0263: 023E 7E                     LD     A,(HL)               ; Get 1st value
+0264: 023F FE 30                  CP     ASCII_ZERO           ; Leading value 0?
+0265: 0241 28 03                  JR     Z,PrintLineNumber1   ; Skip if yes
+0266: 0243 CD 57 02               CALL   printCharInA         ; print leading char
+0267: 0246
+0268: 0246             PrintLineNumber1:
+0269: 0246 23                     INC    HL
+0270: 0247 7E                     LD     A,(HL)
+0271: 0248 E5                     PUSH   HL
+0272: 0249 CD 57 02               CALL   printCharInA
+0273: 024C E1                     POP    HL
+0274: 024D 10 F7                  DJNZ   PrintLineNumber1
+0275: 024F CD 53 02               CALL   printSpace
+0276: 0252 C9                     RET
+0277: 0253
+0278: 0253         ;------------------------------- Print Space -------------------------------;
+0279: 0253             printSpace:
+0280: 0253 1E 20                  LD     E,SPACE              ; Load Space
+0281: 0255 18 03                  JR     printCharInE         ; Go Print it  * Save BC
+0282: 0257
+0283: 0257         ;------------------------------- printCharInA ------------------------------;
+0284: 0257         ; Print character
+0285: 0257         ; On Entry A = Character to Send to Console
+0286: 0257             printCharInA:
+0287: 0257 5F                     LD     E,A                  ; move char to E
+0288: 0258 18 00                  JR     printCharInE
+0289: 025A
+0290: 025A         ;------------------------------- printCharInE ------------------------------;
+0291: 025A         ; Print character
+0292: 025A         ; On Entry E = Character to Send to Console
+0293: 025A         ; Preserves BC								;
+0294: 025A             printCharInE:
+0295: 025A C5                     PUSH   BC                   ; Preserve BC
+0296: 025B CD 06 03               CALL   ConsoleOut           ; Send the char to the console
+0297: 025E C1                     POP    BC                   ; Restore BC
+0298: 025F C9                     RET
+0299: 0260
+0300: 0260         ;-------------------------------- CR / LF ----------------------------------;
+0301: 0260         ;Sent Carriage Return Line Feed to Console
+0302: 0260             printCrLf:
+0303: 0260 1E 0D                  LD     E,CR                 ; Load Carriage Return
+0304: 0262 CD 06 03               CALL   ConsoleOut           ; Send the char to the console
+0305: 0265 1E 0A                  LD     E,LF                 ; Load Line Feed
+0306: 0267 CD 06 03               CALL   ConsoleOut           ; Send the char to the console
+0307: 026A C9                     RET
+0308: 026B         ;------------------------------ CR / LF Safe --------------------------------;
+0309: 026B         ;Sent Carriage Return Line Feed to Console
+0310: 026B             printCrLfSafe:
+0311: 026B C5                     PUSH   BC                   ; Preserve BC
+0312: 026C 1E 0D                  LD     E,CR                 ; Load Carriage Return
+0313: 026E CD 06 03               CALL   ConsoleOut           ; Send the char to the console
+0314: 0271 1E 0A                  LD     E,LF                 ; Load Line Feed
+0315: 0273 CD 06 03               CALL   ConsoleOut           ; Send the char to the console
+0316: 0276 C1                     POP    BC                   ; Restore BC
+0317: 0277 C9                     RET
+0318: 0278
+0319: 0278         ;----------------- Print (CRLF then ) Null Terminated String ---------------;
+0320: 0278         ;print CRLF then null terminated string at (BC)
+0321: 0278             printCrLfStringNull:
+0322: 0278 C5                     PUSH   BC                   ; Save string pointer
+0323: 0279 CD 60 02               CALL   printCrLf            ; Send CR/LF
+0324: 027C E1                     POP    HL                   ; Restore pointer & fall thru
+0325: 027D         ;print null terminated string from (HL)
+0326: 027D             printStringNull:
+0327: 027D 7E                     LD     A,(HL)               ; Get the next character
+0328: 027E B7                     OR     A                    ; Is it the Null terminator ?
+0329: 027F C8                     RET    Z                    ;  exit if yes
+0330: 0280 23                     INC    HL                   ; Move string pointer
+0331: 0281 E5                     PUSH   HL                   ; Save for next iteration
+0332: 0282 5F                     LD     E,A                  ; Character
+0333: 0283 CD 06 03               CALL   ConsoleOut           ; Send the char to the console
+0334: 0286 E1                     POP    HL                   ; string pointer
+0335: 0287 18 F4                  JR     printStringNull      ; Loop for more
+0336: 0289
+0337: 0289         ;----------------- Print (Null Terminated String ) then CRLF ---------------;
+0338: 0289         ;print null terminated string from (HL)
+0339: 0289             printStringNullCrLf:
+0340: 0289 CD 7D 02               CALL   printStringNull      ; Print null terminated String
+0341: 028C CD 6B 02               CALL   printCrLfSafe        ; Print CR/LF saving BC
+0342: 028F C9                     RET
+0343: 0290         ;------------------------ Get Number From Command Line ---------------------;
+0344: 0290         ; Get number from the command line
+0345: 0290         ; Exits with A = Value
+0346: 0290         ;?GetNumberFromCmdLine:
+0347: 0290         ;?	CALL	ParseToken1					; Get token
+0348: 0290         ;?	LD		A,(selectedDisk)			; Get currently selected disk
+0349: 0290         ;?	OR		A							; Is it current default disk ?
+0350: 0290         ;?	JP		NZ,CommandError				;  no, then error exit
+0351: 0290         ;?; convert the byte value in Token1 to binary
+0352: 0290         ;?
+0353: 0290 21 00 00               LD     HL,0000
+0354: 0293 01 00 00               LD     BC,0000              ; Clear the registers
+0355: 0296
+0356: 0296         ;	LD		IX,Token1 + 1   **********
+0357: 0296             CalculateNumber:
+0358: 0296 DD 7E 00               LD     A,(IX+0)             ; Get Character
+0359: 0299 DD 23                  INC    IX                   ; Adjust for next time around
+0360: 029B FE 20                  CP     SPACE                ; Terminating character ?
+0361: 029D 28 10                  JR     Z,ReturnNumericValue ;  get out if yes
+0362: 029F D6 30                  SUB    ASCII_ZERO           ; Make binary
+0363: 02A1 FE 0A                  CP     0AH                  ; Is it a digit ?
+0364: 02A3 30 0A                  JR     NC,ReturnNumericValue ;  get out if no
+0365: 02A5 29                     ADD    HL,HL                ; Prior value * 2
+0366: 02A6 E5                     PUSH   HL                   ; Move *2
+0367: 02A7 D1                     POP    DE                   ;  to DE
+0368: 02A8 29                     ADD    HL,HL                ; Prior value * 4
+0369: 02A9 29                     ADD    HL,HL                ; Prior value * 8
+0370: 02AA 19                     ADD    HL,DE                ; Add * 2 gives Prior value * 10
+0371: 02AB 4F                     LD     C,A                  ; Get this digit
+0372: 02AC 09                     ADD    HL,BC                ; and add it
+0373: 02AD 18 E7                  JR     CalculateNumber
+0374: 02AF
+0375: 02AF             ReturnNumericValue:
+0376: 02AF 7D                     LD     A,L                  ; Put result in Acc
+0377: 02B0 C9                     RET
+0378: 02B1
+0379: 02B1         ;------------------------ Get Number From Command Line ---------------------;
+0380: 02B1         ;----------------------------- Hex To ASCII Buffer -------------------------;
+0381: 02B1         ; HL  -> Dividend
+0382: 02B1         ; IX  -> ASCII buffer
+0383: 02B1             HexToASCIIbuff:
+0384: 02B1         ;	LD		IX,LineNumber				; Set up buffer Pointer
+0385: 02B1
+0386: 02B1 11 10 27               LD     DE,2710H             ; 10,000D, 2710H
+0387: 02B4 CD D0 02               CALL   HexToASCIIdigit      ; Get digit4
+0388: 02B7
+0389: 02B7 11 E8 03               LD     DE,03E8H             ; 1,000D, 03E8H
+0390: 02BA CD D0 02               CALL   HexToASCIIdigit      ; Get digit3
+0391: 02BD
+0392: 02BD 11 64 00               LD     DE,64H               ; 100D, 64H
+0393: 02C0 CD D0 02               CALL   HexToASCIIdigit      ; Get digit2
+0394: 02C3
+0395: 02C3 11 0A 00               LD     DE,0AH               ; 10D, 0AH
+0396: 02C6 CD D0 02               CALL   HexToASCIIdigit      ; Get digit1
+0397: 02C9
+0398: 02C9 7D                     LD     A,L                  ; Get digit0
+0399: 02CA C6 30                  ADD    A,ASCII_ZERO         ; Make ASCII
+0400: 02CC DD 77 00               LD     (IX+0),A             ; Put it in Buffer
+0401: 02CF
+0402: 02CF C9                     RET                         ; Exit
+0403: 02D0
+0404: 02D0         ;----------------------------- Hex To ASCII Buffer -------------------------;
+0405: 02D0
+0406: 02D0         ;----------------------------- Hex To ASCII Digit --------------------------;
+0407: 02D0         ; HL  -> Dividend
+0408: 02D0         ; DE  -> Divisor
+0409: 02D0         ; IX  -> ASCII buffer
+0410: 02D0
+0411: 02D0         ; HL  <- Remainder
+0412: 02D0         ; IX  <- ASCII buffer + 1
+0413: 02D0             HexToASCIIdigit:
+0414: 02D0 CD DD 02               CALL   Divide               ; Get value
+0415: 02D3 C6 30                  ADD    A,ASCII_ZERO         ; Make ASCII
+0416: 02D5 DD 77 00               LD     (IX+0),A             ; Put it in Buffer
+0417: 02D8 DD 23                  INC    IX                   ; Increment buffer pointer
+0418: 02DA C5                     PUSH   BC                   ; Get remainder
+0419: 02DB E1                     POP    HL                   ; Put into HL for return
+0420: 02DC C9                     RET                         ; Exit
+0421: 02DD         ;----------------------------- Hex To ASCII Digit --------------------------;
+0422: 02DD
+0423: 02DD         ;----------------------------------- Divide --------------------------------;
+0424: 02DD         ; HL  -> Dividend
+0425: 02DD         ; DE  -> Divisor
+0426: 02DD         ; BC  <- Remainder
+0427: 02DD         ; ACC <- Result
+0428: 02DD
+0429: 02DD             Divide:
+0430: 02DD 3E FF                  LD     A,-1                 ; Initialize Acc
+0431: 02DF
+0432: 02DF             Divide1:
+0433: 02DF E5                     PUSH   HL                   ; Want to save
+0434: 02E0 C1                     POP    BC                   ;  what will be the remainder
+0435: 02E1 3C                     INC    A                    ; Keep count
+0436: 02E2 A7                     AND    A                    ; Clear the CY flag
+0437: 02E3 ED 52                  SBC    HL,DE                ; Poor man's Divide
+0438: 02E5 30 F8                  JR     NC,Divide1           ;  loop if more
+0439: 02E7 C9                     RET                         ;  else return
+0440: 02E8
+0441: 02E8
+0442: 02E8         ;----------------------------------- Set DMA -------------------------------;
+0443: 02E8             SetDMA:
+0444: 02E8 0E 1A                  LD     C,fSetDMA
+0445: 02EA C3 05 00               JP     BDOS                 ; Set the disk read buffer
+0446: 02ED
+0447: 02ED         ;------------------------------- Read Sequential ---------------------------;
+0448: 02ED             ReadSeq:
+0449: 02ED 0E 14                  LD     C,fReadSeq
+0450: 02EF C3 05 00               JP     BDOS                 ; Read next record
+0451: 02F2
+0452: 02F2         ;---------------------------------- Open File ------------------------------;
+0453: 02F2             OpenFile:
+0454: 02F2 0E 0F                  LD     C,fOpenFile
+0455: 02F4 C3 05 00               JP     BDOS                 ; Open the file
+0456: 02F7
+0457: 02F7         ;---------------------------------- Make File ------------------------------;
+0458: 02F7             MakeFile:
+0459: 02F7 0E 16                  LD     C,fMakeFile          ; Make a new File
+0460: 02F9 C3 05 00               JP     BDOS
+0461: 02FC
+0462: 02FC         ;---------------------------------- Close File -----------------------------;
+0463: 02FC             CloseFile:
+0464: 02FC 0E 10                  LD     C,fCloseFile
+0465: 02FE C3 05 00               JP     BDOS                 ; Close File
+0466: 0301
+0467: 0301         ;---------------------------------- Close File -----------------------------;
+0468: 0301             ReadString:
+0469: 0301 0E 0A                  LD     C,fReadString
+0470: 0303 C3 05 00               JP     BDOS                 ; Read user's input
+0471: 0306
+0472: 0306         ;---------------------------------- Console Out ----------------------------;
+0473: 0306             ConsoleOut:
+0474: 0306 0E 02                  LD     C,fConsoleOut
+0475: 0308 C3 05 00               JP     BDOS                 ; Send Char in E to Console
+0476: 030B
+0477: 030B
+0478: 030B         ;------------------------------ Application Init ---------------------------;
+0479: 030B             appInit:
+0480: 030B 3A 07 00               LD     A,(BDOS+2)           ; Get BDOS start page
+0481: 030E D6 01                  SUB    1                    ; Find the page before that
+0482: 0310 67                     LD     H,A                  ; Move to H
+0483: 0311 2E A0                  LD     L,0A0H
+0484: 0313 F9                     LD     SP,HL                ; Make stack 160 bytes
+0485: 0314 2E 00                  LD     L,00H
+0486: 0316 22 3B 03               LD     (endOfBuffer),HL     ; save top of buffer
+0487: 0319 21 85 07               LD     HL,EndOfCode         ; Find start of Buffer
+0488: 031C 24                     INC    H
+0489: 031D 2E 00                  LD     L,0                  ; Start buffer on page boundary
+0490: 031F 22 39 03               LD     (startOfBuffer),HL   ; Save beginning of buffer
+0491: 0322 21 00 00               LD     HL,0000
+0492: 0325 22 32 03               LD     (activeLinePointer),HL ; Initialize the line pointer
+0493: 0328 22 37 03               LD     (readBufferPointer),HL ; Initialize the buffer pointer
+0494: 032B AF                     XOR    A
+0495: 032C 32 34 03               LD     (lineIndex),A        ; Initialize the line index
+0496: 032F
+0497: 032F C3 03 01               JP     Begin                ; Do the Application
+0498: 0332
+0499: 0332         ;<<<<<<<<<<<<<<<<<<<<<<< Include >>>>>>>>>>>>>>>>
+0500: 0332
+0501: 0332                        Include ./MyEdVars.Z80
+0502: 0332         ;<<<<<<<<<<<<<<<<<<<<<<< Include >>>>>>>>>>>>>>>>
+0503: 0332         ; MyEdVars.z80
+0504: 0332
+0505: 0332         ;-------------------------------- Variables --------------------------------;
+0506: 0332             activeLinePointer:
+0507: 0332 00 00                  DW     00000H               ; Current Line Number
+0508: 0334             lineIndex:
+0509: 0334 00                     DB     00                   ; Current index in current line
+0510: 0335             displayLinePointer:
+0511: 0335 00 00                  DW     0000H                ; pointer for line display
+0512: 0337             readBufferPointer:
+0513: 0337 00 00                  DW     0000H
+0514: 0339             startOfBuffer:
+0515: 0339 00 00                  DW     0000H
+0516: 033B             endOfBuffer:
+0517: 033B 00 00                  DW     0000H
+0518: 033D             file1Open:
+0519: 033D 00                     DB     FALSE
+0520: 033E         ;fileFCB1:
+0521: 033E         ;	DS		022H
+0522: 033E
+0523: 033E
+0524: 033E         ;---------------------------------- Buffers --------------------------------;
+0525: 033E             BuffSize   EQU    080H
+0526: 033E             readBuffer:
+0527: 033E                        DS     BuffSize + BuffSize + BuffSize + BuffSize
+0528: 053E             displayLineBuffer:
+0529: 053E             commandBuffer:
+0530: 053E                        DS     BuffSize + BuffSize + BuffSize + BuffSize
+0531: 073E             LineNumber:
+0532: 073E 20 20 20 20 20 20                DB     SPACE,SPACE,SPACE,SPACE,SPACE,SPACE
+0533: 0744
+0534: 0744         ;--------------------------------- Messages --------------------------------;
+0535: 0744             msgAskForFile:
+0536: 0744 0D 0A 50 6C 65 61 73 65 20 65 6E 74 65 72 20 61 20 66 69 6C 65 20 6E 61 6D 65 3A 20 0D 0A 00                DB     CR,LF,'Please enter a file name: ',CR,LF,0
+0537: 0763             msgBadMake:
+0538: 0763 55 6E 61 62 6C 65 20 74 6F 20 6D 61 6B 65 20 66 69 6C 65 00                DB     'Unable to make file',0
+0539: 0777             msgByeBye:
+0540: 0777 45 6E 64 20 6F 66 20 4D 59 45 44 0D 0A 00                DB     'End of MYED',CR,LF,0
+0541: 0785             EndOfCode:
+0542: 0785         ;<<<<<<<<<<<<<<<<<<<<<<< Include >>>>>>>>>>>>>>>>
+0543: 0785
+0544: 0785             EndOfCode:
+0545: 0785
+0546: 0785                        Include ./hdrA.z80
+0547: 0785         ;<<<<<<<<<<<<<<<<<<<<<<< Include >>>>>>>>>>>>>>>>
+0548: 0785         ;hdrA.Z80
+0549: 0785
+0550: 0785         ; Header file for use with A.Z80
+0551: 0785
+0552: 0785             CPMRecordSize EQU    128                  ; Size of standard CP/M record
+0553: 0785
+0554: 0785             BDOS       EQU    00005H
+0555: 0785             fConsoleOut EQU    02H
+0556: 0785             fPrintString EQU    09H
+0557: 0785             fReadString EQU    0AH
+0558: 0785             fOpenFile  EQU    0FH
+0559: 0785             fCloseFile EQU    10H
+0560: 0785             fFindFirst EQU    11H
+0561: 0785             fFindNext  EQU    12H
+0562: 0785             fReadSeq   EQU    14H
+0563: 0785             fMakeFile  EQU    16H
+0564: 0785             fRenameFile EQU    17H
+0565: 0785             fSetDMA    EQU    1AH
+0566: 0785
+0567: 0785             defaultBuffer EQU    080H
+0568: 0785
+0569: 0785             sizeFCB    EQU    021H
+0570: 0785             FCB1       EQU    05CH                 ; File Control Block #1
+0571: 0785
+0572: 0785             EOM        EQU    '$'
+0573: 0785
+0574: 0785             LF         EQU    0AH                  ; Line Feed
+0575: 0785             CR         EQU    0DH                  ; Carriage Return
+0576: 0785             TRUE       EQU    -1
+0577: 0785             FALSE      EQU    00H
+0578: 0785             SPACE      EQU    020H
+0579: 0785
+0580: 0785             STAR       EQU    '*'
+0581: 0785             COLON      EQU    3AH                  ; Colon
+0582: 0785             ASCII_ZERO EQU    030H
+0583: 0785         ;<<<<<<<<<<<<<<<<<<<<<<< Include >>>>>>>>>>>>>>>>
            ************************   Xref   ************************
-0000: $               02D7
-0083: ALLOC           0151
-0003: BDOS            0005
-0005: CLOSE_FILE      0010
-0071: cmdLine         013D   0045
-0013: defaultBuffer   0080
-0077: DISK            0141
-0067: END             013B   0050 0053
-0095: erPermanent     0165
-0080: EXT             014D
-0075: FCB             0141
-0006: FIND_FIRST      0011
-0007: FIND_NEXT       0012
-0011: GET_SIZE        0023
-0046: Loop1           0120   0065
-0078: NAME            0142
-0004: OPEN_FILE       000F
-0082: RC              0150
-0008: READ_SEQ        0014
-0093: REC_RAN_O       0164
-0092: REC_RANDOM      0162
-0091: REC_SEQ         0161
-0015: recordRandom    0015   0016 0017 0018
-0016: recordRandomLSB 0015
-0017: recordRandomMSB 0016
-0018: recordRandomOVF 0017
-0009: RENAME_FILE     0017
-0081: RESV            014E
-0010: SET_DMA         001A
-0012: SET_RANDREC     0024
-0107: Stack           02E7   0041
-0023: Start           0100
-0020: TPA             0100   0022
-0079: TYPE            014A
+0000: $               0785
+0506: activeLinePointer 0332   0231 0233 0240 0245 0252 0257 0492
+0479: appInit         030B   0010
+0582: ASCII_ZERO      0030   0264 0362 0399 0415
+0167: askForFile      01C8   0139
+0554: BDOS            0005   0445 0450 0455 0460 0465 0470 0475 0480
+0011: Begin           0103   0497
+0525: BuffSize        0080   0196 0527 0530
+0357: CalculateNumber 0296   0373
+0463: CloseFile       02FC   0160
+0581: COLON           003A   0210
+0529: commandBuffer   053E   0033 0116 0121 0176 0193 0195
+0204: CommandPrompt   01F6   0174
+0098: CompleteLine    0171   0083 0086 0093 0096
+0111: CompleteLine1   017A
+0078: CompleteLineCR  015B   0050
+0088: CompleteLineLF  0166   0052
+0473: ConsoleOut      0306   0296 0304 0306 0313 0315 0333
+0552: CPMRecordSize   0080   0031 0061
+0575: CR              000D   0049 0092 0303 0312 0536 0540
+0238: DecrementLinePointer 021B
+0567: defaultBuffer   0080
+0528: displayLineBuffer 053E
+0510: displayLinePointer 0335   0030
+0429: Divide          02DD   0414
+0432: Divide1         02DF   0438
+0019: END             0111
+0516: endOfBuffer     033B   0486
+0541: EndOfCode       0785   0487
+0572: EOM             0024
+0155: Exit            01B4   0017 0153 0182
+0161: Exit1           01C1   0158
+0577: FALSE           0000   0519
+0570: FCB1            005C   0040 0137 0142 0146 0159
+0559: fCloseFile      0010   0464
+0555: fConsoleOut     0002   0474
+0560: fFindFirst      0011
+0561: fFindNext       0012
+0518: file1Open       033D   0014 0156
+0189: FillCmdBuffer   01E3   0169
+0563: fMakeFile       0016   0459
+0558: fOpenFile       000F   0454
+0556: fPrintString    0009
+0562: fReadSeq        0014   0449
+0557: fReadString     000A   0469
+0564: fRenameFile     0017
+0565: fSetDMA         001A   0444
+0134: GetTheFile      0193   0012
+0383: HexToASCIIbuff  02B1   0259
+0413: HexToASCIIdigit 02D0   0387 0390 0393 0396
+0229: IncrementLinePointer 0211   0115
+0209: InputPrompt     01FC
+0574: LF              000A   0051 0082 0305 0314 0536 0540
+0508: lineIndex       0334   0495
+0531: LineNumber      073E   0258 0261
+0023: LoadTheFile     0113   0016
+0039: LoadTheFile1    012F   0070
+0047: LoadTheFile2    013A   0059 0123
+0053: LoadTheFile3    0145
+0458: MakeFile        02F7   0147
+0535: msgAskForFile   0744   0172
+0537: msgBadMake      0763   0151
+0539: msgByeBye       0777   0162
+0453: OpenFile        02F2   0143
+0286: printCharInA    0257   0266 0272
+0294: printCharInE    025A   0220 0281 0288
+0302: printCrLf       0260   0256 0323
+0310: printCrLfSafe   026B   0341
+0321: printCrLfStringNull 0278   0152 0163 0173
+0255: PrintLineNumber 022C   0113 0217
+0268: PrintLineNumber1 0246   0265 0274
+0279: printSpace      0253   0218 0221 0275
+0326: printStringNull 027D   0117 0335 0340
+0339: printStringNullCrLf 0289
+0526: readBuffer      033E   0024 0034 0063
+0512: readBufferPointer 0337   0029 0493
+0448: ReadSeq         02ED   0041
+0468: ReadString      0301   0180
+0375: ReturnNumericValue 02AF   0361 0364
+0443: SetDMA          02E8   0025
+0251: SetLineNumber   0228
+0569: sizeFCB         0021
+0578: SPACE           0020   0138 0280 0360 0532
+0580: STAR            002A   0205
+0009: Start           0100
+0514: startOfBuffer   0339   0028 0490
+0004: TPA             0100   0006
+0576: TRUE            FFFF   0013 0157
+0215: UserPrompt      0202   0206 0211

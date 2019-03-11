@@ -1,0 +1,39 @@
+; MyEdVars.z80
+
+;-------------------------------- Variables --------------------------------;
+activeLinePointer:
+	DW		00000H						; Current Line Number
+lineIndex:
+	DB		00							; Current index in current line
+displayLinePointer:
+	DW		0000H						; pointer for line display
+readBufferPointer:
+	DW		0000H
+startOfBuffer:
+	DW		0000H
+endOfBuffer:
+	DW		0000H
+file1Open:
+	DB		FALSE	
+;fileFCB1:
+;	DS		022H
+
+	
+;---------------------------------- Buffers --------------------------------;
+BuffSize	EQU		080H
+readBuffer:
+	DS		BuffSize + BuffSize + BuffSize + BuffSize
+displayLineBuffer:
+commandBuffer:
+	DS		BuffSize + BuffSize + BuffSize + BuffSize
+LineNumber:			
+	DB		SPACE,SPACE,SPACE,SPACE,SPACE,SPACE
+
+;--------------------------------- Messages --------------------------------;
+msgAskForFile:
+	DB		CR,LF,'Please enter a file name: ',CR,LF,0
+msgBadMake:
+	DB		'Unable to make file',0
+msgByeBye:
+	DB		'End of MYED',CR,LF,0
+EndOfCode:

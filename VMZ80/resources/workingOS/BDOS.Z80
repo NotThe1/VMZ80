@@ -1,6 +1,9 @@
 ;		File created by MakeZ80Source on Tue Sep 18 12:41:03 EDT 2018 from:
 ;		C:\Users\admin\Dropbox\Resources\CPM\CurrentOS\8080\BDOSX.asm
 ; BDOS.Z80
+
+; 2019-03-04 vConsoleIn Not passing back non-printable characters
+; 2019-03-03 Preserved the IX and IY registers for the Caller
 ; 2019-03-02 Refactored constants and removed header files
 ; 2019-02-29 Version 1.0
 ; 2019-02-04 Fixed bdosStack problem
@@ -74,6 +77,8 @@ bcSectran	EQU		BIOSStart+3*16		; Sector Translate					;
 ; Save users Stack pointer													;
 	LD		(usersStack),SP			; Save the User's stack					;
 	LD		SP,bdosStack				; We will use our own stack			;
+	PUSH	IX							; Save users IX register			;
+	PUSH	IY							; Save users IY register			;
 																			;
 ; initialize variables														;
 	LD		HL,0000H														;
@@ -125,7 +130,9 @@ ReturnToCaller:																;
 	LD		(paramE),A					; and select it						;
 	CALL	SelectCurrent													;
 																			;
-ReturnToCaller1:															;
+ReturnToCaller1:
+	POP		IY							; Restore IY
+	POP		IX							; Restore IX
 	LD		HL,(usersStack)													;
 	LD		SP,HL						; restore callers stack				;
 	LD		HL,(exitParameterWord)											;
@@ -228,6 +235,7 @@ vSystemReset:
 vConsoleIn:
 	CALL	ConIn						; Don't come back without input
 	CALL	IsPrintableASCII			; CR,LF,TAB,BACK_SPACE or GE SPACE
+	LD		(exitParameterByte),A
 	RET		C							; return nothing to echo
 	PUSH	AF							; Save printable character
 	LD		C,A

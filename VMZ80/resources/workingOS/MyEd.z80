@@ -1,0 +1,160 @@
+; MyEd.Z80
+;  Reading the open file
+
+TPA			EQU		0100H
+
+			ORG		TPA
+			
+
+Start:
+	JP		appInit						; Initialize application
+Begin:
+	CALL	GetTheFile					; open/create the file
+	LD		A,TRUE
+	LD		(file1Open),A				; Set open flag
+
+
+	JP		Exit
+
+END:
+	NOP
+	HALT
+;------------------------------ Load The File ------------------------------;
+LoadTheFile:
+	LD		DE,readBuffer
+	LD		C,fSetDMA
+	CALL	BDOS						; Set the disk read buffer
+
+LoadTheFile1:	
+	LD		DE,FCB1
+	LD		C,fReadSeq
+	CALL	BDOS						; Read next record
+	XOR		A							; Did we read a record?
+	RET		Z							; EDxit if no more data
+	RET
+;------------------------------ Get The File -------------------------------;	
+GetTheFile:
+;   Is there a file on the command line ?
+
+	LD		A,(FCB1 + 1)				; First char in file name
+	CP		SPACE						; Is it Blank ?
+	CALL	Z,askForFile				;  yes, ask the user for the file
+
+
+	LD		DE,FCB1						; Point at the file from CMD line
+	LD		C,fOpenFile					; Open the file
+	CALL	BDOS
+	INC		A							; -1 +1 = 0
+	RET		NZ							; File is now open
+	LD		DE,FCB1						; Point at the file from CMD line
+	LD		C,fMakeFile					; Make a new File
+	CALL	BDOS
+	INC		A							; -1 +1 = 0
+	RET		NZ							; New File available
+
+	LD		BC,msgBadMake
+	CALL	printCrLfStringNull
+	JP		Exit
+
+Exit:
+	LD		A,(file1Open)
+	CP		TRUE						; Do we have an open file ?
+	JR		NZ,Exit1					; no, skip the close
+	LD		DE,FCB1						; Point at file1's FCB
+	LD		C,fCloseFile				; CLose File
+	CALL	BDOS
+Exit1:
+	LD		BC,msgByeBye
+	CALL	printCrLfStringNull
+	RET
+
+;---------------------------- Ask For The File -----------------------------;	
+askForFile:
+	XOR		A							; Set Acc to Zero
+	CALL	FillCmdBuffer				; Initialize command buffer
+
+
+	LD		BC,msgAskForFile
+	CALL	printCrLfStringNull
+	CALL	CommandPrompt
+
+	LD		DE,CommandBuffer
+	LD		A,15
+	LD		(DE),A						; Limit to full file name
+
+;	INC		DE
+;	INC		DE							; Point at start of input
+	LD		C,fReadString
+	CALL	BDOS						; read user's input
+
+	CALL	Exit
+	NOP
+	HALT
+
+;---------------------------- Fill Command Buffer --------------------------;
+; Fills the command/readFile buffer with value in ACC.
+; Registers BC,DE & HL are preserved
+FillCmdBuffer:
+	PUSH	HL
+	PUSH	DE
+	PUSH	BC
+	LD		HL,CommandBuffer
+	LD		(HL),A
+	LD		DE,CommandBuffer +1
+	LD		BC,BuffSize -1
+	LDIR								; Clear command buffer
+	POP		BC
+	POP		DE
+	POP		HL
+	RET
+
+;------------------------------ Command Prompt -----------------------------;
+CommandPrompt:
+	LD		E,STAR						; nnnn *
+	CALL	UserPrompt
+	RET
+;------------------------------- Input Prompt ------------------------------;
+InputPrompt:
+	LD		E,COLON						; nnnn :
+	CALL	UserPrompt
+	RET
+;-------------------------------- UserPrompt -------------------------------;
+; E -> Char to prompt
+UserPrompt:
+	PUSH	DE							; Save prompt
+	CALL	PrintLineNumber
+	CALL	printSpace
+	POP		DE							; Get prompt char
+	CALL	printCharInE
+	CALL	printSpace
+	RET
+
+
+;--------------------------------- Utilities -------------------------------;
+appInit:
+	LD		A,(BDOS + 2)				; Get BDOS start page
+	SUB		1							; Find the page before that
+	LD		H,A							; Move to H
+	LD		L,0A0H
+	LD		SP,HL						; Make stack 160 bytes
+	LD		L,00H
+	LD		(endOfBuffer),HL			; save top of buffer
+	LD		HL,EndOfCode				; Find start of Buffer
+	INC		H,
+	LD		L,0							; Start buffer on page boundary
+	LD		(startOfBuffer),HL			; Save beginning of buffer
+	LD		HL,0000
+	LD		(linePointer),HL			; Initialize the pointer
+	XOR		A
+	LD		(lineIndex),A				; Initialize the index
+
+	JP		Begin						; Do the Application
+	
+	
+	$Include ./Utilities.Z80
+
+	$Include ./MyEdVars.Z80
+
+EndOfCode:
+
+	$Include ./hdrA.z80

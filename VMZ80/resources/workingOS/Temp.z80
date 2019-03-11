@@ -1,34 +1,30 @@
-; MyEd.Z80
-;  Reading the open file
-
-TPA			EQU		0100H
-
-			ORG		TPA
-			
-
-Start:
-	JP		appInit						; Initialize application
-Begin:
-	CALL	GetTheFile					; open/create the file
-	LD		A,TRUE
-	LD		(file1Open),A				; Set open flag
-
-	CALL	LoadTheFile					; Get the file
-	JP		Exit
-
-END:
-	NOP
-	HALT
 ;------------------------------ Load The File ------------------------------;
 LoadTheFile:
 	LD		DE,readBuffer
 	CALL	SetDMA						; Set the disk read buffer
 	
-LoadTheFile1:
 	CALL	ReadSourceFile				; Get source data
-	RET		NZ							; Exit if no more data
+	
+; <set up>
+;	LD		HL,startOfBuffer			; Initialize 
+;	LD		(readBufferPointer),HL			;  Buffer pointer
+;	LD		(displayLinePointer),HL				; Save line start
+;	LD		B,CPMRecordSize				; Length of source record
+;	LD		C,00						; Size of this line
 	LD		DE,commandBuffer			; Destination
-
+;	LD		HL,readBuffer				; Source
+	PUSH	HL
+	PUSH	DE
+	PUSH	BC							; Save the control parameters
+; <set up > ReadSourceFile
+LoadTheFile1:
+	LD		DE,FCB1
+	CALL	ReadSeq						; Read next record
+	OR		A							; Did we read a record?
+	RET		NZ							; Exit if no more data
+	POP		BC
+	POP		DE
+	POP		HL							; Restore the control parameters
 LoadTheFile2:
 	LD		A,(HL)
 	CP		CR							; Carriage Return ?
@@ -43,6 +39,15 @@ LoadTheFile3:
 	DEC		B							; Keep track of pointers
 	JR		NZ,LoadTheFile2				; not at end of read buffer, loop
 
+	LD		B,CPMRecordSize				; Length of source record
+	LD		C,00						; Size of this line
+	LD		HL,readBuffer				; go back to the start of read buffer
+	PUSH	HL
+	PUSH	DE
+	PUSH	BC							; Save the control parameters
+
+	
+	
 	JR		LoadTheFile1
 
 	NOP
@@ -67,37 +72,28 @@ ReadSourceFile:
 	OR		A							; Did we read a record?
 	RET		NZ							; Exit if no more data
 
-;------------------------- We have a complete line -------------------------;
-; A-> Value to be checked in next position	
-CompleteLineCRLF:
-	INC		HL							; Get past the CR
-	DEC		B							; account for reading CR
-	CP		(HL)							; Is it a Line Feed ?
-	JR		NZ,CompleteLine				;  no then process the line
-	INC		HL							; Get past the LF
-	DEC		B							; Account for reading LF
-	JR		CompleteLine				; Process the line
 
 	
 ;------------------------- We have a complete line -------------------------;
 CompleteLineCR:
-	LD		A,LF						; is the following char a LF ?
-	JR		CompleteLineCRLF			;  check it out
-;
-CompleteLineLF:
-	LD		A,CR						; is following char a CR ?
-;
-CompleteLineCRLF:
 	INC		HL							; Get past the CR
 	DEC		B							; account for reading CR
-	CALL	Z,ReadSourceFile			; Read source if end of read buffer
-	JP		x,xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-	CP		(HL)							; Is it a Line Feed ?
+	LD		A,(HL)						; Get the next character
+	CP		LF							; Is it a Line Feed ?
 	JR		NZ,CompleteLine				;  no then process the line
 	INC		HL							; Get past the LF
 	DEC		B							; Account for reading LF
-; fall thru
-	
+	JR		CompleteLine				; Process the line
+;
+CompleteLineLF:
+	INC		HL							; Get past the LF
+	DEC		B							; account for reading LF
+	LD		A,(HL)						; Get the next character
+	CP		CR							; Is it a Carriage Return ?
+	JR		NZ,CompleteLine				;  no then process the line
+	INC		HL							; Get past the CR
+	DEC		B							; Account for reading CR
+	JR		CompleteLine				; Process the line
 ;	
 CompleteLine:
 	PUSH	BC							; Save the counts
@@ -129,12 +125,4 @@ CompleteLine1:
 ;	HALT
 	RET
 
-;--------------------------------- Utilities -------------------------------;
-	
-	$Include ./Utilities.Z80
-
-	$Include ./MyEdVars.Z80
-
-EndOfCode:
-
-	$Include ./hdrA.z80
+;--------------------------------- Utilities --------------
