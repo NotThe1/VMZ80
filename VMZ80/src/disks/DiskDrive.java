@@ -54,21 +54,6 @@ public class DiskDrive {
 	public DiskDrive(String strPathName) {
 		resolveDiskType(strPathName);
 		setupDisk(strPathName);
-		// try {
-		// File file = new File(strPathName);
-		//
-		// raf = new RandomAccessFile(file, "rw");
-		// fileChannel = raf.getChannel();
-		// disk = fileChannel.map(FileChannel.MapMode.READ_WRITE, 0, fileChannel.size());// total Bytes on disk
-		// fileAbsoluteName = file.toString();
-		// fileLocalName = file.getName();
-		//
-		// } catch (IOException ioException) {
-		// log.error("[DiskDrive]: " + ERR_IO + ioException.getMessage());
-		// fireVDiskError(1l, ERR_IO + ioException.getMessage());
-		// } // try
-		// readSector = new byte[bytesPerSector];
-		// writeSector = ByteBuffer.allocate(bytesPerSector);
 	}// Constructor
 
 	private void setupDisk(String strPathName) {

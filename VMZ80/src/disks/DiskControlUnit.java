@@ -2,6 +2,7 @@ package disks;
 
 import java.io.File;
 import java.nio.ByteBuffer;
+import java.nio.file.Paths;
 import java.util.Observable;
 import java.util.Observer;
 import java.util.Vector;
@@ -66,6 +67,21 @@ public class DiskControlUnit {
 		return ans;
 	}// isDiskMounted
 
+	private boolean isDiskMounted(String absolutePath) {
+		boolean ans = false;
+		for (int i = 0; i < Disk.NUMBER_OF_DISKS; i++) {
+			if (drives[i] == null) {
+				continue;
+			} // if null
+			if (absolutePath.equals(drives[i].getFilePath())) {
+				ans = true;
+				break;
+			} // if
+		} // for
+
+		return ans;
+	}// isDiskMounted
+
 	private void reportStatus(byte firstCode, byte secondCode) {
 		ioBuss.write(DISK_STATUS_BLOCK, firstCode);
 		ioBuss.write(DISK_STATUS_BLOCK + 1, secondCode);
@@ -106,27 +122,42 @@ public class DiskControlUnit {
 		} // if mounted already
 
 		JFileChooser fc = FilePicker.getDisk();
-//		JFileChooser fc = FilePicker.getDiskPicker();
 		if (fc.showOpenDialog(ifDisks) == JFileChooser.CANCEL_OPTION) {
 			log.info("Bailed out of the open");
 			return;
 		} // if
 
-		File selectedFile = fc.getSelectedFile();
+		String absolutePath = fc.getSelectedFile().getAbsolutePath();
 
-		if (!selectedFile.exists()) {
+		if (java.nio.file.Files.notExists(Paths.get(absolutePath))) {
 			log.info("Selected Disk does not exists");
-			return; // try again
-		} // if exists
+			return;
+		} // if
 
-		if (isDiskMounted(selectedFile)) {
+		if (isDiskMounted(absolutePath)) {
 			log.warn("Disk already mounted");
 			return;
 		} // already mounted
+		
+		 drives[diskIndex] = new DiskDrive(absolutePath);
+		 drives[diskIndex].addVDiskErrorListener(adapterDCU);
+		 log.infof("Mounted Disk - Index %d, Path: %s%n", diskIndex, absolutePath);
 
-		drives[diskIndex] = new DiskDrive(selectedFile.getAbsolutePath());
-		drives[diskIndex].addVDiskErrorListener(adapterDCU);
-		log.infof("Mounted Disk - Index %d, Path: %s%n", diskIndex, drives[diskIndex].getFilePath());
+		// File selectedFile = fc.getSelectedFile();
+		//
+		// if (!selectedFile.exists()) {
+		// log.info("Selected Disk does not exists");
+		// return; // try again
+		// } // if exists
+		//
+		// if (isDiskMounted(selectedFile)) {
+		// log.warn("Disk already mounted");
+		// return;
+		// } // already mounted
+		//
+		// drives[diskIndex] = new DiskDrive(selectedFile.getAbsolutePath());
+		// drives[diskIndex].addVDiskErrorListener(adapterDCU);
+		// log.infof("Mounted Disk - Index %d, Path: %s%n", diskIndex, drives[diskIndex].getFilePath());
 		return;
 	}// mountDisk
 
@@ -176,9 +207,9 @@ public class DiskControlUnit {
 		return Disk.NUMBER_OF_DISKS;
 	}// getMaxNumberOfDrives
 
-//	public DiskDrive[] getDrives() {
-//		return drives;
-//	}// getDrives
+	// public DiskDrive[] getDrives() {
+	// return drives;
+	// }// getDrives
 
 	private void debugShowControlTable() {
 		// log.infof("currentCommand: %02X%n", currentCommand);
@@ -377,8 +408,8 @@ public class DiskControlUnit {
 	private static final int DCT_SECTOR = 4; // DB 1
 	private static final int DCT_BYTE_COUNT = 5; // DW 1
 	private static final int DCT_DMA_ADDRESS = 7; // DW 1
-//	private static final int DCT_NEXT_STATUS_BLOCK = 9; // DW 1
-//	private static final int DCT_NEXT_DCT = 11; // DW 1
+	// private static final int DCT_NEXT_STATUS_BLOCK = 9; // DW 1
+	// private static final int DCT_NEXT_DCT = 11; // DW 1
 
 	//////////////////////////////////////////////
 

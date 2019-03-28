@@ -534,8 +534,8 @@ public class DiskUtility extends JDialog {
 
 	}// selectedNewPhysicalSector
 
-	private void manageFileMenus(String source) {
-		switch (source) {
+	private void manageFileMenus(String caller) {
+		switch (caller) {
 		case MNU_TOOLS_NEW:
 		case MNU_DISK_LOAD:
 			mnuToolsNew.setEnabled(false);
