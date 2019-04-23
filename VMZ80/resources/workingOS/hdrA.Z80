@@ -1,24 +1,0 @@
-;hdrA.Z80
-
-; Header file for use with A.Z80
-
-CPMRecordSize	EQU		128			; Size of standard CP/M record
-
-BDOS			EQU		00005HfConsoleOut		EQU		02HfPrintString	EQU		09HfReadString		EQU		0AHfOpenFile		EQU		0FHfCloseFile		EQU		10HfFindFirst		EQU		11HfFindNext		EQU		12HfReadSeq		EQU		14HfMakeFile		EQU		16HfRenameFile		EQU		17HfSetDMA			EQU		1AH
-
-defaultBuffer	EQU		080H
-
-sizeFCB			EQU		021H
-FCB1			EQU		05CH			; File Control Block #1
-
-EOM				EQU		'$'				; End Of Message
-EOF				EQU		01AH			; End of File
-LF				EQU    0AH				; Line Feed
-CR				EQU    0DH				; Carriage Return
-TRUE			EQU		-1
-FALSE			EQU		00H
-SPACE			EQU		020H
-
-STAR			EQU    '*'
-COLON			EQU    3AH				; Colon
-ASCII_ZERO		EQU		030H

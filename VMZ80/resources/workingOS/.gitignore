@@ -1,5 +1,3 @@
-/A.list
-/A.mem
-/A.z80
-/CharacterDevices.Z80
-/A_Backup.Z80
+/*.list
+/*.mem
+/*.hex
