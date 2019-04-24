@@ -494,7 +494,7 @@ public class Z80Machine {
 	 */
 	private void initialize() {
 		frameBase = new JFrame();
-		frameBase.setTitle("Z80 Machine    1.0.0");
+		frameBase.setTitle("Z80 Machine    1.0.1");
 		frameBase.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frameBase.addWindowListener(new WindowAdapter() {
 			@Override
@@ -590,6 +590,11 @@ public class Z80Machine {
 		runStopPanel.setBorder(new SoftBevelBorder(BevelBorder.LOWERED, null, null, null, null));
 		runStopPanel.setLayout(null);
 		leftTopPanel.add(runStopPanel);
+		
+		java.net.URL urlButtonTurnOff = this.getClass().getResource("/Button-Turn-Off-icon-64.png");
+		java.net.URL urlButtonTurnOn = this.getClass().getResource("/Button-Turn-On-icon-64.png");
+		java.net.URL urlButtonNext = this.getClass().getResource("/Button-Next-icon-48.png");
+
 
 		tbRunStop = new JToggleButton("");
 		tbRunStop.addActionListener(applicationAdapter);
@@ -597,10 +602,15 @@ public class Z80Machine {
 		tbRunStop.setBounds(17, 52, 65, 65);
 		tbRunStop.setBackground(SystemColor.control);
 		tbRunStop.setBorder(null);
-		tbRunStop.setSelectedIcon(
-				new ImageIcon("C:\\Users\\admin\\git\\VM\\VM\\resources\\Button-Turn-Off-icon-64.png"));
 		tbRunStop.setToolTipText(BUTTON_RUN_TIP);
-		tbRunStop.setIcon(new ImageIcon("C:\\Users\\admin\\git\\VM\\VM\\resources\\Button-Turn-On-icon-64.png"));
+		
+//		tbRunStop.setSelectedIcon(
+//				new ImageIcon("C:\\Users\\admin\\git\\VM\\VM\\resources\\Button-Turn-Off-icon-64.png"));
+//		tbRunStop.setIcon(new ImageIcon("C:\\Users\\admin\\git\\VM\\VM\\resources\\Button-Turn-On-icon-64.png"));
+
+		tbRunStop.setSelectedIcon(new ImageIcon(urlButtonTurnOff));
+		tbRunStop.setIcon(new ImageIcon(urlButtonTurnOn));
+
 		runStopPanel.add(tbRunStop);
 
 		Component horizontalStrut = Box.createHorizontalStrut(20);
@@ -614,7 +624,8 @@ public class Z80Machine {
 		btnStep.setBackground(SystemColor.control);
 		btnStep.setBorder(null);
 		btnStep.setToolTipText("Step thru the instructions");
-		btnStep.setIcon(new ImageIcon("C:\\Users\\admin\\git\\VM\\VM\\resources\\Button-Next-icon-48.png"));
+//		btnStep.setIcon(new ImageIcon("C:\\Users\\admin\\git\\VM\\VM\\resources\\Button-Next-icon-48.png"));
+		btnStep.setIcon(new ImageIcon(urlButtonNext));
 		runStopPanel.add(btnStep);
 
 		spinnerStepCount = new JSpinner();
