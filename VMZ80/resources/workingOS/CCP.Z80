@@ -491,7 +491,7 @@ commandBufferPointer:	DW	commandBuffer	; Address of next to char		;
 ;																			;
 submitFlag:			DB		00H			; 00 if no submit file,				;
 										;  0FFH if submitting				;
-submitFCB:			DB		'$$$		'	; File name is $$$				;
+submitFCB:			DB		0,'$$$     '	; File name is $$$				;
 submitType:			DB		'SUB     '	; Type is 'SUB'						;
 submitExtent:		DB		00H			; Extent							;
 submitS1:			DB		00H			; S1								;

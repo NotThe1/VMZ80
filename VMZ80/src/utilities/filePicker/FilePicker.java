@@ -18,7 +18,8 @@ public class FilePicker {
 	 *         sub directory called "Disks". Each type of file is identified by its suffix.
 	 * 
 	 *         examples: JFileChooser fc = FilePicker.getDataPicker("Memory Image Files", "mem", "hex");
-	 *         
+	 *
+	 *         2019-04-26 - Fixed GetDisks did not select any disks
 	 *         2018-09-12 - major cleanup.
 	 */
 
@@ -57,7 +58,7 @@ public class FilePicker {
 	}// getDisks
 
 	public static JFileChooser getDisks() {
-		return getChooser(pathDisk, FilterFactory.getDisk(), false);
+		return getChooser(pathDisk, FilterFactory.getDisk(), true);
 	}// getDisks
 
 	/* Memory */

@@ -13,10 +13,11 @@ public class DriveDiskUtility {
 
 	public static void main(String[] args) {
 		StyledDocument doc = new DefaultStyledDocument();
-AppLogger log = AppLogger.getInstance();
-log.setDoc(doc);
-DiskUtility du = new DiskUtility();
-du.setVisible(true);
-	}//main
+		AppLogger log = AppLogger.getInstance();
+		log.setDoc(doc);
+		DiskUtility du = new DiskUtility();
+		du.setVisible(true);
 
-}//class DriveDiskUtility
+	}// main
+
+}// class DriveDiskUtility
