@@ -45,8 +45,8 @@ public class UpdateSystemDisk {
 			disk.position(0);
 			disk.put(dataBoot);
 
-//			in = thisClass.getClass().getResourceAsStream("/Z80Code/CCP.mem");
-			in = thisClass.getClass().getResourceAsStream("/workingOS/CCP.mem");
+			in = thisClass.getClass().getResourceAsStream("/Z80Code/CCP.mem");
+//			in = thisClass.getClass().getResourceAsStream("/workingOS/CCP.mem");
 			reader = new BufferedReader(new InputStreamReader(in));
 			byte[] dataCCP = MemoryLoaderFromFile.loadMemoryImage(reader, 0x0800);
 			disk.put(dataCCP);
