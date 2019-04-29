@@ -838,8 +838,8 @@ public class Z80Machine {
 	private static final String MNU_WINDOW_TTY = "mnuWindowsTTY";
 	private static final String MNU_WINDOW_LST = "mnuWindowsLST";
 
-	private static final String MNU_TOOLS_DISK_UTILITY = "mnuToolsDiskUtility";
-	private static final String MNU_TOOLS_DISK_NEW = "mnuToolsDiskNew";
+//	private static final String MNU_TOOLS_DISK_UTILITY = "mnuToolsDiskUtility";
+//	private static final String MNU_TOOLS_DISK_NEW = "mnuToolsDiskNew";
 
 	private static final String BUTTON_RUN_STOP = "tbRunStop";
 	private static final String BUTTON_RUN_TIP = "Run";
