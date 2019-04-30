@@ -48,9 +48,6 @@ import javax.swing.border.SoftBevelBorder;
 import codeSupport.AppLogger;
 import disks.DiskControlUnit;
 import disks.diskPanel.V_IF_DiskPanel;
-import disks.utility.DiskUtility;
-import disks.utility.MakeNewDisk;
-import disks.utility.UpdateSystemDisk;
 import hardware.View.TabDialog;
 import hardware.View.V_IF_CCR;
 import hardware.View.V_IF_IndexRegisters;
@@ -77,7 +74,6 @@ public class Z80Machine {
 
 	private AppLogger log = AppLogger.getInstance();
 	private TabDialog tabDialog = new TabDialog();
-	DiskUtility du;
 
 	Thread t_cpu = new Thread(cpu);
 	// private List<Component> frontPanels;
@@ -234,16 +230,6 @@ public class Z80Machine {
 
 	//////////////////////////////////////////////////
 
-	private void doDiskUtility() {
-		if (du == null) {
-			du = new DiskUtility();
-		} // if only want one running copy
-		du.setVisible(true);
-	}// doDiskUtility
-
-	private void doDiskNew() {
-		MakeNewDisk.makeNewDisk(frameBase);
-	}// doDiskNew
 
 	//////////////////////////////////////////////////
 
@@ -476,7 +462,6 @@ public class Z80Machine {
 
 		dcu.setDisplay(ifDiskPanel);
 		updateDisplaysMaster();
-		du = null;
 
 		ifProgramRegisters.addHDNumberValueChangedListener(applicationAdapter);
 		CpuBuss.getInstance().addObserver(applicationAdapter);
@@ -494,7 +479,7 @@ public class Z80Machine {
 	 */
 	private void initialize() {
 		frameBase = new JFrame();
-		frameBase.setTitle("Z80 Machine    1.0.2");
+		frameBase.setTitle("Z80 Machine    1.1.0");
 		frameBase.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frameBase.addWindowListener(new WindowAdapter() {
 			@Override
@@ -533,15 +518,6 @@ public class Z80Machine {
 
 		Component verticalStrut = Box.createVerticalStrut(20);
 		toolBar.add(verticalStrut);
-
-		JButton btnTest = new JButton("Update Disk A");
-		btnTest.setToolTipText("C:\\Users\\admin\\Z80Work\\Disks\\A.F3HD");
-		btnTest.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent arg0) {
-				UpdateSystemDisk.updateDisk("C:\\Users\\admin\\Z80Work\\Disks\\A.F3HD");
-			}//
-		});
-		toolBar.add(btnTest);
 
 		JPanel panelMain = new JPanel();
 		GridBagConstraints gbc_panelMain = new GridBagConstraints();
@@ -800,18 +776,18 @@ public class Z80Machine {
 		mnuWindowsReset.addActionListener(applicationAdapter);
 		mnuWindow.add(mnuWindowsReset);
 
-		JMenu mnuTools = new JMenu("Tools");
-		menuBar.add(mnuTools);
-
-		JMenuItem mnuToolsDiskUtility = new JMenuItem("Disk Utilities");
-		mnuToolsDiskUtility.setName(MNU_TOOLS_DISK_UTILITY);
-		mnuToolsDiskUtility.addActionListener(applicationAdapter);
-		mnuTools.add(mnuToolsDiskUtility);
-
-		JMenuItem mnuToolsDiskNew = new JMenuItem("New Disk");
-		mnuToolsDiskNew.setName(MNU_TOOLS_DISK_NEW);
-		mnuToolsDiskNew.addActionListener(applicationAdapter);
-		mnuTools.add(mnuToolsDiskNew);
+//		JMenu mnuTools = new JMenu("Tools");
+//		menuBar.add(mnuTools);
+//
+//		JMenuItem mnuToolsDiskUtility = new JMenuItem("Disk Utilities");
+//		mnuToolsDiskUtility.setName(MNU_TOOLS_DISK_UTILITY);
+//		mnuToolsDiskUtility.addActionListener(applicationAdapter);
+//		mnuTools.add(mnuToolsDiskUtility);
+//
+//		JMenuItem mnuToolsDiskNew = new JMenuItem("New Disk");
+//		mnuToolsDiskNew.setName(MNU_TOOLS_DISK_NEW);
+//		mnuToolsDiskNew.addActionListener(applicationAdapter);
+//		mnuTools.add(mnuToolsDiskNew);
 
 	}// initialize
 
@@ -925,15 +901,15 @@ public class Z80Machine {
 				doResetAllRegisterDisplays();
 				break;
 
-			/* Menu - tools */
-			case MNU_TOOLS_DISK_UTILITY:
-				doDiskUtility();
-				break;
-
-			case MNU_TOOLS_DISK_NEW:
-				doDiskNew();
-				break;
-
+//			/* Menu - tools */
+//			case MNU_TOOLS_DISK_UTILITY:
+//				doDiskUtility();
+//				break;
+//
+//			case MNU_TOOLS_DISK_NEW:
+//				doDiskNew();
+//				break;
+//
 			}// switch
 		}// actionPerformed
 

@@ -1,6 +1,5 @@
 package disks;
 
-import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.file.Paths;
 import java.util.Observable;
@@ -53,19 +52,19 @@ public class DiskControlUnit {
 		ifDisks.addDiskPanelActionListener(adapterDCU);
 	}// setDisplay
 
-	private boolean isDiskMounted(File newFile) {
-		boolean ans = false;
-		for (int i = 0; i < Disk.NUMBER_OF_DISKS; i++) {
-			if (drives[i] == null) {
-				continue;
-			} // if null
-			if (newFile.getAbsolutePath().equals(drives[i].getFilePath())) {
-				ans = true;
-				break;
-			} // if
-		} // for
-		return ans;
-	}// isDiskMounted
+//	private boolean isDiskMounted(File newFile) {
+//		boolean ans = false;
+//		for (int i = 0; i < Disk.NUMBER_OF_DISKS; i++) {
+//			if (drives[i] == null) {
+//				continue;
+//			} // if null
+//			if (newFile.getAbsolutePath().equals(drives[i].getFilePath())) {
+//				ans = true;
+//				break;
+//			} // if
+//		} // for
+//		return ans;
+//	}// isDiskMounted
 
 	private boolean isDiskMounted(String absolutePath) {
 		boolean ans = false;
