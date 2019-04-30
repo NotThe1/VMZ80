@@ -27,7 +27,6 @@ public class DiskControlUnit {
 	private CpuBuss cpuBuss = CpuBuss.getInstance();
 	private IoBuss ioBuss = IoBuss.getInstance();
 	private DiskDrive[] drives;
-	// private int maxNumberOfDrives;
 
 	private int currentDrive;
 	private int currentDiskControlByte;
@@ -52,19 +51,6 @@ public class DiskControlUnit {
 		ifDisks.addDiskPanelActionListener(adapterDCU);
 	}// setDisplay
 
-//	private boolean isDiskMounted(File newFile) {
-//		boolean ans = false;
-//		for (int i = 0; i < Disk.NUMBER_OF_DISKS; i++) {
-//			if (drives[i] == null) {
-//				continue;
-//			} // if null
-//			if (newFile.getAbsolutePath().equals(drives[i].getFilePath())) {
-//				ans = true;
-//				break;
-//			} // if
-//		} // for
-//		return ans;
-//	}// isDiskMounted
 
 	private boolean isDiskMounted(String absolutePath) {
 		boolean ans = false;
@@ -77,7 +63,6 @@ public class DiskControlUnit {
 				break;
 			} // if
 		} // for
-
 		return ans;
 	}// isDiskMounted
 
@@ -140,24 +125,10 @@ public class DiskControlUnit {
 		
 		 drives[diskIndex] = new DiskDrive(absolutePath);
 		 drives[diskIndex].addVDiskErrorListener(adapterDCU);
+		 
 		 log.infof("Mounted Disk - Index %d, Path: %s%n", diskIndex, absolutePath);
-
-		// File selectedFile = fc.getSelectedFile();
-		//
-		// if (!selectedFile.exists()) {
-		// log.info("Selected Disk does not exists");
-		// return; // try again
-		// } // if exists
-		//
-		// if (isDiskMounted(selectedFile)) {
-		// log.warn("Disk already mounted");
-		// return;
-		// } // already mounted
-		//
-		// drives[diskIndex] = new DiskDrive(selectedFile.getAbsolutePath());
-		// drives[diskIndex].addVDiskErrorListener(adapterDCU);
-		// log.infof("Mounted Disk - Index %d, Path: %s%n", diskIndex, drives[diskIndex].getFilePath());
 		return;
+		
 	}// mountDisk
 
 	private void dismountDisk(int diskIndex) {
