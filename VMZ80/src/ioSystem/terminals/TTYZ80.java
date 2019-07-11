@@ -1,4 +1,4 @@
-package ioSystem.ttyZ80;
+package ioSystem.terminals;
 
 /*
  * 		2018-12-06  Changed Status return Value:
@@ -56,7 +56,7 @@ import codeSupport.Z80;
 import ioSystem.DeviceZ80;
 import utilities.fontChooser.FontChooser;
 
-public class TTYZ80 extends DeviceZ80 implements Runnable {
+public class TTYZ80 extends DeviceZ80 {
 
 	private AdapterTTY adapterTTY = new AdapterTTY();
 

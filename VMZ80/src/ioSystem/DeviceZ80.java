@@ -6,7 +6,7 @@ import java.util.AbstractQueue;
  */
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-abstract public class DeviceZ80 {
+abstract public class DeviceZ80 implements Runnable {
 
 	protected Byte addressIn;
 	protected Byte addressOut;

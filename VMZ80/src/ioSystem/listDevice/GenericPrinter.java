@@ -38,7 +38,7 @@ import ioSystem.DeviceZ80;
 import utilities.filePicker.FilePicker;
 import utilities.fontChooser.FontChooser;
 
-public class GenericPrinter extends DeviceZ80 implements Runnable {
+public class GenericPrinter extends DeviceZ80{
 
 	private ApplicationAdapter adapterApplication = new ApplicationAdapter();
 	AppLogger log = AppLogger.getInstance();
