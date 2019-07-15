@@ -183,11 +183,8 @@ public class TTYZ80 extends DeviceZ80 {
 	}// getLastElement
 
 	private void showStatus(char keyChar) {
-
 		String msg = String.format("Last Char = %s     [0x%02X]", keyChar, (byte) keyChar);
-
 		lblKeyChar.setText(msg);
-
 	}// showStatus
 
 	private void clearDoc() {
@@ -680,6 +677,7 @@ public class TTYZ80 extends DeviceZ80 {
 	private static final String MNU_PROPERTIES_CARET_COLOR = "mnuPropertiesCaretColor";
 
 	private static final String SPINNER_COLUMNS = "spinnerColumns";
+	
 
 	private JFrame frameTTY;
 	private JLabel lblKeyChar;

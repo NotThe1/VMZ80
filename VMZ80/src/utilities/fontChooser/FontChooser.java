@@ -144,6 +144,9 @@ public class FontChooser extends JDialog implements ListSelectionListener, Actio
 
 
 
+	/**
+	 * @wbp.parser.constructor
+	 */
 	public FontChooser(Window w,String fontFamily, String fontStyle, Integer fontSize) {
 		super(w,"Font Chooser",Dialog.DEFAULT_MODALITY_TYPE);
 		initFamily = fontFamily;

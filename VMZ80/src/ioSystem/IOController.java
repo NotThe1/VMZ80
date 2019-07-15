@@ -46,7 +46,7 @@ public class IOController {
 
 		Thread threadDevice = new Thread(device, device.getName());
 		threadDevice.start();
-
+		devicePopulation.add(device);
 	}// addDevice
 
 	public void close() {
