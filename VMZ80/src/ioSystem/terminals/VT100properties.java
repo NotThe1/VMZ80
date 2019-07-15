@@ -75,7 +75,7 @@ public class VT100properties extends JDialog {
 		listSize.setSelectedValue(originalFont.getSize(), true);
 		listFamily.setSelectedValue(originalFont.getFamily(), true);
 		listStyle.setSelectedIndex(originalFont.getStyle());
-		doSelection() ;
+		doFontSelection() ;
 	}//doRestoreFont
 
 	public int showDialog() {
@@ -127,11 +127,11 @@ public class VT100properties extends JDialog {
 		listFamily.addListSelectionListener(adapterDialog);
 		listStyle.addListSelectionListener(adapterDialog);
 
-		doSelection();
+		doFontSelection();
 
 	}// initFontTab
 
-	private void doSelection() {
+	private void doFontSelection() {
 		textFamily.setText((String) listFamily.getSelectedValue());
 		textStyle.setText((String) listStyle.getSelectedValue());
 		textSize.setText(Integer.toString(listSize.getSelectedValue()));
@@ -163,6 +163,32 @@ public class VT100properties extends JDialog {
 		}// switch
 		return styleFromTextDisplay;
 	}// getStyleFromText
+	
+	
+	private void doSetTextColor() {
+//		Color color = JColorChooser.showDialog(frameTTY, "Font Color", textScreen.getForeground());
+//		if (color != null) {
+//			textScreen.setForeground(color);
+//			textScreen.getCaret().setVisible(true);
+//		} // if
+	}// doSetTextColor
+
+	private void doSetBackgroundColor() {
+//		Color color = JColorChooser.showDialog(frameTTY, "Font Color", textScreen.getBackground());
+//		if (color != null) {
+//			textScreen.setBackground(color);
+//			textScreen.getCaret().setVisible(true);
+//		} // if
+	}// doSetBackgroundColor
+
+	private void doSetCaretColor() {
+//		Color color = JColorChooser.showDialog(frameTTY, "Font Color", textScreen.getCaretColor());
+//		if (color != null) {
+//			textScreen.setCaretColor(color);
+//			textScreen.getCaret().setVisible(true);
+//		} // if
+	}// doSetCaretColor
+
 
 	public void close() {
 		appClose();
@@ -411,7 +437,7 @@ public class VT100properties extends JDialog {
 
 		@Override
 		public void valueChanged(ListSelectionEvent listSelectionEvent) {
-			doSelection();
+			doFontSelection();
 		}// valueChanged
 
 	}// class AdapterVT100Properties
