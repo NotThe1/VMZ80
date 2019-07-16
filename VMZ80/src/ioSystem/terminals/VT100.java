@@ -46,24 +46,13 @@ public class VT100 extends DeviceZ80 {
 	private Queue<Byte> escapeBuffer = new LinkedList<Byte>();
 	private AdapterVT100 adapterVT100 = new AdapterVT100();
 	private AppLogger log = AppLogger.getInstance();
+	
 	private int screenColumns;
-
+	private boolean screenWrap;
+	private boolean screenTruncate;
+	private boolean screenExtend;
 	private boolean escapeMode;
-	// /**
-	// * Launch the application.
-	// */
-	// public static void main(String[] args) {
-	// EventQueue.invokeLater(new Runnable() {
-	// public void run() {
-	// try {
-	// VT100 window = new VT100("vt100", IN, OUT, STATUS);
-	// window.frameVT100.setVisible(true);
-	// } catch (Exception e) {
-	// e.printStackTrace();
-	// } // try
-	// }// run
-	// });
-	// }// main
+	
 
 	@Override
 	public void run() {
@@ -214,6 +203,7 @@ public class VT100 extends DeviceZ80 {
 
 	private void appendToDoc(Document doc, String textToAppend) {
 		appendToDoc(doc, textToAppend, null);
+		txtScreen.getCaret().setVisible(true);
 	}// appendToDocASM
 
 	private void appendToDoc(Document doc, String textToAppend, AttributeSet attributeSet) {
@@ -246,14 +236,21 @@ public class VT100 extends DeviceZ80 {
 		dialogProperties = null;
 		return;
 	}//
-
 	private void setProperties(Preferences myPrefs) {
 		Font font = new Font(myPrefs.get("FontFamily", "Courier"), myPrefs.getInt("FontStyle", Font.PLAIN),
 				myPrefs.getInt("FontSize", 18));
 		txtScreen.setFont(font);
+		
+		txtScreen.setForeground(new Color(myPrefs.getInt("ColorFont", -13421773)));
+		txtScreen.setBackground(new Color(myPrefs.getInt("ColorBackground", -4144960)));
+		txtScreen.setCaretColor(new Color(myPrefs.getInt("ColorCaret", -65536)));
+		
 		screenColumns = myPrefs.getInt("Columns", 80);
-
+		screenTruncate = myPrefs.getBoolean("ScreenTruncate", true);
+		screenWrap = myPrefs.getBoolean("ScreenWrap", false);
+		screenExtend = myPrefs.getBoolean("ScreenExtend", false);
 	}// setProperties
+
 
 	/**
 	 * Create the application.
@@ -278,21 +275,15 @@ public class VT100 extends DeviceZ80 {
 		myPrefs.putInt("FontStyle", txtScreen.getFont().getStyle());
 		myPrefs.putInt("FontSize", txtScreen.getFont().getSize());
 		myPrefs.put("FontFamily", txtScreen.getFont().getFamily());
+		
+		myPrefs.putInt("ColorFont", txtScreen.getForeground().getRGB());
+		myPrefs.putInt("ColorBackground", txtScreen.getBackground().getRGB());
+		myPrefs.putInt("ColorCaret", txtScreen.getCaretColor().getRGB());
+		
 
-		// myPrefs.putBoolean("TruncateColumns", truncateColumns);
-		// myPrefs.putInt("MaxColumn", maxColumn);
-
-		// myPrefs.putBoolean("Extended", mnuBehaviorExtend.isSelected());
-		// myPrefs.putBoolean("Wrap", mnuBehaviorWrap.isSelected());
-		// myPrefs.putBoolean("Truncate", mnuBehaviorTruncate.isSelected());
-
-		// myPrefs.putInt("CaretColor", textScreen.getCaretColor().getRGB());
-		// myPrefs.putInt("BackgroundColor", textScreen.getBackground().getRGB());
-		// myPrefs.putInt("ForegroundColor", textScreen.getForeground().getRGB());
-
-		// myPrefs.put("FontFamily", textScreen.getFont().getFamily());
-		// myPrefs.putInt("FontStyle", textScreen.getFont().getStyle());
-		// myPrefs.putInt("FontSize", textScreen.getFont().getSize());
+		myPrefs.putBoolean("ScreenTruncate", screenTruncate);
+		myPrefs.putBoolean("ScreenWrap", screenWrap);
+		myPrefs.putBoolean("ScreenExtend", screenExtend);
 
 		closeMyPrefs(myPrefs);
 	}// appClose
@@ -360,7 +351,7 @@ public class VT100 extends DeviceZ80 {
 		frameVT100 = new JFrame();
 		// frameVT100.setBounds(100, 100, 450, 300);
 
-		frameVT100.setTitle("VT100              Rev 0.0.A");
+		frameVT100.setTitle("VT100              Rev 0.0.B");
 		frameVT100.setResizable(false);
 		GridBagLayout gridBagLayout = new GridBagLayout();
 		gridBagLayout.columnWidths = new int[] { 0, 0 };
@@ -405,6 +396,7 @@ public class VT100 extends DeviceZ80 {
 		panelMain.setLayout(gbl_panelMain);
 
 		txtScreen = new JTextPane();
+		txtScreen.setCaretColor(Color.RED);
 		txtScreen.addKeyListener(adapterVT100);
 		txtScreen.setBackground(Color.LIGHT_GRAY);
 		// scrollPane.setViewportView(txtScreen);

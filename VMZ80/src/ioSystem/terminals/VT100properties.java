@@ -2,6 +2,7 @@ package ioSystem.terminals;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
@@ -9,21 +10,27 @@ import java.awt.Frame;
 import java.awt.GraphicsEnvironment;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
+import java.awt.Insets;
 import java.awt.SystemColor;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.prefs.Preferences;
 
+import javax.swing.Box;
+import javax.swing.ButtonGroup;
 import javax.swing.DefaultListModel;
 import javax.swing.JButton;
+import javax.swing.JColorChooser;
 import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JRadioButton;
 import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTextField;
+import javax.swing.JTextPane;
 import javax.swing.ListSelectionModel;
 import javax.swing.SwingConstants;
 import javax.swing.UIManager;
@@ -32,15 +39,11 @@ import javax.swing.border.LineBorder;
 import javax.swing.border.TitledBorder;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
-import javax.swing.text.JTextComponent;
 
 import codeSupport.AppLogger;
 
 public class VT100properties extends JDialog {
 
-	/**
-	 * 
-	 */
 	private static final long serialVersionUID = 1L;
 	private final JPanel contentPanel = new JPanel();
 	private int dialogResultValue;
@@ -50,18 +53,35 @@ public class VT100properties extends JDialog {
 	/* properties */
 	private Font originalFont;
 	private Font dialogFont;
-	private JTextComponent component;
+	
 	private int screenColumns;
+	private boolean screenTruncate;
+	private boolean screenWrap;
+	private boolean screenExtend;
+	
 	private int foregroundColor;
+	private int dialogForegroundColor;
 	private int backgroundColor;
+	private int dialogBackgroundColor;
 	private int caretColor;
+	private int dialogCaretColor;
 
 
 	private void doBtnOK() {
 		myPrefs.put("FontFamily", dialogFont.getFamily());
 		myPrefs.putInt("FontStyle", dialogFont.getStyle());
 		myPrefs.putInt("FontSize", dialogFont.getSize());
-				
+		
+		myPrefs.putInt("ColorFont", textExample.getForeground().getRGB());
+		myPrefs.putInt("ColorBackground", textExample.getBackground().getRGB());
+		myPrefs.putInt("ColorCaret", textExample.getCaretColor().getRGB());
+		
+		myPrefs.putInt("Columns", rb80.isSelected()?80:132);
+
+		myPrefs.putBoolean("ScreenTruncate", rbTruncate.isSelected());
+		myPrefs.putBoolean("ScreenWrap", rbWrap.isSelected());
+		myPrefs.putBoolean("ScreenExtend", rbExtend.isSelected());
+
 		dialogResultValue = JOptionPane.OK_OPTION;
 		dispose();
 	}// doBtnOK
@@ -77,6 +97,20 @@ public class VT100properties extends JDialog {
 		listStyle.setSelectedIndex(originalFont.getStyle());
 		doFontSelection() ;
 	}//doRestoreFont
+	
+	private void doRestoreColumns() {
+		if (screenColumns==132) {
+			rb132.setSelected(true);
+			rb80.setSelected(false);
+		}else {
+			rb132.setSelected(false);
+			rb80.setSelected(true);
+		}// if
+		
+		rbWrap.setSelected(screenWrap);
+		rbTruncate.setSelected(screenTruncate);
+		rbExtend.setSelected(screenExtend);
+	}//restoreColumns
 
 	public int showDialog() {
 		dialogResultValue = JOptionPane.NO_OPTION;
@@ -92,10 +126,21 @@ public class VT100properties extends JDialog {
 				myPrefs.getInt("FontSize", 18));
 		originalFont = new Font(myPrefs.get("FontFamily", "Courier"), myPrefs.getInt("FontStyle", Font.PLAIN),
 				myPrefs.getInt("FontSize", 18));
+		
 		screenColumns = myPrefs.getInt("Columns", 80);
-		foregroundColor = myPrefs.getInt("ForegroundColor", 80);
-		backgroundColor = myPrefs.getInt("backgroundColor", 80);
-		caretColor = myPrefs.getInt("caretColor", 80);
+		
+		foregroundColor = myPrefs.getInt("ColorFont", -13421773);
+		backgroundColor = myPrefs.getInt("ColorBackground", -4144960);
+		caretColor = myPrefs.getInt("ColorCaret", -65536);
+		
+		dialogForegroundColor = foregroundColor;
+		dialogBackgroundColor =backgroundColor;
+		dialogCaretColor =caretColor;
+		
+		screenColumns = myPrefs.getInt("Columns", 80);
+		screenTruncate = myPrefs.getBoolean("ScreenTruncate", true);
+		screenWrap = myPrefs.getBoolean("ScreenWrap", false);
+		screenExtend = myPrefs.getBoolean("ScreenExtend", false);
 	}// getCurrentProperties
 
 	private void initFontTab() {
@@ -121,14 +166,12 @@ public class VT100properties extends JDialog {
 		} // for
 		listStyle.setModel(styleModel);
 		listStyle.setSelectedValue(styles[dialogFont.getStyle()], true);
-//		listStyle.setSelectedValue(dialogFont.getStyle(), true);
 
 		listSize.addListSelectionListener(adapterDialog);
 		listFamily.addListSelectionListener(adapterDialog);
 		listStyle.addListSelectionListener(adapterDialog);
 
 		doFontSelection();
-
 	}// initFontTab
 
 	private void doFontSelection() {
@@ -142,7 +185,8 @@ public class VT100properties extends JDialog {
 
 		String display = String.format("%s ,%s, %s", textFamily.getText(), textStyle.getText(), textSize.getText());
 		lblSelectedFont.setText(display);
-
+		textExample.setFont(dialogFont);
+		textExample.getCaret().setVisible(true);
 	}// doSelection
 
 	public static int getStyleFromText(String textStyle) {
@@ -164,31 +208,44 @@ public class VT100properties extends JDialog {
 		return styleFromTextDisplay;
 	}// getStyleFromText
 	
+	private void initColorTab() {
+		textExample.setForeground(new Color(dialogForegroundColor));
+		textExample.setBackground(new Color(dialogBackgroundColor));
+		textExample.setCaretColor(new Color(dialogCaretColor));
+
+		textExample.setFont(dialogFont);
+	}//initColorTab
 	
-	private void doSetTextColor() {
-//		Color color = JColorChooser.showDialog(frameTTY, "Font Color", textScreen.getForeground());
-//		if (color != null) {
-//			textScreen.setForeground(color);
-//			textScreen.getCaret().setVisible(true);
-//		} // if
-	}// doSetTextColor
+	private void doRestoreColors() {
+		dialogForegroundColor = foregroundColor;
+		dialogBackgroundColor =backgroundColor;
+		dialogCaretColor =caretColor;
+		initColorTab();
+	}//doRestoreColors
+	
+	private void doColorText() {
+		Color color = JColorChooser.showDialog(panelColor, "Font Color", textExample.getForeground());
+		if (color != null) {
+			textExample.setForeground(color);
+			textExample.getCaret().setVisible(true);
+		} // if
+	}// doColorText
 
-	private void doSetBackgroundColor() {
-//		Color color = JColorChooser.showDialog(frameTTY, "Font Color", textScreen.getBackground());
-//		if (color != null) {
-//			textScreen.setBackground(color);
-//			textScreen.getCaret().setVisible(true);
-//		} // if
-	}// doSetBackgroundColor
+	private void doColorBackground() {
+		Color color = JColorChooser.showDialog(panelColor, "Background Color", textExample.getBackground());
+		if (color != null) {
+			textExample.setBackground(color);
+			textExample.getCaret().setVisible(true);
+		} // if
+	}// doColorBackground
 
-	private void doSetCaretColor() {
-//		Color color = JColorChooser.showDialog(frameTTY, "Font Color", textScreen.getCaretColor());
-//		if (color != null) {
-//			textScreen.setCaretColor(color);
-//			textScreen.getCaret().setVisible(true);
-//		} // if
-	}// doSetCaretColor
-
+	private void doColorCaret() {
+		Color color = JColorChooser.showDialog(panelColor, "Font Color", textExample.getCaretColor());
+		if (color != null) {
+			textExample.setCaretColor(color);
+			textExample.getCaret().setVisible(true);
+		} // if
+	}// doColorCaret
 
 	public void close() {
 		appClose();
@@ -196,21 +253,19 @@ public class VT100properties extends JDialog {
 
 	private void appClose() {
 		
-
 	}// appClose
 
 	private void appInit() {
 		getCurrentProperties();
 		initFontTab();
-		// loadFontChooser();
+		initColorTab();
+		doRestoreColumns();
 	}// appInit
 
 	public VT100properties(Frame f, Preferences myPrefs) {
-//		public VT100properties(Frame f, Preferences myPrefs,JTextComponent component) {
 		super(f, "Properties Dialog", true);
 		setResizable(false);
 		this.myPrefs = myPrefs;
-//		this.component=component;
 		initialize();
 		appInit();
 	}// Constructor
@@ -358,20 +413,248 @@ public class VT100properties extends JDialog {
 		JPanel tabColors = new JPanel();
 		tabbedPane.addTab("Colors", null, tabColors, null);
 		GridBagLayout gbl_tabColors = new GridBagLayout();
-		gbl_tabColors.columnWidths = new int[] { 0 };
-		gbl_tabColors.rowHeights = new int[] { 0 };
-		gbl_tabColors.columnWeights = new double[] { Double.MIN_VALUE };
-		gbl_tabColors.rowWeights = new double[] { Double.MIN_VALUE };
+		gbl_tabColors.columnWidths = new int[] { 0, 0 };
+		gbl_tabColors.rowHeights = new int[] { 150, 0, 0, 0 };
+		gbl_tabColors.columnWeights = new double[] { 1.0, Double.MIN_VALUE };
+		gbl_tabColors.rowWeights = new double[] { 0.0, 1.0, 0.0, Double.MIN_VALUE };
 		tabColors.setLayout(gbl_tabColors);
+		
+		JPanel panelExampleTextColors = new JPanel();
+		panelExampleTextColors.setBorder(new TitledBorder(UIManager.getBorder("TitledBorder.border"), "Preview", TitledBorder.CENTER, TitledBorder.ABOVE_TOP, null, new Color(0, 0, 0)));
+		GridBagConstraints gbc_panelExampleTextColors = new GridBagConstraints();
+		gbc_panelExampleTextColors.insets = new Insets(0, 0, 5, 0);
+		gbc_panelExampleTextColors.fill = GridBagConstraints.BOTH;
+		gbc_panelExampleTextColors.gridx = 0;
+		gbc_panelExampleTextColors.gridy = 0;
+		tabColors.add(panelExampleTextColors, gbc_panelExampleTextColors);
+		GridBagLayout gbl_panelExampleTextColors = new GridBagLayout();
+		gbl_panelExampleTextColors.columnWidths = new int[]{0, 0};
+		gbl_panelExampleTextColors.rowHeights = new int[]{0, 0};
+		gbl_panelExampleTextColors.columnWeights = new double[]{1.0, Double.MIN_VALUE};
+		gbl_panelExampleTextColors.rowWeights = new double[]{1.0, Double.MIN_VALUE};
+		panelExampleTextColors.setLayout(gbl_panelExampleTextColors);
+		
+		JScrollPane scrollPane_3 = new JScrollPane();
+		GridBagConstraints gbc_scrollPane_3 = new GridBagConstraints();
+		gbc_scrollPane_3.fill = GridBagConstraints.BOTH;
+		gbc_scrollPane_3.gridx = 0;
+		gbc_scrollPane_3.gridy = 0;
+		panelExampleTextColors.add(scrollPane_3, gbc_scrollPane_3);
+		
+		textExample = new JTextPane();
+		scrollPane_3.setViewportView(textExample);
+		textExample.setText("01234567890123456789012345\r\nabcdefghijklmnopqrst\r\nABCDEFGHIJKLMNOPQRSSTUVWXYZ\r\n!\"#$%&'()*+,-./{|}~");
+		textExample.setEditable(false);
+		
+		panelColor = new JPanel();
+		GridBagConstraints gbc_panelColor = new GridBagConstraints();
+		gbc_panelColor.insets = new Insets(0, 0, 5, 0);
+		gbc_panelColor.fill = GridBagConstraints.BOTH;
+		gbc_panelColor.gridx = 0;
+		gbc_panelColor.gridy = 1;
+		tabColors.add(panelColor, gbc_panelColor);
+		GridBagLayout gbl_panelColor = new GridBagLayout();
+		gbl_panelColor.columnWidths = new int[]{0, 0, 0};
+		gbl_panelColor.rowHeights = new int[]{0, 0, 0, 0, 0, 0, 0};
+		gbl_panelColor.columnWeights = new double[]{0.0, 0.0, Double.MIN_VALUE};
+		gbl_panelColor.rowWeights = new double[]{0.0, 0.0, 0.0, 0.0, 0.0, 0.0, Double.MIN_VALUE};
+		panelColor.setLayout(gbl_panelColor);
+		
+		Component rigidArea = Box.createRigidArea(new Dimension(30, 30));
+		GridBagConstraints gbc_rigidArea = new GridBagConstraints();
+		gbc_rigidArea.insets = new Insets(0, 0, 5, 5);
+		gbc_rigidArea.gridx = 0;
+		gbc_rigidArea.gridy = 0;
+		panelColor.add(rigidArea, gbc_rigidArea);
+		
+		JButton btnColorText = new JButton("Text...");
+		btnColorText.setActionCommand(BTN_COLOR_TEXT);
+		btnColorText.addActionListener(adapterDialog);
+		GridBagConstraints gbc_btnColorText = new GridBagConstraints();
+		gbc_btnColorText.fill = GridBagConstraints.HORIZONTAL;
+		gbc_btnColorText.insets = new Insets(0, 0, 5, 0);
+		gbc_btnColorText.gridx = 1;
+		gbc_btnColorText.gridy = 1;
+		panelColor.add(btnColorText, gbc_btnColorText);
+		
+		Component rigidArea_1 = Box.createRigidArea(new Dimension(30, 30));
+		GridBagConstraints gbc_rigidArea_1 = new GridBagConstraints();
+		gbc_rigidArea_1.insets = new Insets(0, 0, 5, 5);
+		gbc_rigidArea_1.gridx = 0;
+		gbc_rigidArea_1.gridy = 2;
+		panelColor.add(rigidArea_1, gbc_rigidArea_1);
+		
+		JButton btnColorBackground = new JButton("Background ...");
+		btnColorBackground.setActionCommand(BTN_COLOR_BACKGROUND);
+		btnColorBackground.addActionListener(adapterDialog);
+		GridBagConstraints gbc_btnColorBackground = new GridBagConstraints();
+		gbc_btnColorBackground.insets = new Insets(0, 0, 5, 0);
+		gbc_btnColorBackground.gridx = 1;
+		gbc_btnColorBackground.gridy = 3;
+		panelColor.add(btnColorBackground, gbc_btnColorBackground);
+		
+		Component rigidArea_2 = Box.createRigidArea(new Dimension(30, 30));
+		GridBagConstraints gbc_rigidArea_2 = new GridBagConstraints();
+		gbc_rigidArea_2.insets = new Insets(0, 0, 5, 5);
+		gbc_rigidArea_2.gridx = 0;
+		gbc_rigidArea_2.gridy = 4;
+		panelColor.add(rigidArea_2, gbc_rigidArea_2);
+		
+		JButton btnColorCaret = new JButton("Caret");
+		btnColorCaret.setActionCommand(BTN_COLOR_CARET);
+		btnColorCaret.addActionListener(adapterDialog);
+		GridBagConstraints gbc_btnColorCaret = new GridBagConstraints();
+		gbc_btnColorCaret.fill = GridBagConstraints.HORIZONTAL;
+		gbc_btnColorCaret.gridx = 1;
+		gbc_btnColorCaret.gridy = 5;
+		panelColor.add(btnColorCaret, gbc_btnColorCaret);
+		
+		JPanel panel_1 = new JPanel();
+		GridBagConstraints gbc_panel_1 = new GridBagConstraints();
+		gbc_panel_1.anchor = GridBagConstraints.EAST;
+		gbc_panel_1.fill = GridBagConstraints.VERTICAL;
+		gbc_panel_1.gridx = 0;
+		gbc_panel_1.gridy = 2;
+		tabColors.add(panel_1, gbc_panel_1);
+		GridBagLayout gbl_panel_1 = new GridBagLayout();
+		gbl_panel_1.columnWidths = new int[]{0, 0};
+		gbl_panel_1.rowHeights = new int[]{0, 0};
+		gbl_panel_1.columnWeights = new double[]{0.0, Double.MIN_VALUE};
+		gbl_panel_1.rowWeights = new double[]{0.0, Double.MIN_VALUE};
+		panel_1.setLayout(gbl_panel_1);
+		
+		JButton btnRestoreColors = new JButton("Restore");
+		btnRestoreColors.setActionCommand(BTN_RESTORE_COLORS);
+		btnRestoreColors.addActionListener(adapterDialog);
+		GridBagConstraints gbc_btnRestoreColors = new GridBagConstraints();
+		gbc_btnRestoreColors.gridx = 0;
+		gbc_btnRestoreColors.gridy = 0;
+		panel_1.add(btnRestoreColors, gbc_btnRestoreColors);
 
 		JPanel tabColumns = new JPanel();
 		tabbedPane.addTab("Columns", null, tabColumns, null);
 		GridBagLayout gbl_tabColumns = new GridBagLayout();
-		gbl_tabColumns.columnWidths = new int[] { 0 };
-		gbl_tabColumns.rowHeights = new int[] { 0 };
-		gbl_tabColumns.columnWeights = new double[] { Double.MIN_VALUE };
-		gbl_tabColumns.rowWeights = new double[] { Double.MIN_VALUE };
+		gbl_tabColumns.columnWidths = new int[] { 0, 0, 0, 0 };
+		gbl_tabColumns.rowHeights = new int[] { 0, 0, 0, 0, 0, 0 };
+		gbl_tabColumns.columnWeights = new double[] { 0.0, 0.0, 1.0, Double.MIN_VALUE };
+		gbl_tabColumns.rowWeights = new double[] { 0.0, 0.0, 0.0, 0.0, 1.0, Double.MIN_VALUE };
 		tabColumns.setLayout(gbl_tabColumns);
+		
+		Component rigidArea_3 = Box.createRigidArea(new Dimension(30, 30));
+		GridBagConstraints gbc_rigidArea_3 = new GridBagConstraints();
+		gbc_rigidArea_3.insets = new Insets(0, 0, 5, 5);
+		gbc_rigidArea_3.gridx = 0;
+		gbc_rigidArea_3.gridy = 0;
+		tabColumns.add(rigidArea_3, gbc_rigidArea_3);
+		
+		JPanel panel_2 = new JPanel();
+		panel_2.setBorder(new TitledBorder(new LineBorder(new Color(0, 0, 0), 1, true), "Number of Columns", TitledBorder.CENTER, TitledBorder.ABOVE_TOP, null, null));
+		GridBagConstraints gbc_panel_2 = new GridBagConstraints();
+		gbc_panel_2.insets = new Insets(0, 0, 5, 5);
+		gbc_panel_2.fill = GridBagConstraints.BOTH;
+		gbc_panel_2.gridx = 1;
+		gbc_panel_2.gridy = 1;
+		tabColumns.add(panel_2, gbc_panel_2);
+		GridBagLayout gbl_panel_2 = new GridBagLayout();
+		gbl_panel_2.columnWidths = new int[]{0, 0, 0, 0};
+		gbl_panel_2.rowHeights = new int[]{0, 0};
+		gbl_panel_2.columnWeights = new double[]{0.0, 0.0, 0.0, Double.MIN_VALUE};
+		gbl_panel_2.rowWeights = new double[]{0.0, Double.MIN_VALUE};
+		panel_2.setLayout(gbl_panel_2);
+		
+		rb80 = new JRadioButton("80");
+		GridBagConstraints gbc_rb80 = new GridBagConstraints();
+		gbc_rb80.insets = new Insets(0, 0, 0, 5);
+		gbc_rb80.gridx = 0;
+		gbc_rb80.gridy = 0;
+		panel_2.add(rb80, gbc_rb80);
+		
+		Component horizontalStrut = Box.createHorizontalStrut(40);
+		GridBagConstraints gbc_horizontalStrut = new GridBagConstraints();
+		gbc_horizontalStrut.insets = new Insets(0, 0, 0, 5);
+		gbc_horizontalStrut.gridx = 1;
+		gbc_horizontalStrut.gridy = 0;
+		panel_2.add(horizontalStrut, gbc_horizontalStrut);
+		
+		rb132 = new JRadioButton("132");
+		GridBagConstraints gbc_rb132 = new GridBagConstraints();
+		gbc_rb132.anchor = GridBagConstraints.SOUTHEAST;
+		gbc_rb132.gridx = 2;
+		gbc_rb132.gridy = 0;
+		panel_2.add(rb132, gbc_rb132);
+		
+		Component rigidArea_4 = Box.createRigidArea(new Dimension(30, 30));
+		GridBagConstraints gbc_rigidArea_4 = new GridBagConstraints();
+		gbc_rigidArea_4.insets = new Insets(0, 0, 5, 5);
+		gbc_rigidArea_4.gridx = 0;
+		gbc_rigidArea_4.gridy = 2;
+		tabColumns.add(rigidArea_4, gbc_rigidArea_4);
+		
+		JPanel panel_3 = new JPanel();
+		panel_3.setBorder(new TitledBorder(new LineBorder(new Color(0, 0, 0), 1, true), "Line Behavior", TitledBorder.CENTER, TitledBorder.ABOVE_TOP, null, null));
+		GridBagConstraints gbc_panel_3 = new GridBagConstraints();
+		gbc_panel_3.insets = new Insets(0, 0, 5, 5);
+		gbc_panel_3.fill = GridBagConstraints.BOTH;
+		gbc_panel_3.gridx = 1;
+		gbc_panel_3.gridy = 3;
+		tabColumns.add(panel_3, gbc_panel_3);
+		GridBagLayout gbl_panel_3 = new GridBagLayout();
+		gbl_panel_3.columnWidths = new int[]{0, 0};
+		gbl_panel_3.rowHeights = new int[]{0, 0, 0, 0, 0, 0};
+		gbl_panel_3.columnWeights = new double[]{0.0, Double.MIN_VALUE};
+		gbl_panel_3.rowWeights = new double[]{0.0, 0.0, 0.0, 0.0, 0.0, Double.MIN_VALUE};
+		panel_3.setLayout(gbl_panel_3);
+		
+		rbTruncate = new JRadioButton("Truncate");
+		rbTruncate.setHorizontalAlignment(SwingConstants.LEFT);
+		GridBagConstraints gbc_rbTruncate = new GridBagConstraints();
+		gbc_rbTruncate.anchor = GridBagConstraints.WEST;
+		gbc_rbTruncate.insets = new Insets(0, 0, 5, 0);
+		gbc_rbTruncate.gridx = 0;
+		gbc_rbTruncate.gridy = 0;
+		panel_3.add(rbTruncate, gbc_rbTruncate);
+		
+		Component verticalStrut = Box.createVerticalStrut(20);
+		GridBagConstraints gbc_verticalStrut = new GridBagConstraints();
+		gbc_verticalStrut.insets = new Insets(0, 0, 5, 0);
+		gbc_verticalStrut.gridx = 0;
+		gbc_verticalStrut.gridy = 1;
+		panel_3.add(verticalStrut, gbc_verticalStrut);
+		
+		rbWrap = new JRadioButton("Wrap");
+		rbWrap.setHorizontalAlignment(SwingConstants.LEFT);
+		GridBagConstraints gbc_rbWrap = new GridBagConstraints();
+		gbc_rbWrap.anchor = GridBagConstraints.WEST;
+		gbc_rbWrap.insets = new Insets(0, 0, 5, 0);
+		gbc_rbWrap.gridx = 0;
+		gbc_rbWrap.gridy = 2;
+		panel_3.add(rbWrap, gbc_rbWrap);
+		
+		Component verticalStrut_1 = Box.createVerticalStrut(20);
+		GridBagConstraints gbc_verticalStrut_1 = new GridBagConstraints();
+		gbc_verticalStrut_1.insets = new Insets(0, 0, 5, 0);
+		gbc_verticalStrut_1.gridx = 0;
+		gbc_verticalStrut_1.gridy = 3;
+		panel_3.add(verticalStrut_1, gbc_verticalStrut_1);
+		
+		rbExtend = new JRadioButton("Extend");
+		rbExtend.setHorizontalAlignment(SwingConstants.LEFT);
+		GridBagConstraints gbc_rbExtend = new GridBagConstraints();
+		gbc_rbExtend.anchor = GridBagConstraints.WEST;
+		gbc_rbExtend.gridx = 0;
+		gbc_rbExtend.gridy = 4;
+		panel_3.add(rbExtend, gbc_rbExtend);
+		
+		JButton btnRestoreColumns = new JButton("Restore");
+		btnRestoreColumns.setActionCommand(BTN_RESTORE_COLUMNS);
+		btnRestoreColumns.addActionListener(adapterDialog);
+		btnRestoreColumns.setVerticalAlignment(SwingConstants.BOTTOM);
+		btnRestoreColumns.setHorizontalAlignment(SwingConstants.RIGHT);
+		GridBagConstraints gbc_btnRestoreColumns = new GridBagConstraints();
+		gbc_btnRestoreColumns.anchor = GridBagConstraints.SOUTHEAST;
+		gbc_btnRestoreColumns.gridx = 2;
+		gbc_btnRestoreColumns.gridy = 4;
+		tabColumns.add(btnRestoreColumns, gbc_btnRestoreColumns);
 
 		JPanel buttonPane = new JPanel();
 		buttonPane.setLayout(new FlowLayout(FlowLayout.RIGHT));
@@ -387,6 +670,16 @@ public class VT100properties extends JDialog {
 		cancelButton.addActionListener(adapterDialog);
 		cancelButton.setActionCommand(BTN_CANCEL);
 		buttonPane.add(cancelButton);
+		
+		ButtonGroup bgBehavior = new ButtonGroup();
+		bgBehavior.add(rbExtend);
+		bgBehavior.add(rbWrap);
+		bgBehavior.add(rbTruncate);
+		
+		ButtonGroup bgColumns = new ButtonGroup();
+		bgColumns.add(rb80);
+		bgColumns.add(rb132);
+
 
 	}// initialize
 
@@ -394,7 +687,13 @@ public class VT100properties extends JDialog {
 	private static final String BTN_CANCEL = "btnCancel";
 	
 	private static final String BTN_RESTORE_FONT = "btnRestoreFont";
-	
+	private static final String BTN_RESTORE_COLORS = "btnRestoreColors";
+	private static final String BTN_RESTORE_COLUMNS = "btnRestoreColumns";
+
+	private static final String BTN_COLOR_TEXT = "btnColorText";
+	private static final String BTN_COLOR_BACKGROUND = "btnColorBackground";
+	private static final String BTN_COLOR_CARET = "btnColorCaret";
+
 	private final static String STYLE_PLAIN = "Plain";
 	private final static String STYLE_BOLD = "Bold";
 	private final static String STYLE_ITALIC = "Italic";
@@ -409,6 +708,13 @@ public class VT100properties extends JDialog {
 	private JList<Integer> listSize;
 	
 	private JPanel tabFont;
+	private JTextPane textExample;
+	private JPanel panelColor;
+	private JRadioButton rb80;
+	private JRadioButton rb132;
+	private JRadioButton rbTruncate;
+	private JRadioButton rbWrap;
+	private JRadioButton rbExtend;
 
 	///////////////////////////////////////////////////////////////////////////
 
@@ -425,8 +731,26 @@ public class VT100properties extends JDialog {
 			case BTN_CANCEL:
 				doBtnCancel();
 				break;
+				
 			case BTN_RESTORE_FONT:
 				doRestoreFont();
+				break;
+				
+				
+			case BTN_COLOR_TEXT:
+				doColorText();
+				break;
+			case BTN_COLOR_BACKGROUND:
+				doColorBackground();
+				break;
+			case BTN_COLOR_CARET:
+				doColorCaret();
+				break;
+			case BTN_RESTORE_COLORS:
+				doRestoreColors();
+				break;
+			case BTN_RESTORE_COLUMNS:
+				doRestoreColumns();
 				break;
 			default:
 				log.errorf("bad actionEvent cmd : [%s]%n", cmd);
