@@ -38,6 +38,7 @@ import javax.swing.text.JTextComponent;
 import codeSupport.AppLogger;
 import codeSupport.Z80;
 import ioSystem.DeviceZ80;
+import utilities.FancyCaret;
 
 public class VT100 extends DeviceZ80 {
 
@@ -48,11 +49,14 @@ public class VT100 extends DeviceZ80 {
 	private AdapterVT100 adapterVT100 = new AdapterVT100();
 	private AppLogger log = AppLogger.getInstance();
 	
+	private int currentRow,currentColumn;
 	private int screenColumns;
 	private boolean screenWrap;
 	private boolean screenTruncate;
 	private boolean screenExtend;
 	private boolean escapeMode;
+	
+	private InputState inputState;
 	
 
 	@Override
@@ -83,23 +87,23 @@ public class VT100 extends DeviceZ80 {
 
 	private void asciiInFromCPU(byte value) {
 		if (value == ESC) {
-			setEscapeMode(true);
+			setEscapeMode(InputState.ESC_0);
 			return;
 		} // if escape char
-//		char c = (char) ( value);
-//		Character.toString((char) ( value));
-//		Character.toString(c);
 		appendToDoc(screen, Character.toString((char) ( value)));
-//		appendToDoc(screen, (char) value);
+		log.infof("Text size: %d,cursor Position: %d%n",txtScreen.getText().length(), txtScreen.getCaretPosition());
+		txtScreen.getCaret().setVisible(true);
+
 	}// asciiInput
 
-	private void escapeInFromCPU(byte value) {
-		escapeBuffer.add(value);
+//	private void escapeInFromCPU(byte value) {
+//		escapeBuffer.add(value);
+//
+//	}// escapeInput
 
-	}// escapeInput
-
-	private void setEscapeMode(boolean state) {
-		escapeMode = state;
+	private void setEscapeMode(InputState inState) {
+		inputState = inState;
+		showInputState();
 		escapeBuffer.clear();
 	}// setEscapeMode
 
@@ -166,12 +170,24 @@ public class VT100 extends DeviceZ80 {
 
 	@Override
 	public void byteFromCPU(Byte value) {
-		showStatus((char)(byte) value,lblInChar);
-		if (!escapeMode) {
+		showInChar((char)(byte) value);
+		
+		switch(inputState) {
+		case Text:
 			asciiInFromCPU(value);
-		} else {
-			escapeInFromCPU(value);
-		} // if
+			break;
+			
+			default:
+				log.errorf("InputState error: %s%n", inputState.toString());
+		}//switch
+		
+		
+		
+//		if (inputState.equals(InputState.Text)) {
+//			asciiInFromCPU(value);
+//		} else {
+//			escapeInFromCPU(value);
+//		} // if
 	}// byteFromCPU
 
 	@Override
@@ -193,25 +209,40 @@ public class VT100 extends DeviceZ80 {
 	public boolean isVisible() {
 		return frameVT100.isVisible();
 	}// isVisible
+	
+	private void determineCursorPosition() {
+	
+	}//
 
+	private void showCursorPosition() {
+		String msg = String.format("Row; %d,Column: %d", currentRow,currentColumn);
+		lblCursorPosition.setText(msg);
+	}//showCursorPosition
+	
 	private void doKeyboardIn(KeyEvent keyEvent) {
 		internalBuffer.offer((byte) keyEvent.getKeyChar());
-		showStatus(keyEvent.getKeyChar(),lblKeyChar);
+		showKeyChar(keyEvent.getKeyChar());
 	}// doKeyboardIn
 
-//	private void showStatus(char keyChar) {
-//		String msg = String.format("Last Char = %s     [0x%02X]", keyChar, (byte) keyChar);
-//		lblKeyChar.setText(msg);
-//	}// showStatus
 	
-	private void showStatus(char keyChar,JLabel label) {
-		String msg = String.format("Last Char = %s     [0x%02X]", keyChar, (byte) keyChar);
-		label.setText(msg);
+	private void showInputState() {
+		lblState.setText(inputState.toString());
+	}//showInputState
+	
+	private void showInChar(char keyChar) {// From CPU
+		String msg = String.format("In Char = %s     [0x%02X]", keyChar, (byte) keyChar);
+		lblInChar.setText(msg);
+	}// showStatus
+	
+	private void showKeyChar(char keyChar) {// From Keyboard
+		String msg = String.format("KB Char = %s     [0x%02X]", keyChar, (byte) keyChar);
+		lblKeyChar.setText(msg);
 	}// showStatus
 
 	private void appendToDoc(Document doc, String textToAppend) {
 		appendToDoc(doc, textToAppend, null);
-		txtScreen.getCaret().setVisible(true);
+		txtScreen.setCaretPosition(doc.getLength());		
+//		txtScreen.getCaret().setVisible(true);
 	}// appendToDocASM
 
 	private void appendToDoc(Document doc, String textToAppend, AttributeSet attributeSet) {
@@ -310,10 +341,15 @@ public class VT100 extends DeviceZ80 {
 		internalBuffer.clear();
 
 //		txtScreen.setFont(new Font("Courier New", Font.BOLD, 24));
+		txtScreen.setCaret(new FancyCaret());
 		screen = txtScreen.getDocument();
 		clearDoc(screen);
 
 		frameVT100.setVisible(true);
+		inputState = InputState.Text;
+		showInputState();
+		currentRow=0;currentColumn =0;
+		showCursorPosition();
 	}// appInit
 
 	private Preferences getMyPrefs() {
@@ -355,6 +391,7 @@ public class VT100 extends DeviceZ80 {
 		panelMain.setLayout(gbl_panelMain);
 
 		txtScreen = new JTextPane();
+		txtScreen.setEditable(false);
 		txtScreen.setCaretColor(Color.RED);
 		txtScreen.addKeyListener(adapterVT100);
 		txtScreen.setBackground(Color.LIGHT_GRAY);
@@ -455,7 +492,7 @@ public class VT100 extends DeviceZ80 {
 				gbl_panel_2.rowWeights = new double[]{0.0};
 				panel_2.setLayout(gbl_panel_2);
 				
-				JLabel lblCursorPosition = new JLabel("Row: rr,  Column: ccc");
+				lblCursorPosition = new JLabel("Row: rr,  Column: ccc");
 				GridBagConstraints gbc_lblCursorPosition = new GridBagConstraints();
 				gbc_lblCursorPosition.gridx = 0;
 				gbc_lblCursorPosition.gridy = 0;
@@ -553,6 +590,10 @@ public class VT100 extends DeviceZ80 {
 //		}//preferenceChange
 
 	}// class AdapterVT100
+	
+	public enum InputState{
+		Text,ESC_0,ESC_1
+	}//enum InputState
 
 	// --------------------------------------------------------------------------------------
 
@@ -581,5 +622,6 @@ public class VT100 extends DeviceZ80 {
 	private Component rigidArea_2;
 	private Component rigidArea_3;
 	private JLabel lblInChar;
+	private JLabel lblCursorPosition;
 
 }// class VT100
