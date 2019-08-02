@@ -57,7 +57,6 @@ public class VT100properties extends JDialog {
 	private int screenColumns;
 	private boolean screenTruncate;
 	private boolean screenWrap;
-	private boolean screenExtend;
 	
 	private int foregroundColor;
 	private int dialogForegroundColor;
@@ -80,7 +79,6 @@ public class VT100properties extends JDialog {
 
 		myPrefs.putBoolean("ScreenTruncate", rbTruncate.isSelected());
 		myPrefs.putBoolean("ScreenWrap", rbWrap.isSelected());
-		myPrefs.putBoolean("ScreenExtend", rbExtend.isSelected());
 
 		dialogResultValue = JOptionPane.OK_OPTION;
 		dispose();
@@ -109,7 +107,6 @@ public class VT100properties extends JDialog {
 		
 		rbWrap.setSelected(screenWrap);
 		rbTruncate.setSelected(screenTruncate);
-		rbExtend.setSelected(screenExtend);
 	}//restoreColumns
 
 	public int showDialog() {
@@ -140,7 +137,6 @@ public class VT100properties extends JDialog {
 		screenColumns = myPrefs.getInt("Columns", 80);
 		screenTruncate = myPrefs.getBoolean("ScreenTruncate", true);
 		screenWrap = myPrefs.getBoolean("ScreenWrap", false);
-		screenExtend = myPrefs.getBoolean("ScreenExtend", false);
 	}// getCurrentProperties
 
 	private void initFontTab() {
@@ -532,7 +528,7 @@ public class VT100properties extends JDialog {
 		panel_1.add(btnRestoreColors, gbc_btnRestoreColors);
 
 		JPanel tabColumns = new JPanel();
-		tabbedPane.addTab("Columns", null, tabColumns, null);
+		tabbedPane.addTab("Columns/Lines", null, tabColumns, null);
 		GridBagLayout gbl_tabColumns = new GridBagLayout();
 		gbl_tabColumns.columnWidths = new int[] { 0, 0, 0, 0 };
 		gbl_tabColumns.rowHeights = new int[] { 0, 0, 0, 0, 0, 0 };
@@ -548,7 +544,7 @@ public class VT100properties extends JDialog {
 		tabColumns.add(rigidArea_3, gbc_rigidArea_3);
 		
 		JPanel panel_2 = new JPanel();
-		panel_2.setBorder(new TitledBorder(new LineBorder(new Color(0, 0, 0), 1, true), "Number of Columns", TitledBorder.CENTER, TitledBorder.ABOVE_TOP, null, null));
+		panel_2.setBorder(new TitledBorder(new LineBorder(new Color(0, 0, 0), 1, true), "Columns", TitledBorder.CENTER, TitledBorder.ABOVE_TOP, null, new Color(0, 0, 0)));
 		GridBagConstraints gbc_panel_2 = new GridBagConstraints();
 		gbc_panel_2.insets = new Insets(0, 0, 5, 5);
 		gbc_panel_2.fill = GridBagConstraints.BOTH;
@@ -556,31 +552,31 @@ public class VT100properties extends JDialog {
 		gbc_panel_2.gridy = 1;
 		tabColumns.add(panel_2, gbc_panel_2);
 		GridBagLayout gbl_panel_2 = new GridBagLayout();
-		gbl_panel_2.columnWidths = new int[]{0, 0, 0, 0};
-		gbl_panel_2.rowHeights = new int[]{0, 0};
-		gbl_panel_2.columnWeights = new double[]{0.0, 0.0, 0.0, Double.MIN_VALUE};
-		gbl_panel_2.rowWeights = new double[]{0.0, Double.MIN_VALUE};
+		gbl_panel_2.columnWidths = new int[]{0, 0};
+		gbl_panel_2.rowHeights = new int[]{0, 0, 0, 0};
+		gbl_panel_2.columnWeights = new double[]{0.0, Double.MIN_VALUE};
+		gbl_panel_2.rowWeights = new double[]{0.0, 0.0, 0.0, Double.MIN_VALUE};
 		panel_2.setLayout(gbl_panel_2);
 		
 		rb80 = new JRadioButton("80");
 		GridBagConstraints gbc_rb80 = new GridBagConstraints();
-		gbc_rb80.insets = new Insets(0, 0, 0, 5);
+		gbc_rb80.insets = new Insets(0, 0, 5, 0);
 		gbc_rb80.gridx = 0;
 		gbc_rb80.gridy = 0;
 		panel_2.add(rb80, gbc_rb80);
 		
-		Component horizontalStrut = Box.createHorizontalStrut(40);
-		GridBagConstraints gbc_horizontalStrut = new GridBagConstraints();
-		gbc_horizontalStrut.insets = new Insets(0, 0, 0, 5);
-		gbc_horizontalStrut.gridx = 1;
-		gbc_horizontalStrut.gridy = 0;
-		panel_2.add(horizontalStrut, gbc_horizontalStrut);
+		Component verticalStrut_1 = Box.createVerticalStrut(20);
+		GridBagConstraints gbc_verticalStrut_1 = new GridBagConstraints();
+		gbc_verticalStrut_1.insets = new Insets(0, 0, 5, 0);
+		gbc_verticalStrut_1.gridx = 0;
+		gbc_verticalStrut_1.gridy = 1;
+		panel_2.add(verticalStrut_1, gbc_verticalStrut_1);
 		
 		rb132 = new JRadioButton("132");
 		GridBagConstraints gbc_rb132 = new GridBagConstraints();
 		gbc_rb132.anchor = GridBagConstraints.SOUTHEAST;
-		gbc_rb132.gridx = 2;
-		gbc_rb132.gridy = 0;
+		gbc_rb132.gridx = 0;
+		gbc_rb132.gridy = 2;
 		panel_2.add(rb132, gbc_rb132);
 		
 		Component rigidArea_4 = Box.createRigidArea(new Dimension(30, 30));
@@ -600,9 +596,9 @@ public class VT100properties extends JDialog {
 		tabColumns.add(panel_3, gbc_panel_3);
 		GridBagLayout gbl_panel_3 = new GridBagLayout();
 		gbl_panel_3.columnWidths = new int[]{0, 0};
-		gbl_panel_3.rowHeights = new int[]{0, 0, 0, 0, 0, 0};
+		gbl_panel_3.rowHeights = new int[]{0, 0, 0, 0};
 		gbl_panel_3.columnWeights = new double[]{0.0, Double.MIN_VALUE};
-		gbl_panel_3.rowWeights = new double[]{0.0, 0.0, 0.0, 0.0, 0.0, Double.MIN_VALUE};
+		gbl_panel_3.rowWeights = new double[]{0.0, 0.0, 0.0, Double.MIN_VALUE};
 		panel_3.setLayout(gbl_panel_3);
 		
 		rbTruncate = new JRadioButton("Truncate");
@@ -625,25 +621,9 @@ public class VT100properties extends JDialog {
 		rbWrap.setHorizontalAlignment(SwingConstants.LEFT);
 		GridBagConstraints gbc_rbWrap = new GridBagConstraints();
 		gbc_rbWrap.anchor = GridBagConstraints.WEST;
-		gbc_rbWrap.insets = new Insets(0, 0, 5, 0);
 		gbc_rbWrap.gridx = 0;
 		gbc_rbWrap.gridy = 2;
 		panel_3.add(rbWrap, gbc_rbWrap);
-		
-		Component verticalStrut_1 = Box.createVerticalStrut(20);
-		GridBagConstraints gbc_verticalStrut_1 = new GridBagConstraints();
-		gbc_verticalStrut_1.insets = new Insets(0, 0, 5, 0);
-		gbc_verticalStrut_1.gridx = 0;
-		gbc_verticalStrut_1.gridy = 3;
-		panel_3.add(verticalStrut_1, gbc_verticalStrut_1);
-		
-		rbExtend = new JRadioButton("Extend");
-		rbExtend.setHorizontalAlignment(SwingConstants.LEFT);
-		GridBagConstraints gbc_rbExtend = new GridBagConstraints();
-		gbc_rbExtend.anchor = GridBagConstraints.WEST;
-		gbc_rbExtend.gridx = 0;
-		gbc_rbExtend.gridy = 4;
-		panel_3.add(rbExtend, gbc_rbExtend);
 		
 		JButton btnRestoreColumns = new JButton("Restore");
 		btnRestoreColumns.setActionCommand(BTN_RESTORE_COLUMNS);
@@ -672,13 +652,12 @@ public class VT100properties extends JDialog {
 		buttonPane.add(cancelButton);
 		
 		ButtonGroup bgBehavior = new ButtonGroup();
-		bgBehavior.add(rbExtend);
 		bgBehavior.add(rbWrap);
 		bgBehavior.add(rbTruncate);
 		
 		ButtonGroup bgColumns = new ButtonGroup();
-		bgColumns.add(rb80);
 		bgColumns.add(rb132);
+		bgColumns.add(rb80);
 
 
 	}// initialize
@@ -714,7 +693,6 @@ public class VT100properties extends JDialog {
 	private JRadioButton rb132;
 	private JRadioButton rbTruncate;
 	private JRadioButton rbWrap;
-	private JRadioButton rbExtend;
 
 	///////////////////////////////////////////////////////////////////////////
 
