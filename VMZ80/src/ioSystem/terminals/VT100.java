@@ -33,32 +33,26 @@ import javax.swing.border.BevelBorder;
 import javax.swing.text.AbstractDocument;
 import javax.swing.text.AttributeSet;
 import javax.swing.text.BadLocationException;
-import javax.swing.text.DocumentFilter;
 import javax.swing.text.JTextComponent;
-import javax.swing.text.NavigationFilter;
 import javax.swing.text.StyledDocument;
 
 import codeSupport.AppLogger;
 import codeSupport.Z80;
 import ioSystem.DeviceZ80;
-import utilities.FancyCaret;
 
 public class VT100 extends DeviceZ80 {
 
 	private JFrame frameVT100;
 	private JTextPane txtScreen = new JTextPane();
 	private StyledDocument screen;
-	private NavigationFilter navigationFilter = new VT100Navigator();
-	private DocumentFilter documentFilter = new VT100Filter();
 
 	private Queue<Byte> internalBuffer = new LinkedList<Byte>();
 	private Queue<Byte> escapeBuffer = new LinkedList<Byte>();
 	private AdapterVT100 adapterVT100 = new AdapterVT100();
 	private AppLogger log = AppLogger.getInstance();
 
-	private int currentRow, currentColumn,currentPosition;
-	private int currentDotPosition;
-	
+	private int currentRow, currentColumn, currentPosition;
+
 	private int screenColumns;
 	private String aLine; // a blank line with System.lineSeparator
 	private int lineLength; // accounts for System.lineSeparator
@@ -98,26 +92,22 @@ public class VT100 extends DeviceZ80 {
 	private void asciiInFromCPU(byte value) {
 
 		switch (value) {
-		case ASCII_ESC:
+		case ASCII_ESC:// Escape 0x1B
 			setEscapeMode(InputState.ESC_0);
-			return;
-		// break;
-		case ASCII_LF:	// Line Feed
+			break;
+		case ASCII_LF: // Line Feed 0x0A
 			nextLine();
-			return;
-//			break;
-		case ASCII_CR:	// Carriage Return
+			break;
+		case ASCII_CR: // Carriage Return 0x0D
+			carriageReturn();
+			break;
+		case ASCII_BS: // Backspace 0x08
+			backSpace();
 			break;
 		default:
-		}// switch
-
-		// appendToDoc(screen, Character.toString((char) (value)));
-		// log.infof("Text size: %d,cursor Position: %d%n", txtScreen.getText().length(), txtScreen.getCaretPosition());
-
-		displayOnScreen(Character.toString((char) (value)));
-		// txtScreen.getCaret().setVisible(true);
-
-	}// asciiInput
+			displayOnScreen(Character.toString((char) (value)));
+		}// switch ASCII_BS
+	}// asciiInFromCPU
 
 	// private void escapeInFromCPU(byte value) {
 	// escapeBuffer.add(value);
@@ -129,43 +119,40 @@ public class VT100 extends DeviceZ80 {
 		showInputState();
 		escapeBuffer.clear();
 	}// setEscapeMode
-	
-	private int getCurrentPosition(int row,int column) {
-		return (row * lineLength) + column;
-	}//getCurrentPosition
 
 	private void makeNewScreen() {
-		// clearScreen();
 		StringBuilder sb = new StringBuilder(lineLength * SCREEN_ROWS);
 		for (int i = 0; i < SCREEN_ROWS; i++) {
 			sb.append(aLine);
-			// appendToScreen(aLine);
 		} // for
 
 		try {
 			screen.remove(0, screen.getLength());
 			screen.insertString(0, sb.toString(), null);
-			// ((AbstractDocument) screen).replace(0,sb.length(),sb.toString(),null);
 		} catch (Exception e) {
-			// TODO: handle exception
+			log.error("Failed to makeNewScreen");
 		} // try
 		currentRow = 0;
 		currentColumn = 0;
-		currentPosition = getCurrentPosition(currentRow,currentColumn);
+		currentPosition = getCurrentPosition(currentRow, currentColumn);
 
 		txtScreen.setCaretPosition(currentPosition);
 		txtScreen.getCaret().setVisible(true);
 
-	}// fillScreen
+	}// makeNewScreen
 
-	private void setEmptyLine() {
+	private int getCurrentPosition(int row, int column) {
+		return (row * lineLength) + column;
+	}// getCurrentPosition
+
+	private void makeEmptyLine() {
 		aLine = String.format("%" + screenColumns + "s%s", SPACE, System.lineSeparator());
 		lineLength = aLine.length();
 		screenSize = (SCREEN_ROWS * lineLength);
 		log.infof("lineLength = %s, screenSize = %d%n", lineLength, screenSize);
-	}// setEmptyLine
+	}// makeEmptyLine
 
-	private void setScreenSize(JTextComponent component, int columns) {
+	private void setFrameSize(JTextComponent component, int columns) {
 		Insets insetsContentPane = frameVT100.getContentPane().getInsets();
 		Insets insetsFrame = frameVT100.getInsets();
 		Insets insets = component.getMargin();
@@ -178,7 +165,7 @@ public class VT100 extends DeviceZ80 {
 		int h = calcScreenHeight(component) + extraH;
 		frameVT100.setSize(w, h);
 
-		setEmptyLine(); // aLine & lineLength
+		makeEmptyLine(); // aLine & lineLength
 	}// setScreenSize
 
 	private int calcScreenWidth(JComponent component, int columns) {
@@ -203,18 +190,11 @@ public class VT100 extends DeviceZ80 {
 
 		switch (inputState) {
 		case Text:
-			asciiInFromCPU(value);
+			asciiInFromCPU((byte) (value & 0x7F));
 			break;
-
 		default:
 			log.errorf("InputState error: %s%n", inputState.toString());
 		}// switch
-
-		// if (inputState.equals(InputState.Text)) {
-		// asciiInFromCPU(value);
-		// } else {
-		// escapeInFromCPU(value);
-		// } // if
 	}// byteFromCPU
 
 	@Override
@@ -237,75 +217,68 @@ public class VT100 extends DeviceZ80 {
 		return frameVT100.isVisible();
 	}// isVisible
 
-	private int scrollScreen() {
-		// returns the the new currentDotPosition;
-		log.info("Need to Scroll");
-		// currentRow = 0;
-		// currentColumn = 0;
-		// currentDotPosition = 0;
-		int row23Column0 = 0;
-		try {
-			screen.remove(0, lineLength);
-			row23Column0 = screen.getLength();
-			screen.insertString(row23Column0, aLine, null);
-		} catch (Exception e) {
-			// TODO: handle exception
-		} // try
-		return row23Column0;
-	}// scrollScreen
+	private void backSpace() {
+		if (currentRow + currentColumn == 0) {
+			return;
+		} // if at top of page
+		if (--currentColumn < 0) {
+			currentRow--;
+			currentColumn = screenColumns - 1;
+		} // if else
+		fixCurrentPosition();
 
-	private int nextLine() {
-		int newDotPosition = currentDotPosition + lineLength;
-		if (newDotPosition >= screenSize - System.lineSeparator().length()) {
-			newDotPosition = scrollScreen();
+	}// backSpace
+
+	private void carriageReturn() {
+		currentColumn = 0;
+		fixCurrentPosition();
+	}// carriageReturn
+
+	private void nextLine() {
+		int priorColumn = currentColumn;
+		if (++currentRow >= SCREEN_ROWS) {
+			scrollScreen();
 		} // if
-		setCaretDot(newDotPosition);
-		setRowColumn(newDotPosition);
-		return newDotPosition;
-
+		currentColumn = priorColumn;
+		fixCurrentPosition();
 	}// nextLine
-	
-	private void setCaretDot(int position) {
-		txtScreen.setCaretPosition(position);
-	}//setCaretDot
 
-	private void setRowColumn(int newDotPosition) {
-		currentDotPosition = newDotPosition;
-		currentRow = currentDotPosition / lineLength;
-		currentColumn = currentDotPosition % lineLength;
-		showCursorPosition();
-	}// setRowColumn
-
-	private void updateDotPosition(int delta) {
-		if (currentColumn < screenColumns-1) {
+	private void incrementCurrentPosition() {
+		if (currentColumn < screenColumns - 1) {
 			currentColumn++;
 		} else {
-			if (currentRow < SCREEN_ROWS) {
+			if (currentRow < SCREEN_ROWS - 1) {
 				currentRow++;
 				currentColumn = 0;
 			} else {
 				scrollScreen();
 			} // if rows
 		} // if columns
-		currentPosition = getCurrentPosition(currentRow,currentColumn);
+		fixCurrentPosition();
+	}// updateCursorPosition
+
+	private void fixCurrentPosition() {
+		currentPosition = getCurrentPosition(currentRow, currentColumn);
 		txtScreen.setCaretPosition(currentPosition);
-//		txtScreen.getCaretPosition();
 		txtScreen.getCaret().setVisible(true);
+		showCursorPosition();
+	}// fixCurrentPosition
 
-		showCursorPosition(currentRow,currentColumn);
-	}// updateCursorPosition
-
-	private void updateDotPosition() {
-		updateDotPosition(1);
-	}// updateCursorPosition
+	private void scrollScreen() {
+		log.info("Need to Scroll");
+		currentRow = 23;
+		currentColumn = 0;
+		try {
+			screen.remove(0, lineLength);
+			screen.insertString(getCurrentPosition(currentRow, currentColumn), aLine, null);
+		} catch (Exception e) {
+			log.error("Failed to Scroll the Screen");
+		} // try
+		return;
+	}// scrollScreen
 
 	private void showCursorPosition() {
 		String msg = String.format("Row; %d,Column: %d", currentRow, currentColumn);
-		lblCursorPosition.setText(msg);
-	}// showCursorPosition
-	
-	private void showCursorPosition(int row, int column) {
-		String msg = String.format("Row; %d,Column: %d", row, column);
 		lblCursorPosition.setText(msg);
 	}// showCursorPosition
 
@@ -328,26 +301,8 @@ public class VT100 extends DeviceZ80 {
 		lblKeyChar.setText(msg);
 	}// showStatus
 
-	private void appendToScreen(String textToAppend) {
-		appendToScreen(textToAppend, null);
-		txtScreen.setCaretPosition(screen.getLength());
-		// txtScreen.getCaret().setVisible(true);
-	}// appendToDocASM
-
-	private void appendToScreen(String textToAppend, AttributeSet attributeSet) {
-		try {
-			screen.insertString(screen.getLength(), textToAppend, attributeSet);
-		} catch (BadLocationException e) {
-			log.errorf("Failed to append text: %s %n", textToAppend);
-			e.printStackTrace();
-		} // try
-	}// appendToDocASM
-
 	private void displayOnScreen(String textToAppend) {
 		displayOnScreen(textToAppend, null);
-		// updateDotPosition();
-		// txtScreen.setCaretPosition(screen.getLength());
-		// txtScreen.getCaret().setVisible(true);
 	}// appendToDocASM
 
 	private void displayOnScreen(String textToInsert, AttributeSet attributeSet) {
@@ -359,16 +314,8 @@ public class VT100 extends DeviceZ80 {
 			e.printStackTrace();
 		} // try
 
-		updateDotPosition();
+		incrementCurrentPosition();
 	}// appendToDocASM
-
-	private void clearScreen() {
-		try {
-			screen.remove(0, screen.getLength());
-		} catch (BadLocationException e) {
-			log.errorf("Failed to clear screen: " + e.getMessage());
-		} // try
-	}// clearDoc
 
 	private void showSetPropertiesDialog() {
 		Preferences myPrefs = getMyPrefs();
@@ -378,7 +325,8 @@ public class VT100 extends DeviceZ80 {
 			int oldScreenColumns = screenColumns;
 			setProperties(myPrefs);
 			if (oldScreenColumns != screenColumns) {
-				setScreenSize(txtScreen, screenColumns);
+				setFrameSize(txtScreen, screenColumns);
+				makeNewScreen();
 			} // if screenColumns changed
 		} // if
 		closeMyPrefs(myPrefs);
@@ -444,25 +392,16 @@ public class VT100 extends DeviceZ80 {
 
 		closeMyPrefs(myPrefs);
 		screen = txtScreen.getStyledDocument();
-		((AbstractDocument) screen).setDocumentFilter(documentFilter);
-		txtScreen.setNavigationFilter(navigationFilter);
-		// log.infof("ScreenColumns = %s%n", screenColumns);
-		setScreenSize(txtScreen, screenColumns);
+		setFrameSize(txtScreen, screenColumns);
 		makeNewScreen();
 		// txtScreen.setFont(new Font("Courier New", Font.BOLD, 24));
-		txtScreen.setCaret(new FancyCaret());
 
 		escapeMode = false;
 		escapeBuffer.clear();
 		internalBuffer.clear();
 
-		// clearDoc(screen);
-
-		frameVT100.setVisible(true);
 		inputState = InputState.Text;
 		showInputState();
-		currentRow = 0;
-		currentColumn = 0;
 		showCursorPosition();
 //		frameVT100.setSize(761, 693);
 
@@ -664,12 +603,40 @@ public class VT100 extends DeviceZ80 {
 		});
 		mnNewMenu.add(mntmNewMenuItem);
 
+		mntmFillscreen = new JMenuItem("FillScreen");
+		mntmFillscreen.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent arg0) {
+				String line132 = "01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789";
+			String thisLine = line132.substring(0, screenColumns);
+			StringBuilder sb = new StringBuilder(lineLength * SCREEN_ROWS);
+			for (int i = 0; i < SCREEN_ROWS; i++) {
+				sb.append(thisLine + System.lineSeparator());
+			} // for
+
+			try {
+				screen.remove(0, screen.getLength());
+				screen.insertString(0, sb.toString(), null);
+			} catch (Exception e) {
+				log.error("Failed to makeNewScreen");
+			} // try
+			currentRow = 0;
+			currentColumn = 0;
+			currentPosition = getCurrentPosition(currentRow, currentColumn);
+
+			txtScreen.setCaretPosition(currentPosition);
+			txtScreen.getCaret().setVisible(true);
+
+			}
+		});
+		mnNewMenu.add(mntmFillscreen);
+
 		frameVT100.addWindowListener(new WindowAdapter() {
 			@Override
 			public void windowClosing(WindowEvent arg0) {
 				appClose();
 			}// windowClosing
 		});
+		frameVT100.setVisible(true);
 
 	}// initialize
 
@@ -733,6 +700,7 @@ public class VT100 extends DeviceZ80 {
 
 	private static final String MNU_PROPERTIES = "mnuProperties";
 
+	private static final byte ASCII_BS = (byte) 0x08; // Backspace
 	private static final byte ASCII_LF = (byte) 0x0A; // Line Feed
 	private static final byte ASCII_CR = (byte) 0x0D;// Carriage Return
 	private static final byte ASCII_ESC = (byte) 0x1B;// Escape
@@ -754,5 +722,6 @@ public class VT100 extends DeviceZ80 {
 	private JLabel lblCursorPosition;
 	private JMenu mnNewMenu;
 	private JMenuItem mntmNewMenuItem;
+	private JMenuItem mntmFillscreen;
 
 }// class VT100
