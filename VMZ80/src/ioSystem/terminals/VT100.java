@@ -39,7 +39,7 @@ public class VT100 extends DeviceZ80 {
 
 	private JFrame frameVT100;
 	private JTextPane txtScreen = new JTextPane();
-	private VT100Display screen; 
+	private VT100Display screen;
 
 	private Queue<Byte> internalBuffer = new LinkedList<Byte>();
 	private Queue<Byte> escapeBuffer = new LinkedList<Byte>();
@@ -48,8 +48,6 @@ public class VT100 extends DeviceZ80 {
 
 	private int screenColumns;
 	private int lineLength; // accounts for System.lineSeparator
-//	private boolean screenWrap;
-//	private boolean screenTruncate;
 	private boolean escapeMode;
 
 	private InputState inputState;
@@ -80,11 +78,11 @@ public class VT100 extends DeviceZ80 {
 		} // while - true }// run
 	}// run
 
-	private void setEscapeMode(InputState inState) {
-		inputState = inState;
-		showInputState();
-		escapeBuffer.clear();
-	}// setEscapeMode
+	// private void setEscapeMode(InputState inState) {
+	// inputState = inState;
+	// showInputState();
+	// escapeBuffer.clear();
+	// }// setEscapeMode
 
 	private void setFrameSize(JTextComponent component, int columns) {
 		Insets insetsFrame = frameVT100.getInsets();
@@ -108,21 +106,213 @@ public class VT100 extends DeviceZ80 {
 	@Override
 	public void byteFromCPU(Byte value) {
 		showInChar((char) (byte) value);
-
-		switch (inputState) {
+		InputState state = getState();
+		switch (state) {
 		case Text:
 			if (value == ASCII_ESC) {// Escape 0x1B
-				setEscapeMode(InputState.ESC_0);
+				setInputState(InputState.ESC_PART0);
 			} else {
 				screen.asciiInFromCPU((byte) (value & 0x7F));
-				showCursorPosition();
 			} // if
 			break;
+		case ESC_PART0:
+			setInputState(value == ASCII_LEFT_PARENTHSIS ? InputState.ESC_PART1 : InputState.Text);
+			break;
+		case ESC_PART1:
+			escape1(value);
+			break;
+		case ESC_SemiColon:
+			escapeSemiColon(value);
+			break;
+		case ESC_QMark:
+			escapeQMark(value);
+			break;
+		case ESC_Q1:
+			escapeQ1(value);
+			break;
+		case ESC_Q3:
+			escapeQ3(value);
+			break;
+		case ESC_Q4:
+			escapeQ4(value);
+			break;
+		case ESC_Q5:
+			escapeQ5(value);
+			break;
+		case ESC_Q7:
+			escapeQ7(value);
+			break;		
+		case ESC_NUMBER:
+			escapeNumber(value);
 		default:
-			log.errorf("InputState error: %s%n", inputState.toString());
+			log.errorf("InputState error: %s%n", state.toString());
 		}// switch
+		showCursorPosition();
+
 	}// byteFromCPU
 
+	private void escape1(byte value) {
+		switch (value) {
+		case ASCII_A:
+			screen.moveCursorUp(1);
+			setInputState(InputState.Text);
+			break;
+		case ASCII_B:
+			screen.moveCursorDown(1);
+			setInputState(InputState.Text);
+			break;
+		case ASCII_C:
+			screen.moveCursorRight(1);
+			setInputState(InputState.Text);
+			break;
+		case ASCII_D:
+			screen.moveCursorLeft(1);
+			setInputState(InputState.Text);
+			break;
+		case ASCII_SEMI_COLON:
+			setInputState(InputState.ESC_SemiColon);
+			break;
+		case ASCII_QMARK:
+			setInputState(InputState.ESC_QMark);
+			break;
+		case ASCII_H:
+		case ASCII_f: // move cursor to upper left.
+			screen.moveCursor(0, 0);
+			showCursorPosition();
+			setInputState(InputState.Text);
+			break;
+		case ASCII_g:
+			log.infof("Escape Sequence %s%n", "Clear Tab at current column");
+			setInputState(InputState.Text);
+			break;
+		case ASCII_J:
+			log.infof("Escape Sequence %s%n", "Clear Screen from cursor down");
+			setInputState(InputState.Text);
+			break;
+		case ASCII_K:
+			screen.clearRight();
+			setInputState(InputState.Text);
+			break;
+		case ASCII_m:
+			log.infof("Escape Sequence %s%n", "Turn off character attributes");
+			setInputState(InputState.Text);
+			break;
+		case ASCII_0:
+		case ASCII_1:
+		case ASCII_2:
+		case ASCII_3:
+		case ASCII_4:
+		case ASCII_5:
+		case ASCII_6:
+		case ASCII_7:
+		case ASCII_8:
+		case ASCII_9:
+			escapeBuffer.add(value);
+			setInputState(InputState.ESC_Number);
+			break;
+		default:
+			setInputState(InputState.Text);
+		}// switch
+	}// escape1
+
+	private void escapeSemiColon(byte value) {
+		if ((value == ASCII_f) || (value == ASCII_H)) {
+			screen.moveCursor(0, 0);
+			showCursorPosition();
+		} // if
+		setInputState(InputState.Text);
+	}// escapeSemiColon
+
+	private void escapeQMark(byte value) {
+		switch (value) {
+		case ASCII_1:
+			setInputState(inputState.ESC_Q1);
+		case ASCII_3:
+			setInputState(inputState.ESC_Q3);
+		case ASCII_4:
+			setInputState(inputState.ESC_Q4);
+		case ASCII_5:
+			setInputState(inputState.ESC_Q5);
+		case ASCII_7:
+			setInputState(inputState.ESC_Q7);
+		default:
+			setInputState(InputState.Text);
+		}// switch
+	}// escapeQMark
+
+	private void escapeQ1(byte value) {
+		if (value == ASCII_h) {
+			log.infof("Escape Sequence %s%n", "Set cursor key to application");
+		}else if (value ==ASCII_l) {
+			log.infof("Escape Sequence %s%n", "Set cursor key to cusor");	
+		}//if		
+		setInputState(InputState.Text);
+	}// escapeQ1
+
+	private void escapeQ3(byte value) {
+		if (value == ASCII_h) {
+			log.infof("Escape Sequence %s%n", "Set Number of Columns to 132");
+		}else if (value ==ASCII_l) {
+			log.infof("Escape Sequence %s%n", "Set Number of Columns to  80");	
+		}//if		
+		setInputState(InputState.Text);
+	}// escapeQ3
+
+	private void escapeQ4(byte value) {
+		if (value == ASCII_h) {
+			log.infof("Escape Sequence %s%n", "Set smooth scrolling");
+		}else if (value ==ASCII_l) {
+			log.infof("Escape Sequence %s%n", "Set jump scrolling");	
+		}//if		
+		setInputState(InputState.Text);
+	}// escapeQ4
+
+	private void escapeQ5(byte value) {
+		if (value == ASCII_h) {
+			log.infof("Escape Sequence %s%n", "Set reverse video on screen");
+		}else if (value ==ASCII_l) {
+			log.infof("Escape Sequence %s%n", "Set normal video on screen");	
+		}//if		
+		setInputState(InputState.Text);
+	}// escapeQ5
+
+	private void escapeQ7(byte value) {
+		if (value == ASCII_h) {
+			log.infof("Escape Sequence %s%n", "Set auto-wrap mode");
+		}else if (value ==ASCII_l) {
+			log.infof("Escape Sequence %s%n", "Reset auto-wrap mode");	
+		}//if		
+		setInputState(InputState.Text);
+	}// escapeQ7
+
+	private void escapeNumber(byte value) {
+		switch(value) {
+		case ASCII_SEMI_COLON:			
+		case ASCII_0:
+		case ASCII_1:
+		case ASCII_2:
+		case ASCII_3:
+		case ASCII_4:
+		case ASCII_5:
+		case ASCII_6:
+		case ASCII_7:
+		case ASCII_8:
+		case ASCII_9:
+			escapeBuffer.add(value);
+			setInputState(InputState.ESC_Number);
+			
+//		case 
+			
+			
+			
+			
+		default:
+			setInputState(InputState.Text);		
+		}//switch
+	}//escapeNumber
+	
+	
+	////////////////////////////////////////////////////////
 	@Override
 	public void byteToCPU(Byte value) {
 		dataToCPU.offer(value);
@@ -143,7 +333,6 @@ public class VT100 extends DeviceZ80 {
 		return frameVT100.isVisible();
 	}// isVisible
 
-
 	private void showCursorPosition() {
 		String msg = String.format("Row; %d,Column: %d", screen.getRow(), screen.getColumn());
 		lblCursorPosition.setText(msg);
@@ -154,9 +343,9 @@ public class VT100 extends DeviceZ80 {
 		showKeyChar(keyEvent.getKeyChar());
 	}// doKeyboardIn
 
-	private void showInputState() {
-		lblState.setText(inputState.toString());
-	}// showInputState
+	// private void showInputState() {
+	// lblState.setText(inputState.toString());
+	// }// showInputState
 
 	private void showInChar(char keyChar) {// From CPU
 		String msg = String.format("In Char = %s     [0x%02X]", keyChar, (byte) keyChar);
@@ -167,7 +356,6 @@ public class VT100 extends DeviceZ80 {
 		String msg = String.format("KB Char = %s     [0x%02X]", keyChar, (byte) keyChar);
 		lblKeyChar.setText(msg);
 	}// showStatus
-
 
 	private void showSetPropertiesDialog() {
 		Preferences myPrefs = getMyPrefs();
@@ -239,9 +427,8 @@ public class VT100 extends DeviceZ80 {
 	}// appClose
 
 	private void appInit() {
-		 screen = new VT100Display(txtScreen);
+		screen = new VT100Display(txtScreen);
 
-		
 		Preferences myPrefs = getMyPrefs();
 		frameVT100.setSize(myPrefs.getInt("Width", 761), myPrefs.getInt("Height", 693));
 		frameVT100.setLocation(myPrefs.getInt("LocX", 100), myPrefs.getInt("LocY", 100));
@@ -259,10 +446,9 @@ public class VT100 extends DeviceZ80 {
 		escapeBuffer.clear();
 		internalBuffer.clear();
 
-		inputState = InputState.Text;
-		showInputState();
+		setInputState(InputState.Text);
 		showCursorPosition();
-		
+
 		// frameVT100.setSize(761, 693);
 
 	}// appInit
@@ -277,6 +463,17 @@ public class VT100 extends DeviceZ80 {
 		// pref.removePreferenceChangeListener(adapterVT100);
 		pref = null;
 	}// closeMyPrefs
+
+	private void setInputState(InputState state) {
+		escapeBuffer.clear();
+		inputState = state;
+		lblState.setText(inputState.toString());
+		showCursorPosition();
+	}// setState
+
+	private InputState getState() {
+		return inputState;
+	}// InputState
 
 	/**
 	 * Initialize the contents of the frame.
@@ -466,7 +663,7 @@ public class VT100 extends DeviceZ80 {
 		mntmFillscreen = new JMenuItem("FillScreen");
 		mntmFillscreen.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
-				 final int SCREEN_ROWS = 24;
+				final int SCREEN_ROWS = 24;
 
 				String line132 = "01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789";
 				String thisLine = line132.substring(0, screenColumns);
@@ -481,9 +678,6 @@ public class VT100 extends DeviceZ80 {
 				} catch (Exception e) {
 					log.error("Failed to makeNewScreen");
 				} // try
-				
-				
-
 
 			}
 		});
@@ -544,10 +738,14 @@ public class VT100 extends DeviceZ80 {
 		// }//preferenceChange
 
 	}// class AdapterVT100
-
+/* @formatter:off */
 	public enum InputState {
-		Text, ESC_0, ESC_1
+		Text, ESC_PART0, ESC_PART1,
+		ESC_SemiColon, ESC_QMark, ESC_Number, ESC_f, ESC_g, ESC_H, ESC_J, ESC_K, ESC_m, ESC_NUMBER,
+		ESC_Q1,ESC_Q3,ESC_Q4,ESC_Q5,ESC_Q7,ESC_Q,
+		ESC_N0,ESC_N
 	}// enum InputState
+/* @formatter:on  */
 
 	// --------------------------------------------------------------------------------------
 
@@ -560,6 +758,32 @@ public class VT100 extends DeviceZ80 {
 	private static final String MNU_PROPERTIES = "mnuProperties";
 
 	private static final byte ASCII_ESC = (byte) 0x1B;// Escape
+	private static final byte ASCII_SEMI_COLON = (byte) 0x3B;// :
+	private static final byte ASCII_QMARK = (byte) 0x3F;// ?
+	private static final byte ASCII_f = (byte) 0x66;// f
+	private static final byte ASCII_g = (byte) 0x67;// g
+	private static final byte ASCII_h = (byte) 0x68;// h
+	private static final byte ASCII_l = (byte) 0x6C;// l
+	private static final byte ASCII_m = (byte) 0x6D;// m
+	private static final byte ASCII_A = (byte) 0x41;// A
+	private static final byte ASCII_B = (byte) 0x42;// B
+	private static final byte ASCII_C = (byte) 0x43;// C
+	private static final byte ASCII_D = (byte) 0x44;// D
+	private static final byte ASCII_H = (byte) 0x48;// H
+	private static final byte ASCII_J = (byte) 0x4A;// J
+	private static final byte ASCII_K = (byte) 0x4B;// K
+	private static final byte ASCII_LEFT_PARENTHSIS = (byte) 0x5B; // [
+
+	private static final byte ASCII_0 = (byte) 0x30;// 0
+	private static final byte ASCII_1 = (byte) 0x31;// 1
+	private static final byte ASCII_2 = (byte) 0x32;// 2
+	private static final byte ASCII_3 = (byte) 0x33;// 3
+	private static final byte ASCII_4 = (byte) 0x34;// 4
+	private static final byte ASCII_5 = (byte) 0x35;// 5
+	private static final byte ASCII_6 = (byte) 0x36;// 6
+	private static final byte ASCII_7 = (byte) 0x37;// 7
+	private static final byte ASCII_8 = (byte) 0x38;// 8
+	private static final byte ASCII_9 = (byte) 0x39;// 9
 
 	private JLabel lblKeyChar;
 	private JMenuBar menuBar;
