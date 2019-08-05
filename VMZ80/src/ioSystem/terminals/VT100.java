@@ -121,11 +121,15 @@ public class VT100 extends DeviceZ80 {
 		case ESC_PART1:
 			escape1(value);
 			break;
+
 		case ESC_SemiColon:
 			escapeSemiColon(value);
 			break;
 		case ESC_QMark:
 			escapeQMark(value);
+			break;
+		case ESC_NUMBER:
+			escapeNumber(value);
 			break;
 		case ESC_Q1:
 			escapeQ1(value);
@@ -141,9 +145,7 @@ public class VT100 extends DeviceZ80 {
 			break;
 		case ESC_Q7:
 			escapeQ7(value);
-			break;		
-		case ESC_NUMBER:
-			escapeNumber(value);
+			break;
 		default:
 			log.errorf("InputState error: %s%n", state.toString());
 		}// switch
@@ -153,6 +155,10 @@ public class VT100 extends DeviceZ80 {
 
 	private void escape1(byte value) {
 		switch (value) {
+		case ASCII_m:
+			log.infof("Escape Sequence %s%n", "Turn off character attributes");
+			setInputState(InputState.Text);
+			break;
 		case ASCII_A:
 			screen.moveCursorUp(1);
 			setInputState(InputState.Text);
@@ -169,12 +175,6 @@ public class VT100 extends DeviceZ80 {
 			screen.moveCursorLeft(1);
 			setInputState(InputState.Text);
 			break;
-		case ASCII_SEMI_COLON:
-			setInputState(InputState.ESC_SemiColon);
-			break;
-		case ASCII_QMARK:
-			setInputState(InputState.ESC_QMark);
-			break;
 		case ASCII_H:
 		case ASCII_f: // move cursor to upper left.
 			screen.moveCursor(0, 0);
@@ -186,16 +186,18 @@ public class VT100 extends DeviceZ80 {
 			setInputState(InputState.Text);
 			break;
 		case ASCII_J:
-			log.infof("Escape Sequence %s%n", "Clear Screen from cursor down");
+			screen.clearFromCursorDown();
 			setInputState(InputState.Text);
 			break;
 		case ASCII_K:
 			screen.clearRight();
 			setInputState(InputState.Text);
 			break;
-		case ASCII_m:
-			log.infof("Escape Sequence %s%n", "Turn off character attributes");
-			setInputState(InputState.Text);
+		case ASCII_SEMI_COLON:
+			setInputState(InputState.ESC_SemiColon);
+			break;
+		case ASCII_QMARK:
+			setInputState(InputState.ESC_QMark);
 			break;
 		case ASCII_0:
 		case ASCII_1:
@@ -208,7 +210,7 @@ public class VT100 extends DeviceZ80 {
 		case ASCII_8:
 		case ASCII_9:
 			escapeBuffer.add(value);
-			setInputState(InputState.ESC_Number);
+			setInputState(InputState.ESC_NUMBER);
 			break;
 		default:
 			setInputState(InputState.Text);
@@ -243,51 +245,52 @@ public class VT100 extends DeviceZ80 {
 	private void escapeQ1(byte value) {
 		if (value == ASCII_h) {
 			log.infof("Escape Sequence %s%n", "Set cursor key to application");
-		}else if (value ==ASCII_l) {
-			log.infof("Escape Sequence %s%n", "Set cursor key to cusor");	
-		}//if		
+		} else if (value == ASCII_l) {
+			log.infof("Escape Sequence %s%n", "Set cursor key to cusor");
+		} // if
 		setInputState(InputState.Text);
 	}// escapeQ1
 
 	private void escapeQ3(byte value) {
 		if (value == ASCII_h) {
 			log.infof("Escape Sequence %s%n", "Set Number of Columns to 132");
-		}else if (value ==ASCII_l) {
-			log.infof("Escape Sequence %s%n", "Set Number of Columns to  80");	
-		}//if		
+		} else if (value == ASCII_l) {
+			log.infof("Escape Sequence %s%n", "Set Number of Columns to  80");
+		} // if
 		setInputState(InputState.Text);
 	}// escapeQ3
 
 	private void escapeQ4(byte value) {
 		if (value == ASCII_h) {
 			log.infof("Escape Sequence %s%n", "Set smooth scrolling");
-		}else if (value ==ASCII_l) {
-			log.infof("Escape Sequence %s%n", "Set jump scrolling");	
-		}//if		
+		} else if (value == ASCII_l) {
+			log.infof("Escape Sequence %s%n", "Set jump scrolling");
+		} // if
 		setInputState(InputState.Text);
 	}// escapeQ4
 
 	private void escapeQ5(byte value) {
 		if (value == ASCII_h) {
 			log.infof("Escape Sequence %s%n", "Set reverse video on screen");
-		}else if (value ==ASCII_l) {
-			log.infof("Escape Sequence %s%n", "Set normal video on screen");	
-		}//if		
+		} else if (value == ASCII_l) {
+			log.infof("Escape Sequence %s%n", "Set normal video on screen");
+		} // if
 		setInputState(InputState.Text);
 	}// escapeQ5
 
 	private void escapeQ7(byte value) {
 		if (value == ASCII_h) {
 			log.infof("Escape Sequence %s%n", "Set auto-wrap mode");
-		}else if (value ==ASCII_l) {
-			log.infof("Escape Sequence %s%n", "Reset auto-wrap mode");	
-		}//if		
+		} else if (value == ASCII_l) {
+			log.infof("Escape Sequence %s%n", "Reset auto-wrap mode");
+		} // if
 		setInputState(InputState.Text);
 	}// escapeQ7
 
 	private void escapeNumber(byte value) {
-		switch(value) {
-		case ASCII_SEMI_COLON:			
+		int escapeValue;
+		switch (value) {
+		case ASCII_SEMI_COLON:
 		case ASCII_0:
 		case ASCII_1:
 		case ASCII_2:
@@ -299,19 +302,170 @@ public class VT100 extends DeviceZ80 {
 		case ASCII_8:
 		case ASCII_9:
 			escapeBuffer.add(value);
-			setInputState(InputState.ESC_Number);
-			
-//		case 
-			
-			
-			
-			
+			setInputState(InputState.ESC_NUMBER);
+			break;
+
+		case ASCII_H:
+		case ASCII_f:
+			// check for the;
+			if (escapeBuffer.contains(ASCII_SEMI_COLON)) {
+				String escapeValuesString = getEscapeValuesString();
+				String[] lineRow = escapeValuesString.split(SEMI_COLON);
+				int row = lineRow[0] == null ? 0 : Integer.valueOf(new String(lineRow[0]));
+				int col = lineRow[1] == null ? 0 : Integer.valueOf(new String(lineRow[1]));
+				screen.moveCursor(row, col);
+			} // if
+			setInputState(InputState.Text);
+			break;
+
+		case ASCII_A:
+			screen.moveCursorUp(getEscapeValue());
+			setInputState(InputState.Text);
+			break;
+		case ASCII_B:
+			screen.moveCursorDown(getEscapeValue());
+			setInputState(InputState.Text);
+			break;
+		case ASCII_C:
+			screen.moveCursorRight(getEscapeValue());
+			setInputState(InputState.Text);
+			break;
+		case ASCII_D:
+			screen.moveCursorLeft(getEscapeValue());
+			setInputState(InputState.Text);
+			break;
+
+		case ASCII_h:
+			if (getEscapeValue() == 20) {
+				log.infof("Escape Sequence %s%n", "Set new line mode");
+			} // if
+			setInputState(InputState.Text);
+			break;
+		case ASCII_l:
+			if (getEscapeValue() == 20) {
+				log.infof("Escape Sequence %s%n", "Set line feed mode");
+			} // if
+			setInputState(InputState.Text);
+			break;
+		case ASCII_g:
+			if (getEscapeValue() == 3) {
+				log.infof("Escape Sequence %s%n", "Clear all tabs");
+			} // if
+			setInputState(InputState.Text);
+			break;
+
+		case ASCII_J:
+			switch (getEscapeValue()) {
+			case 0:
+				screen.clearFromCursorDown();
+				setInputState(InputState.Text);
+				break;
+			case 1:
+				log.infof("Escape Sequence %s%n", "Clear screen from cursor up");
+				break;
+			case 2:
+				screen.makeNewScreen();
+				setInputState(InputState.Text);
+				break;
+			default:
+				log.infof("Bad Escape Sequence %s - %02X%n", "ASCII_J", getEscapeValue());
+			}// switch
+
+			setInputState(InputState.Text);
+			break;
+		case ASCII_K:
+			switch (getEscapeValue()) {
+			case 0:
+				screen.clearRight();
+				setInputState(InputState.Text);
+				break;
+			case 1:
+				log.infof("Escape Sequence %s%n", "Clear screen from cursor left");
+				break;
+			case 2:
+				screen.clearEntireLine();
+				setInputState(InputState.Text);
+				break;
+			default:
+				log.infof("Bad Escape Sequence %s - %02X%n", "ASCII_K", getEscapeValue());
+			}// switch
+
+			setInputState(InputState.Text);
+			break;
+
+		case ASCII_q:
+			switch (getEscapeValue()) {
+			case 0:
+				log.infof("Escape Sequence %s%n", "Turn off all four LEDS");
+				break;
+			case 1:
+				log.infof("Escape Sequence %s%n", "Turn on LED #1");
+				break;
+			case 2:
+				log.infof("Escape Sequence %s%n", "Turn on LED #2");
+				break;
+			case 3:
+				log.infof("Escape Sequence %s%n", "Turn on LED #3");
+				break;
+			case 4:
+				log.infof("Escape Sequence %s%n", "Turn on LED #4");
+				break;
+			default:
+				log.infof("Bad Escape Sequence %s - %02X%n", "ASCII_K", getEscapeValue());
+			}// switch
+			setInputState(InputState.Text);
+			break;
+
+		case ASCII_m:
+			switch (getEscapeValue()) {
+			case 0:
+				log.infof("Escape Sequence %s%n", "Turn off all character attributes");
+				break;
+			case 1:
+				log.infof("Escape Sequence %s%n", "Turn bold mode on");
+				break;
+			case 4:
+				log.infof("Escape Sequence %s%n", "Turn underline mode on");
+				break;
+			case 5:
+				log.infof("Escape Sequence %s%n", "Turn blinking mode on");
+				break;
+			case 7:
+				log.infof("Escape Sequence %s%n", "Turn reverse video on");
+				break;
+			case 8:
+				log.infof("Escape Sequence %s%n", "Turn invisible text mode on");
+				break;
+			default:
+				log.infof("Bad Escape Sequence %s - %02X%n", "ASCII_K", getEscapeValue());
+			}// switch
+			setInputState(InputState.Text);
+			break;
+
 		default:
-			setInputState(InputState.Text);		
-		}//switch
-	}//escapeNumber
-	
-	
+			setInputState(InputState.Text);
+		}// switch
+	}// escapeNumber
+
+	private String getEscapeValuesString() {
+		int bufferSize = escapeBuffer.size();
+		byte[] values = new byte[bufferSize];
+		
+		for(int i = 0; i < bufferSize; i++) {
+			values[i] = escapeBuffer.remove();
+		} // while
+		return new String(values);
+	}// getEscapeValuesString
+
+	private int getEscapeValue() {
+		if (escapeBuffer.size() < 1) {
+			return -1;
+		} else {
+			return Integer.valueOf(getEscapeValuesString());
+		} // if
+
+	}// getEscapeValue
+
 	////////////////////////////////////////////////////////
 	@Override
 	public void byteToCPU(Byte value) {
@@ -465,7 +619,10 @@ public class VT100 extends DeviceZ80 {
 	}// closeMyPrefs
 
 	private void setInputState(InputState state) {
-		escapeBuffer.clear();
+		if (state.equals(InputState.Text)) {
+			escapeBuffer.clear();
+		}//if
+
 		inputState = state;
 		lblState.setText(inputState.toString());
 		showCursorPosition();
@@ -740,8 +897,9 @@ public class VT100 extends DeviceZ80 {
 	}// class AdapterVT100
 /* @formatter:off */
 	public enum InputState {
+		ESC_m, ESC_f, ESC_H,ESC_g, ESC_J, ESC_K, 
 		Text, ESC_PART0, ESC_PART1,
-		ESC_SemiColon, ESC_QMark, ESC_Number, ESC_f, ESC_g, ESC_H, ESC_J, ESC_K, ESC_m, ESC_NUMBER,
+		ESC_SemiColon, ESC_QMark,  ESC_NUMBER,
 		ESC_Q1,ESC_Q3,ESC_Q4,ESC_Q5,ESC_Q7,ESC_Q,
 		ESC_N0,ESC_N
 	}// enum InputState
@@ -756,15 +914,17 @@ public class VT100 extends DeviceZ80 {
 	public static final Byte STATUS_OUT_READY = (byte) 0b1000_0000; // MSB set
 
 	private static final String MNU_PROPERTIES = "mnuProperties";
+	private static final String SEMI_COLON = ";";
 
 	private static final byte ASCII_ESC = (byte) 0x1B;// Escape
-	private static final byte ASCII_SEMI_COLON = (byte) 0x3B;// :
+	private static final byte ASCII_SEMI_COLON = (byte) 0x3B;// ;
 	private static final byte ASCII_QMARK = (byte) 0x3F;// ?
 	private static final byte ASCII_f = (byte) 0x66;// f
 	private static final byte ASCII_g = (byte) 0x67;// g
 	private static final byte ASCII_h = (byte) 0x68;// h
 	private static final byte ASCII_l = (byte) 0x6C;// l
 	private static final byte ASCII_m = (byte) 0x6D;// m
+	private static final byte ASCII_q = (byte) 0x71;// q
 	private static final byte ASCII_A = (byte) 0x41;// A
 	private static final byte ASCII_B = (byte) 0x42;// B
 	private static final byte ASCII_C = (byte) 0x43;// C

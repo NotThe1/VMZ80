@@ -143,23 +143,23 @@ public class VT100Display extends DefaultStyledDocument {
 
 	public void moveCursorDown(int count) {
 		int row = currentRow + count;
-		currentRow = row >= SCREEN_ROWS ? SCREEN_ROWS - 1 :row ;
+		currentRow = row >= SCREEN_ROWS ? SCREEN_ROWS - 1 : row;
 		moveCursor(currentRow, currentColumn);
 		// log.infof("Escape Sequence %s%n", "moveCursorDown");
 	}// moveCursorUp
 
 	public void moveCursorRight(int count) {
 		int column = currentColumn + count;
-		currentColumn = column >= screenColumns ? screenColumns - 1 :column ;
+		currentColumn = column >= screenColumns ? screenColumns - 1 : column;
 		moveCursor(currentRow, currentColumn);
-//		log.infof("Escape Sequence %s%n", "moveCursorRight");
+		// log.infof("Escape Sequence %s%n", "moveCursorRight");
 	}// moveCursorUp
 
 	public void moveCursorLeft(int count) {
 		int column = currentColumn - count;
-		currentColumn = column > 0  ? column  : screenColumns- 1;
+		currentColumn = column > 0 ? column : screenColumns - 1;
 		moveCursor(currentRow, currentColumn);
-//		log.infof("Escape Sequence %s%n", "moveCursorLeft");
+		// log.infof("Escape Sequence %s%n", "moveCursorLeft");
 	}// moveCursorUp
 
 	private void incrementCurrentPosition() {
@@ -187,11 +187,29 @@ public class VT100Display extends DefaultStyledDocument {
 		this.setColumn(column);
 		fixCurrentPosition();
 	}// moveCursor
+	
+	public void clearFromCursorDown() {
+		int originalRow = currentRow;
+		int originalColumn = currentColumn;
+		clearRight();
+		while (++currentRow < SCREEN_ROWS) {
+			clearEntireLine();
+		}//while
+		currentRow = originalRow;
+		currentColumn= originalColumn;
+		fixCurrentPosition();
+	}//clearFromCursorDown
+
+	public void clearEntireLine() {
+		this.setColumn(0);
+		clearRight();
+	}// clearEntireLine
 
 	public void clearRight() {
+		int pos = getPosition(currentRow, currentColumn);
 		try {
 			for (int c = currentColumn; c < screenColumns; c++) {
-				this.replace(currentPosition++, 1, ASCII_SPACE, null);
+				this.replace(pos++, 1, ASCII_SPACE, null);
 			} // for
 		} catch (Exception e) {
 			log.infof("[VT100Display.clearRight] $s%n", e.getMessage());
