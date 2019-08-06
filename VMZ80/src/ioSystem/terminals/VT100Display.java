@@ -188,6 +188,20 @@ public class VT100Display extends DefaultStyledDocument {
 		fixCurrentPosition();
 	}// moveCursor
 	
+	public void clearFromCursorUp() {
+		int originalRow = currentRow;
+		int originalColumn = currentColumn;
+		
+		clearLeft();
+		while (--currentRow >= 0) {
+			clearEntireLine();
+		}//while
+		currentRow = originalRow;
+		currentColumn= originalColumn;
+		fixCurrentPosition();
+	}//clearFromCursorDown
+
+	
 	public void clearFromCursorDown() {
 		int originalRow = currentRow;
 		int originalColumn = currentColumn;
@@ -210,6 +224,17 @@ public class VT100Display extends DefaultStyledDocument {
 		try {
 			for (int c = currentColumn; c < screenColumns; c++) {
 				this.replace(pos++, 1, ASCII_SPACE, null);
+			} // for
+		} catch (Exception e) {
+			log.infof("[VT100Display.clearRight] $s%n", e.getMessage());
+		} // try
+		fixCurrentPosition();
+	}// clearRight
+
+	public void clearLeft() {
+		try {
+			for (int pos = getPosition(currentRow,0); pos < currentPosition; pos++) {
+				this.replace(pos, 1, ASCII_SPACE, null);
 			} // for
 		} catch (Exception e) {
 			log.infof("[VT100Display.clearRight] $s%n", e.getMessage());
@@ -274,6 +299,7 @@ public class VT100Display extends DefaultStyledDocument {
 
 	public void setWrap(boolean state) {
 		this.wrap = state;
+		this.truncate = !state;
 	}// setWrap
 
 	public boolean getWrap() {
@@ -282,6 +308,7 @@ public class VT100Display extends DefaultStyledDocument {
 
 	public void setTruncate(boolean state) {
 		this.truncate = state;
+		this.wrap = !state;
 	}// setWrap
 
 	public boolean getTruncate() {
