@@ -204,7 +204,7 @@ public class VT100 extends DeviceZ80 {
 		case ASCII_QMARK:
 			setInputState(InputState.ESC_QMark);
 			break;
-			
+
 		case ASCII_0:
 		case ASCII_1:
 		case ASCII_2:
@@ -264,17 +264,17 @@ public class VT100 extends DeviceZ80 {
 
 	private void escapeQ3(byte value) {
 		int originalScreenColumns = screenColumns;
-		
+
 		if (value == ASCII_h) {
 			screenColumns = 132;
 		} else if (value == ASCII_l) {
 			screenColumns = 80;
 		} // if
-		if (screenColumns !=originalScreenColumns ) {
-				screen.setScreenColumns(screenColumns);
-				setFrameSize(txtScreen, screenColumns);
-				screen.makeNewScreen();	
-		}//if		
+		if (screenColumns != originalScreenColumns) {
+			screen.setScreenColumns(screenColumns);
+			setFrameSize(txtScreen, screenColumns);
+			screen.makeNewScreen();
+		} // if
 		setInputState(InputState.Text);
 	}// escapeQ3
 
@@ -447,41 +447,66 @@ public class VT100 extends DeviceZ80 {
 			break;
 
 		case ASCII_m:
-			switch (getEscapeValue()) {
-			case 0:
-				log.infof("Escape Sequence %s%n", "Turn off all character attributes");
-				break;
-			case 1:
-				log.infof("Escape Sequence %s%n", "Turn bold mode on");
-				break;
-			case 4:
-				log.infof("Escape Sequence %s%n", "Turn underline mode on");
-				break;
-			case 5:
-				log.infof("Escape Sequence %s%n", "Turn blinking mode on");
-				break;
-			case 7:
-				log.infof("Escape Sequence %s%n", "Turn reverse video on");
-				break;
-			case 8:
-				log.infof("Escape Sequence %s%n", "Turn invisible text mode on");
-				break;
-			default:
-				log.infof("Bad Escape Sequence %s - %02X%n", "ASCII_K", getEscapeValue());
-			}// switch
-			setInputState(InputState.Text);
-			break;
+//			if (escapeBuffer.contains(ASCII_SEMI_COLON)) {
+//				String escapeValuesString = getEscapeValuesString();
+//				String[] attributes = escapeValuesString.split(SEMI_COLON);
+//				for(String attribute:attributes) {
+//					setCharacterAttribute(Integer.valueOf(attribute));
+//				}//for
+//			} else {
+//				setCharacterAttribute(getEscapeValue());
+//			} // if
 
-		default:
-			setInputState(InputState.Text);
+			String escapeValuesString = getEscapeValuesString();
+			String[] attributes = escapeValuesString.split(SEMI_COLON);
+			for(String attribute:attributes) {
+				setCharacterAttribute(Integer.valueOf(attribute));
+			}//for
 		}// switch
+
 	}// escapeNumber
+
+	private void setCharacterAttribute(int m_value) {
+		switch (m_value) {
+		case 0:
+			log.infof("Escape Sequence %s%n", "Turn off all character attributes");
+			break;
+		case 1:
+			log.infof("Escape Sequence %s%n", "Turn bold mode on");
+			break;
+		case 2:
+			log.infof("Escape Sequence %s%n", "Turn Low intensity  mode on");
+			break;
+		case 3:
+			log.infof("Escape Sequence %s%n", "Turn italics  mode on");
+			break;
+		case 4:
+			log.infof("Escape Sequence %s%n", "Turn underline mode on");
+			break;
+		case 5:
+			log.infof("Escape Sequence %s%n", "Turn blinking mode on");
+			break;
+		case 6:
+			log.infof("Escape Sequence %s%n", "Turn rapid blinking mode on");
+			break;
+		case 7:
+			log.infof("Escape Sequence %s%n", "Turn reverse video on");
+			break;
+		case 8:
+			log.infof("Escape Sequence %s%n", "Turn invisible text mode on");
+			break;
+		default:
+			log.infof("Bad Escape Sequence %s - %02X%n", "ASCII_K", getEscapeValue());
+		}// switch
+		setInputState(InputState.Text);
+
+	}// getEscapeNumber_m
 
 	private String getEscapeValuesString() {
 		int bufferSize = escapeBuffer.size();
 		byte[] values = new byte[bufferSize];
-		
-		for(int i = 0; i < bufferSize; i++) {
+
+		for (int i = 0; i < bufferSize; i++) {
 			values[i] = escapeBuffer.remove();
 		} // while
 		return new String(values);
@@ -637,7 +662,7 @@ public class VT100 extends DeviceZ80 {
 		setInputState(InputState.Text);
 		showCursorPosition();
 
-//		 frameVT100.setSize(761, 693);
+		// frameVT100.setSize(761, 693);
 
 	}// appInit
 
@@ -655,7 +680,7 @@ public class VT100 extends DeviceZ80 {
 	private void setInputState(InputState state) {
 		if (state.equals(InputState.Text)) {
 			escapeBuffer.clear();
-		}//if
+		} // if
 
 		inputState = state;
 		lblState.setText(inputState.toString());
@@ -672,7 +697,7 @@ public class VT100 extends DeviceZ80 {
 	private void initialize() {
 		frameVT100 = new JFrame();
 		frameVT100.setTitle("VT100              Rev 0.0.B");
-//		frameVT100.setSize(700, 600);
+		// frameVT100.setSize(700, 600);
 		frameVT100.setResizable(false);
 		GridBagLayout gridBagLayout = new GridBagLayout();
 		gridBagLayout.columnWidths = new int[] { 0, 0 };
@@ -714,7 +739,8 @@ public class VT100 extends DeviceZ80 {
 		GridBagLayout gbl_panelStatus = new GridBagLayout();
 		gbl_panelStatus.columnWidths = new int[] { 0, 150, 0, 0, 0, 150, 0, 0, 0, 0, 0 };
 		gbl_panelStatus.rowHeights = new int[] { 18, 0 };
-		gbl_panelStatus.columnWeights = new double[] { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, Double.MIN_VALUE };
+		gbl_panelStatus.columnWeights = new double[] { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+				Double.MIN_VALUE };
 		gbl_panelStatus.rowWeights = new double[] { 0.0, Double.MIN_VALUE };
 		panelStatus.setLayout(gbl_panelStatus);
 
@@ -724,7 +750,7 @@ public class VT100 extends DeviceZ80 {
 		gbc_rigidArea.gridx = 0;
 		gbc_rigidArea.gridy = 0;
 		panelStatus.add(rigidArea, gbc_rigidArea);
-		
+
 		panel = new JPanel();
 		panel.setBorder(new BevelBorder(BevelBorder.LOWERED, null, null, null, null));
 		GridBagConstraints gbc_panel = new GridBagConstraints();
@@ -738,21 +764,21 @@ public class VT100 extends DeviceZ80 {
 		gbl_panel.columnWeights = new double[] { 0.0, 0.0, 0.0, 0.0 };
 		gbl_panel.rowWeights = new double[] { 0.0 };
 		panel.setLayout(gbl_panel);
-		
+
 		rbLED1 = new JRadioButton("1");
 		GridBagConstraints gbc_rbLED1 = new GridBagConstraints();
 		gbc_rbLED1.insets = new Insets(0, 0, 0, 5);
 		gbc_rbLED1.gridx = 0;
 		gbc_rbLED1.gridy = 0;
 		panel.add(rbLED1, gbc_rbLED1);
-		
+
 		rbLED2 = new JRadioButton("2");
 		GridBagConstraints gbc_rbLED2 = new GridBagConstraints();
 		gbc_rbLED2.insets = new Insets(0, 0, 0, 5);
 		gbc_rbLED2.gridx = 1;
 		gbc_rbLED2.gridy = 0;
 		panel.add(rbLED2, gbc_rbLED2);
-		
+
 		rbLED3 = new JRadioButton("3");
 		rbLED3.setHorizontalAlignment(SwingConstants.CENTER);
 		GridBagConstraints gbc_rbLED3 = new GridBagConstraints();
@@ -760,20 +786,20 @@ public class VT100 extends DeviceZ80 {
 		gbc_rbLED3.gridx = 2;
 		gbc_rbLED3.gridy = 0;
 		panel.add(rbLED3, gbc_rbLED3);
-		
+
 		rbLED4 = new JRadioButton("4");
 		GridBagConstraints gbc_rbLED4 = new GridBagConstraints();
 		gbc_rbLED4.gridx = 3;
 		gbc_rbLED4.gridy = 0;
 		panel.add(rbLED4, gbc_rbLED4);
-		
+
 		rigidArea_4 = Box.createRigidArea(new Dimension(20, 20));
 		GridBagConstraints gbc_rigidArea_4 = new GridBagConstraints();
 		gbc_rigidArea_4.insets = new Insets(0, 0, 0, 5);
 		gbc_rigidArea_4.gridx = 2;
 		gbc_rigidArea_4.gridy = 0;
 		panelStatus.add(rigidArea_4, gbc_rigidArea_4);
-		
+
 		panel_4 = new JPanel();
 		panel_4.setBorder(new BevelBorder(BevelBorder.LOWERED, null, null, null, null));
 		GridBagConstraints gbc_panel_4 = new GridBagConstraints();
@@ -783,17 +809,17 @@ public class VT100 extends DeviceZ80 {
 		gbc_panel_4.gridy = 0;
 		panelStatus.add(panel_4, gbc_panel_4);
 		GridBagLayout gbl_panel_4 = new GridBagLayout();
-		gbl_panel_4.columnWidths = new int[]{0, 0, 0};
-		gbl_panel_4.rowHeights = new int[]{18, 0};
-		gbl_panel_4.columnWeights = new double[]{0.0, 0.0, Double.MIN_VALUE};
-		gbl_panel_4.rowWeights = new double[]{0.0, Double.MIN_VALUE};
+		gbl_panel_4.columnWidths = new int[] { 0, 0, 0 };
+		gbl_panel_4.rowHeights = new int[] { 18, 0 };
+		gbl_panel_4.columnWeights = new double[] { 0.0, 0.0, Double.MIN_VALUE };
+		gbl_panel_4.rowWeights = new double[] { 0.0, Double.MIN_VALUE };
 		panel_4.setLayout(gbl_panel_4);
-		
-				lblKeyChar = new JLabel("");
-				GridBagConstraints gbc_lblKeyChar = new GridBagConstraints();
-				gbc_lblKeyChar.gridx = 1;
-				gbc_lblKeyChar.gridy = 0;
-				panel_4.add(lblKeyChar, gbc_lblKeyChar);
+
+		lblKeyChar = new JLabel("");
+		GridBagConstraints gbc_lblKeyChar = new GridBagConstraints();
+		gbc_lblKeyChar.gridx = 1;
+		gbc_lblKeyChar.gridy = 0;
+		panel_4.add(lblKeyChar, gbc_lblKeyChar);
 
 		rigidArea_1 = Box.createRigidArea(new Dimension(30, 15));
 		GridBagConstraints gbc_rigidArea_1 = new GridBagConstraints();
