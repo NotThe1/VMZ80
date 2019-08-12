@@ -12,6 +12,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.util.LinkedList;
@@ -19,7 +21,9 @@ import java.util.Queue;
 import java.util.concurrent.TimeUnit;
 import java.util.prefs.Preferences;
 
+import javax.swing.AbstractButton;
 import javax.swing.Box;
+import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JMenu;
@@ -28,8 +32,9 @@ import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
+import javax.swing.JRadioButtonMenuItem;
+import javax.swing.JSeparator;
 import javax.swing.JTextPane;
-import javax.swing.SwingConstants;
 import javax.swing.border.BevelBorder;
 import javax.swing.text.JTextComponent;
 
@@ -53,7 +58,7 @@ public class VT100 extends DeviceZ80 {
 
 	private int screenColumns;
 	private int lineLength; // accounts for System.lineSeparator
-	private boolean escapeMode;
+	private String screenTitle = "VT100            Rev 1.0";
 
 	private InputState inputState;
 
@@ -83,12 +88,6 @@ public class VT100 extends DeviceZ80 {
 		} // while - true }// run
 	}// run
 
-	// private void setEscapeMode(InputState inState) {
-	// inputState = inState;
-	// showInputState();
-	// escapeBuffer.clear();
-	// }// setEscapeMode
-
 	private void setFrameSize(JTextComponent component, int columns) {
 		Insets insetsFrame = frameVT100.getInsets();
 		Insets insetsContentPane = frameVT100.getContentPane().getInsets();
@@ -117,7 +116,7 @@ public class VT100 extends DeviceZ80 {
 			if (value == ASCII_ESC) {// Escape 0x1B
 				setInputState(InputState.ESC_PART0);
 			} else {
-				screen.asciiInFromCPU((byte) (value & 0x7F));
+				asciiInFromCPU((byte) (value & 0x7F));
 			} // if
 			break;
 		case ESC_PART0:
@@ -157,6 +156,34 @@ public class VT100 extends DeviceZ80 {
 		showCursorPosition();
 
 	}// byteFromCPU
+
+	private void asciiInFromCPU(byte value) {
+		int usi = Byte.toUnsignedInt(value);
+
+		if ((usi >= ASCII_SPACE) && (usi < ASCII_DEL)) {
+			screen.displayOnScreen(Character.toString((char) (value)));
+		} else {
+			switch (value) {
+			case ASCII_LF:
+				screen.nextLine();
+			case ASCII_CR:
+				screen.carriageReturn();
+				break;
+			case ASCII_BS:
+				screen.backSpace();
+				break;
+			case ASCII_TAB:
+				screen.doTab();
+				break;
+			case ASCII_DEL:
+				screen.doDel();
+				break;
+			default:
+				/* Ignore the rest */
+			}// switch
+		} // if else
+
+	}// asciiFromCPU
 
 	private void escape1(byte value) {
 		switch (value) {
@@ -234,19 +261,19 @@ public class VT100 extends DeviceZ80 {
 	private void escapeQMark(byte value) {
 		switch (value) {
 		case ASCII_1:
-			setInputState(inputState.ESC_Q1);
+			setInputState(InputState.ESC_Q1);
 			break;
 		case ASCII_3:
-			setInputState(inputState.ESC_Q3);
+			setInputState(InputState.ESC_Q3);
 			break;
 		case ASCII_4:
-			setInputState(inputState.ESC_Q4);
+			setInputState(InputState.ESC_Q4);
 			break;
 		case ASCII_5:
-			setInputState(inputState.ESC_Q5);
+			setInputState(InputState.ESC_Q5);
 			break;
 		case ASCII_7:
-			setInputState(inputState.ESC_Q7);
+			setInputState(InputState.ESC_Q7);
 			break;
 		default:
 			setInputState(InputState.Text);
@@ -308,7 +335,7 @@ public class VT100 extends DeviceZ80 {
 	}// escapeQ7
 
 	private void escapeNumber(byte value) {
-		int escapeValue;
+		// int escapeValue;
 		switch (value) {
 		case ASCII_SEMI_COLON:
 		case ASCII_0:
@@ -447,21 +474,21 @@ public class VT100 extends DeviceZ80 {
 			break;
 
 		case ASCII_m:
-//			if (escapeBuffer.contains(ASCII_SEMI_COLON)) {
-//				String escapeValuesString = getEscapeValuesString();
-//				String[] attributes = escapeValuesString.split(SEMI_COLON);
-//				for(String attribute:attributes) {
-//					setCharacterAttribute(Integer.valueOf(attribute));
-//				}//for
-//			} else {
-//				setCharacterAttribute(getEscapeValue());
-//			} // if
+			// if (escapeBuffer.contains(ASCII_SEMI_COLON)) {
+			// String escapeValuesString = getEscapeValuesString();
+			// String[] attributes = escapeValuesString.split(SEMI_COLON);
+			// for(String attribute:attributes) {
+			// setCharacterAttribute(Integer.valueOf(attribute));
+			// }//for
+			// } else {
+			// setCharacterAttribute(getEscapeValue());
+			// } // if
 
 			String escapeValuesString = getEscapeValuesString();
 			String[] attributes = escapeValuesString.split(SEMI_COLON);
-			for(String attribute:attributes) {
+			for (String attribute : attributes) {
 				setCharacterAttribute(Integer.valueOf(attribute));
-			}//for
+			} // for
 		}// switch
 
 	}// escapeNumber
@@ -543,7 +570,7 @@ public class VT100 extends DeviceZ80 {
 	}// isVisible
 
 	private void showCursorPosition() {
-		String msg = String.format("Row; %d,Column: %d", screen.getRow(), screen.getColumn());
+		String msg = String.format("Row; %d, Col: %d", screen.getRow(), screen.getColumn());
 		lblCursorPosition.setText(msg);
 	}// showCursorPosition
 
@@ -582,7 +609,30 @@ public class VT100 extends DeviceZ80 {
 		dialogProperties.close();
 		dialogProperties = null;
 		return;
-	}//
+	}//show SetPropertiesDialog
+	
+	private void doSetPanelVisible(AbstractButton source) {
+		boolean state = source.isSelected();
+		switch(source.getActionCommand()) {
+		case MNU_SETTINGS_LEDS:	
+			panelLeds.setVisible(state);
+			break;
+		case MNU_SETTINGS_KEY_IN:
+			panelKey.setVisible(state);
+			break;
+		case MNU_SETTINGS_FROM_CPU:
+			panelInChar.setVisible(state);
+			break;
+		case MNU_SETTINGS_ROW_COLUMN:
+			panelRowColumn.setVisible(state);
+			break;
+		case MNU_SETTINGS_STATE:
+			panelState.setVisible(state);
+			break;
+			default:
+				log.errorf("[VT100.doSetPanelVisible] error %s%n",source.getActionCommand());
+		}//switch
+	}//doSetPanelVisible
 
 	private void setProperties(Preferences myPrefs) {
 		Font font = new Font(myPrefs.get("FontFamily", "Courier"), myPrefs.getInt("FontStyle", Font.PLAIN),
@@ -598,6 +648,14 @@ public class VT100 extends DeviceZ80 {
 		screen.setScreenColumns(myPrefs.getInt("Columns", 80));
 		screen.setTruncate(myPrefs.getBoolean("ScreenTruncate", true));
 		screen.setWrap(myPrefs.getBoolean("ScreenWrap", false));
+		
+		panelLeds.setVisible(myPrefs.getBoolean("PanelLeds", true));
+		panelKey.setVisible(myPrefs.getBoolean("PanelKey", true));
+		panelInChar.setVisible(myPrefs.getBoolean("PanelInChar", true));
+		panelRowColumn.setVisible(myPrefs.getBoolean("PanelRowColumn", true));
+		panelState.setVisible(myPrefs.getBoolean("PanelState", true));
+		
+
 
 	}// setProperties
 
@@ -632,11 +690,17 @@ public class VT100 extends DeviceZ80 {
 		myPrefs.putBoolean("ScreenTruncate", screen.getTruncate());
 		myPrefs.putBoolean("ScreenWrap", screen.getWrap());
 
+		myPrefs.putBoolean("PanelLeds", panelLeds.isVisible());
+		myPrefs.putBoolean("PanelInChar", panelInChar.isVisible());
+		myPrefs.putBoolean("PanelKey", panelKey.isVisible());
+		myPrefs.putBoolean("PanelRowColumn", panelRowColumn.isVisible());
+		myPrefs.putBoolean("PanelState", panelState.isVisible());
 		closeMyPrefs(myPrefs);
 	}// appClose
 
 	private void appInit() {
 		screen = new VT100Display(txtScreen);
+		txtScreen.getCaret().setVisible(true);
 
 		Preferences myPrefs = getMyPrefs();
 		frameVT100.setSize(myPrefs.getInt("Width", 761), myPrefs.getInt("Height", 693));
@@ -646,12 +710,16 @@ public class VT100 extends DeviceZ80 {
 
 		closeMyPrefs(myPrefs);
 		// screen = txtScreen.getStyledDocument();
+		mnuSettingsLeds.setSelected(panelLeds.isVisible());
+		mnuSettingsKeyboardCharacter.setSelected(panelKey.isVisible());
+		mnuSettingsFromCPU.setSelected(panelInChar.isVisible());
+		mnuSettingsState.setSelected(panelState.isVisible());
+		mnuSettingsRowColumn.setSelected(panelRowColumn.isVisible());
 
 		setFrameSize(txtScreen, screenColumns);
 		screen.makeNewScreen();
 		// txtScreen.setFont(new Font("Courier New", Font.BOLD, 24));
 
-		escapeMode = false;
 		escapeBuffer.clear();
 		internalBuffer.clear();
 
@@ -662,8 +730,8 @@ public class VT100 extends DeviceZ80 {
 		setInputState(InputState.Text);
 		showCursorPosition();
 
-		// frameVT100.setSize(761, 693);
-
+		frameVT100.setSize(761, 693);
+		frameVT100.setVisible(true);
 	}// appInit
 
 	private Preferences getMyPrefs() {
@@ -696,7 +764,7 @@ public class VT100 extends DeviceZ80 {
 	 */
 	private void initialize() {
 		frameVT100 = new JFrame();
-		frameVT100.setTitle("VT100              Rev 0.0.B");
+		frameVT100.setTitle(screenTitle);
 		// frameVT100.setSize(700, 600);
 		frameVT100.setResizable(false);
 		GridBagLayout gridBagLayout = new GridBagLayout();
@@ -723,185 +791,194 @@ public class VT100 extends DeviceZ80 {
 		txtScreen.setEditable(false);
 		txtScreen.setCaretColor(Color.RED);
 		txtScreen.addKeyListener(adapterVT100);
+		txtScreen.addMouseListener(adapterVT100);
 		txtScreen.setBackground(Color.LIGHT_GRAY);
-		// scrollPane.setViewportView(txtScreen);
 		GridBagConstraints gbc_txtScreen = new GridBagConstraints();
 		gbc_txtScreen.fill = GridBagConstraints.BOTH;
 		panelMain.add(txtScreen, gbc_txtScreen);
 
 		panelStatus = new JPanel();
+		panelStatus.setBackground(Color.DARK_GRAY);
 		panelStatus.setBorder(new BevelBorder(BevelBorder.LOWERED, null, null, null, null));
 		GridBagConstraints gbc_panelStatus = new GridBagConstraints();
-		gbc_panelStatus.anchor = GridBagConstraints.WEST;
+		gbc_panelStatus.fill = GridBagConstraints.HORIZONTAL;
 		gbc_panelStatus.gridx = 0;
 		gbc_panelStatus.gridy = 1;
 		frameVT100.getContentPane().add(panelStatus, gbc_panelStatus);
 		GridBagLayout gbl_panelStatus = new GridBagLayout();
-		gbl_panelStatus.columnWidths = new int[] { 0, 150, 0, 0, 0, 150, 0, 0, 0, 0, 0 };
-		gbl_panelStatus.rowHeights = new int[] { 18, 0 };
-		gbl_panelStatus.columnWeights = new double[] { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-				Double.MIN_VALUE };
-		gbl_panelStatus.rowWeights = new double[] { 0.0, Double.MIN_VALUE };
+		gbl_panelStatus.columnWidths = new int[] { 0, 0, 0, 0, 0, 0, 0 };
+		gbl_panelStatus.rowHeights = new int[] { 18 };
+		gbl_panelStatus.columnWeights = new double[] { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+				0.0 };
+		gbl_panelStatus.rowWeights = new double[] { 0.0 };
 		panelStatus.setLayout(gbl_panelStatus);
 
-		rigidArea = Box.createRigidArea(new Dimension(30, 15));
-		GridBagConstraints gbc_rigidArea = new GridBagConstraints();
-		gbc_rigidArea.insets = new Insets(0, 0, 0, 5);
-		gbc_rigidArea.gridx = 0;
-		gbc_rigidArea.gridy = 0;
-		panelStatus.add(rigidArea, gbc_rigidArea);
+//		rigidArea = Box.createRigidArea(new Dimension(30, 15));
+//		GridBagConstraints gbc_rigidArea = new GridBagConstraints();
+//		gbc_rigidArea.insets = new Insets(0, 0, 0, 5);
+//		gbc_rigidArea.gridx = 0;
+//		gbc_rigidArea.gridy = 0;
+//		panelStatus.add(rigidArea, gbc_rigidArea);
 
-		panel = new JPanel();
-		panel.setBorder(new BevelBorder(BevelBorder.LOWERED, null, null, null, null));
-		GridBagConstraints gbc_panel = new GridBagConstraints();
-		gbc_panel.insets = new Insets(0, 0, 0, 5);
-		gbc_panel.gridx = 1;
-		gbc_panel.gridy = 0;
-		panelStatus.add(panel, gbc_panel);
-		GridBagLayout gbl_panel = new GridBagLayout();
-		gbl_panel.columnWidths = new int[] { 50, 45, 45, 45 };
-		gbl_panel.rowHeights = new int[] { 15 };
-		gbl_panel.columnWeights = new double[] { 0.0, 0.0, 0.0, 0.0 };
-		gbl_panel.rowWeights = new double[] { 0.0 };
-		panel.setLayout(gbl_panel);
+		panelLeds = new JPanel();
+		panelLeds.setBorder(new BevelBorder(BevelBorder.LOWERED, null, null, null, null));
+		GridBagConstraints gbc_panelLeds = new GridBagConstraints();
+		gbc_panelLeds.anchor = GridBagConstraints.WEST;
+		gbc_panelLeds.fill = GridBagConstraints.HORIZONTAL;
+		gbc_panelLeds.insets = new Insets(0, 0, 0, 5);
+		gbc_panelLeds.gridx = 1;
+		gbc_panelLeds.gridy = 0;
+		panelStatus.add(panelLeds, gbc_panelLeds);
+		GridBagLayout gbl_panelLeds = new GridBagLayout();
+		gbl_panelLeds.columnWidths = new int[] { 50, 45, 45, 45 };
+		gbl_panelLeds.rowHeights = new int[] {18};
+		gbl_panelLeds.columnWeights = new double[] { 0.0, 0.0, 0.0, 0.0 };
+		gbl_panelLeds.rowWeights = new double[] { 0.0 };
+		panelLeds.setLayout(gbl_panelLeds);
 
 		rbLED1 = new JRadioButton("1");
 		GridBagConstraints gbc_rbLED1 = new GridBagConstraints();
 		gbc_rbLED1.insets = new Insets(0, 0, 0, 5);
 		gbc_rbLED1.gridx = 0;
 		gbc_rbLED1.gridy = 0;
-		panel.add(rbLED1, gbc_rbLED1);
+		panelLeds.add(rbLED1, gbc_rbLED1);
 
 		rbLED2 = new JRadioButton("2");
 		GridBagConstraints gbc_rbLED2 = new GridBagConstraints();
 		gbc_rbLED2.insets = new Insets(0, 0, 0, 5);
 		gbc_rbLED2.gridx = 1;
 		gbc_rbLED2.gridy = 0;
-		panel.add(rbLED2, gbc_rbLED2);
+		panelLeds.add(rbLED2, gbc_rbLED2);
 
 		rbLED3 = new JRadioButton("3");
-		rbLED3.setHorizontalAlignment(SwingConstants.CENTER);
 		GridBagConstraints gbc_rbLED3 = new GridBagConstraints();
 		gbc_rbLED3.insets = new Insets(0, 0, 0, 5);
 		gbc_rbLED3.gridx = 2;
 		gbc_rbLED3.gridy = 0;
-		panel.add(rbLED3, gbc_rbLED3);
+		panelLeds.add(rbLED3, gbc_rbLED3);
 
 		rbLED4 = new JRadioButton("4");
 		GridBagConstraints gbc_rbLED4 = new GridBagConstraints();
 		gbc_rbLED4.gridx = 3;
 		gbc_rbLED4.gridy = 0;
-		panel.add(rbLED4, gbc_rbLED4);
+		panelLeds.add(rbLED4, gbc_rbLED4);
 
-		rigidArea_4 = Box.createRigidArea(new Dimension(20, 20));
-		GridBagConstraints gbc_rigidArea_4 = new GridBagConstraints();
-		gbc_rigidArea_4.insets = new Insets(0, 0, 0, 5);
-		gbc_rigidArea_4.gridx = 2;
-		gbc_rigidArea_4.gridy = 0;
-		panelStatus.add(rigidArea_4, gbc_rigidArea_4);
+//		rigidArea_4 = Box.createRigidArea(new Dimension(20, 20));
+//		GridBagConstraints gbc_rigidArea_4 = new GridBagConstraints();
+//		gbc_rigidArea_4.insets = new Insets(0, 0, 0, 5);
+//		gbc_rigidArea_4.gridx = 2;
+//		gbc_rigidArea_4.gridy = 0;
+//		panelStatus.add(rigidArea_4, gbc_rigidArea_4);
 
-		panel_4 = new JPanel();
-		panel_4.setBorder(new BevelBorder(BevelBorder.LOWERED, null, null, null, null));
-		GridBagConstraints gbc_panel_4 = new GridBagConstraints();
-		gbc_panel_4.fill = GridBagConstraints.BOTH;
-		gbc_panel_4.insets = new Insets(0, 0, 0, 5);
-		gbc_panel_4.gridx = 3;
-		gbc_panel_4.gridy = 0;
-		panelStatus.add(panel_4, gbc_panel_4);
-		GridBagLayout gbl_panel_4 = new GridBagLayout();
-		gbl_panel_4.columnWidths = new int[] { 0, 0, 0 };
-		gbl_panel_4.rowHeights = new int[] { 18, 0 };
-		gbl_panel_4.columnWeights = new double[] { 0.0, 0.0, Double.MIN_VALUE };
-		gbl_panel_4.rowWeights = new double[] { 0.0, Double.MIN_VALUE };
-		panel_4.setLayout(gbl_panel_4);
+		panelKey = new JPanel();
+		panelKey.setBorder(new BevelBorder(BevelBorder.LOWERED, null, null, null, null));
+		GridBagConstraints gbc_panelKey = new GridBagConstraints();
+		gbc_panelKey.anchor = GridBagConstraints.CENTER;
+		gbc_panelKey.fill = GridBagConstraints.HORIZONTAL;
+		gbc_panelKey.insets = new Insets(0, 0, 0, 5);
+		gbc_panelKey.gridx = 2;
+		gbc_panelKey.gridy = 0;
+		panelStatus.add(panelKey, gbc_panelKey);
+		GridBagLayout gbl_panelKey = new GridBagLayout();
+		gbl_panelKey.columnWidths = new int[] {20};
+		gbl_panelKey.rowHeights = new int[] {18};
+		gbl_panelKey.columnWeights = new double[] { 0.0};
+		gbl_panelKey.rowWeights = new double[] { 0.0 };
+		panelKey.setLayout(gbl_panelKey);
 
-		lblKeyChar = new JLabel("");
+		lblKeyChar = new JLabel("KB Char =   [    ]");
 		GridBagConstraints gbc_lblKeyChar = new GridBagConstraints();
+		gbc_lblKeyChar.fill = GridBagConstraints.HORIZONTAL;
 		gbc_lblKeyChar.gridx = 1;
 		gbc_lblKeyChar.gridy = 0;
-		panel_4.add(lblKeyChar, gbc_lblKeyChar);
+		panelKey.add(lblKeyChar, gbc_lblKeyChar);
 
-		rigidArea_1 = Box.createRigidArea(new Dimension(30, 15));
-		GridBagConstraints gbc_rigidArea_1 = new GridBagConstraints();
-		gbc_rigidArea_1.insets = new Insets(0, 0, 0, 5);
-		gbc_rigidArea_1.gridx = 4;
-		gbc_rigidArea_1.gridy = 0;
-		panelStatus.add(rigidArea_1, gbc_rigidArea_1);
-
-		panel_1 = new JPanel();
-		panel_1.setBorder(new BevelBorder(BevelBorder.LOWERED, null, null, null, null));
-		GridBagConstraints gbc_panel_1 = new GridBagConstraints();
-		gbc_panel_1.insets = new Insets(0, 0, 0, 5);
-		gbc_panel_1.gridx = 5;
-		gbc_panel_1.gridy = 0;
-		panelStatus.add(panel_1, gbc_panel_1);
-		GridBagLayout gbl_panel_1 = new GridBagLayout();
-		gbl_panel_1.columnWidths = new int[] { 100 };
-		gbl_panel_1.rowHeights = new int[] { 15 };
-		gbl_panel_1.columnWeights = new double[] { 0.0 };
-		gbl_panel_1.rowWeights = new double[] { 0.0 };
-		panel_1.setLayout(gbl_panel_1);
+//		rigidArea_1 = Box.createRigidArea(new Dimension(30, 15));
+//		GridBagConstraints gbc_rigidArea_1 = new GridBagConstraints();
+//		gbc_rigidArea_1.insets = new Insets(0, 0, 0, 5);
+//		gbc_rigidArea_1.gridx = 4;
+//		gbc_rigidArea_1.gridy = 0;
+//		panelStatus.add(rigidArea_1, gbc_rigidArea_1);
+//
+		panelInChar = new JPanel();
+		panelInChar.setBorder(new BevelBorder(BevelBorder.LOWERED, null, null, null, null));
+		GridBagConstraints gbc_panelInChar = new GridBagConstraints();
+		gbc_panelInChar.anchor = GridBagConstraints.WEST;
+		gbc_panelInChar.fill = GridBagConstraints.HORIZONTAL;
+		gbc_panelInChar.insets = new Insets(0, 0, 0, 5);
+		gbc_panelInChar.gridx = 3;
+		gbc_panelInChar.gridy = 0;
+		panelStatus.add(panelInChar, gbc_panelInChar);
+		GridBagLayout gbl_panelInChar = new GridBagLayout();
+		gbl_panelInChar.columnWidths = new int[] { 100 };
+		gbl_panelInChar.rowHeights = new int[] {18};
+		gbl_panelInChar.columnWeights = new double[] { 0.0 };
+		gbl_panelInChar.rowWeights = new double[] { 0.0 };
+		panelInChar.setLayout(gbl_panelInChar);
 
 		lblInChar = new JLabel("");
 		GridBagConstraints gbc_lblInChar = new GridBagConstraints();
 		gbc_lblInChar.gridx = 0;
 		gbc_lblInChar.gridy = 0;
-		panel_1.add(lblInChar, gbc_lblInChar);//
+		panelInChar.add(lblInChar, gbc_lblInChar);//
 
-		rigidArea_2 = Box.createRigidArea(new Dimension(30, 15));
-		GridBagConstraints gbc_rigidArea_2 = new GridBagConstraints();
-		gbc_rigidArea_2.insets = new Insets(0, 0, 0, 5);
-		gbc_rigidArea_2.gridx = 6;
-		gbc_rigidArea_2.gridy = 0;
-		panelStatus.add(rigidArea_2, gbc_rigidArea_2);
+//		rigidArea_2 = Box.createRigidArea(new Dimension(30, 15));
+//		GridBagConstraints gbc_rigidArea_2 = new GridBagConstraints();
+//		gbc_rigidArea_2.insets = new Insets(0, 0, 0, 5);
+//		gbc_rigidArea_2.gridx = 6;
+//		gbc_rigidArea_2.gridy = 0;
+//		panelStatus.add(rigidArea_2, gbc_rigidArea_2);
 
-		JPanel panel_2 = new JPanel();
-		panel_2.setBorder(new BevelBorder(BevelBorder.LOWERED, null, null, null, null));
-		GridBagConstraints gbc_panel_2 = new GridBagConstraints();
-		gbc_panel_2.anchor = GridBagConstraints.WEST;
-		gbc_panel_2.insets = new Insets(0, 0, 0, 5);
-		gbc_panel_2.gridx = 7;
-		gbc_panel_2.gridy = 0;
-		panelStatus.add(panel_2, gbc_panel_2);
-		GridBagLayout gbl_panel_2 = new GridBagLayout();
-		gbl_panel_2.columnWidths = new int[] { 200 };
-		gbl_panel_2.rowHeights = new int[] { 15 };
-		gbl_panel_2.columnWeights = new double[] { 0.0 };
-		gbl_panel_2.rowWeights = new double[] { 0.0 };
-		panel_2.setLayout(gbl_panel_2);
+		panelRowColumn = new JPanel();
+		panelRowColumn.setBorder(new BevelBorder(BevelBorder.LOWERED, null, null, null, null));
+		GridBagConstraints gbc_panelRowColumn = new GridBagConstraints();
+		gbc_panelRowColumn.anchor = GridBagConstraints.WEST;
+		gbc_panelRowColumn.fill = GridBagConstraints.HORIZONTAL;
+		gbc_panelRowColumn.insets = new Insets(0, 0, 0, 5);
+		gbc_panelRowColumn.gridx = 4;
+		gbc_panelRowColumn.gridy = 0;
+		panelStatus.add(panelRowColumn, gbc_panelRowColumn);
+		GridBagLayout gbl_panelRowColumn = new GridBagLayout();
+		gbl_panelRowColumn.columnWidths = new int[] { 100 };
+		gbl_panelRowColumn.rowHeights = new int[] {18};
+		gbl_panelRowColumn.columnWeights = new double[] { 0.0 };
+		gbl_panelRowColumn.rowWeights = new double[] { 0.0 };
+		panelRowColumn.setLayout(gbl_panelRowColumn);
 
 		lblCursorPosition = new JLabel("Row: rr,  Column: ccc");
 		GridBagConstraints gbc_lblCursorPosition = new GridBagConstraints();
 		gbc_lblCursorPosition.gridx = 0;
 		gbc_lblCursorPosition.gridy = 0;
-		panel_2.add(lblCursorPosition, gbc_lblCursorPosition);
+		panelRowColumn.add(lblCursorPosition, gbc_lblCursorPosition);
 
-		rigidArea_3 = Box.createRigidArea(new Dimension(30, 15));
-		GridBagConstraints gbc_rigidArea_3 = new GridBagConstraints();
-		gbc_rigidArea_3.insets = new Insets(0, 0, 0, 5);
-		gbc_rigidArea_3.gridx = 8;
-		gbc_rigidArea_3.gridy = 0;
-		panelStatus.add(rigidArea_3, gbc_rigidArea_3);
+//		rigidArea_3 = Box.createRigidArea(new Dimension(30, 15));
+//		GridBagConstraints gbc_rigidArea_3 = new GridBagConstraints();
+//		gbc_rigidArea_3.insets = new Insets(0, 0, 0, 5);
+//		gbc_rigidArea_3.gridx = 8;
+//		gbc_rigidArea_3.gridy = 0;
+//		panelStatus.add(rigidArea_3, gbc_rigidArea_3);
 
-		panel_3 = new JPanel();
-		panel_3.setBorder(new BevelBorder(BevelBorder.LOWERED, null, null, null, null));
-		GridBagConstraints gbc_panel_3 = new GridBagConstraints();
-		gbc_panel_3.fill = GridBagConstraints.HORIZONTAL;
-		gbc_panel_3.gridx = 9;
-		gbc_panel_3.gridy = 0;
-		panelStatus.add(panel_3, gbc_panel_3);
-		GridBagLayout gbl_panel_3 = new GridBagLayout();
-		gbl_panel_3.columnWidths = new int[] { 100 };
-		gbl_panel_3.rowHeights = new int[] { 15 };
-		gbl_panel_3.columnWeights = new double[] { 0.0 };
-		gbl_panel_3.rowWeights = new double[] { 0.0 };
-		panel_3.setLayout(gbl_panel_3);
+		panelState = new JPanel();
+		panelState.setBorder(new BevelBorder(BevelBorder.LOWERED, null, null, null, null));
+		GridBagConstraints gbc_panelState = new GridBagConstraints();
+		gbc_panelState.fill = GridBagConstraints.HORIZONTAL;
+		gbc_panelState.anchor = GridBagConstraints.WEST;
+		gbc_panelState.insets = new Insets(0, 0, 0, 5);
+		gbc_panelState.gridx = 5;
+		gbc_panelState.gridy = 0;
+		panelStatus.add(panelState, gbc_panelState);
+		GridBagLayout gbl_panelState = new GridBagLayout();
+		gbl_panelState.columnWidths = new int[] { 100 };
+		gbl_panelState.rowHeights = new int[] {18};
+		gbl_panelState.columnWeights = new double[] { 0.0 };
+		gbl_panelState.rowWeights = new double[] { 0.0 };
+		panelState.setLayout(gbl_panelState);
 
 		lblState = new JLabel("Text");
 		GridBagConstraints gbc_lblState = new GridBagConstraints();
 		gbc_lblState.gridx = 0;
 		gbc_lblState.gridy = 0;
-		panel_3.add(lblState, gbc_lblState);
+		panelState.add(lblState, gbc_lblState);
 
 		menuBar = new JMenuBar();
 		frameVT100.setJMenuBar(menuBar);
@@ -911,42 +988,42 @@ public class VT100 extends DeviceZ80 {
 
 		JMenuItem mnuMenuProperties = new JMenuItem("Properties...");
 		mnuMenuProperties.addActionListener(adapterVT100);
-		mnuMenuProperties.setActionCommand(MNU_PROPERTIES);
+		mnuMenuProperties.setActionCommand(MNU_SETTINGS_PROPERTIES);
 		mnuMenu.add(mnuMenuProperties);
 
-		mnNewMenu = new JMenu("New menu");
-		menuBar.add(mnNewMenu);
+		separator = new JSeparator();
+		mnuMenu.add(separator);
 
-		mntmNewMenuItem = new JMenuItem("make screen");
-		mntmNewMenuItem.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent arg0) {
-				screen.makeNewScreen();
-			}
-		});
-		mnNewMenu.add(mntmNewMenuItem);
+		mnuSettingsLeds = new JRadioButtonMenuItem("LEDs");
+		mnuSettingsLeds.setActionCommand(MNU_SETTINGS_LEDS);
+		mnuSettingsLeds.addActionListener(adapterVT100);
+		mnuMenu.add(mnuSettingsLeds);
 
-		mntmFillscreen = new JMenuItem("FillScreen");
-		mntmFillscreen.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent arg0) {
-				final int SCREEN_ROWS = 24;
+		mnuSettingsKeyboardCharacter = new JRadioButtonMenuItem("Keyboard Character");
+		mnuSettingsKeyboardCharacter.setActionCommand(MNU_SETTINGS_KEY_IN);
+		mnuSettingsKeyboardCharacter.addActionListener(adapterVT100);
+		mnuMenu.add(mnuSettingsKeyboardCharacter);
 
-				String line132 = "01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789";
-				String thisLine = line132.substring(0, screenColumns);
-				StringBuilder sb = new StringBuilder(lineLength * SCREEN_ROWS);
-				for (int i = 0; i < SCREEN_ROWS; i++) {
-					sb.append(thisLine + System.lineSeparator());
-				} // for
+		mnuSettingsFromCPU = new JRadioButtonMenuItem("Byte From CPU");
+		mnuSettingsFromCPU.setActionCommand(MNU_SETTINGS_FROM_CPU);
+		mnuSettingsFromCPU.addActionListener(adapterVT100);
+		mnuMenu.add(mnuSettingsFromCPU);
 
-				try {
-					screen.remove(0, screen.getLength());
-					screen.insertString(0, sb.toString(), null);
-				} catch (Exception e) {
-					log.error("Failed to makeNewScreen");
-				} // try
+		mnuSettingsState = new JRadioButtonMenuItem("State");
+		mnuSettingsState.setActionCommand(MNU_SETTINGS_STATE);
+		mnuSettingsState.addActionListener(adapterVT100);
+		mnuMenu.add(mnuSettingsState);
 
-			}
-		});
-		mnNewMenu.add(mntmFillscreen);
+		mnuSettingsRowColumn = new JRadioButtonMenuItem("Cursor position");
+		mnuSettingsRowColumn.setActionCommand(MNU_SETTINGS_ROW_COLUMN);
+		mnuSettingsRowColumn.addActionListener(adapterVT100);
+		mnuMenu.add(mnuSettingsRowColumn);
+		
+		horizontalGlue = Box.createHorizontalGlue();
+		menuBar.add(horizontalGlue);
+		
+		btnNewButton = new JButton("Clear Screen");
+		menuBar.add(btnNewButton);
 
 		frameVT100.addWindowListener(new WindowAdapter() {
 			@Override
@@ -958,17 +1035,12 @@ public class VT100 extends DeviceZ80 {
 
 	}// initialize
 
-	class AdapterVT100 implements KeyListener, ActionListener {// ,PreferenceChangeListener
+	class AdapterVT100 implements KeyListener, ActionListener, MouseListener {// ,PreferenceChangeListener
 		/* KeyListener */
 
 		@Override
 		public void keyTyped(KeyEvent keyEvent) {
 			doKeyboardIn(keyEvent);
-			// char c = keyEvent.getKeyChar();
-			// int kc = keyEvent.getKeyCode();
-			// int ekc = keyEvent.getExtendedKeyCode();
-			// String fmt = "typed - getKeyChar(): %s (%02X),getKeyCode(): %02X,getExtendedKeyCode(): %02X%n";
-			// log.infof(fmt, c,(byte)c,kc,ekc);
 		}// keyTyped
 
 		@Override
@@ -983,15 +1055,49 @@ public class VT100 extends DeviceZ80 {
 
 		/* ActionListener */
 		public void actionPerformed(ActionEvent actionEvent) {
+			AbstractButton source = (AbstractButton) actionEvent.getSource();
 			String cmd = actionEvent.getActionCommand();
 			switch (cmd) {
-			case MNU_PROPERTIES:
+			case MNU_SETTINGS_PROPERTIES:
 				showSetPropertiesDialog();
 				break;
+			case MNU_SETTINGS_LEDS:	
+			case MNU_SETTINGS_KEY_IN:				
+			case MNU_SETTINGS_FROM_CPU:				
+			case MNU_SETTINGS_ROW_COLUMN:				
+			case MNU_SETTINGS_STATE:
+				doSetPanelVisible(source);
 			default:
 				log.errorf("bad actionEvent cmd : [%s]%n", cmd);
 			}// switch
 		}// actionPerformed
+
+		/* KeyListener */
+
+		@Override
+		public void mouseClicked(MouseEvent mouseEvent) {
+			if (mouseEvent.getSource().equals(txtScreen)) {
+				txtScreen.setCaretPosition(screen.getPosition());
+				txtScreen.getCaret().setVisible(true);
+			} // if
+
+		}// mouseClicked
+
+		@Override
+		public void mouseEntered(MouseEvent mouseEvent) {
+		}// mouseEntered
+
+		@Override
+		public void mouseExited(MouseEvent mouseEvent) {
+		}// mouseExited
+
+		@Override
+		public void mousePressed(MouseEvent mouseEvent) {
+		}// mousePressed
+
+		@Override
+		public void mouseReleased(MouseEvent mouseEvent) {
+		}// mouseReleased
 
 		/* PreferenceChangeListener */
 
@@ -1021,8 +1127,21 @@ public class VT100 extends DeviceZ80 {
 	public static final Byte STATUS = (byte) 0X02;
 	public static final Byte STATUS_OUT_READY = (byte) 0b1000_0000; // MSB set
 
-	private static final String MNU_PROPERTIES = "mnuProperties";
+	private static final String MNU_SETTINGS_PROPERTIES = "mnuSettingsProperties";
+	private static final String MNU_SETTINGS_LEDS = "mnuSettingsLEDs";
+	private static final String MNU_SETTINGS_KEY_IN = "mnuSettingsKeyboardCharacter";
+	private static final String MNU_SETTINGS_FROM_CPU = "mnuSettingsFromCPU";
+	private static final String MNU_SETTINGS_ROW_COLUMN = "mnuSettingsRowColumns";
+	private static final String MNU_SETTINGS_STATE = "mnuSettingsState";
+
 	private static final String SEMI_COLON = ";";
+
+	private static final byte ASCII_BS = (byte) 0x08;// Backspace
+	private static final byte ASCII_TAB = (byte) 0x09;// Tab
+	private static final byte ASCII_LF = (byte) 0x0A;// Linefeed
+	private static final byte ASCII_CR = (byte) 0x0D;// Carriage Return
+	private static final byte ASCII_SPACE = (byte) 0x20;// Space
+	private static final byte ASCII_DEL = (byte) 0x7F;// Delete
 
 	private static final byte ASCII_ESC = (byte) 0x1B;// Escape
 	private static final byte ASCII_SEMI_COLON = (byte) 0x3B;// ;
@@ -1056,25 +1175,32 @@ public class VT100 extends DeviceZ80 {
 	private JLabel lblKeyChar;
 	private JMenuBar menuBar;
 	private JPanel panelStatus;
-	private JPanel panel;
-	private JPanel panel_1;
-	private JPanel panel_3;
-	private JLabel lblState;
+	private JPanel panelLeds;
+	private JPanel panelInChar;
+	private JPanel panelState;
+	private JPanel panelKey;
+	private JPanel panelRowColumn;
+	
 	private Component rigidArea;
 	private Component rigidArea_1;
 	private Component rigidArea_2;
 	private Component rigidArea_3;
 	private JLabel lblInChar;
 	private JLabel lblCursorPosition;
-	private JMenu mnNewMenu;
-	private JMenuItem mntmNewMenuItem;
-	private JMenuItem mntmFillscreen;
+	private JLabel lblState;
 	private JPanel panelMain;
 	private Component rigidArea_4;
-	private JPanel panel_4;
 	private JRadioButton rbLED1;
 	private JRadioButton rbLED2;
 	private JRadioButton rbLED3;
 	private JRadioButton rbLED4;
+	private JSeparator separator;
+	private JRadioButtonMenuItem mnuSettingsLeds;
+	private JRadioButtonMenuItem mnuSettingsKeyboardCharacter;
+	private JRadioButtonMenuItem mnuSettingsFromCPU;
+	private JRadioButtonMenuItem mnuSettingsState;
+	private JRadioButtonMenuItem mnuSettingsRowColumn;
+	private JButton btnNewButton;
+	private Component horizontalGlue;
 
 }// class VT100

@@ -22,13 +22,14 @@ public class VT100Display extends DefaultStyledDocument {
 	private int lineLength = 0;
 
 	private JTextPane textPane;
-
+	
+//	ApplicationAdapter applicationAdapter = new ApplicationAdapter();
 	public VT100Display(JTextPane textPane) {
 		this.textPane = textPane;
 		textPane.setStyledDocument(this);
 	}// Constructor
 
-	private void displayOnScreen(String textToAppend) {
+	public void displayOnScreen(String textToAppend) {
 		displayOnScreen(textToAppend, null);
 	}// appendToDocASM
 
@@ -47,25 +48,34 @@ public class VT100Display extends DefaultStyledDocument {
 	}// appendToDocASM
 		////////////////////////////////////////////////////////////////////////////
 
-	public void asciiInFromCPU(byte value) {
-
-		switch (value) {
-		case ASCII_LF: // Line Feed 0x0A
-			nextLine();
-			break;
-		case ASCII_CR: // Carriage Return 0x0D
-			carriageReturn();
-			break;
-		case ASCII_BS: // Backspace 0x08
-			backSpace();
-			break;
-		default:
-			displayOnScreen(Character.toString((char) (value)));
-		}// switch ASCII_BS
-	}// asciiInFromCPU
+//	public void asciiInFromCPU(byte value) {
+//
+//		switch (value) {
+//		case ASCII_LF: // Line Feed 0x0A
+//			nextLine();
+//			break;
+//		case ASCII_CR: // Carriage Return 0x0D
+//			carriageReturn();
+//			break;
+//		case ASCII_BS: // Backspace 0x08
+//			backSpace();
+//			break;
+//		default:
+//			displayOnScreen(Character.toString((char) (value)));
+//		}// switch ASCII_BS
+//	}// asciiInFromCPU
 
 	///////////////////////////////////////////////////////////////////////////////////
-	private void backSpace() {
+	public void doDel() {// 0x7F
+		
+	}//doDel
+	
+	public void doTab() {// 0x09
+		
+	}//doTab
+	
+	
+	public void backSpace() {
 		if (currentRow + currentColumn == 0) {
 			return;
 		} // if at top of page
@@ -77,7 +87,7 @@ public class VT100Display extends DefaultStyledDocument {
 
 	}// backSpace
 
-	private void carriageReturn() {
+	public void carriageReturn() {
 		currentColumn = 0;
 		fixCurrentPosition();
 	}// carriageReturn
@@ -125,7 +135,7 @@ public class VT100Display extends DefaultStyledDocument {
 		return;
 	}// scrollScreen
 
-	private void nextLine() {
+	public void nextLine() {
 		int priorColumn = currentColumn;
 		if (++currentRow >= SCREEN_ROWS) {
 			scrollScreen();
@@ -282,7 +292,7 @@ public class VT100Display extends DefaultStyledDocument {
 	}// setPosition
 
 	public int getPosition() {
-		return currentPosition;
+		return getPosition(currentRow, currentColumn);
 	}// getPosition
 
 	private int getPosition(int row, int column) {
@@ -315,22 +325,26 @@ public class VT100Display extends DefaultStyledDocument {
 		return this.truncate;
 	}// getWrap
 
-	private String getEmptyLine() {
-		return this.aLine;
-	}// getEmptyLine
+//	private String getEmptyLine() {
+//		return this.aLine;
+//	}// getEmptyLine
 
 	private int getLineSize() {
 		return this.lineLength;
 	}// getLineSize
 
+	
 	private static final int SCREEN_ROWS = 24;
 	private static final String EOL = System.lineSeparator();
 	private static final int EOL_SIZE = EOL.length();
 
 	private static final String ASCII_SPACE = " ";
-	private static final byte ASCII_BS = (byte) 0x08; // Backspace
-	private static final byte ASCII_LF = (byte) 0x0A; // Line Feed
-	private static final byte ASCII_CR = (byte) 0x0D;// Carriage Return
-	private static final byte ASCII_ESC = (byte) 0x1B;// Escape
+
+
+
+//	private static final byte ASCII_BS = (byte) 0x08; // Backspace
+//	private static final byte ASCII_LF = (byte) 0x0A; // Line Feed
+//	private static final byte ASCII_CR = (byte) 0x0D;// Carriage Return
+//	private static final byte ASCII_ESC = (byte) 0x1B;// Escape
 
 }// class VT100Display

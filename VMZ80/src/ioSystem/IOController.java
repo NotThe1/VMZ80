@@ -11,6 +11,7 @@ import java.util.Set;
 import codeSupport.AppLogger;
 import ioSystem.listDevice.GenericPrinter;
 import ioSystem.terminals.TTYZ80;
+import ioSystem.terminals.VT100;
 
 public class IOController {
 	private AppLogger log = AppLogger.getInstance();
@@ -27,8 +28,9 @@ public class IOController {
 	}// getInstance
 
 	private IOController() {
-		addDevice(new TTYZ80("tty", TTYZ80.IN, TTYZ80.OUT, TTYZ80.STATUS));
 		addDevice(new GenericPrinter("printer", GenericPrinter.IN, GenericPrinter.OUT, GenericPrinter.STATUS));
+		addDevice(new TTYZ80("tty", TTYZ80.IN, TTYZ80.OUT, TTYZ80.STATUS));
+		addDevice(new VT100("crt", VT100.IN, VT100.OUT, VT100.STATUS));
 	}// Constructor
 
 	public void addDevice(DeviceZ80 device) {// TTYZ80 throws IOException

@@ -24,13 +24,14 @@ import javax.swing.JPopupMenu;
 import javax.swing.JSeparator;
 import javax.swing.JTextPane;
 import javax.swing.text.BadLocationException;
+import javax.swing.text.DefaultStyledDocument;
 import javax.swing.text.SimpleAttributeSet;
 import javax.swing.text.StyleConstants;
 import javax.swing.text.StyledDocument;
 
 public class AppLogger {
 
-	private StyledDocument docLog; // keep from failing if not set by using app
+	private StyledDocument docLog = new DefaultStyledDocument(); // keep from failing if not set by using app
 	private JTextPane txtLog;
 	private JPopupMenu popupLog;
 	private AdapterLog logAdaper = new AdapterLog();

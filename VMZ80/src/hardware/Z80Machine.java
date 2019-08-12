@@ -246,10 +246,13 @@ public class Z80Machine {
 		String deviceName;
 		switch (name) {
 		case MNU_WINDOW_LST:
-			deviceName = "lst";
+			deviceName = "printer";
 			break;
 		case MNU_WINDOW_TTY:
 			deviceName = "tty";
+			break;
+		case MNU_WINDOW_CRT:
+			deviceName = "crt";
 			break;
 		default:
 			log.warnf("unknown device: %s for toggle%n", name);
@@ -738,6 +741,11 @@ public class Z80Machine {
 		mnuWindowsTTY.setName(MNU_WINDOW_TTY);
 		mnuWindowsTTY.addActionListener(applicationAdapter);
 		mnuWindow.add(mnuWindowsTTY);
+		
+		JMenuItem mnuWindowsCRT = new JMenuItem("CRT Device");
+		mnuWindowsCRT.setName(MNU_WINDOW_CRT);
+		mnuWindowsCRT.addActionListener(applicationAdapter);
+		mnuWindow.add(mnuWindowsCRT);
 		mnuWindow.add(mnuWindowZ80Support);
 
 		JSeparator separator = new JSeparator();
@@ -812,6 +820,7 @@ public class Z80Machine {
 	private static final String MNU_WINDOW_RESET = "mnuWindowsReset";
 
 	private static final String MNU_WINDOW_TTY = "mnuWindowsTTY";
+	private static final String MNU_WINDOW_CRT = "mnuWindowsCRT";
 	private static final String MNU_WINDOW_LST = "mnuWindowsLST";
 
 //	private static final String MNU_TOOLS_DISK_UTILITY = "mnuToolsDiskUtility";
@@ -887,6 +896,7 @@ public class Z80Machine {
 
 			case MNU_WINDOW_LST:
 			case MNU_WINDOW_TTY:
+			case MNU_WINDOW_CRT:
 				doDeviceToggle(name);
 				break;
 			case MNU_WINDOW_PRIMARY_REGISTERS:

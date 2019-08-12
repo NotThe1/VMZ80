@@ -1,6 +1,8 @@
 ;		File created by MakeZ80Source on Tue Sep 18 12:43:09 EDT 2018 from:
 ;		C:\Users\admin\Dropbox\Resources\CPM\CurrentOS\8080\BIOS.asm
 ; BIOS.Z80
+; 2019-08-10 Adapted for either TTY or CRT to be CON:
+; 2019-08-09 changing tty to CRT
 ; 2018-01-19 Repaired CP	A,TRUE
 ; 2018-12-28 Version 1.0
 ; 2018-12-28 Changed the READ & WRITE routines
@@ -22,7 +24,8 @@
 	$Include ./stdHeader.Z80
 	$Include ./osHeader.Z80
 	$Include ./diskHeader.Z80
-BOOT_CON_ADDRESS	EQU	0ECH				; tty data address
+;BOOT_CON_ADDRESS	EQU	0ECH		; tty data address
+BOOT_CON_ADDRESS	EQU	01H			; CRT data address
 
 IN_OPCODE	EQU	0DBH
 OUT_OPCODE	EQU	0D3H
@@ -544,13 +547,13 @@ SetDeviceVector:
 ;++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 ; Physical Device Attributes
 
-TTY_StatusPort		EQU		0EDH
-TTY_DataPort		EQU		0ECH
+TTY_StatusPort		EQU		02H		; 0EDH
+TTY_DataPort		EQU		01H		; 0ECH
 TTY_OutputMask		EQU		80H			; Status Mask
 TTY_InputMask		EQU		7FH			; Status Mask
 
-CRT_StatusPort		EQU		02H
-CRT_DataPort		EQU		01H
+CRT_StatusPort		EQU		0EDH	; 02H
+CRT_DataPort		EQU		0ECH	; 01H
 CRT_OutputMask		EQU		80H			; Status Mask - ready for output
 CRT_InputMask		EQU		07FH		; Status Mask - bytes yet to	read
 
@@ -589,6 +592,8 @@ TTY_Table:
 	DW		DataReadASCII
 	DW		DataWrite
 
+
+
 CRT_Table:
 	DB		CRT_StatusPort
 	DB		CRT_DataPort
@@ -597,6 +602,8 @@ CRT_Table:
 	DW		StatusRead
 	DW		DataRead
 	DW		DataWrite
+
+
 COM_Table:
 	DB		COM_StatusPort
 	DB		COM_DataPort
