@@ -35,6 +35,7 @@ import javax.swing.JRadioButton;
 import javax.swing.JRadioButtonMenuItem;
 import javax.swing.JSeparator;
 import javax.swing.JTextPane;
+import javax.swing.UIManager;
 import javax.swing.border.BevelBorder;
 import javax.swing.text.JTextComponent;
 
@@ -57,8 +58,9 @@ public class VT100 extends DeviceZ80 {
 	private AppLogger log = AppLogger.getInstance();
 
 	private int screenColumns;
-	private int lineLength; // accounts for System.lineSeparator
+//	private int lineLength; // accounts for System.lineSeparator
 	private String screenTitle = "VT100            Rev 1.0";
+
 
 	private InputState inputState;
 
@@ -570,7 +572,7 @@ public class VT100 extends DeviceZ80 {
 	}// isVisible
 
 	private void showCursorPosition() {
-		String msg = String.format("Row; %d, Col: %d", screen.getRow(), screen.getColumn());
+		String msg = String.format("Row: %4d, Col: %5d", screen.getRow(), screen.getColumn());
 		lblCursorPosition.setText(msg);
 	}// showCursorPosition
 
@@ -633,6 +635,10 @@ public class VT100 extends DeviceZ80 {
 				log.errorf("[VT100.doSetPanelVisible] error %s%n",source.getActionCommand());
 		}//switch
 	}//doSetPanelVisible
+	
+	private void doClearScreen() {
+		screen.makeNewScreen();
+	}//doClearScreen
 
 	private void setProperties(Preferences myPrefs) {
 		Font font = new Font(myPrefs.get("FontFamily", "Courier"), myPrefs.getInt("FontStyle", Font.PLAIN),
@@ -730,8 +736,13 @@ public class VT100 extends DeviceZ80 {
 		setInputState(InputState.Text);
 		showCursorPosition();
 
-		frameVT100.setSize(761, 693);
 		frameVT100.setVisible(true);
+		
+		
+//		frameVT100.setSize(900, 693);
+//		frameVT100.setForeground(Color.RED);
+//		frameVT100.setTitle("frameVT100.setSize(900, 693);");
+		
 	}// appInit
 
 	private Preferences getMyPrefs() {
@@ -798,10 +809,10 @@ public class VT100 extends DeviceZ80 {
 		panelMain.add(txtScreen, gbc_txtScreen);
 
 		panelStatus = new JPanel();
-		panelStatus.setBackground(Color.DARK_GRAY);
+		panelStatus.setBackground(UIManager.getColor("Panel.background"));
 		panelStatus.setBorder(new BevelBorder(BevelBorder.LOWERED, null, null, null, null));
 		GridBagConstraints gbc_panelStatus = new GridBagConstraints();
-		gbc_panelStatus.fill = GridBagConstraints.HORIZONTAL;
+		gbc_panelStatus.anchor = GridBagConstraints.WEST;
 		gbc_panelStatus.gridx = 0;
 		gbc_panelStatus.gridy = 1;
 		frameVT100.getContentPane().add(panelStatus, gbc_panelStatus);
@@ -821,6 +832,9 @@ public class VT100 extends DeviceZ80 {
 //		panelStatus.add(rigidArea, gbc_rigidArea);
 
 		panelLeds = new JPanel();
+		panelLeds.setPreferredSize(new Dimension(190, 30));
+		panelLeds.setMinimumSize(new Dimension(190, 30));
+		panelLeds.setMaximumSize(new Dimension(190, 30));
 		panelLeds.setBorder(new BevelBorder(BevelBorder.LOWERED, null, null, null, null));
 		GridBagConstraints gbc_panelLeds = new GridBagConstraints();
 		gbc_panelLeds.anchor = GridBagConstraints.WEST;
@@ -871,6 +885,9 @@ public class VT100 extends DeviceZ80 {
 //		panelStatus.add(rigidArea_4, gbc_rigidArea_4);
 
 		panelKey = new JPanel();
+		panelKey.setPreferredSize(new Dimension(110, 30));
+		panelKey.setMinimumSize(new Dimension(110, 30));
+		panelKey.setMaximumSize(new Dimension(110, 30));
 		panelKey.setBorder(new BevelBorder(BevelBorder.LOWERED, null, null, null, null));
 		GridBagConstraints gbc_panelKey = new GridBagConstraints();
 		gbc_panelKey.anchor = GridBagConstraints.CENTER;
@@ -901,6 +918,9 @@ public class VT100 extends DeviceZ80 {
 //		panelStatus.add(rigidArea_1, gbc_rigidArea_1);
 //
 		panelInChar = new JPanel();
+		panelInChar.setMaximumSize(new Dimension(110, 30));
+		panelInChar.setMinimumSize(new Dimension(110, 30));
+		panelInChar.setPreferredSize(new Dimension(110, 30));
 		panelInChar.setBorder(new BevelBorder(BevelBorder.LOWERED, null, null, null, null));
 		GridBagConstraints gbc_panelInChar = new GridBagConstraints();
 		gbc_panelInChar.anchor = GridBagConstraints.WEST;
@@ -930,6 +950,9 @@ public class VT100 extends DeviceZ80 {
 //		panelStatus.add(rigidArea_2, gbc_rigidArea_2);
 
 		panelRowColumn = new JPanel();
+		panelRowColumn.setPreferredSize(new Dimension(110, 30));
+		panelRowColumn.setMinimumSize(new Dimension(110, 30));
+		panelRowColumn.setMaximumSize(new Dimension(110, 30));
 		panelRowColumn.setBorder(new BevelBorder(BevelBorder.LOWERED, null, null, null, null));
 		GridBagConstraints gbc_panelRowColumn = new GridBagConstraints();
 		gbc_panelRowColumn.anchor = GridBagConstraints.WEST;
@@ -951,14 +974,10 @@ public class VT100 extends DeviceZ80 {
 		gbc_lblCursorPosition.gridy = 0;
 		panelRowColumn.add(lblCursorPosition, gbc_lblCursorPosition);
 
-//		rigidArea_3 = Box.createRigidArea(new Dimension(30, 15));
-//		GridBagConstraints gbc_rigidArea_3 = new GridBagConstraints();
-//		gbc_rigidArea_3.insets = new Insets(0, 0, 0, 5);
-//		gbc_rigidArea_3.gridx = 8;
-//		gbc_rigidArea_3.gridy = 0;
-//		panelStatus.add(rigidArea_3, gbc_rigidArea_3);
-
 		panelState = new JPanel();
+		panelState.setMaximumSize(new Dimension(110, 30));
+		panelState.setMinimumSize(new Dimension(110, 30));
+		panelState.setPreferredSize(new Dimension(110, 30));
 		panelState.setBorder(new BevelBorder(BevelBorder.LOWERED, null, null, null, null));
 		GridBagConstraints gbc_panelState = new GridBagConstraints();
 		gbc_panelState.fill = GridBagConstraints.HORIZONTAL;
@@ -1022,8 +1041,10 @@ public class VT100 extends DeviceZ80 {
 		horizontalGlue = Box.createHorizontalGlue();
 		menuBar.add(horizontalGlue);
 		
-		btnNewButton = new JButton("Clear Screen");
-		menuBar.add(btnNewButton);
+		btnClearScreen = new JButton("Clear Screen");
+		btnClearScreen.setActionCommand(BTN_CLEAR_SCREEN);
+		btnClearScreen.addActionListener(adapterVT100);
+		menuBar.add(btnClearScreen);
 
 		frameVT100.addWindowListener(new WindowAdapter() {
 			@Override
@@ -1060,6 +1081,9 @@ public class VT100 extends DeviceZ80 {
 			switch (cmd) {
 			case MNU_SETTINGS_PROPERTIES:
 				showSetPropertiesDialog();
+				break;
+			case BTN_CLEAR_SCREEN:
+				doClearScreen();
 				break;
 			case MNU_SETTINGS_LEDS:	
 			case MNU_SETTINGS_KEY_IN:				
@@ -1133,6 +1157,8 @@ public class VT100 extends DeviceZ80 {
 	private static final String MNU_SETTINGS_FROM_CPU = "mnuSettingsFromCPU";
 	private static final String MNU_SETTINGS_ROW_COLUMN = "mnuSettingsRowColumns";
 	private static final String MNU_SETTINGS_STATE = "mnuSettingsState";
+	
+	private static final String BTN_CLEAR_SCREEN = "btnClearScreen";
 
 	private static final String SEMI_COLON = ";";
 
@@ -1181,15 +1207,10 @@ public class VT100 extends DeviceZ80 {
 	private JPanel panelKey;
 	private JPanel panelRowColumn;
 	
-	private Component rigidArea;
-	private Component rigidArea_1;
-	private Component rigidArea_2;
-	private Component rigidArea_3;
 	private JLabel lblInChar;
 	private JLabel lblCursorPosition;
 	private JLabel lblState;
 	private JPanel panelMain;
-	private Component rigidArea_4;
 	private JRadioButton rbLED1;
 	private JRadioButton rbLED2;
 	private JRadioButton rbLED3;
@@ -1200,7 +1221,7 @@ public class VT100 extends DeviceZ80 {
 	private JRadioButtonMenuItem mnuSettingsFromCPU;
 	private JRadioButtonMenuItem mnuSettingsState;
 	private JRadioButtonMenuItem mnuSettingsRowColumn;
-	private JButton btnNewButton;
 	private Component horizontalGlue;
+	private JButton btnClearScreen;
 
 }// class VT100

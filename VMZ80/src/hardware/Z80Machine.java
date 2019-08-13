@@ -97,8 +97,8 @@ public class Z80Machine {
 	// ---------------------------------------------------------
 
 	private void loadROM() {
-//		InputStream in = this.getClass().getResourceAsStream("/workingOS/ROM.mem");
-		 InputStream in = this.getClass().getResourceAsStream("/Z80code/ROM.mem");
+		InputStream in = this.getClass().getResourceAsStream("/ROM.mem");
+//		 InputStream in = this.getClass().getResourceAsStream("/Z80code/ROM.mem");
 		BufferedReader reader = new BufferedReader(new InputStreamReader(in));
 		MemoryLoaderFromFile.loadMemoryImage(reader);
 	}// loadROM
@@ -482,7 +482,7 @@ public class Z80Machine {
 	 */
 	private void initialize() {
 		frameBase = new JFrame();
-		frameBase.setTitle("Z80 Machine    1.1.1");
+		frameBase.setTitle("Z80 Machine    1.1.5");
 		frameBase.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frameBase.addWindowListener(new WindowAdapter() {
 			@Override
