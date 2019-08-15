@@ -20,8 +20,6 @@ import java.io.InputStreamReader;
 import java.util.Observable;
 import java.util.Observer;
 import java.util.prefs.Preferences;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import javax.swing.Box;
 import javax.swing.ImageIcon;
@@ -60,7 +58,6 @@ import memory.Core.Trap;
 import memory.CpuBuss;
 import memory.MemoryLoaderFromFile;
 import memory.MemoryTrapEvent;
-import utilities.filePicker.FilePicker;
 import utilities.hdNumberBox.HDNumberValueChangeEvent;
 import utilities.hdNumberBox.HDNumberValueChangeListener;
 
@@ -98,7 +95,7 @@ public class Z80Machine {
 
 	private void loadROM() {
 		InputStream in = this.getClass().getResourceAsStream("/ROM.mem");
-//		 InputStream in = this.getClass().getResourceAsStream("/Z80code/ROM.mem");
+		// InputStream in = this.getClass().getResourceAsStream("/Z80code/ROM.mem");
 		BufferedReader reader = new BufferedReader(new InputStreamReader(in));
 		MemoryLoaderFromFile.loadMemoryImage(reader);
 	}// loadROM
@@ -145,32 +142,7 @@ public class Z80Machine {
 
 	// ----------------------------------------------------------
 
-	private void doFileNew() {
-		// System.out.println("** [doFileNew] **");
-		// String diskPath = "C:\\Users\\admin\\VMdata\\Disks\\ZZZ.F3HD";
-		// File file = new File(diskPath);
-		// file.delete();
-		// try {
-		// file.createNewFile();
-		// UpdateSystemDisk.updateDisk(diskPath);
-		// } catch (IOException e) {
-		// log.error(" Did not create file :" + diskPath);
-		// } // try
-	}// doFileNew
-
 	private void doFileLoadMemory() {
-		// JFileChooser filePicker = FilePicker.getMemories();
-		// // JFileChooser filePicker = FilePicker.getMemoryPicker();
-		// if (filePicker.showOpenDialog(frameBase) != JFileChooser.OPEN_DIALOG) {
-		// log.info("abandoned File Load Memory");
-		// return;
-		// } // if
-		// for (File file : filePicker.getSelectedFiles()) {
-		// log.infof("File chosen is %s%n", file.toString());
-		// MemoryLoaderFromFile.loadMemoryImage(file);
-		// // MemoryLoaderFromFile.loadMemoryImage(new File(filePicker.getSelectedFile().getAbsolutePath()));
-		// } // for each file
-		// updateDisplaysMaster();
 
 		JFileChooser filePicker = new JFileChooser("C:\\Users\\admin\\git\\VMZ80\\VMZ80\\resources\\workingOS");
 		if (filePicker.showOpenDialog(frameBase) != JFileChooser.OPEN_DIALOG) {
@@ -181,55 +153,12 @@ public class Z80Machine {
 		updateDisplaysMaster();
 	}// doFileOpen
 
-	private void doFileSaveMemory() {
-		JFileChooser filePicker = FilePicker.getMemories();
-		// JFileChooser filePicker = FilePicker.getMemoryPicker();
-		if (filePicker.showOpenDialog(frameBase) != JFileChooser.OPEN_DIALOG) {
-			log.info("abandoned File Load Memory");
-			return;
-		} // if
-		final String DEFAULT_TYPE = "MEM";
-		final String DEFAULT_FILE_TYPE = "." + DEFAULT_TYPE;
-		String selectedFilePath = filePicker.getSelectedFile().getAbsolutePath();
-		String saveFilePath;
-		Pattern memoryFileTypes = Pattern.compile("(?i)\\.(HEX|MEM)$");
-		Matcher fileTypeMatcher = memoryFileTypes.matcher(selectedFilePath);
-		String fileType = "XXX";
-		if (fileTypeMatcher.find()) {// type is either MEM or HEX
-			saveFilePath = selectedFilePath;
-			fileType = fileTypeMatcher.group(1);
-		} else {
-			Pattern fileTypePattern = Pattern.compile("\\.([^.]+$)");
-			fileTypeMatcher = fileTypePattern.matcher(selectedFilePath);
-			if (fileTypeMatcher.find()) {// has other file type
-				saveFilePath = fileTypeMatcher.replaceFirst(DEFAULT_FILE_TYPE);
-				fileType = DEFAULT_TYPE;
-			} else {// has no file type
-				saveFilePath = selectedFilePath + DEFAULT_FILE_TYPE;
-				fileType = DEFAULT_TYPE;
-			} // inner if
-		} // if
-
-		System.out.printf("[Z80Machine.doFileSaveMemory]fileType: %s, saveFilePath: %s%n", fileType, saveFilePath);
-
-	}// doFileSave
-
-	private void doFileSaveAs() {
-		System.out.println("** [doFileSaveAs] **");
-	}// doFileSaveAs
-
-	private void doFilePrint() {
-		System.out.println("** [doFilePrint] **");
-
-	}// doFilePrint
-
 	private void doFileExit() {
 		appClose();
 		System.exit(0);
 	}// doFileExit
 
 	//////////////////////////////////////////////////
-
 
 	//////////////////////////////////////////////////
 
@@ -405,12 +334,12 @@ public class Z80Machine {
 		for (JInternalFrame internalFrame : desktopPane.getAllFrames()) {
 			internalFrame.setEnabled(state);
 		} // for frames
-		
+
 		int menuCount = menuBar.getMenuCount();
 
-		for(int i = 0; i< menuCount;i++) {
+		for (int i = 0; i < menuCount; i++) {
 			menuBar.getMenu(i).setEnabled(state);
-		}//for
+		} // for
 
 	}// setDisplaysEnabled
 
@@ -482,7 +411,7 @@ public class Z80Machine {
 	 */
 	private void initialize() {
 		frameBase = new JFrame();
-		frameBase.setTitle("Z80 Machine    1.1.5");
+		frameBase.setTitle("Z80 Machine    1.1.6");
 		frameBase.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frameBase.addWindowListener(new WindowAdapter() {
 			@Override
@@ -569,11 +498,10 @@ public class Z80Machine {
 		runStopPanel.setBorder(new SoftBevelBorder(BevelBorder.LOWERED, null, null, null, null));
 		runStopPanel.setLayout(null);
 		leftTopPanel.add(runStopPanel);
-		
+
 		java.net.URL urlButtonTurnOff = this.getClass().getResource("/Button-Turn-Off-icon-64.png");
 		java.net.URL urlButtonTurnOn = this.getClass().getResource("/Button-Turn-On-icon-64.png");
 		java.net.URL urlButtonNext = this.getClass().getResource("/Button-Next-icon-48.png");
-
 
 		tbRunStop = new JToggleButton("");
 		tbRunStop.addActionListener(applicationAdapter);
@@ -582,10 +510,12 @@ public class Z80Machine {
 		tbRunStop.setBackground(SystemColor.control);
 		tbRunStop.setBorder(null);
 		tbRunStop.setToolTipText(BUTTON_RUN_TIP);
-		
-//		tbRunStop.setSelectedIcon(
-//				new ImageIcon("C:\\Users\\admin\\git\\VM\\VM\\resources\\Button-Turn-Off-icon-64.png"));
-//		tbRunStop.setIcon(new ImageIcon("C:\\Users\\admin\\git\\VM\\VM\\resources\\Button-Turn-On-icon-64.png"));
+
+		// tbRunStop.setSelectedIcon(
+		// new
+		// ImageIcon("C:\\Users\\admin\\git\\VM\\VM\\resources\\Button-Turn-Off-icon-64.png"));
+		// tbRunStop.setIcon(new
+		// ImageIcon("C:\\Users\\admin\\git\\VM\\VM\\resources\\Button-Turn-On-icon-64.png"));
 
 		tbRunStop.setSelectedIcon(new ImageIcon(urlButtonTurnOff));
 		tbRunStop.setIcon(new ImageIcon(urlButtonTurnOn));
@@ -603,7 +533,8 @@ public class Z80Machine {
 		btnStep.setBackground(SystemColor.control);
 		btnStep.setBorder(null);
 		btnStep.setToolTipText("Step thru the instructions");
-//		btnStep.setIcon(new ImageIcon("C:\\Users\\admin\\git\\VM\\VM\\resources\\Button-Next-icon-48.png"));
+		// btnStep.setIcon(new
+		// ImageIcon("C:\\Users\\admin\\git\\VM\\VM\\resources\\Button-Next-icon-48.png"));
 		btnStep.setIcon(new ImageIcon(urlButtonNext));
 		runStopPanel.add(btnStep);
 
@@ -679,14 +610,9 @@ public class Z80Machine {
 
 		menuBar = new JMenuBar();
 		frameBase.setJMenuBar(menuBar);
-		
+
 		JMenu mnuFile = new JMenu("File");
 		menuBar.add(mnuFile);
-
-		JMenuItem mnuFileNew = new JMenuItem("New");
-		mnuFileNew.setName(MNU_FILE_NEW);
-		mnuFileNew.addActionListener(applicationAdapter);
-		mnuFile.add(mnuFileNew);
 
 		JMenuItem mnuFileLoadMemory = new JMenuItem("Load Memory...");
 		mnuFileLoadMemory.setName(MNU_FILE_LOAD_MEMORY);
@@ -695,27 +621,6 @@ public class Z80Machine {
 
 		JSeparator separator99 = new JSeparator();
 		mnuFile.add(separator99);
-
-		JMenuItem mnuFileSaveMemory = new JMenuItem("Save Memory...");
-		mnuFileSaveMemory.setName(MNU_FILE_SAVE_MEMORY);
-		mnuFileSaveMemory.addActionListener(applicationAdapter);
-		mnuFile.add(mnuFileSaveMemory);
-
-		JMenuItem mnuFileSaveAs = new JMenuItem("Save As...");
-		mnuFileSaveAs.setName(MNU_FILE_SAVE_AS);
-		mnuFileSaveAs.addActionListener(applicationAdapter);
-		mnuFile.add(mnuFileSaveAs);
-
-		JSeparator separator_2 = new JSeparator();
-		mnuFile.add(separator_2);
-
-		JMenuItem mnuFilePrint = new JMenuItem("Print...");
-		mnuFilePrint.setName(MNU_FILE_PRINT);
-		mnuFilePrint.addActionListener(applicationAdapter);
-		mnuFile.add(mnuFilePrint);
-
-		JSeparator separator_1 = new JSeparator();
-		mnuFile.add(separator_1);
 
 		JMenuItem mnuFileExit = new JMenuItem("Exit");
 		mnuFileExit.setName(MNU_FILE_EXIT);
@@ -741,7 +646,7 @@ public class Z80Machine {
 		mnuWindowsTTY.setName(MNU_WINDOW_TTY);
 		mnuWindowsTTY.addActionListener(applicationAdapter);
 		mnuWindow.add(mnuWindowsTTY);
-		
+
 		JMenuItem mnuWindowsCRT = new JMenuItem("CRT Device");
 		mnuWindowsCRT.setName(MNU_WINDOW_CRT);
 		mnuWindowsCRT.addActionListener(applicationAdapter);
@@ -784,18 +689,18 @@ public class Z80Machine {
 		mnuWindowsReset.addActionListener(applicationAdapter);
 		mnuWindow.add(mnuWindowsReset);
 
-//		JMenu mnuTools = new JMenu("Tools");
-//		menuBar.add(mnuTools);
-//
-//		JMenuItem mnuToolsDiskUtility = new JMenuItem("Disk Utilities");
-//		mnuToolsDiskUtility.setName(MNU_TOOLS_DISK_UTILITY);
-//		mnuToolsDiskUtility.addActionListener(applicationAdapter);
-//		mnuTools.add(mnuToolsDiskUtility);
-//
-//		JMenuItem mnuToolsDiskNew = new JMenuItem("New Disk");
-//		mnuToolsDiskNew.setName(MNU_TOOLS_DISK_NEW);
-//		mnuToolsDiskNew.addActionListener(applicationAdapter);
-//		mnuTools.add(mnuToolsDiskNew);
+		// JMenu mnuTools = new JMenu("Tools");
+		// menuBar.add(mnuTools);
+		//
+		// JMenuItem mnuToolsDiskUtility = new JMenuItem("Disk Utilities");
+		// mnuToolsDiskUtility.setName(MNU_TOOLS_DISK_UTILITY);
+		// mnuToolsDiskUtility.addActionListener(applicationAdapter);
+		// mnuTools.add(mnuToolsDiskUtility);
+		//
+		// JMenuItem mnuToolsDiskNew = new JMenuItem("New Disk");
+		// mnuToolsDiskNew.setName(MNU_TOOLS_DISK_NEW);
+		// mnuToolsDiskNew.addActionListener(applicationAdapter);
+		// mnuTools.add(mnuToolsDiskNew);
 
 	}// initialize
 
@@ -804,11 +709,7 @@ public class Z80Machine {
 	static final String EMPTY_STRING = "";
 
 	//////////////////////////////////////////////////////////////////////////
-	private static final String MNU_FILE_NEW = "mnuFileNew";
 	private static final String MNU_FILE_LOAD_MEMORY = "mnuFileLoadMemory";
-	private static final String MNU_FILE_SAVE_MEMORY = "mnuFileSaveMemory";
-	private static final String MNU_FILE_SAVE_AS = "mnuFileSaveAs";
-	private static final String MNU_FILE_PRINT = "mnuFilePrint";
 	private static final String MNU_FILE_EXIT = "mnuFileExit";
 
 	private static final String MNU_WINDOW_Z80_SUPPORT = "mnuWindowsZ80Support";
@@ -822,9 +723,6 @@ public class Z80Machine {
 	private static final String MNU_WINDOW_TTY = "mnuWindowsTTY";
 	private static final String MNU_WINDOW_CRT = "mnuWindowsCRT";
 	private static final String MNU_WINDOW_LST = "mnuWindowsLST";
-
-//	private static final String MNU_TOOLS_DISK_UTILITY = "mnuToolsDiskUtility";
-//	private static final String MNU_TOOLS_DISK_NEW = "mnuToolsDiskNew";
 
 	private static final String BUTTON_RUN_STOP = "tbRunStop";
 	private static final String BUTTON_RUN_TIP = "Run";
@@ -873,20 +771,8 @@ public class Z80Machine {
 				doBoot();
 				break;
 			/* Menu - File */
-			case MNU_FILE_NEW:
-				doFileNew();
-				break;
 			case MNU_FILE_LOAD_MEMORY:
 				doFileLoadMemory();
-				break;
-			case MNU_FILE_SAVE_MEMORY:
-				doFileSaveMemory();
-				break;
-			case MNU_FILE_SAVE_AS:
-				doFileSaveAs();
-				break;
-			case MNU_FILE_PRINT:
-				doFilePrint();
 				break;
 			case MNU_FILE_EXIT:
 				doFileExit();
@@ -911,15 +797,15 @@ public class Z80Machine {
 				doResetAllRegisterDisplays();
 				break;
 
-//			/* Menu - tools */
-//			case MNU_TOOLS_DISK_UTILITY:
-//				doDiskUtility();
-//				break;
-//
-//			case MNU_TOOLS_DISK_NEW:
-//				doDiskNew();
-//				break;
-//
+			// /* Menu - tools */
+			// case MNU_TOOLS_DISK_UTILITY:
+			// doDiskUtility();
+			// break;
+			//
+			// case MNU_TOOLS_DISK_NEW:
+			// doDiskNew();
+			// break;
+			//
 			}// switch
 		}// actionPerformed
 

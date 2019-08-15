@@ -8,8 +8,9 @@ import java.util.Scanner;
 import javax.swing.JOptionPane;
 
 /**
- * this class' function is to load core memory with the values coded in Memory Image files. There are two types. The
- * first is the Intel ".HEX" files. The other is standard mem files
+ * this class' function is to load core memory with the values coded in Memory
+ * Image files. There are two types. The first is the Intel ".HEX" files. The
+ * other is standard mem files
  * 
  * @author Frank Martyn
  *
@@ -18,36 +19,22 @@ import javax.swing.JOptionPane;
 public class MemoryLoaderFromFile {
 	static private IoBuss ioBuss = IoBuss.getInstance();
 	static final private int memorySize = ioBuss.getSize();
-	static private byte[] result;
-
-	static public byte[] loadMemoryImage(File sourceFile, int size) {
-		result = new byte[size];
-		loadMemoryImage(sourceFile);
-		return result.clone();
-
-	}//
 
 	/**
-	 * this method will take the string representation of memory found in the file sent to it and load memory with its
-	 * contents. The files may be either "hex" or "mem" file types
+	 * this method will take the string representation of memory found in the file
+	 * sent to it and load memory with its contents. The files may be either "hex"
+	 * or "mem" file types
 	 * 
 	 * @param sourceFile
 	 *            file that contains the string representation of memory
 	 * @return byte array loaded into memory
 	 */
 
-	static public byte[] loadMemoryImage(BufferedReader bufferedReader, int size) {
-		result = new byte[size];
-		loadMemoryImage(bufferedReader);
-		return result.clone();
-	}
-
 	static public void loadMemoryImage(BufferedReader bufferedReader) {
 		parseAndLoadImageMem(new Scanner(bufferedReader));
 	}// loadMemoryImage - BufferedReader
 
 	private static void parseAndLoadImageMem(Scanner scanner) {
-		int byteIndex = 0;
 		String strAddress;
 		int address;
 		byte[] values = new byte[SIXTEEN];
@@ -67,19 +54,13 @@ public class MemoryLoaderFromFile {
 			for (int i = 0; i < SIXTEEN; i++) {
 				values[i] = (byte) ((int) Integer.valueOf(scanner.next(), 16));
 			} // for values
-			if (result == null) {
-				ioBuss.writeDMA(address, values); // avoid setting off memory traps
-			} else {
-				for (int i = 0; i < SIXTEEN; i++) {
-					result[byteIndex++] = values[i];
-				} // for values
-			} // if memory or array
+
+			ioBuss.writeDMA(address, values); // avoid setting off memory traps
 			scanner.nextLine();
 		} // while - next line
+
 		scanner.close();
-
 		return;
-
 	}// parseAndloadImageMem - Scanner
 
 	static public void loadMemoryImage(File sourceFile) {
@@ -105,16 +86,15 @@ public class MemoryLoaderFromFile {
 	}// loadMemoryImage
 
 	static private void parseAndLoadImageMem(File sourceFile) {
-		int byteIndex = 0;
 		try {
-			String strAddress ="";
+			String strAddress = "";
 			int address;
 			byte[] values = new byte[SIXTEEN];
 			Scanner scanner = new Scanner(sourceFile);
-			while (scanner.hasNext()) { //scanner.hasNextLine()
+			while (scanner.hasNext()) { // scanner.hasNextLine()
 
 				strAddress = scanner.next();
-				
+
 				strAddress = strAddress.replace(":", "");
 				address = Integer.valueOf(strAddress, 16);
 
@@ -128,13 +108,8 @@ public class MemoryLoaderFromFile {
 				for (int i = 0; i < SIXTEEN; i++) {
 					values[i] = (byte) ((int) Integer.valueOf(scanner.next(), 16));
 				} // for values
-				if (result == null) {
-					ioBuss.writeDMA(address, values); // avoid setting off memory traps
-				} else {
-					for (int i = 0; i < SIXTEEN; i++) {
-						result[byteIndex++] = values[i];
-					} // for values
-				} // if memory or array
+
+				ioBuss.writeDMA(address, values); // avoid setting off memory traps
 				scanner.nextLine();
 			} // while - next line
 			scanner.close();
@@ -153,7 +128,7 @@ public class MemoryLoaderFromFile {
 			byte recordType, value;
 			byte[] values;
 			scanner = new Scanner(sourceFile);
-			while (scanner.hasNext()) { //scanner.hasNextLine()
+			while (scanner.hasNext()) { // scanner.hasNextLine()
 				line = scanner.next();
 				line = line.replace(" ", ""); // remove any spaces
 				if (line.length() == 0) {
@@ -178,8 +153,8 @@ public class MemoryLoaderFromFile {
 				} // if max memory test
 
 				recordType = (byte) ((int) (Integer.valueOf(line.substring(HEX_TYPE_START, HEX_TYPE_END), HEX_VALUE)));
-//				System.out.printf("recordType: %02X%n", recordType);
-				
+				// System.out.printf("recordType: %02X%n", recordType);
+
 				switch (recordType) {
 				case DATA_RECORD:
 					values = new byte[byteCount];
@@ -196,8 +171,6 @@ public class MemoryLoaderFromFile {
 					checksumValue = Integer.valueOf(
 							line.substring((byteCount * 2) + HEX_DATA_START, (byteCount * 2) + HEX_DATA_END),
 							HEX_VALUE);
-					// System.out.printf("checksumValue: %02X%n", checksumValue);
-
 					checksum = checksum + checksumValue;
 
 					if ((checksum & 0xFF) != 0) {
@@ -206,16 +179,11 @@ public class MemoryLoaderFromFile {
 						return;
 					} // if - checksum test
 
-//					if (result == null) {
-//						ioBuss.writeDMA(address, values); // avoid setting off memory traps
-//					} // if Memory
 					ioBuss.writeDMA(address, values); // avoid setting off memory traps
-
 					break;
 				case END_OF_FILE_RECORD:
 					String msg = "End of File Record found!";
 					System.out.println(msg);
-					// JOptionPane.showMessageDialog(null, msg, "Hex memory loader", JOptionPane.INFORMATION_MESSAGE);
 					break;
 				case EXTENDED_SEGMENT_ADDRESS_RECORD:
 					// Not coded
