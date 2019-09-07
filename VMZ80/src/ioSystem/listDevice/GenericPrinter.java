@@ -1,4 +1,7 @@
 package ioSystem.listDevice;
+/*
+ * 2019-09-07 Fixed MyPrefs problem...in Generic Printer also
+ */
 
 import java.awt.Component;
 import java.awt.Dimension;
@@ -89,21 +92,6 @@ public class GenericPrinter extends DeviceZ80{
 		log.infof("lineCount = %d, lines to skip = %d%n", lineCount, linesToSkip);
 	}// formFeed
 
-	// @Override
-	// public Byte getAddressIn() {
-	// return IN;
-	// }// getAddressIn
-	//
-	// @Override
-	// public Byte getAddressOut() {
-	// return OUT;
-	// }// getAddressOut
-	//
-	// @Override
-	// public Byte getAddressStatus() {
-	// return STATUS;
-	// }// getAddressStatus
-
 	@Override
 	public void byteFromCPU(Byte value) {
 		char c = (char) ((byte) value);
@@ -160,26 +148,19 @@ public class GenericPrinter extends DeviceZ80{
 	}// showProperties
 
 	private void loadProperties() {
-		Preferences myPrefs = Preferences.userNodeForPackage(GenericPrinter.class)
-				.node(this.getClass().getSimpleName());
-
+		Preferences myPrefs = getMyPrefs();
 		tabSize = myPrefs.getInt("tabSize", 9); // default for CP/M
 
 		maxColumn = (myPrefs.getInt("maxColumns", 80));
 		limitColumns = myPrefs.getBoolean("limitColumns", false);
-		int style = FontChooser.getStyleFromText(myPrefs.get("fontFamily", "Plain"));
+		int style = FontChooser.getStyleFromText(myPrefs.get("fontStyle", "Plain"));
 
 		Font newFont = new Font(myPrefs.get("fontFamily", "Courier New"), style, myPrefs.getInt("fontSize", 13));
 		textAreaList.setFont(newFont);
 		myPrefs = null;
-
-		// Font f = textAreaList.getFont();
-
-		// System.out.printf("[loadProperties] Font family = %s, Font Size = %d%n", f.getFamily(), f.getSize());
 	}// loadProperties
 
 	private void displayPrintable(String s) {
-
 		Element lastElement = getLastElement();
 
 		if (!limitColumns) {// drop anything beyond the max column ??
@@ -188,7 +169,6 @@ public class GenericPrinter extends DeviceZ80{
 			display(s);
 		} // if
 		textAreaList.setCaretPosition(doc.getDefaultRootElement().getEndOffset() - 1);
-
 	}// displayPrintable
 
 	private Element getLastElement() {
@@ -288,33 +268,23 @@ public class GenericPrinter extends DeviceZ80{
 		appClose();
 	}// close
 
+	public Preferences getMyPrefs() {
+		return Preferences.userNodeForPackage(GenericPrinter.class).node("GenericPrinter");
+	}//getMyPrefs
+	
 	private void appInit() {
-		Preferences myPrefs = Preferences.userNodeForPackage(GenericPrinter.class)
-				.node(this.getClass().getSimpleName());
+		Preferences myPrefs = getMyPrefs();
 		frameLST.setSize(myPrefs.getInt("Width", 761), myPrefs.getInt("Height", 693));
 		frameLST.setLocation(myPrefs.getInt("LocX", 100), myPrefs.getInt("LocY", 100));
-
-		tabSize = myPrefs.getInt("tabSize", 9); // default for CP/M
-
-		maxColumn = (myPrefs.getInt("maxColumns", 80));
-		limitColumns = myPrefs.getBoolean("limitColumns", false);
-		int style = FontChooser.getStyleFromText(myPrefs.get("fontFamily", "Plain"));
-
-		Font newFont = new Font(myPrefs.get("fontFamily", "Courier New"), style, myPrefs.getInt("fontSize", 13));
-		textAreaList.setFont(newFont);
 		myPrefs = null;
-
-		// Font f = textAreaList.getFont();
-		// System.out.printf("[loadProperties] Font family = %s, Font Size = %d%n", f.getFamily(), f.getSize());
-
-		doc = textAreaList.getDocument();
+		
 		loadProperties();
+		doc = textAreaList.getDocument();
 		frameLST.setVisible(true);
 	}// appInit
 
 	private void appClose() {
-		Preferences myPrefs = Preferences.userNodeForPackage(GenericPrinter.class)
-				.node(this.getClass().getSimpleName());
+		Preferences myPrefs = getMyPrefs();
 		Dimension dim = frameLST.getSize();
 		myPrefs.putInt("Height", dim.height);
 		myPrefs.putInt("Width", dim.width);

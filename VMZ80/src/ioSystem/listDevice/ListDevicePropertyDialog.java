@@ -1,5 +1,8 @@
 package ioSystem.listDevice;
 
+/*
+ * 2019-09-07 Fixed MyPrefs problem...in Generic Printer also
+ */
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dialog;
@@ -59,9 +62,15 @@ public class ListDevicePropertyDialog extends JDialog implements ActionListener 
 		this.dispose();
 		return dialogResultValue;
 	}// showDialog
+	
+	public Preferences getMyPrefs() {
+		return Preferences.userNodeForPackage(GenericPrinter.class).node("GenericPrinter");
+	}//getMyPrefs
+
 
 	private void saveProperties() {
-		Preferences myPrefs = Preferences.userNodeForPackage(GenericPrinter.class).node("ListDevice");
+		Preferences myPrefs =getMyPrefs();
+//		Preferences myPrefs = Preferences.userNodeForPackage(GenericPrinter.class).node("ListDevice");
 
 		myPrefs.putInt("tabSize", (int) spinnerTab.getValue());
 
