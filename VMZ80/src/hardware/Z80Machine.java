@@ -94,10 +94,17 @@ public class Z80Machine {
 	// ---------------------------------------------------------
 
 	private void loadROM() {
-		InputStream in = this.getClass().getResourceAsStream("/ROM.mem");
-		// InputStream in = this.getClass().getResourceAsStream("/Z80code/ROM.mem");
-		BufferedReader reader = new BufferedReader(new InputStreamReader(in));
-		MemoryLoaderFromFile.loadMemoryImage(reader);
+		try {
+		InputStream in = this.getClass().getClassLoader().getResourceAsStream("ROM.mem");
+//		InputStream in = this.getClass().getResourceAsStream("/ROM.mem");
+			BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+			MemoryLoaderFromFile.loadMemoryImage(reader);
+			
+		} catch (NullPointerException npe) {
+			System.err.println(" failed to open ROM.mem");
+		} //try
+
+
 	}// loadROM
 
 	private void doStep() {
@@ -443,8 +450,10 @@ public class Z80Machine {
 		btnBoot.setBorder(null);
 		btnBoot.setToolTipText("Boot");
 		btnBoot.setSelectedIcon(null);
+//		btnBoot.setIcon(
+//		new ImageIcon(Z80Machine.class.getResource("/com/sun/java/swing/plaf/windows/icons/Computer.gif")));
 		btnBoot.setIcon(
-				new ImageIcon(Z80Machine.class.getResource("/com/sun/java/swing/plaf/windows/icons/Computer.gif")));
+		new ImageIcon(Z80Machine.class.getResource("/Processor-48.png")));
 		btnBoot.setHorizontalAlignment(SwingConstants.LEADING);
 		toolBar.add(btnBoot);
 

@@ -46,7 +46,26 @@ public class VT100Display extends DefaultStyledDocument {
 		incrementCurrentPosition();
 		// textPane.updateUI();
 	}// appendToDocASM
-		////////////////////////////////////////////////////////////////////////////
+
+	
+	public void displayOnScreen(char charToDisplay) {
+		displayOnScreen(charToDisplay, null);
+	}// appendToDocASM
+
+	private void displayOnScreen(char charToDisplay, AttributeSet attributeSet) {
+		int position = (currentRow * lineLength) + currentColumn;
+		try {
+			// ((AbstractDocument) this).replace(position, 1, textToInsert, null);
+			this.replace(position, 1, (Character.toString(charToDisplay)), null);
+		} catch (BadLocationException e) {
+			log.errorf("Failed to insert character: %s at row %d, column: %d%n", charToDisplay, currentRow, currentColumn);
+			e.printStackTrace();
+		} // try
+
+		incrementCurrentPosition();
+		// textPane.updateUI();
+	}// appendToDocASM
+////////////////////////////////////////////////////////////////////////////
 
 //	public void asciiInFromCPU(byte value) {
 //

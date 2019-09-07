@@ -16,6 +16,7 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Queue;
 import java.util.concurrent.TimeUnit;
@@ -160,10 +161,8 @@ public class VT100 extends DeviceZ80 {
 	}// byteFromCPU
 
 	private void asciiInFromCPU(byte value) {
-		int usi = Byte.toUnsignedInt(value);
-
-		if ((usi >= ASCII_SPACE) && (usi < ASCII_DEL)) {
-			screen.displayOnScreen(Character.toString((char) (value)));
+		if (printableASCIIs.containsKey(value)){
+			screen.displayOnScreen(printableASCIIs.get(value));
 		} else {
 			switch (value) {
 			case ASCII_LF:
@@ -1223,5 +1222,12 @@ public class VT100 extends DeviceZ80 {
 	private JRadioButtonMenuItem mnuSettingsRowColumn;
 	private Component horizontalGlue;
 	private JButton btnClearScreen;
+	
+	private static HashMap<Byte,Character> printableASCIIs = new HashMap<Byte,Character>();
+	static {
+		for(byte i = 0x20; i < (byte) 0x7F; i++) {
+			printableASCIIs.put(i, (char)i);
+		}// for
+	}//static
 
 }// class VT100
