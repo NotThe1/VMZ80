@@ -513,6 +513,12 @@ public class DebugFrame extends JInternalFrame implements Runnable {
 			taListing.setSelectionStart(targetAddressMatcher.start());
 			taListing.setSelectionEnd(targetAddressMatcher.end());
 			lblStatus.setText(String.format("Program Counter at %04X", programCounter));
+			
+			taListing.setSelectionColor(Color.yellow);
+			taListing.setSelectedTextColor(Color.BLUE);
+
+
+
 			lblStatus.updateUI();
 		} else {
 			String status = String.format("Target line: %04X Not Start of Instruction%n", programCounter);
