@@ -1,5 +1,8 @@
 package hardware;
-
+/*
+* 		2019-09-10  Ran in both Unix an Windows - System.lineSeparater
+* 		2019-09-10  Made line highlight explicit, using Highlighter in DebugFrame
+*/
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.EventQueue;
@@ -418,7 +421,7 @@ public class Z80Machine {
 	 */
 	private void initialize() {
 		frameBase = new JFrame();
-		frameBase.setTitle("Z80 Machine    1.1.6");
+		frameBase.setTitle("Z80 Machine    1.2.0");
 		frameBase.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frameBase.addWindowListener(new WindowAdapter() {
 			@Override

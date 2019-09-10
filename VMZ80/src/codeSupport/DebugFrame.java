@@ -1,5 +1,8 @@
 package codeSupport;
-
+/*
+ * 		2019-09-10  Ran in both Unix an Windows - System.lineSeparater
+ * 		2019-09-10  Made line highlight explicit, using Highlighter
+ */
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
@@ -51,6 +54,9 @@ import javax.swing.JToggleButton;
 import javax.swing.SwingConstants;
 import javax.swing.border.BevelBorder;
 import javax.swing.border.LineBorder;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.DefaultHighlighter;
+import javax.swing.text.Highlighter;
 
 import hardware.WorkingRegisterSet;
 //import codeSupport.debug.ShowCode.Limits;
@@ -80,6 +86,7 @@ public class DebugFrame extends JInternalFrame implements Runnable {
 	private int currentStart, currentEnd;
 	private String currentFilePath = null;
 	private boolean fileIsCurrent;
+	private Highlighter.HighlightPainter highlighter = new DefaultHighlighter.DefaultHighlightPainter(Color.yellow);
 
 	private void loadList() {
 		trapModel.clear();
@@ -504,22 +511,29 @@ public class DebugFrame extends JInternalFrame implements Runnable {
 	}// getFileToShow
 
 	private void selectTheCorrectLine() {
-		String targetAddressRegex = String.format("[0-9]{4}: %04X [A-Fa-f|[0-9]]{2}.*\r", programCounter);
+		String targetAddressRegex = String.format("[0-9]{4}: %04X [A-Fa-f|[0-9]]{2}.*" + System.lineSeparator(), programCounter);
+//		String targetAddressRegex = String.format("[0-9]{4}: %04X [A-Fa-f|[0-9]]{2}.*\r", programCounter);
 		Pattern targetAddressPattern = Pattern.compile(targetAddressRegex);
 		Matcher targetAddressMatcher;
 		targetAddressMatcher = targetAddressPattern.matcher(taListing.getText());
 		if (targetAddressMatcher.find()) {
 
+			taListing.getHighlighter().removeAllHighlights();
+			try {
+				taListing.getHighlighter().addHighlight(targetAddressMatcher.start(), targetAddressMatcher.end(),
+						highlighter);
+			} catch (BadLocationException ble) {
+				// TODO: handle exception
+			} // try
+
 			taListing.setSelectionStart(targetAddressMatcher.start());
 			taListing.setSelectionEnd(targetAddressMatcher.end());
 			lblStatus.setText(String.format("Program Counter at %04X", programCounter));
-			
-			taListing.setSelectionColor(Color.yellow);
-			taListing.setSelectedTextColor(Color.BLUE);
-
-
-
-			lblStatus.updateUI();
+//
+//			taListing.setSelectionColor(Color.yellow);
+//			taListing.setSelectedTextColor(Color.BLUE);
+//
+//			lblStatus.updateUI();
 		} else {
 			String status = String.format("Target line: %04X Not Start of Instruction%n", programCounter);
 			lblStatus.setText(status);
@@ -543,7 +557,8 @@ public class DebugFrame extends JInternalFrame implements Runnable {
 		return isLineInThisFile;
 	}// isLineInThisFile
 
-	// +/+/+/+/+/+/+/+/+/+/+/+/+/+/+/ DEBUG /+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+
+	// +/+/+/+/+/+/+/+/+/+/+/+/+/+/+/ DEBUG
+	// /+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+
 
 	private void doAddFile() {
 
@@ -593,15 +608,15 @@ public class DebugFrame extends JInternalFrame implements Runnable {
 					JOptionPane.ERROR_MESSAGE);
 			return; // exit gracefully
 		} // try
-//		boolean newFile = !fileList.containsKey(listFileFullPath);
+		// boolean newFile = !fileList.containsKey(listFileFullPath);
 		fileList.put(listFileFullPath, new Limits(startAddress, endAddress));
 		listings.put(listFileFullPath, stringBuilder.toString());
 		loadDisplay(listFileFullPath);
 		taListing.setCaretPosition(0);
-//		if (newFile) {
-			MenuUtility.addItemToList(mnuFiles, new File(listFileFullPath), new JCheckBoxMenuItem());
-//			System.out.printf("[DebugFrame.addFile] %s%n", "New File");
-//		} // if new File
+		// if (newFile) {
+		MenuUtility.addItemToList(mnuFiles, new File(listFileFullPath), new JCheckBoxMenuItem());
+		// System.out.printf("[DebugFrame.addFile] %s%n", "New File");
+		// } // if new File
 	}// addFile
 
 	private void loadDisplay(String filePath) {
@@ -617,7 +632,8 @@ public class DebugFrame extends JInternalFrame implements Runnable {
 
 	private void doAddFilesFromList() {
 		JFileChooser fc = FilePicker.getListingCollection();
-		// JFileChooser fc = FilePicker.getAllListPicker();// FilePicker.getAnyListPicker();
+		// JFileChooser fc = FilePicker.getAllListPicker();//
+		// FilePicker.getAnyListPicker();
 		if (fc.showOpenDialog(this) != JFileChooser.APPROVE_OPTION) {
 			System.out.println("You cancelled the Load Asm from File List...");
 		} else {
@@ -746,7 +762,8 @@ public class DebugFrame extends JInternalFrame implements Runnable {
 		loadList();
 	}// doDebugClear
 
-	// +/+/+/+/+/+/+/+/+/+/+/+/+/+/+/ DEBUG /+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+
+	// +/+/+/+/+/+/+/+/+/+/+/+/+/+/+/ DEBUG
+	// /+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+
 
 	///////////////////////////
 	static class Limits {
