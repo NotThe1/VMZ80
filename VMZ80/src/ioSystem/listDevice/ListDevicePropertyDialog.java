@@ -31,10 +31,6 @@ import javax.swing.border.TitledBorder;
 
 import utilities.fontChooser.FontChooser;
 
-//import utilities.FontChooser;
-
-//import com.jgoodies.forms.factories.DefaultComponentFactory;
-
 public class ListDevicePropertyDialog extends JDialog implements ActionListener {
 	private static final long serialVersionUID = 1L;
 
@@ -70,7 +66,6 @@ public class ListDevicePropertyDialog extends JDialog implements ActionListener 
 
 	private void saveProperties() {
 		Preferences myPrefs =getMyPrefs();
-//		Preferences myPrefs = Preferences.userNodeForPackage(GenericPrinter.class).node("ListDevice");
 
 		myPrefs.putInt("tabSize", (int) spinnerTab.getValue());
 
@@ -91,7 +86,7 @@ public class ListDevicePropertyDialog extends JDialog implements ActionListener 
 	}// saveProperties
 
 	private void readProperties() {
-		Preferences myPrefs = Preferences.userNodeForPackage(GenericPrinter.class).node("ListDevice");
+		Preferences myPrefs =getMyPrefs();
 
 		spinnerTab.setValue(myPrefs.getInt("tabSize", 1)); // default for CP/M
 

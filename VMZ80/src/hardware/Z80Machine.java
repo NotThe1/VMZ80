@@ -1,7 +1,8 @@
 package hardware;
 /*
-* 		2019-09-10  Ran in both Unix an Windows - System.lineSeparater
-* 		2019-09-10  Made line highlight explicit, using Highlighter in DebugFrame
+ *		2019-12-04	Fixed Printer Properties persistence issue, shortened I/O delay to 1 
+ * 		2019-09-10  Ran in both Unix an Windows - System.lineSeparater
+ * 		2019-09-10  Made line highlight explicit, using Highlighter in DebugFrame
 */
 import java.awt.Component;
 import java.awt.Dimension;
@@ -421,7 +422,7 @@ public class Z80Machine {
 	 */
 	private void initialize() {
 		frameBase = new JFrame();
-		frameBase.setTitle("Z80 Machine    1.2.0");
+		frameBase.setTitle("Z80 Machine    1.2.1");
 		frameBase.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frameBase.addWindowListener(new WindowAdapter() {
 			@Override

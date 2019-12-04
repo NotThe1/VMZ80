@@ -58,7 +58,7 @@ public class GenericPrinter extends DeviceZ80{
 	// private Path newListingPath = Paths.get("."); // location to save listing to file
 
 	public void run() {
-		long delay = 5;
+		long delay = 1;  //5
 		while (true) {
 			if (statusFromCPU.size() > 0) {
 				statusFromCPU.poll();
