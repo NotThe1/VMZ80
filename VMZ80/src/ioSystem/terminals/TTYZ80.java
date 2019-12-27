@@ -285,6 +285,7 @@ public class TTYZ80 extends DeviceZ80 {
 	public void close() {
 		appClose();
 	}// close
+	
 
 	//////////////////////////////////////////////////////////////////////////////////////
 	private void appClose() {

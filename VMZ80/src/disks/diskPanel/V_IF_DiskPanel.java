@@ -4,6 +4,7 @@ import java.awt.Color;
 import java.awt.Font;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
 import java.util.HashMap;
 import java.util.Vector;
 
@@ -97,6 +98,7 @@ public class V_IF_DiskPanel extends JInternalFrame implements Runnable {
 		panelAB.add(lblA);
 
 		tbDiskA = new JToggleButton("A");
+		tbDiskA.setMnemonic(KeyEvent.VK_A);
 		tbDiskA.setName(DISK_A);
 		tbDiskA.addActionListener(adapterDiskPanel);
 		tbDiskA.setFont(new Font("Tahoma", Font.PLAIN, 14));

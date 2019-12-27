@@ -258,6 +258,7 @@ public class GenericPrinter extends DeviceZ80{
 		frameLST.setVisible(state);
 	}// setVisible
 
+	
 	@Override
 	public boolean isVisible() {
 		return frameLST.isVisible();

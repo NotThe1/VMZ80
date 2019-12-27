@@ -1,4 +1,5 @@
 package hardware;
+
 /*
  *		2019-12-04	Fixed Printer Properties persistence issue, shortened I/O delay to 1 
  * 		2019-09-10  Ran in both Unix an Windows - System.lineSeparater
@@ -49,6 +50,7 @@ import javax.swing.border.SoftBevelBorder;
 
 import codeSupport.AppLogger;
 import disks.DiskControlUnit;
+import disks.DiskDrive;
 import disks.diskPanel.V_IF_DiskPanel;
 import hardware.View.TabDialog;
 import hardware.View.V_IF_CCR;
@@ -99,15 +101,14 @@ public class Z80Machine {
 
 	private void loadROM() {
 		try {
-		InputStream in = this.getClass().getClassLoader().getResourceAsStream("ROM.mem");
-//		InputStream in = this.getClass().getResourceAsStream("/ROM.mem");
+			InputStream in = this.getClass().getClassLoader().getResourceAsStream("ROM.mem");
+			// InputStream in = this.getClass().getResourceAsStream("/ROM.mem");
 			BufferedReader reader = new BufferedReader(new InputStreamReader(in));
 			MemoryLoaderFromFile.loadMemoryImage(reader);
-			
+
 		} catch (NullPointerException npe) {
 			System.err.println(" failed to open ROM.mem");
-		} //try
-
+		} // try
 
 	}// loadROM
 
@@ -379,6 +380,13 @@ public class Z80Machine {
 		myPrefs.put("VisibleDevices", ioc.getVisibleDevices());
 		myPrefs = null;
 
+		DiskDrive[] drives = dcu.getDrives();
+		for (int i = 0; i < dcu.getMaxNumberOfDrives(); i++) {
+			if (drives[i] != null) {
+				System.out.printf("[Z80Machine.appClose] %d : %s%n", i, drives[i].getFileAbsoluteName());
+			} // if
+		} // for
+
 		dcu.close();
 		ioc.close();
 	}// appClose
@@ -410,6 +418,7 @@ public class Z80Machine {
 		CpuBuss.getInstance().addObserver(applicationAdapter);
 
 		log.addTimeStamp("Starting....");
+
 	}// appInit
 
 	public Z80Machine() {
@@ -428,7 +437,17 @@ public class Z80Machine {
 			@Override
 			public void windowClosing(WindowEvent arg0) {
 				appClose();
-			}
+			}//windowClosing
+			
+//			@Override
+//			public void windowOpened(WindowEvent we) {
+//				ifDiskPanel.requestFocusInWindow();
+//			}//windowOpened
+			@Override
+			public void windowGainedFocus(WindowEvent we) {
+//				ifDiskPanel.requestFocusInWindow();
+			}//windowOpened
+			
 		});
 		GridBagLayout gridBagLayout = new GridBagLayout();
 		gridBagLayout.columnWidths = new int[] { 0, 0 };
@@ -454,10 +473,10 @@ public class Z80Machine {
 		btnBoot.setBorder(null);
 		btnBoot.setToolTipText("Boot");
 		btnBoot.setSelectedIcon(null);
-//		btnBoot.setIcon(
-//		new ImageIcon(Z80Machine.class.getResource("/com/sun/java/swing/plaf/windows/icons/Computer.gif")));
-		btnBoot.setIcon(
-		new ImageIcon(Z80Machine.class.getResource("/Processor-48.png")));
+		// btnBoot.setIcon(
+		// new
+		// ImageIcon(Z80Machine.class.getResource("/com/sun/java/swing/plaf/windows/icons/Computer.gif")));
+		btnBoot.setIcon(new ImageIcon(Z80Machine.class.getResource("/Processor-48.png")));
 		btnBoot.setHorizontalAlignment(SwingConstants.LEADING);
 		toolBar.add(btnBoot);
 
@@ -714,7 +733,9 @@ public class Z80Machine {
 		// mnuToolsDiskNew.setName(MNU_TOOLS_DISK_NEW);
 		// mnuToolsDiskNew.addActionListener(applicationAdapter);
 		// mnuTools.add(mnuToolsDiskNew);
-
+		frameBase.pack();
+		ifDiskPanel.requestFocusInWindow();
+		frameBase.setVisible(true);
 	}// initialize
 
 	//////////////////////////////////////////////////////////////////////////
@@ -763,6 +784,9 @@ public class Z80Machine {
 	private JPanel disksPanel;
 	private JToggleButton btnBoot;
 	private JMenuBar menuBar;
+	//////////////////////////////////////////////////////////////////////////
+
+	
 	//////////////////////////////////////////////////////////////////////////
 
 	class ApplicationAdapter implements ActionListener, HDNumberValueChangeListener, Observer {// ,

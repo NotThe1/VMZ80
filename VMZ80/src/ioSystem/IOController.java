@@ -71,6 +71,7 @@ public class IOController {
 		return false; // default to not visible
 	}// is visible
 
+	
 	public void setVisible(String deviceName, boolean state) {
 		for (DeviceZ80 d : devicePopulation) {
 			if (d.getName().equals(deviceName)) {

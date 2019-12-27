@@ -564,6 +564,11 @@ public class VT100 extends DeviceZ80 {
 	public void setVisible(boolean state) {
 		frameVT100.setVisible(state);
 	}// setVisible
+	
+	public void setFocus() {
+		frameVT100.requestFocusInWindow();
+	}//setFocus
+
 
 	@Override
 	public boolean isVisible() {
@@ -1165,7 +1170,7 @@ public class VT100 extends DeviceZ80 {
 	private static final byte ASCII_TAB = (byte) 0x09;// Tab
 	private static final byte ASCII_LF = (byte) 0x0A;// Linefeed
 	private static final byte ASCII_CR = (byte) 0x0D;// Carriage Return
-	private static final byte ASCII_SPACE = (byte) 0x20;// Space
+//	private static final byte ASCII_SPACE = (byte) 0x20;// Space
 	private static final byte ASCII_DEL = (byte) 0x7F;// Delete
 
 	private static final byte ASCII_ESC = (byte) 0x1B;// Escape

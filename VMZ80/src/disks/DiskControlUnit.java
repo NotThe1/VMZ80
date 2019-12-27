@@ -51,6 +51,9 @@ public class DiskControlUnit {
 		ifDisks.addDiskPanelActionListener(adapterDCU);
 	}// setDisplay
 
+	public DiskDrive[] getDrives() {
+		return drives;
+	}//getDrives
 
 	private boolean isDiskMounted(String absolutePath) {
 		boolean ans = false;
