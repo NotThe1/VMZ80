@@ -115,6 +115,7 @@ public class V_IF_DiskPanel extends JInternalFrame implements Runnable {
 		panelAB.add(lblB);
 
 		tbDiskB = new JToggleButton("B");
+		tbDiskB.setMnemonic(KeyEvent.VK_B);
 		tbDiskB.setName(DISK_B);
 		tbDiskB.addActionListener(adapterDiskPanel);
 		tbDiskB.setHorizontalAlignment(SwingConstants.CENTER);
@@ -137,6 +138,7 @@ public class V_IF_DiskPanel extends JInternalFrame implements Runnable {
 		panelCD.add(lblC);
 
 		tbDiskC = new JToggleButton("C");
+		tbDiskC.setMnemonic(KeyEvent.VK_C);
 		tbDiskC.setName(DISK_C);
 		tbDiskC.addActionListener(adapterDiskPanel);
 		tbDiskC.setHorizontalAlignment(SwingConstants.CENTER);
@@ -153,6 +155,7 @@ public class V_IF_DiskPanel extends JInternalFrame implements Runnable {
 		panelCD.add(lblD);
 
 		tbDiskD = new JToggleButton("D");
+		tbDiskD.setMnemonic(KeyEvent.VK_D);
 		tbDiskD.setName(DISK_D);
 		tbDiskD.addActionListener(adapterDiskPanel);
 		tbDiskD.setHorizontalAlignment(SwingConstants.CENTER);

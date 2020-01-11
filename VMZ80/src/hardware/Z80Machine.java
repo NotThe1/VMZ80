@@ -1,5 +1,6 @@
 package hardware;
 
+import java.awt.AWTException;
 /*
  *		2019-12-04	Fixed Printer Properties persistence issue, shortened I/O delay to 1 
  * 		2019-09-10  Ran in both Unix an Windows - System.lineSeparater
@@ -13,9 +14,12 @@ import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.Point;
 import java.awt.Rectangle;
+import java.awt.Robot;
 import java.awt.SystemColor;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.InputEvent;
+import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.beans.PropertyVetoException;
@@ -24,6 +28,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.Observable;
 import java.util.Observer;
+import java.util.concurrent.TimeUnit;
 import java.util.prefs.Preferences;
 
 import javax.swing.Box;
@@ -291,6 +296,70 @@ public class Z80Machine {
 		return result;
 	}// getNextLocationY
 
+	private void autoLoadDisks() {
+		// String d1 = "C:\\Users\\admin\\Z80Work\\Disks\\Asystem.F3HD";
+		// StringSelection s1 = new StringSelection(d1);
+		// Toolkit.getDefaultToolkit().getSystemClipboard().setContents(s1, null);
+		try {
+			Robot robot = new Robot();
+			robot.setAutoDelay(40);
+			robot.setAutoWaitForIdle(true);
+//			Thread.sleep(1500);
+
+			robot.keyPress(KeyEvent.VK_ALT);
+			robot.keyPress(KeyEvent.VK_A);
+			robot.keyRelease(KeyEvent.VK_ALT);
+//			Thread.sleep(1500);
+
+			 robot.mousePress(InputEvent.BUTTON1_DOWN_MASK);
+			 Thread.sleep(1500);
+			 robot.mouseRelease(InputEvent.BUTTON1_DOWN_MASK);
+//			 Thread.sleep(1500);
+
+			robot.keyPress(KeyEvent.VK_CONTROL);
+			robot.keyPress(KeyEvent.VK_V);
+			robot.keyRelease(KeyEvent.VK_V);
+			robot.keyRelease(KeyEvent.VK_CONTROL);
+//			Thread.sleep(1500);
+
+		} catch (AWTException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}// autoLoadDisks
+
+	private Preferences getPrefs() {
+		return Preferences.userNodeForPackage(Z80Machine.class).node(this.getClass().getSimpleName());
+	}// getPrefs
+
+	private void saveDisks(Preferences myPrefs) {
+		DiskDrive[] drives = dcu.getDrives();
+
+		for (int i = 0; i < dcu.getMaxNumberOfDrives(); i++) {
+			if (drives[i] == null) {
+				// System.out.printf("[Z80Machine.appClose] %d : %s%n", i,
+				// drives[i].getFileAbsoluteName());
+				myPrefs.put(DISK + i, NO_DISK);
+			} else {
+				myPrefs.put(DISK + i, drives[i].getFileAbsoluteName());
+			} // if
+		} // for
+
+	}// saveDisks
+
+	private void restoreDisks(Preferences myPrefs) {
+		String diskName = null;
+		for (int i = 0; i < dcu.getMaxNumberOfDrives(); i++) {
+			diskName = myPrefs.get(DISK + i, NO_DISK);
+			if (!diskName.equals(NO_DISK)) {
+			} // if
+			System.out.printf("[Z80Machine.restoreDisks] (%d): %s%n", i, diskName);
+		} // for
+	}// restoreDisks
+
 	private void restoreTabDialogState(Preferences myPrefs) {
 		Rectangle tabDialogBounds = new Rectangle();
 		tabDialogBounds.x = myPrefs.getInt("tabDialog.x", 0);
@@ -367,7 +436,7 @@ public class Z80Machine {
 		////////////////////////////////////////////////////////////////////////////////////////
 
 	private void appClose() {
-		Preferences myPrefs = Preferences.userNodeForPackage(Z80Machine.class).node(this.getClass().getSimpleName());
+		Preferences myPrefs = getPrefs();
 		Dimension dim = frameBase.getSize();
 		myPrefs.putInt("Height", dim.height);
 		myPrefs.putInt("Width", dim.width);
@@ -376,16 +445,9 @@ public class Z80Machine {
 		myPrefs.putInt("LocY", point.y);
 		saveInternalFrameLocations(myPrefs);
 		saveTabDialogState(myPrefs);
-
+		saveDisks(myPrefs);
 		myPrefs.put("VisibleDevices", ioc.getVisibleDevices());
 		myPrefs = null;
-
-		DiskDrive[] drives = dcu.getDrives();
-		for (int i = 0; i < dcu.getMaxNumberOfDrives(); i++) {
-			if (drives[i] != null) {
-				System.out.printf("[Z80Machine.appClose] %d : %s%n", i, drives[i].getFileAbsoluteName());
-			} // if
-		} // for
 
 		dcu.close();
 		ioc.close();
@@ -397,7 +459,7 @@ public class Z80Machine {
 		// tabDialog = new TabDialog();
 		tabDialog.setVisible(true);
 
-		Preferences myPrefs = Preferences.userNodeForPackage(Z80Machine.class).node(this.getClass().getSimpleName());
+		Preferences myPrefs = getPrefs();
 		Rectangle frameBounds = new Rectangle();
 		frameBounds.x = myPrefs.getInt("LocX", 100);
 		frameBounds.y = myPrefs.getInt("LocY", 100);
@@ -406,7 +468,7 @@ public class Z80Machine {
 		frameBase.setBounds(frameBounds);
 		restoreInternalFrameLocations(myPrefs);
 		restoreTabDialogState(myPrefs);
-
+		restoreDisks(myPrefs);
 		ioc.setVisibleDevices(myPrefs.get("VisibleDevices", ""));
 
 		myPrefs = null;
@@ -418,7 +480,6 @@ public class Z80Machine {
 		CpuBuss.getInstance().addObserver(applicationAdapter);
 
 		log.addTimeStamp("Starting....");
-
 	}// appInit
 
 	public Z80Machine() {
@@ -437,17 +498,23 @@ public class Z80Machine {
 			@Override
 			public void windowClosing(WindowEvent arg0) {
 				appClose();
-			}//windowClosing
-			
-//			@Override
-//			public void windowOpened(WindowEvent we) {
-//				ifDiskPanel.requestFocusInWindow();
-//			}//windowOpened
+			}// windowClosing
+
 			@Override
-			public void windowGainedFocus(WindowEvent we) {
-//				ifDiskPanel.requestFocusInWindow();
-			}//windowOpened
-			
+			public void windowOpened(WindowEvent we) {
+				ifDiskPanel.requestFocusInWindow();
+				try {
+					TimeUnit.MILLISECONDS.sleep(100);
+					autoLoadDisks();
+				} catch (InterruptedException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
+
+				 System.out.printf("[Z80Machine.initialize().new WindowAdapter() {...}.windowOpened] %s%n",
+				 "Set Focus");
+			}// windowOpened
+
 		});
 		GridBagLayout gridBagLayout = new GridBagLayout();
 		gridBagLayout.columnWidths = new int[] { 0, 0 };
@@ -736,6 +803,30 @@ public class Z80Machine {
 		frameBase.pack();
 		ifDiskPanel.requestFocusInWindow();
 		frameBase.setVisible(true);
+
+		// frameBase.addWindowListener(new WindowAdapter() {
+		// @Override
+		// public void windowClosing(WindowEvent arg0) {
+		// appClose();
+		// }//windowClosing
+		//
+		// @Override
+		// public void windowOpened(WindowEvent we) {
+		// System.out.printf("[Z80Machine.initialize().new WindowAdapter()
+		// {...}.windowOpened] %s%n",
+		// "Set Focus");
+		//
+		// }//windowOpened
+		// @Override
+		// public void windowGainedFocus(WindowEvent we) {
+		// ifDiskPanel.requestFocusInWindow();
+		// System.out.printf("[Z80Machine.initialize().new WindowAdapter()
+		// {...}.windowGainedFocus] %s%n",
+		// "Set Focus");
+		// }//windowOpened
+		//
+		// });
+
 	}// initialize
 
 	//////////////////////////////////////////////////////////////////////////
@@ -766,6 +857,9 @@ public class Z80Machine {
 
 	private static final String BUTTON_BOOT = "btnBoot";
 
+	private static final String DISK = "Disk";
+	private static final String NO_DISK = "< No Disk >";
+
 	private static final int INSET_X = 1;
 	private static final int INSET_Y = 1;
 
@@ -786,7 +880,6 @@ public class Z80Machine {
 	private JMenuBar menuBar;
 	//////////////////////////////////////////////////////////////////////////
 
-	
 	//////////////////////////////////////////////////////////////////////////
 
 	class ApplicationAdapter implements ActionListener, HDNumberValueChangeListener, Observer {// ,
