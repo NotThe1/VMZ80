@@ -98,19 +98,16 @@ public class Core extends Observable implements ICore {
 	 *            where to get the value from
 	 * @return value found at the location, or a HLT command if this is the first access to a debug marked location
 	 */
-//private int TARGET = 0XE9C8;
+
 	@Override
 	public byte read(int location) {
 		byte result;
 		if (isValidAddress(location)) {
 			result= storage[location];
-//			if (location==TARGET) {
-//				System.out.printf("[Core.read] %04X : %02X%n", location,result);
-//			}//if TARGET
 		}else {
 			result = (byte) 0X00;
 			log.errorf("[Core.read] attempted to read from an invalid location: [%04X],(byte) 0X00 returned%n" , location);
-		}//
+		}//if
 		return   result; 
 	}// read
 
@@ -118,9 +115,6 @@ public class Core extends Observable implements ICore {
 	public void write(int location, byte value) {
 		if (isValidAddress(location)) {
 			storage[location] = value;
-//			if (location==TARGET) {
-//				System.out.printf("[Core.write] %04X : %02X%n", location,value);
-//			}//if TARGET
 		}else {
 			log.errorf("[Core.write] attempted to write to an invalid location: [%04X],%n" , location);
 		}// if
@@ -145,8 +139,6 @@ public class Core extends Observable implements ICore {
 		}// if
 		return checkAddress;
 	}// isValidAddress
-
-
 
 	// +++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
