@@ -1,7 +1,5 @@
 package hardware;
 
-import java.util.concurrent.atomic.AtomicBoolean;
-
 import codeSupport.AppLogger;
 import codeSupport.Z80;
 import codeSupport.Z80.ConditionCode;
@@ -36,7 +34,7 @@ public class CentralProcessingUnit implements Runnable {
 	private static ErrorStatus errorCurrent = ErrorStatus.NONE;
 	private int instructionBase;
 	
-	private static AtomicBoolean running = new AtomicBoolean(false);
+//	private static AtomicBoolean running = new AtomicBoolean(false);
 	
 	@SuppressWarnings("unused")
 	private int interruptMode = Z80.MODE_0;
@@ -74,7 +72,7 @@ public class CentralProcessingUnit implements Runnable {
 	public void executeInstruction(int currentAddress) {
 		byte opCode = cpuBuss.readOpCode(currentAddress);
 		if (cpuBuss.isThisDebugHalt()) {
-			CentralProcessingUnit.setRunning(false);
+//			CentralProcessingUnit.setRunning(false);
 			setError(ErrorStatus.STOP);
 			return;
 		} // if debug
@@ -1070,7 +1068,7 @@ public class CentralProcessingUnit implements Runnable {
 		int instructionSize = 1;
 		if (cpuBuss.read(instructionBase) == (byte) 0X76) {// HALT
 			instructionSize = 0;
-			CentralProcessingUnit.setRunning(false);
+//			CentralProcessingUnit.setRunning(false);
 			setError(ErrorStatus.HALT_INSTRUCTION);
 		} else {// LD r, r1
 			wrs.setReg(getSingleRegister345(instructionBase), wrs.getReg(getSingleRegister012(instructionBase)));
@@ -1502,7 +1500,7 @@ public class CentralProcessingUnit implements Runnable {
 		default:
 			String message = String.format("[cpu] isConditionTrue() - bad condition: %s", condition);
 			log.error(message);
-			CentralProcessingUnit.setRunning(false);
+//			CentralProcessingUnit.setRunning(false);
 			setError(ErrorStatus.INVALID_CONDITION_CODE);
 			break;
 		}// switch
@@ -1579,7 +1577,7 @@ public class CentralProcessingUnit implements Runnable {
 	
 	public static void setRunning(boolean state) {
 //		running.set((error.equals(ErrorStatus.NONE) ? true : false)|(error.equals(ErrorStatus.HALT_INSTRUCTION)));
-		running.set(state);
+//		running.set(state);
 	}//setRunning
 
 	/**
@@ -1595,7 +1593,7 @@ public class CentralProcessingUnit implements Runnable {
 		String message = String.format("[cpu] Bad opCode: %02X,Location: %04X", cpuBuss.read(instructionBase),
 				instructionBase);
 		log.error(message);
-		CentralProcessingUnit.setRunning(false);
+//		CentralProcessingUnit.setRunning(false);
 		setError(ErrorStatus.INVALID_OPCODE);
 	}// reportOpCodeError
 
