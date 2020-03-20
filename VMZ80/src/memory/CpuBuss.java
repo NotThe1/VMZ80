@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.Observable;
 import java.util.stream.Collectors;
 
+import javax.swing.event.EventListenerList;
+
 import memory.Core.Trap;
 
 /*
@@ -23,6 +25,7 @@ public class CpuBuss extends Observable implements ICore, IcpuBuss {
 	private static CpuBuss instance = new CpuBuss();
 	private Core core;
 	private HashMap<Integer, Trap> traps;
+	EventListenerList memoryTrapListenerList = new EventListenerList();
 
 	private boolean isDebug = false;
 	private boolean isDebugEnabled = false;
@@ -110,8 +113,7 @@ public class CpuBuss extends Observable implements ICore, IcpuBuss {
 		core.write(location, value);
 
 		if (isDiskTrapLocation(location, value)) {
-			tellObservers(location, Trap.IO);
-			// fireMemoryTrap(location, Trap.IO);
+			 fireMemoryTrap(location, Trap.IO);
 		} // if
 	}// write
 
@@ -375,6 +377,31 @@ public class CpuBuss extends Observable implements ICore, IcpuBuss {
 	public boolean isValidAddress(int location) {
 		return core.isValidAddress(location);
 	}// isValidAddress
-
 	// +++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+	// ---------------------------	// ---------------------------
+		
+		// ---------------------------	// ---------------------------
+		public void addMemoryTrapListener(MemoryTrapListener memoryTrapListener) {
+			memoryTrapListenerList.add(MemoryTrapListener.class, memoryTrapListener);
+		}// addMemoryTrapListener
+
+		public void removeMemoryTrapListener(MemoryTrapListener memoryTrapListener) {
+			memoryTrapListenerList.remove(MemoryTrapListener.class, memoryTrapListener);
+		}// removeMemoryTrapListener
+
+		protected void fireMemoryTrap(int location,Core.Trap trap ) {
+			Object[] listeners = memoryTrapListenerList.getListenerList();
+			// process
+			MemoryTrapEvent memoryTrapEvent = new MemoryTrapEvent(core,location,trap);
+
+			for (int i = listeners.length - 2; i >= 0; i -= 2) {
+				if (listeners[i] == MemoryTrapListener.class) {
+					((MemoryTrapListener) listeners[i + 1]).memoryTrap(memoryTrapEvent);
+				} // if
+			} // for
+
+		}// fireMemoryTrap
+
+		// ---------------------------	// ---------------------------
+		// ---------------------------	// ---------------------------
 }// class CpuBuss

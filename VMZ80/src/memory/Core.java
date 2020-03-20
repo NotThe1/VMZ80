@@ -131,7 +131,7 @@ public class Core extends Observable implements ICore {
 	 * @return true if address is valid
 	 * 
 	 */
-	@Override
+//	@Override
 	public boolean isValidAddress(int location) {
 		boolean checkAddress = true;
 		if ((location < PROTECTED_MEMORY) | (location > maxAddress)) {

@@ -2,8 +2,6 @@ package disks;
 
 import java.nio.ByteBuffer;
 import java.nio.file.Paths;
-import java.util.Observable;
-import java.util.Observer;
 import java.util.Vector;
 
 import javax.swing.JFileChooser;
@@ -16,6 +14,7 @@ import memory.Core;
 import memory.CpuBuss;
 import memory.IoBuss;
 import memory.MemoryTrapEvent;
+import memory.MemoryTrapListener;
 import utilities.filePicker.FilePicker;
 
 public class DiskControlUnit {
@@ -50,7 +49,6 @@ public class DiskControlUnit {
 		this.ifDisks = ifDisks;
 		ifDisks.addDiskPanelActionListener(adapterDCU);
 	}// setDisplay
-
 
 	private boolean isDiskMounted(String absolutePath) {
 		boolean ans = false;
@@ -122,13 +120,13 @@ public class DiskControlUnit {
 			log.warn("Disk already mounted");
 			return;
 		} // already mounted
-		
-		 drives[diskIndex] = new DiskDrive(absolutePath);
-		 drives[diskIndex].addVDiskErrorListener(adapterDCU);
-		 
-		 log.infof("Mounted Disk - Index %d, Path: %s%n", diskIndex, absolutePath);
+
+		drives[diskIndex] = new DiskDrive(absolutePath);
+		drives[diskIndex].addVDiskErrorListener(adapterDCU);
+
+		log.infof("Mounted Disk - Index %d, Path: %s%n", diskIndex, absolutePath);
 		return;
-		
+
 	}// mountDisk
 
 	private void dismountDisk(int diskIndex) {
@@ -213,7 +211,8 @@ public class DiskControlUnit {
 
 		goodOperation = true; // assume all goes well
 
-		// System.out.printf("DCU: Location: %04X, Value: %02X%n", currentDiskControlByte,
+		// System.out.printf("DCU: Location: %04X, Value: %02X%n",
+		// currentDiskControlByte,
 		// ioBuss.read(currentDiskControlByte));
 
 		int controlTableLocation = cpuBuss.readWordReversed(currentDiskControlByte + 1);
@@ -248,7 +247,8 @@ public class DiskControlUnit {
 			return;
 		} // if - bad byte count
 
-		// System.out.printf("DCU: Head: %d, Track: %d, Sector: %d AbsoluteSector: %d%n", currentHead, currentTrack,
+		// System.out.printf("DCU: Head: %d, Track: %d, Sector: %d AbsoluteSector:
+		// %d%n", currentHead, currentTrack,
 		// currentSector, drives[currentDrive].getCurrentAbsoluteSector());
 		if (!goodOperation) {
 			return; // return if any problems - don't do any I/O
@@ -266,7 +266,8 @@ public class DiskControlUnit {
 			} // for
 			byte[] readBuffer = readByteBuffer.array();
 			ioBuss.writeDMA(currentDMAAddress, readBuffer);
-			// System.out.printf("DCU:Value: %02X, length = %d%n", readBuffer[1], readBuffer.length);
+			// System.out.printf("DCU:Value: %02X, length = %d%n", readBuffer[1],
+			// readBuffer.length);
 		} else if (currentCommand == COMMAND_WRITE) { // its a COMMAND_WRITE
 
 			byte[] writeSector = new byte[currentSectorSize];
@@ -299,14 +300,14 @@ public class DiskControlUnit {
 	}// close
 
 	private void appClose() {
+		cpuBuss.removeMemoryTrapListener(adapterDCU);
 		cpuBuss.removeTrap(DISK_CONTROL_BYTE_5, Core.Trap.IO);
-		cpuBuss.deleteObserver(adapterDCU);
 		ifDisks.removeDiskPanelActionListener(adapterDCU);
 		removeAllDiskDrives();
 	}// appClose
 
 	private void appInit() {
-		cpuBuss.addObserver(adapterDCU);
+		cpuBuss.addMemoryTrapListener(adapterDCU);
 		cpuBuss.addTrap(DISK_CONTROL_BYTE_5, Core.Trap.IO);
 		drives = new DiskDrive[Disk.NUMBER_OF_DISKS];
 	}// appInit
@@ -383,25 +384,25 @@ public class DiskControlUnit {
 
 	//////////////////////////////////////////////
 
-	class AdapterDCU implements Observer, VDiskErrorListener, DiskPanelEventListener {
-		/* Observer */
+	class AdapterDCU implements VDiskErrorListener, DiskPanelEventListener, MemoryTrapListener {
+
+		/* VDiskErrorListener */
 		@Override
 		public void vdiskError(VDiskErrorEvent vdee) {
 			doDiskError(ERROR_INVALID_SECTOR_DESIGNATOR, vdee.getMessage());
 		}// vdiskError
-
-		/* VDiskErrorListener */
-		@Override
-		public void update(Observable o, Object event) {
-			doUpdate(event);
-
-		}// update
 
 		/* DiskPanelEventListener */
 		@Override
 		public void diskPanelAction(DiskPanelEvent diskPanelEvent) {
 			doDiskPanelEvent(diskPanelEvent);
 		}// diskPanelAction
+
+		/* MemoryTrapListener */
+		@Override
+		public void memoryTrap(MemoryTrapEvent memoryTrapEvent) {
+			doUpdate(memoryTrapEvent);
+		}//memoryTrap
 
 	}// class AdapterDCU
 
