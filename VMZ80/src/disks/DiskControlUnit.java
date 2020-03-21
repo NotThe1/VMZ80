@@ -2,7 +2,6 @@ package disks;
 
 import java.nio.ByteBuffer;
 import java.nio.file.Paths;
-import java.util.Vector;
 
 import javax.swing.JFileChooser;
 
@@ -254,7 +253,7 @@ public class DiskControlUnit {
 			return; // return if any problems - don't do any I/O
 		} // if
 
-		fireDCUAction(currentDrive, currentCommand); // notify the listeners
+//		fireDCUAction(currentDrive, currentCommand); // notify the listeners
 
 		// ----- now get to work
 
@@ -319,37 +318,6 @@ public class DiskControlUnit {
 	////////////////////////////////////////////////////////////////////
 	/* \/ Event Handling Routines \/ */
 
-	private Vector<DCUActionListener> dcuActionListeners = new Vector<DCUActionListener>();
-
-	public synchronized void addDCUActionListener(DCUActionListener dcuListener) {
-		if (dcuActionListeners.contains(dcuListener)) {
-			return; // Already has it
-		} // if
-		dcuActionListeners.addElement(dcuListener);
-	}// addVDiskErroListener
-
-	public synchronized void removeDCUActionListener(DCUActionListener dcuListener) {
-		dcuActionListeners.remove(dcuListener);
-	}// addVDiskErroListener
-
-	@SuppressWarnings("unchecked")
-	private void fireDCUAction(int diskIndex, int actionType) {
-		Vector<DCUActionListener> actionListeners;
-		synchronized (this) {
-			actionListeners = (Vector<DCUActionListener>) dcuActionListeners.clone();
-		} // sync
-		int size = actionListeners.size();
-		if (size == 0) {
-			return; // no listeners
-		} // if
-
-		DCUActionEvent dcuActionEvent = new DCUActionEvent(this, diskIndex, actionType);
-		for (int i = 0; i < size; i++) {
-			DCUActionListener listener = (DCUActionListener) actionListeners.elementAt(i);
-			listener.dcuAction(dcuActionEvent);
-		} // for
-
-	}// fireDCUAction
 
 	/* /\ Event Handling Routines /\ */
 
