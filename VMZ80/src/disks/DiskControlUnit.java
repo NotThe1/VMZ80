@@ -70,7 +70,7 @@ public class DiskControlUnit {
 	}// reportStatus
 
 	private void doDiskError(int errorCode, String message) {
-		log.errorf("DCU error: -5D -%s%n", errorCode, message);
+		log.errorf("DCU error: -5D -%s,%s%n", errorCode, message);
 		goodOperation = false;
 		reportStatus(BYTE00, BYTE00);
 		ioBuss.write(DISK_STATUS_BLOCK, (byte) 00);

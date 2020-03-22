@@ -1,7 +1,5 @@
 package memory;
 
-import java.util.Observable;
-
 import codeSupport.AppLogger;
 
 //import memory.Core.Trap;
@@ -34,7 +32,7 @@ import codeSupport.AppLogger;
  *
  */
 
-public class Core extends Observable implements ICore {
+public class Core  implements ICore {//extends Observable
 	private static Core instance = new Core();
 	private AppLogger log = AppLogger.getInstance();
 	private  byte[] storage;

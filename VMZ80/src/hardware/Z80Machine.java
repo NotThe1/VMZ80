@@ -1,4 +1,5 @@
 package hardware;
+
 /*
  *		2019-12-04	Fixed Printer Properties persistence issue, shortened I/O delay to 1 
  * 		2019-09-10  Ran in both Unix an Windows - System.lineSeparater
@@ -21,8 +22,6 @@ import java.beans.PropertyVetoException;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.util.Observable;
-import java.util.Observer;
 import java.util.prefs.Preferences;
 
 import javax.swing.Box;
@@ -62,6 +61,7 @@ import memory.Core.Trap;
 import memory.CpuBuss;
 import memory.MemoryLoaderFromFile;
 import memory.MemoryTrapEvent;
+import memory.MemoryTrapListener;
 import utilities.hdNumberBox.HDNumberValueChangeEvent;
 import utilities.hdNumberBox.HDNumberValueChangeListener;
 
@@ -99,15 +99,14 @@ public class Z80Machine {
 
 	private void loadROM() {
 		try {
-		InputStream in = this.getClass().getClassLoader().getResourceAsStream("ROM.mem");
-//		InputStream in = this.getClass().getResourceAsStream("/ROM.mem");
+			InputStream in = this.getClass().getClassLoader().getResourceAsStream("ROM.mem");
+			// InputStream in = this.getClass().getResourceAsStream("/ROM.mem");
 			BufferedReader reader = new BufferedReader(new InputStreamReader(in));
 			MemoryLoaderFromFile.loadMemoryImage(reader);
-			
+
 		} catch (NullPointerException npe) {
 			System.err.println(" failed to open ROM.mem");
-		} //try
-
+		} // try
 
 	}// loadROM
 
@@ -122,7 +121,7 @@ public class Z80Machine {
 						break;
 					} // if
 				} // for step count
-//				CentralProcessingUnit.setRunning(false);
+				// CentralProcessingUnit.setRunning(false);
 				updateDisplaysMaster();
 			}// run
 		});// EventQueue.invokeLater
@@ -134,7 +133,7 @@ public class Z80Machine {
 		if (tbRunStop.isSelected()) {
 			tbRunStop.setToolTipText(BUTTON_STOP_TIP);
 			CentralProcessingUnit.setError(ErrorStatus.NONE);
-//			CentralProcessingUnit.setRunning(true);
+			// CentralProcessingUnit.setRunning(true);
 			System.out.println("actionPerformed: doRun");
 			Thread t = new Thread(cpu);
 			t.start();
@@ -142,7 +141,7 @@ public class Z80Machine {
 			tbRunStop.setToolTipText(BUTTON_RUN_TIP);
 			System.out.println("actionPerformed: doStop");
 			CentralProcessingUnit.setError(ErrorStatus.HALT_INSTRUCTION);
-//			CentralProcessingUnit.setRunning(false);
+			// CentralProcessingUnit.setRunning(false);
 			// CentralProcessingUnit.setError(ErrorStatus.NONE);
 			updateDisplaysMaster();
 		} // if
@@ -407,7 +406,7 @@ public class Z80Machine {
 		updateDisplaysMaster();
 
 		ifProgramRegisters.addHDNumberValueChangedListener(applicationAdapter);
-		CpuBuss.getInstance().addObserver(applicationAdapter);
+		CpuBuss.getInstance().addMemoryTrapListener(applicationAdapter);
 
 		log.addTimeStamp("Starting....");
 	}// appInit
@@ -454,10 +453,10 @@ public class Z80Machine {
 		btnBoot.setBorder(null);
 		btnBoot.setToolTipText("Boot");
 		btnBoot.setSelectedIcon(null);
-//		btnBoot.setIcon(
-//		new ImageIcon(Z80Machine.class.getResource("/com/sun/java/swing/plaf/windows/icons/Computer.gif")));
-		btnBoot.setIcon(
-		new ImageIcon(Z80Machine.class.getResource("/Processor-48.png")));
+		// btnBoot.setIcon(
+		// new
+		// ImageIcon(Z80Machine.class.getResource("/com/sun/java/swing/plaf/windows/icons/Computer.gif")));
+		btnBoot.setIcon(new ImageIcon(Z80Machine.class.getResource("/Processor-48.png")));
 		btnBoot.setHorizontalAlignment(SwingConstants.LEADING);
 		toolBar.add(btnBoot);
 
@@ -765,8 +764,8 @@ public class Z80Machine {
 	private JMenuBar menuBar;
 	//////////////////////////////////////////////////////////////////////////
 
-	class ApplicationAdapter implements ActionListener, HDNumberValueChangeListener, Observer {// ,
-																								// ListSelectionListener
+	class ApplicationAdapter implements ActionListener, HDNumberValueChangeListener, MemoryTrapListener{// ,Observer
+
 		/* ActionListener */
 		@Override
 		public void actionPerformed(ActionEvent actionEvent) {
@@ -831,26 +830,29 @@ public class Z80Machine {
 		}// valueChanged
 
 		////////////////////////////////
-		/* Observer */
 
+
+		/* MemoryTrapListener */
 		@Override
-		public void update(Observable cpuBuss, Object mte) {
+		public void memoryTrap(MemoryTrapEvent mte) {
 			Trap trap = ((MemoryTrapEvent) mte).getTrap();
-			if (trap.equals(Trap.DEBUG)) {
-				System.out.printf("[update - DEBUG]  Location %04X%n", ((MemoryTrapEvent) mte).getLocation());
+			switch (trap) {
+			case DEBUG:
+				log.infof("DEBUG at  Location %04X%n", ((MemoryTrapEvent) mte).getLocation());
 				tbRunStop.setSelected(false);
 				doRunStop();
-			} else if (trap.equals(Trap.HALT)) {
+				break;
+			case HALT:
 				tbRunStop.setSelected(false);
-				// int newLocation = (((MemoryTrapEvent) mte).getLocation() + 1) & 0xFFFF;
-				// WorkingRegisterSet.getInstance().setProgramCounter(newLocation);
 				doRunStop();
-			} // if - debug
-				// stateDisplay.setDisplayComponentsEnabled(true);
-				// btnRun.setSelected(false);
-				// cpu.setError(ErrorType.STOP);
-				// updateView();
+				break;
+			case INVALID:
+				break;
+			case IO:
+				break;
+			default:
+			}// switch
 
-		}// update
+		}// memoryTrap
 	}// class AdapterAction
 }// class GUItemplate

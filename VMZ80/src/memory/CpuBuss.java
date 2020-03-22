@@ -56,30 +56,14 @@ public class CpuBuss extends Observable implements ICore, IcpuBuss {
 	 */
 	public synchronized byte read(int location) {
 		return core.read(location);
-//		byte ans = core.read(location);
-//		// skip if debug flag is false
-//		if (isDebugEnabled) {
-//			// skip if not a debug location
-//			if (isDebugLocation(location)) {
-//				if (!isDebug) {// is this the first encounter ?
-//					isDebug = true; // then set the flag
-//					tellObservers(location, Trap.DEBUG);
-////					ans = DEBUG_CODE; // replace with fake halt
-//				} else {
-//					isDebug = false; // else reset set the flag and return the actual value
-//				} // inner if
-//					// may want to fire trap - fireMemoryTrap(location, Trap.DEBUG);
-//			} // inner if - debug location
-//		} // outer if - debug enabled
-
-//		return ans;
 	}// read
 	
 	public byte readOpCode(int location) {
 		byte ans = this.read(location);
 		
 		if (ans==(byte)0x76) {
-			tellObservers(location,Trap.HALT);
+//			tellObservers(location,Trap.HALT);
+			 fireMemoryTrap(location, Trap.HALT);
 		}// if
 		
 		// skip if debug flag is false
@@ -88,8 +72,8 @@ public class CpuBuss extends Observable implements ICore, IcpuBuss {
 			if (isDebugLocation(location)) {
 				if (!isDebug) {// is this the first encounter ?
 					isDebug = true; // then set the flag
-					tellObservers(location, Trap.DEBUG);
-////					ans = DEBUG_CODE; // replace with fake halt
+//					tellObservers(location, Trap.DEBUG);
+					 fireMemoryTrap(location, Trap.HALT);
 					ans = (byte)0x76; // replace with fake halt
 				} else {
 					isDebug = false; // else reset set the flag and return the actual value
@@ -121,7 +105,7 @@ public class CpuBuss extends Observable implements ICore, IcpuBuss {
 	 * Notify the registered observers
 	 * 
 	 * @param location
-	 *            where the trap occured
+	 *            where the trap occurred
 	 * @param trap
 	 *            Type of trap (IO or Debug)
 	 */
