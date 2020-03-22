@@ -83,17 +83,10 @@ abstract public class DeviceZ80 implements Runnable {
 		 return this.addressStatus;
 	 }//getAddressStatus
 	 
-//	abstract public Byte getAddressOut();
-//
-//	abstract public Byte getAddressStatus();
 
 	abstract public void byteFromCPU(Byte value);
 
 	abstract public void byteToCPU(Byte value);
-
-//	abstract public void statusRequest(Byte value);
-//
-//	abstract public void statusResponse(Byte value);
 
 	abstract public void close();
 

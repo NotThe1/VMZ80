@@ -1,4 +1,4 @@
-package hardware.View;
+package codeSupport;
 
 import java.awt.Color;
 import java.awt.Component;
@@ -6,7 +6,7 @@ import java.awt.Graphics;
 
 import javax.swing.Icon;
 
-public class RoundIcon implements Icon {
+public class RoundIcon implements Icon{
 	Color color;
 
 	public RoundIcon(Color c) {
@@ -28,5 +28,4 @@ public class RoundIcon implements Icon {
 	public int getIconWidth() {
 		return 10;
 	}// getIconWidth
-
-}// class RoundIcon
+}//class RoundIcon1

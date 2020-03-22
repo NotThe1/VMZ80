@@ -41,7 +41,7 @@ import javax.swing.border.BevelBorder;
 import javax.swing.text.JTextComponent;
 
 import appLogger.AppLogger;
-import codeSupport.RoundIcon1;
+import codeSupport.RoundIcon;
 import codeSupport.Z80;
 import ioSystem.DeviceZ80;
 
@@ -50,8 +50,8 @@ public class VT100 extends DeviceZ80 {
 	private JFrame frameVT100;
 	private JTextPane txtScreen = new JTextPane();
 	private VT100Display screen;
-	private RoundIcon1 ledON = new RoundIcon1(Color.RED);
-	private RoundIcon1 ledOFF = new RoundIcon1(Color.BLACK);
+	private RoundIcon ledON = new RoundIcon(Color.RED);
+	private RoundIcon ledOFF = new RoundIcon(Color.BLACK);
 
 	private Queue<Byte> internalBuffer = new LinkedList<Byte>();
 	private Queue<Byte> escapeBuffer = new LinkedList<Byte>();
