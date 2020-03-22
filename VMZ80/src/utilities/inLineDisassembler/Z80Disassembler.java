@@ -21,7 +21,7 @@ import javax.swing.text.SimpleAttributeSet;
 import javax.swing.text.StyleConstants;
 import javax.swing.text.StyledDocument;
 
-import codeSupport.AppLogger;
+import appLogger.AppLogger;
 import hardware.WorkingRegisterSet;
 import memory.Core;
 

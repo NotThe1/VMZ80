@@ -1,6 +1,6 @@
 package memory;
 
-import codeSupport.AppLogger;
+import appLogger.AppLogger;;
 
 //import memory.Core.Trap;
 

@@ -8,7 +8,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 
-import codeSupport.AppLogger;
+import appLogger.AppLogger;
 import ioSystem.listDevice.GenericPrinter;
 import ioSystem.terminals.TTYZ80;
 import ioSystem.terminals.VT100;

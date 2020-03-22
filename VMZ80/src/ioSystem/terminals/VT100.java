@@ -40,7 +40,7 @@ import javax.swing.UIManager;
 import javax.swing.border.BevelBorder;
 import javax.swing.text.JTextComponent;
 
-import codeSupport.AppLogger;
+import appLogger.AppLogger;
 import codeSupport.RoundIcon1;
 import codeSupport.Z80;
 import ioSystem.DeviceZ80;

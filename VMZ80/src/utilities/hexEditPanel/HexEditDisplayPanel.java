@@ -41,7 +41,7 @@ import javax.swing.text.SimpleAttributeSet;
 import javax.swing.text.StyleConstants;
 import javax.swing.text.StyledDocument;
 
-import codeSupport.AppLogger;
+import appLogger.AppLogger;
 /*
  *     2018-08-18  - added limit for address box
  *     2018-09-01  - added access to EditCaretaker list

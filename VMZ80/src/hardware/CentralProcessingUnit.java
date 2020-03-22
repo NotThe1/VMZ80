@@ -1,6 +1,7 @@
 package hardware;
 
-import codeSupport.AppLogger;
+
+import appLogger.AppLogger;
 import codeSupport.Z80;
 import codeSupport.Z80.ConditionCode;
 import codeSupport.Z80.Register;

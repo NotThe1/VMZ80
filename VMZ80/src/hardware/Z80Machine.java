@@ -46,7 +46,7 @@ import javax.swing.border.BevelBorder;
 import javax.swing.border.EtchedBorder;
 import javax.swing.border.SoftBevelBorder;
 
-import codeSupport.AppLogger;
+import appLogger.AppLogger;
 import disks.DiskControlUnit;
 import disks.diskPanel.V_IF_DiskPanel;
 import hardware.View.TabDialog;
@@ -66,7 +66,7 @@ import utilities.hdNumberBox.HDNumberValueChangeEvent;
 import utilities.hdNumberBox.HDNumberValueChangeListener;
 
 public class Z80Machine {
-
+	String title = "Z80 Machine    X1.2.2";
 	ApplicationAdapter applicationAdapter = new ApplicationAdapter();
 
 	CentralProcessingUnit cpu = CentralProcessingUnit.getInstance();
@@ -421,7 +421,7 @@ public class Z80Machine {
 	 */
 	private void initialize() {
 		frameBase = new JFrame();
-		frameBase.setTitle("Z80 Machine    1.2.1");
+		frameBase.setTitle(title);
 		frameBase.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frameBase.addWindowListener(new WindowAdapter() {
 			@Override

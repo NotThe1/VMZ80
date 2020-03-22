@@ -35,8 +35,8 @@ import javax.swing.text.Document;
 import javax.swing.text.Element;
 import javax.swing.text.ElementIterator;
 
+import appLogger.AppLogger;
 import codeSupport.ASCII_CODES;
-import codeSupport.AppLogger;
 import ioSystem.DeviceZ80;
 import utilities.filePicker.FilePicker;
 import utilities.fontChooser.FontChooser;

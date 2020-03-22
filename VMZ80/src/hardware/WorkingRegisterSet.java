@@ -2,7 +2,7 @@ package hardware;
 
 import java.util.HashMap;
 
-import codeSupport.AppLogger;
+import appLogger.AppLogger;
 import codeSupport.Z80;
 import codeSupport.Z80.Register;
 import memory.IoBuss;

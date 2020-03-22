@@ -31,7 +31,7 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
-import codeSupport.AppLogger;
+import appLogger.AppLogger;
 import codeSupport.DebugFrame;
 import memory.Core;
 import utilities.hexEditPanel.EditAtom;

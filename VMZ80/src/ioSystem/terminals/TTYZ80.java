@@ -50,8 +50,8 @@ import javax.swing.text.BadLocationException;
 import javax.swing.text.Document;
 import javax.swing.text.Element;
 
+import appLogger.AppLogger;
 import codeSupport.ASCII_CODES;
-import codeSupport.AppLogger;
 import codeSupport.Z80;
 import ioSystem.DeviceZ80;
 import utilities.fontChooser.FontChooser;

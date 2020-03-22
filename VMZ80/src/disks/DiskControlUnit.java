@@ -5,7 +5,7 @@ import java.nio.file.Paths;
 
 import javax.swing.JFileChooser;
 
-import codeSupport.AppLogger;
+import appLogger.AppLogger;
 import disks.diskPanel.DiskPanelEvent;
 import disks.diskPanel.DiskPanelEventListener;
 import disks.diskPanel.V_IF_DiskPanel;

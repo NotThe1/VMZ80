@@ -8,7 +8,7 @@ import javax.swing.text.AttributeSet;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.DefaultStyledDocument;
 
-import codeSupport.AppLogger;
+import appLogger.AppLogger;
 
 public class VT100Display extends DefaultStyledDocument {
 	private static final long serialVersionUID = 1L;
@@ -39,7 +39,7 @@ public class VT100Display extends DefaultStyledDocument {
 			// ((AbstractDocument) this).replace(position, 1, textToInsert, null);
 			this.replace(position, 1, textToInsert, null);
 		} catch (BadLocationException e) {
-			log.errorf("Failed to insert text: %s at row %d, column: %d%n", textToInsert, currentRow, currentColumn);
+			// log.errorf("Failed to insert text: %s at row %d, column: %d%n", textToInsert, currentRow, currentColumn);
 			e.printStackTrace();
 		} // try
 
@@ -58,7 +58,7 @@ public class VT100Display extends DefaultStyledDocument {
 			// ((AbstractDocument) this).replace(position, 1, textToInsert, null);
 			this.replace(position, 1, (Character.toString(charToDisplay)), null);
 		} catch (BadLocationException e) {
-			log.errorf("Failed to insert character: %s at row %d, column: %d%n", charToDisplay, currentRow, currentColumn);
+			// log.errorf("Failed to insert character: %s at row %d, column: %d%n", charToDisplay, currentRow, currentColumn);
 			e.printStackTrace();
 		} // try
 
@@ -124,7 +124,7 @@ public class VT100Display extends DefaultStyledDocument {
 			this.remove(0, this.getLength());
 			this.insertString(0, sb.toString(), null);
 		} catch (Exception e) {
-			log.error("Failed to makeNewScreen");
+			// log.error("Failed to makeNewScreen");
 		} // try
 		this.currentRow = 0;
 		this.currentColumn = 0;
@@ -138,18 +138,18 @@ public class VT100Display extends DefaultStyledDocument {
 	private void makeEmptyLine() {
 		aLine = String.format("%" + screenColumns + "s%s", ASCII_SPACE, EOL);
 		lineLength = aLine.length();
-		log.infof("[makeEmptyLine]  lineLength = %s, screenSize = %d%n", lineLength, SCREEN_ROWS * lineLength);
+		// log.infof("[makeEmptyLine]  lineLength = %s, screenSize = %d%n", lineLength, SCREEN_ROWS * lineLength);
 	}// makeEmptyLine
 
 	private void scrollScreen() {
-		log.info("Need to Scroll");
+		// log.info("Need to Scroll");
 		currentRow = 23;
 		currentColumn = 0;
 		try {
 			this.remove(0, lineLength);
 			this.insertString(getPosition(currentRow, currentColumn), aLine, null);
 		} catch (Exception e) {
-			log.error("Failed to Scroll the Screen");
+			// log.error("Failed to Scroll the Screen");
 		} // try
 		return;
 	}// scrollScreen
@@ -255,7 +255,7 @@ public class VT100Display extends DefaultStyledDocument {
 				this.replace(pos++, 1, ASCII_SPACE, null);
 			} // for
 		} catch (Exception e) {
-			log.infof("[VT100Display.clearRight] $s%n", e.getMessage());
+			// log.infof("[VT100Display.clearRight] $s%n", e.getMessage());
 		} // try
 		fixCurrentPosition();
 	}// clearRight
@@ -266,7 +266,7 @@ public class VT100Display extends DefaultStyledDocument {
 				this.replace(pos, 1, ASCII_SPACE, null);
 			} // for
 		} catch (Exception e) {
-			log.infof("[VT100Display.clearRight] $s%n", e.getMessage());
+			// log.infof("[VT100Display.clearRight] $s%n", e.getMessage());
 		} // try
 		fixCurrentPosition();
 	}// clearRight
