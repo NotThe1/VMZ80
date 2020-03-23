@@ -29,7 +29,7 @@ import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.border.TitledBorder;
 
-import utilities.fontChooser.FontChooser;
+import fontChooser.FontChooser;
 
 public class ListDevicePropertyDialog extends JDialog implements ActionListener {
 	private static final long serialVersionUID = 1L;

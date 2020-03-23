@@ -7,5 +7,6 @@
 	<classpathentry kind="lib" path="C:/Users/admin/Dropbox/jars/menuUtility.jar"/>
 	<classpathentry kind="lib" path="C:/Users/admin/Dropbox/jars/hexEditDisplay.jar"/>
 	<classpathentry kind="lib" path="C:/Users/admin/Dropbox/jars/hdNumberBox.jar"/>
+	<classpathentry kind="lib" path="C:/Users/admin/Dropbox/jars/fontChooser.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

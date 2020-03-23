@@ -37,9 +37,9 @@ import javax.swing.text.ElementIterator;
 
 import appLogger.AppLogger;
 import codeSupport.ASCII_CODES;
+import fontChooser.FontChooser;
 import ioSystem.DeviceZ80;
 import utilities.filePicker.FilePicker;
-import utilities.fontChooser.FontChooser;
 
 public class GenericPrinter extends DeviceZ80{
 

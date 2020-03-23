@@ -53,8 +53,8 @@ import javax.swing.text.Element;
 import appLogger.AppLogger;
 import codeSupport.ASCII_CODES;
 import codeSupport.Z80;
+import fontChooser.FontChooser;
 import ioSystem.DeviceZ80;
-import utilities.fontChooser.FontChooser;
 
 public class TTYZ80 extends DeviceZ80 {
 
