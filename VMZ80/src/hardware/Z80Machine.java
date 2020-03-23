@@ -1,6 +1,7 @@
 package hardware;
 
 /*
+ * 		2020-03-23  Removing local classes, replacing with jars
  *		2019-12-04	Fixed Printer Properties persistence issue, shortened I/O delay to 1 
  * 		2019-09-10  Ran in both Unix an Windows - System.lineSeparater
  * 		2019-09-10  Made line highlight explicit, using Highlighter in DebugFrame
@@ -66,7 +67,7 @@ import utilities.hdNumberBox.HDNumberValueChangeEvent;
 import utilities.hdNumberBox.HDNumberValueChangeListener;
 
 public class Z80Machine {
-	String title = "Z80 Machine    X1.2.2";
+	String title = "Z80 Machine    X1.2.3";
 	ApplicationAdapter applicationAdapter = new ApplicationAdapter();
 
 	CentralProcessingUnit cpu = CentralProcessingUnit.getInstance();
@@ -380,6 +381,7 @@ public class Z80Machine {
 
 		dcu.close();
 		ioc.close();
+		tabDialog.close();
 	}// appClose
 
 	private void appInit() {

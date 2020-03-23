@@ -67,10 +67,14 @@ public class TabDialog extends JDialog implements Runnable {
 			tabDebug.run();
 		}//if only do if the dialog is visible
 	}// refreshViews
+	
+	public void close() {
+		appClose();
+	}//Close
 
-//	private void appClose() {
-//
-//	}// appClose
+	private void appClose() {
+		tabDebug.close();
+	}// appClose
 
 	private void appInit() {
 		tabbedPane.addChangeListener(adapterTabDialog);

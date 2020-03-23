@@ -1,5 +1,8 @@
 package codeSupport;
+
 /*
+ * 		2013-03-23  Removing local classes and replacing with jars
+ * 					Added changing listing to file selected in Menu.
  * 		2019-09-10  Ran in both Unix an Windows - System.lineSeparater
  * 		2019-09-10  Made line highlight explicit, using Highlighter
  */
@@ -54,6 +57,8 @@ import javax.swing.JToggleButton;
 import javax.swing.SwingConstants;
 import javax.swing.border.BevelBorder;
 import javax.swing.border.LineBorder;
+import javax.swing.event.InternalFrameAdapter;
+import javax.swing.event.InternalFrameEvent;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.DefaultHighlighter;
 import javax.swing.text.Highlighter;
@@ -62,12 +67,12 @@ import hardware.WorkingRegisterSet;
 //import codeSupport.debug.ShowCode.Limits;
 import memory.Core.Trap;
 import memory.CpuBuss;
+import menuUtility.MenuUtility;
 import utilities.filePicker.FilePicker;
 //import utilities.filePicker.FilePicker;
 import utilities.hdNumberBox.HDNumberBox;
 import utilities.hdNumberBox.HDNumberValueChangeEvent;
 import utilities.hdNumberBox.HDNumberValueChangeListener;
-import utilities.menus.MenuUtility;
 
 public class DebugFrame extends JInternalFrame implements Runnable {
 
@@ -105,6 +110,11 @@ public class DebugFrame extends JInternalFrame implements Runnable {
 		fileIsCurrent = false;
 	}// clearCurrentIndicaters
 
+	// private Preferences getPreferences() {
+	// return
+	// Preferences.userNodeForPackage(DebugFrame.class).node(this.getClass().getSimpleName());
+	// }// getPreferences
+
 	@Override
 	public void run() {
 		setProgramCounter(wrs.getProgramCounter());
@@ -115,6 +125,12 @@ public class DebugFrame extends JInternalFrame implements Runnable {
 	 * Create the frame.
 	 */
 	public DebugFrame() {
+		addInternalFrameListener(new InternalFrameAdapter() {
+			@Override
+			public void internalFrameClosing(InternalFrameEvent arg0) {
+				appClose();
+			}
+		});
 		initialize();
 		appInit();
 	}// Constructor
@@ -124,6 +140,9 @@ public class DebugFrame extends JInternalFrame implements Runnable {
 	}// close
 
 	private void appClose() {
+		// Preferences myPrefs = getPreferences();
+		// MenuUtility.saveRecentFileList(myPrefs, mnuFiles);
+		// myPrefs = null;
 
 	}// appClose
 
@@ -139,6 +158,10 @@ public class DebugFrame extends JInternalFrame implements Runnable {
 		//
 		taListing.setSelectedTextColor(Color.BLUE);
 		clearCurrentIndicaters();
+
+		// Preferences myPrefs = getPreferences();
+		// MenuUtility.loadRecentFileList(myPrefs, mnuFiles, adapterDebug);
+		// myPrefs = null;
 
 	}// appInit
 
@@ -511,8 +534,10 @@ public class DebugFrame extends JInternalFrame implements Runnable {
 	}// getFileToShow
 
 	private void selectTheCorrectLine() {
-		String targetAddressRegex = String.format("[0-9]{4}: %04X [A-Fa-f|[0-9]]{2}.*" + System.lineSeparator(), programCounter);
-//		String targetAddressRegex = String.format("[0-9]{4}: %04X [A-Fa-f|[0-9]]{2}.*\r", programCounter);
+		String targetAddressRegex = String.format("[0-9]{4}: %04X [A-Fa-f|[0-9]]{2}.*" + System.lineSeparator(),
+				programCounter);
+		// String targetAddressRegex = String.format("[0-9]{4}: %04X
+		// [A-Fa-f|[0-9]]{2}.*\r", programCounter);
 		Pattern targetAddressPattern = Pattern.compile(targetAddressRegex);
 		Matcher targetAddressMatcher;
 		targetAddressMatcher = targetAddressPattern.matcher(taListing.getText());
@@ -529,11 +554,11 @@ public class DebugFrame extends JInternalFrame implements Runnable {
 			taListing.setSelectionStart(targetAddressMatcher.start());
 			taListing.setSelectionEnd(targetAddressMatcher.end());
 			lblStatus.setText(String.format("Program Counter at %04X", programCounter));
-//
-//			taListing.setSelectionColor(Color.yellow);
-//			taListing.setSelectedTextColor(Color.BLUE);
-//
-//			lblStatus.updateUI();
+			//
+			// taListing.setSelectionColor(Color.yellow);
+			// taListing.setSelectedTextColor(Color.BLUE);
+			//
+			// lblStatus.updateUI();
 		} else {
 			String status = String.format("Target line: %04X Not Start of Instruction%n", programCounter);
 			lblStatus.setText(status);
@@ -608,15 +633,11 @@ public class DebugFrame extends JInternalFrame implements Runnable {
 					JOptionPane.ERROR_MESSAGE);
 			return; // exit gracefully
 		} // try
-		// boolean newFile = !fileList.containsKey(listFileFullPath);
 		fileList.put(listFileFullPath, new Limits(startAddress, endAddress));
 		listings.put(listFileFullPath, stringBuilder.toString());
 		loadDisplay(listFileFullPath);
 		taListing.setCaretPosition(0);
-		// if (newFile) {
-		MenuUtility.addItemToList(mnuFiles, new File(listFileFullPath), new JCheckBoxMenuItem());
-		// System.out.printf("[DebugFrame.addFile] %s%n", "New File");
-		// } // if new File
+		MenuUtility.addFileItem(mnuFiles, new File(listFileFullPath), new JCheckBoxMenuItem(), adapterDebug);
 	}// addFile
 
 	private void loadDisplay(String filePath) {
@@ -787,37 +808,40 @@ public class DebugFrame extends JInternalFrame implements Runnable {
 		@Override
 		public void actionPerformed(ActionEvent actionEvent) {
 			String name = ((Component) actionEvent.getSource()).getName();
-			switch (name) {
-			case RB_ENABLE:
-				doDebugEnable();
-				break;
-			case BTN_RESET:
-				doDebugReset();
-				break;
-			case BTN_REMOVE:
-				doDebugRemove();
-				break;
-			case BTN_CLEAR:
-				doDebugClear();
-				break;
+			if (name == null) {
+				loadDisplay(actionEvent.getActionCommand());
+			} else {
+				switch (name) {
+				case RB_ENABLE:
+					doDebugEnable();
+					break;
+				case BTN_RESET:
+					doDebugReset();
+					break;
+				case BTN_REMOVE:
+					doDebugRemove();
+					break;
+				case BTN_CLEAR:
+					doDebugClear();
+					break;
 
-			case MNU_FILE_ADD_FILE:
-				doAddFile();
-				break;
-			case MNU_FILE_ADD_FILES_FROM_LIST:
-				doAddFilesFromList();
-				break;
-			case MNU_FILE_SAVE_SELECTED_TO_LIST:
-				doSaveSelectedToList();
-				break;
-			case MNU_REMOVE_SELECTED_FILES:
-				doClearSelectedFiles();
-				break;
-			case MNU_CLEAR_ALL_FILES:
-				doClearAllFiles();
-				break;
-			}// switch
-
+				case MNU_FILE_ADD_FILE:
+					doAddFile();
+					break;
+				case MNU_FILE_ADD_FILES_FROM_LIST:
+					doAddFilesFromList();
+					break;
+				case MNU_FILE_SAVE_SELECTED_TO_LIST:
+					doSaveSelectedToList();
+					break;
+				case MNU_REMOVE_SELECTED_FILES:
+					doClearSelectedFiles();
+					break;
+				case MNU_CLEAR_ALL_FILES:
+					doClearAllFiles();
+					break;
+				}// switch
+			} // if
 		}// actionPerformed
 
 		/* HDNumberValueChangeListener */
