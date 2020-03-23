@@ -1,5 +1,7 @@
 package hardware.View;
-
+/*
+ * Commented out hexDisplayMemory.refresh();
+ */
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
@@ -33,11 +35,10 @@ import javax.swing.event.ChangeListener;
 
 import appLogger.AppLogger;
 import codeSupport.DebugFrame;
+import hexEditDisplayPanel.EditAtom;
+import hexEditDisplayPanel.EditType;
+import hexEditDisplayPanel.HexEditDisplayPanel;
 import memory.Core;
-import utilities.hexEditPanel.EditAtom;
-import utilities.hexEditPanel.EditType;
-//import utilities.hexEditPanel.HDNumberBox;
-import utilities.hexEditPanel.HexEditDisplayPanel;
 import utilities.inLineDisassembler.Z80Disassembler;
 
 public class TabDialog extends JDialog implements Runnable {
@@ -57,7 +58,7 @@ public class TabDialog extends JDialog implements Runnable {
 	
 	private void refreshMemory() {
 		hexDisplayMemory.setData(Core.getInstance().getStorage());
-		hexDisplayMemory.refresh();
+//		hexDisplayMemory.refresh();
 		disassembler.updateDisplay();
 	}// refreshMemory
 

@@ -56,6 +56,8 @@ import hardware.View.V_IF_IndexRegisters;
 import hardware.View.V_IF_PrimaryRegisters;
 import hardware.View.V_IF_ProgramRegisters;
 import hardware.View.V_IF_SpecialRegisters;
+import hdNumberBox.HDNumberValueChangeEvent;
+import hdNumberBox.HDNumberValueChangeListener;
 import ioSystem.IOController;
 import memory.Core;
 import memory.Core.Trap;
@@ -63,8 +65,6 @@ import memory.CpuBuss;
 import memory.MemoryLoaderFromFile;
 import memory.MemoryTrapEvent;
 import memory.MemoryTrapListener;
-import utilities.hdNumberBox.HDNumberValueChangeEvent;
-import utilities.hdNumberBox.HDNumberValueChangeListener;
 
 public class Z80Machine {
 	String title = "Z80 Machine    X1.2.3";

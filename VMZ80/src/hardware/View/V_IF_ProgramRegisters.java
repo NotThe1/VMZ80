@@ -9,17 +9,17 @@ import javax.swing.SwingConstants;
 import javax.swing.event.EventListenerList;
 
 import hardware.WorkingRegisterSet;
-import utilities.hdNumberBox.HDNumberBox;
-import utilities.hdNumberBox.HDNumberValueChangeEvent;
-import utilities.hdNumberBox.HDNumberValueChangeListener;
+import hdNumberBox.HDNbox;
+import hdNumberBox.HDNumberValueChangeEvent;
+import hdNumberBox.HDNumberValueChangeListener;
 
 public class V_IF_ProgramRegisters extends JInternalFrame  implements Runnable{
 	private static final long serialVersionUID = 1L;
 
 	AdapterV_IF_ProgramRegisters adapterProgramRegisters = new AdapterV_IF_ProgramRegisters();	
 	WorkingRegisterSet wrs = WorkingRegisterSet.getInstance();
-	private HDNumberBox regPC;
-	private HDNumberBox regSP;
+	private HDNbox regPC;
+	private HDNbox regSP;
 	
 	EventListenerList hdNumberValueChangeListenerList = new EventListenerList();;
 
@@ -36,7 +36,7 @@ public class V_IF_ProgramRegisters extends JInternalFrame  implements Runnable{
 		regSP.setEnabled(state);
 	}//setEnabled
 	
-	private void doValueChanged(int newValue, HDNumberBox reg) {
+	private void doValueChanged(int newValue, HDNbox reg) {
 		String name = reg.getName();
 		switch (name) {
 		case REG_PC:
@@ -88,7 +88,7 @@ public class V_IF_ProgramRegisters extends JInternalFrame  implements Runnable{
 		lblSp.setBounds(100, 21, 30, 14);
 		getContentPane().add(lblSp);
 		
-		regPC = new HDNumberBox(0,0xFFFF,0,false);
+		regPC = new HDNbox(0,0xFFFF,0,false);
 		regPC.setName(REG_PC);
 		regPC.addHDNumberValueChangedListener(adapterProgramRegisters);
 		regPC.setHexDisplay("%04X");
@@ -102,7 +102,7 @@ public class V_IF_ProgramRegisters extends JInternalFrame  implements Runnable{
 		gbl_regPC.rowWeights = new double[] { Double.MIN_VALUE };
 		regPC.setLayout(gbl_regPC);
 		
-		regSP = new HDNumberBox(0, 65535, 0, false);
+		regSP = new HDNbox(0, 65535, 0, false);
 		regSP.setName(REG_SP);
 		regSP.addHDNumberValueChangedListener(adapterProgramRegisters);
 		regSP.setHexDisplay("%04X");
@@ -156,7 +156,7 @@ public class V_IF_ProgramRegisters extends JInternalFrame  implements Runnable{
 		@Override
 		public void valueChanged(HDNumberValueChangeEvent hDNumberValueChangeEvent) {
 			int newValue =  hDNumberValueChangeEvent.getNewValue() & 0xFFFF;
-			doValueChanged(newValue, (HDNumberBox) hDNumberValueChangeEvent.getSource());
+			doValueChanged(newValue, (HDNbox) hDNumberValueChangeEvent.getSource());
 		}// valueChanged
 
 	}// class AdapterV_IF_ProgramRegisters

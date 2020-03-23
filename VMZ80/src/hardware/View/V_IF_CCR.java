@@ -17,9 +17,9 @@ import javax.swing.SwingConstants;
 import codeSupport.RoundIcon;
 import codeSupport.Z80;
 import hardware.ConditionCodeRegister;
-import utilities.hdNumberBox.HDNumberBox;
-import utilities.hdNumberBox.HDNumberValueChangeEvent;
-import utilities.hdNumberBox.HDNumberValueChangeListener;
+import hdNumberBox.HDNbox;
+import hdNumberBox.HDNumberValueChangeEvent;
+import hdNumberBox.HDNumberValueChangeListener;
 
 public class V_IF_CCR extends JInternalFrame implements Runnable {
 	private static final long serialVersionUID = 1L;
@@ -31,7 +31,7 @@ public class V_IF_CCR extends JInternalFrame implements Runnable {
 	private static RoundIcon redIcon = new RoundIcon(Color.RED);
 	private static RoundIcon grayIcon = new RoundIcon(Color.GRAY);
 	private static RoundIcon lightGrayIcon = new RoundIcon(Color.LIGHT_GRAY);
-	private HDNumberBox ccHexValue;
+	private HDNbox ccHexValue;
 
 	@Override
 	public void run() {
@@ -278,7 +278,7 @@ public class V_IF_CCR extends JInternalFrame implements Runnable {
 		lblCarry.setBounds(160, 35, 16, 23);
 		getContentPane().add(lblCarry);
 
-		ccHexValue = new HDNumberBox(0, 128, 0, false);
+		ccHexValue = new HDNbox(0, 128, 0, false);
 		ccHexValue.addHDNumberValueChangedListener(adapterCCR);
 		ccHexValue.setValueQuiet(240);
 		ccHexValue.setPreferredSize(new Dimension(30, 20));

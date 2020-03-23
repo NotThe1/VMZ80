@@ -8,17 +8,17 @@ import javax.swing.JLabel;
 import javax.swing.SwingConstants;
 
 import hardware.WorkingRegisterSet;
-import utilities.hdNumberBox.HDNumberBox;
-import utilities.hdNumberBox.HDNumberValueChangeEvent;
-import utilities.hdNumberBox.HDNumberValueChangeListener;
+import hdNumberBox.HDNbox;
+import hdNumberBox.HDNumberValueChangeEvent;
+import hdNumberBox.HDNumberValueChangeListener;
 
 public class V_IF_IndexRegisters extends JInternalFrame  implements Runnable{
 	private static final long serialVersionUID = 1L;
 	
 	AdapterV_IF_IndexRegisters adapterProgramRegisters = new AdapterV_IF_IndexRegisters();	
 	WorkingRegisterSet wrs = WorkingRegisterSet.getInstance();
-	private HDNumberBox regIX;
-	private HDNumberBox regIY;
+	private HDNbox regIX;
+	private HDNbox regIY;
 
 	@Override
 	public void run() {
@@ -32,7 +32,7 @@ public class V_IF_IndexRegisters extends JInternalFrame  implements Runnable{
 		regIY.setEnabled(state);
 	}//setEnabled
 	
-	private void doValueChanged(int newValue, HDNumberBox reg) {
+	private void doValueChanged(int newValue, HDNbox reg) {
 		String name = reg.getName();
 		switch (name) {
 		case REG_IX:
@@ -83,7 +83,7 @@ public class V_IF_IndexRegisters extends JInternalFrame  implements Runnable{
 		lblSp.setBounds(100, 21, 30, 14);
 		getContentPane().add(lblSp);
 		
-		regIX = new HDNumberBox(0,0xFFFF,0,false);
+		regIX = new HDNbox(0,0xFFFF,0,false);
 		regIX.setName(REG_IX);
 		regIX.addHDNumberValueChangedListener(adapterProgramRegisters);
 		regIX.setHexDisplay("%04X");
@@ -97,7 +97,7 @@ public class V_IF_IndexRegisters extends JInternalFrame  implements Runnable{
 		gbl_regPC.rowWeights = new double[] { Double.MIN_VALUE };
 		regIX.setLayout(gbl_regPC);
 		
-		regIY = new HDNumberBox(0, 65535, 0, false);
+		regIY = new HDNbox(0, 65535, 0, false);
 		regIY.setName(REG_IY);
 		regIY.addHDNumberValueChangedListener(adapterProgramRegisters);
 		regIY.setHexDisplay("%04X");
@@ -122,7 +122,7 @@ public class V_IF_IndexRegisters extends JInternalFrame  implements Runnable{
 		@Override
 		public void valueChanged(HDNumberValueChangeEvent hDNumberValueChangeEvent) {
 			int newValue =  hDNumberValueChangeEvent.getNewValue() & 0xFFFF;
-			doValueChanged(newValue, (HDNumberBox) hDNumberValueChangeEvent.getSource());
+			doValueChanged(newValue, (HDNbox) hDNumberValueChangeEvent.getSource());
 		}// valueChanged
 
 	}// class AdapterV_IF_IndexRegisters

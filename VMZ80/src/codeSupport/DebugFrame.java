@@ -64,15 +64,14 @@ import javax.swing.text.DefaultHighlighter;
 import javax.swing.text.Highlighter;
 
 import hardware.WorkingRegisterSet;
-//import codeSupport.debug.ShowCode.Limits;
+import hdNumberBox.HDNbox;
+import hdNumberBox.HDNumberValueChangeEvent;
+import hdNumberBox.HDNumberValueChangeListener;
 import memory.Core.Trap;
 import memory.CpuBuss;
 import menuUtility.MenuUtility;
 import utilities.filePicker.FilePicker;
-//import utilities.filePicker.FilePicker;
-import utilities.hdNumberBox.HDNumberBox;
-import utilities.hdNumberBox.HDNumberValueChangeEvent;
-import utilities.hdNumberBox.HDNumberValueChangeListener;
+
 
 public class DebugFrame extends JInternalFrame implements Runnable {
 
@@ -345,7 +344,7 @@ public class DebugFrame extends JInternalFrame implements Runnable {
 		gbc_verticalStrut_3.gridy = 8;
 		panelBreaks.add(verticalStrut_3, gbc_verticalStrut_3);
 
-		hdNumber = new utilities.hdNumberBox.HDNumberBox();// utilities.hdNumberBox.HDNumberBox
+		hdNumber = new HDNbox();// utilities.hdNumberBox.HDNumberBox
 		hdNumber.setMinimumSize(new Dimension(71, 23));
 		hdNumber.setMaximumSize(new Dimension(71, 23));
 		hdNumber.setPreferredSize(new Dimension(71, 23));
@@ -480,7 +479,7 @@ public class DebugFrame extends JInternalFrame implements Runnable {
 	private JToggleButton tbEnable;
 	private JPanel contentPane;
 	private JList<String> listTraps;
-	private HDNumberBox hdNumber;
+	private HDNbox hdNumber;
 	private JTextArea taListing;
 	private JLabel lblLisingName;
 	private JMenu mnuFiles;
@@ -880,6 +879,8 @@ public class DebugFrame extends JInternalFrame implements Runnable {
 		public void mouseReleased(MouseEvent arg0) {
 			// TODO Auto-generated method stub
 		}//
+
+
 
 	}// class AdapterDebug
 }// class DebugFrame

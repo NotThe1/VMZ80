@@ -17,9 +17,9 @@ import javax.swing.SwingConstants;
 import codeSupport.RoundIcon;
 import codeSupport.Z80;
 import hardware.WorkingRegisterSet;
-import utilities.hdNumberBox.HDNumberBox;
-import utilities.hdNumberBox.HDNumberValueChangeEvent;
-import utilities.hdNumberBox.HDNumberValueChangeListener;
+import hdNumberBox.HDNbox;
+import hdNumberBox.HDNumberValueChangeEvent;
+import hdNumberBox.HDNumberValueChangeListener;
 
 public class V_IF_SpecialRegisters extends JInternalFrame  implements Runnable {
 	private static final long serialVersionUID = 1L;
@@ -45,7 +45,7 @@ public class V_IF_SpecialRegisters extends JInternalFrame  implements Runnable {
 	}//setEnabled
 	
 
-	private void doValueChanged(byte newValue, HDNumberBox reg) {
+	private void doValueChanged(byte newValue, HDNbox reg) {
 		String name = reg.getName();
 		switch (name) {
 		case REG_I:
@@ -114,7 +114,7 @@ public class V_IF_SpecialRegisters extends JInternalFrame  implements Runnable {
 		lblR.setBounds(66, 24, 20, 14);
 		getContentPane().add(lblR);
 		
-		regI = new HDNumberBox(0, 255, 0, false);
+		regI = new HDNbox(0, 255, 0, false);
 		regI.setName(REG_I);
 		regI.addHDNumberValueChangedListener(adapterSpecialRegisters);
 		regI.setToolTipText("Interrupt Page");
@@ -131,7 +131,7 @@ public class V_IF_SpecialRegisters extends JInternalFrame  implements Runnable {
 		gbl_regI.rowWeights = new double[]{Double.MIN_VALUE};
 		regI.setLayout(gbl_regI);
 		
-		regR = new HDNumberBox(0, 255, 0, false);
+		regR = new HDNbox(0, 255, 0, false);
 		regR.setName(REG_R);
 		regR.addHDNumberValueChangedListener(adapterSpecialRegisters);
 		regR.setToolTipText("Interrupt Page");
@@ -167,8 +167,8 @@ public class V_IF_SpecialRegisters extends JInternalFrame  implements Runnable {
 	private static final String REG_R = "regR";
 	private static final String IFF1 = "IFF1";
 	private static final String IFF2 = "IFF2";
-	private HDNumberBox regI;
-	private HDNumberBox regR;
+	private HDNbox regI;
+	private HDNbox regR;
 	private JCheckBox cbIFF1;
 	private JCheckBox cbIFF2;
 	
@@ -180,7 +180,7 @@ public class V_IF_SpecialRegisters extends JInternalFrame  implements Runnable {
 		@Override
 		public void valueChanged(HDNumberValueChangeEvent hDNumberValueChangeEvent) {
 			byte newValue = (byte) hDNumberValueChangeEvent.getNewValue();
-			doValueChanged(newValue, (HDNumberBox) hDNumberValueChangeEvent.getSource());
+			doValueChanged(newValue, (HDNbox) hDNumberValueChangeEvent.getSource());
 		}// valueChanged
 
 		/* ActionListener */
